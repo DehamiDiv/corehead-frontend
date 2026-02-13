@@ -20,6 +20,6 @@ body {
 }
 
 ::selection {
-  background: rgba(139, 92, 246, 0.3); /* Purple selection */
+  background: rgb(97, 178, 239); /* Purple selection */
   color: white;
 }

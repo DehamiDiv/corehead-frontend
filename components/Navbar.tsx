@@ -14,9 +14,9 @@ export default function Navbar() {
       className="fixed top-0 left-0 right-0 z-50 flex items-center justify-between px-6 py-4 mx-auto max-w-7xl md:px-12 backdrop-blur-md bg-black/30 border-b border-white/10"
     >
       <div className="flex items-center gap-2">
-        <div className="w-8 h-8 rounded-full bg-gradient-to-tr from-purple-500 to-blue-500" />
-        <span className="text-xl font-bold tracking-tight text-white">
-          Corehead
+        <div className="w-8 h-8 rounded-full bg-gradient-to-tr from-blue-500 to-purple-100" />
+        <span className="text-s font-bold tracking-tight text-black">
+          Corehead.app
         </span>
       </div>
 
@@ -39,8 +39,8 @@ export default function Navbar() {
         >
           Log in
         </Link>
-        <button className="px-5 py-2 text-sm font-medium text-white transition-all bg-white/10 border border-white/10 rounded-full hover:bg-white/20 hover:scale-105 active:scale-95 backdrop-blur-sm">
-          Get Started
+        <button className="px-5 py-2 text-sm font-medium text-white transition-all bg-blue-600 border border-white/10 rounded-full hover:bg-white/20 hover:scale-105 active:scale-95 backdrop-blur-sm">
+          Get a Demo
         </button>
       </div>
     </motion.nav>
