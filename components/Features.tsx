@@ -5,35 +5,35 @@ import { Zap, Shield, Globe, Cpu, Layers, Activity } from "lucide-react";
 
 const features = [
   {
-    icon: <Zap className="w-6 h-6 text-yellow-400" />,
+    icon: <Zap className="w-6 h-6 text-yellow-500" />,
     title: "Lightning Fast",
     description:
       "Built on next-gen infrastructure for milliseconds latency anywhere in the world.",
   },
   {
-    icon: <Shield className="w-6 h-6 text-green-400" />,
+    icon: <Shield className="w-6 h-6 text-green-500" />,
     title: "Enterprise Security",
     description: "Bank-grade encryption and SOC2 compliance out of the box.",
   },
   {
-    icon: <Globe className="w-6 h-6 text-blue-400" />,
+    icon: <Globe className="w-6 h-6 text-blue-500" />,
     title: "Global Edge",
     description: "Deploy your app to 35+ regions with a single click.",
   },
   {
-    icon: <Cpu className="w-6 h-6 text-purple-400" />,
+    icon: <Cpu className="w-6 h-6 text-purple-500" />,
     title: "AI Powered",
     description:
       "Smart suggestions and automated optimizations for your workflow.",
   },
   {
-    icon: <Layers className="w-6 h-6 text-pink-400" />,
+    icon: <Layers className="w-6 h-6 text-pink-500" />,
     title: "Seamless Integration",
     description:
       "Connect with your favorite tools like GitHub, Slack, and Linear.",
   },
   {
-    icon: <Activity className="w-6 h-6 text-orange-400" />,
+    icon: <Activity className="w-6 h-6 text-orange-500" />,
     title: "Real-time Analytics",
     description: "Monitor performance and user engagement in real-time.",
   },
@@ -45,14 +45,12 @@ export default function Features() {
       id="features"
       className="py-24 px-6 md:px-12 relative overflow-hidden"
     >
-      <div className="absolute inset-0 bg-gradient-to-b from-black via-purple-950/10 to-black pointer-events-none" />
-
       <div className="max-w-7xl mx-auto relative z-10">
         <div className="text-center mb-16">
-          <h2 className="text-3xl md:text-5xl font-bold mb-6 text-transparent bg-clip-text bg-gradient-to-r from-white to-gray-400">
+          <h2 className="text-3xl md:text-5xl font-bold mb-6 text-slate-900">
             Unleash your potential
           </h2>
-          <p className="text-gray-400 max-w-2xl mx-auto text-lg">
+          <p className="text-slate-600 max-w-2xl mx-auto text-lg">
             Everything you need to build, deploy, and scale your applications
             with speed and confidence.
           </p>
@@ -67,15 +65,15 @@ export default function Features() {
               viewport={{ once: true }}
               transition={{ delay: index * 0.1, duration: 0.5 }}
               whileHover={{ y: -5 }}
-              className="p-8 rounded-2xl bg-white/5 border border-white/10 hover:bg-white/10 hover:border-white/20 transition-colors group"
+              className="p-8 rounded-2xl bg-white border border-slate-200 hover:border-blue-200 hover:shadow-xl hover:shadow-blue-500/10 transition-all group"
             >
-              <div className="mb-4 p-3 rounded-lg bg-white/5 w-fit group-hover:bg-white/10 transition-colors">
+              <div className="mb-4 p-3 rounded-lg bg-slate-50 w-fit group-hover:bg-blue-50 transition-colors">
                 {feature.icon}
               </div>
-              <h3 className="text-xl font-semibold text-white mb-3">
+              <h3 className="text-xl font-semibold text-slate-900 mb-3">
                 {feature.title}
               </h3>
-              <p className="text-gray-400 leading-relaxed">
+              <p className="text-slate-600 leading-relaxed">
                 {feature.description}
               </p>
             </motion.div>

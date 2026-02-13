@@ -2,8 +2,6 @@
 
 import Link from "next/link";
 import { motion } from "framer-motion";
-// Assuming we might use a UI library or standard buttons later, but for now I'll stick to standard html/tailwind for speed unless I added shadcn. I didn't add shadcn, so I will implement buttons directly or generic ones.
-// Actually, let's just make the buttons inline for now to avoid dependency on non-existent UI components.
 
 export default function Navbar() {
   return (
@@ -11,11 +9,11 @@ export default function Navbar() {
       initial={{ y: -100, opacity: 0 }}
       animate={{ y: 0, opacity: 1 }}
       transition={{ duration: 0.8 }}
-      className="fixed top-0 left-0 right-0 z-50 flex items-center justify-between px-6 py-4 mx-auto max-w-7xl md:px-12 backdrop-blur-md bg-black/30 border-b border-white/10"
+      className="fixed top-0 left-0 right-0 z-50 flex items-center justify-between px-6 py-4 mx-auto max-w-7xl md:px-12 backdrop-blur-md bg-white/70 border-b border-white/50 shadow-sm"
     >
       <div className="flex items-center gap-2">
-        <div className="w-8 h-8 rounded-full bg-gradient-to-tr from-blue-500 to-purple-100" />
-        <span className="text-s font-bold tracking-tight text-black">
+        <div className="w-8 h-8 rounded-full bg-blue-600" />
+        <span className="text-lg font-bold tracking-tight text-slate-900">
           Corehead.app
         </span>
       </div>
@@ -25,7 +23,7 @@ export default function Navbar() {
           <Link
             key={item}
             href={`#${item.toLowerCase()}`}
-            className="text-sm font-medium text-gray-300 hover:text-white transition-colors"
+            className="text-sm font-medium text-slate-600 hover:text-blue-600 transition-colors"
           >
             {item}
           </Link>
@@ -35,11 +33,11 @@ export default function Navbar() {
       <div className="flex items-center gap-4">
         <Link
           href="/login"
-          className="text-sm font-medium text-gray-300 hover:text-white transition-colors"
+          className="text-sm font-medium text-slate-600 hover:text-blue-600 transition-colors"
         >
           Log in
         </Link>
-        <button className="px-5 py-2 text-sm font-medium text-white transition-all bg-blue-600 border border-white/10 rounded-full hover:bg-white/20 hover:scale-105 active:scale-95 backdrop-blur-sm">
+        <button className="px-5 py-2 text-sm font-medium text-white transition-all bg-blue-600 border border-transparent rounded-full hover:bg-blue-700 hover:scale-105 active:scale-95 shadow-md shadow-blue-500/20">
           Get a Demo
         </button>
       </div>

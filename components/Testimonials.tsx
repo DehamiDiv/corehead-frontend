@@ -28,15 +28,12 @@ const testimonials = [
 
 export default function Testimonials() {
   return (
-    <section
-      id="testimonials"
-      className="py-24 px-6 md:px-12 bg-black relative"
-    >
-      <div className="absolute top-0 left-0 w-full h-px bg-gradient-to-r from-transparent via-white/10 to-transparent" />
+    <section id="testimonials" className="py-24 px-6 md:px-12 relative">
+      <div className="absolute top-0 left-0 w-full h-px bg-gradient-to-r from-transparent via-slate-200 to-transparent" />
 
       <div className="max-w-7xl mx-auto">
         <div className="mb-16 text-center">
-          <h2 className="text-3xl md:text-5xl font-bold mb-6 text-white">
+          <h2 className="text-3xl md:text-5xl font-bold mb-6 text-slate-900">
             Trusted by innovators
           </h2>
         </div>
@@ -49,9 +46,9 @@ export default function Testimonials() {
               whileInView={{ opacity: 1, scale: 1 }}
               viewport={{ once: true }}
               transition={{ delay: index * 0.2 }}
-              className="p-8 rounded-2xl bg-gradient-to-b from-white/5 to-transparent border border-white/10 relative"
+              className="p-8 rounded-2xl bg-white border border-slate-100 shadow-lg shadow-blue-500/5 relative hover:shadow-xl hover:shadow-blue-500/10 transition-all"
             >
-              <p className="text-lg text-gray-300 mb-8 italic">
+              <p className="text-lg text-slate-600 mb-8 italic">
                 "{testimonial.quote}"
               </p>
 
@@ -59,13 +56,13 @@ export default function Testimonials() {
                 <img
                   src={testimonial.image}
                   alt={testimonial.author}
-                  className="w-12 h-12 rounded-full border border-white/20"
+                  className="w-12 h-12 rounded-full border border-slate-200"
                 />
                 <div>
-                  <h4 className="font-semibold text-white">
+                  <h4 className="font-semibold text-slate-900">
                     {testimonial.author}
                   </h4>
-                  <p className="text-sm text-gray-500">{testimonial.role}</p>
+                  <p className="text-sm text-slate-500">{testimonial.role}</p>
                 </div>
               </div>
             </motion.div>
