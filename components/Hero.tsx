@@ -20,9 +20,8 @@ export default function Hero() {
           v1.0 is now live
         </div>
 
-        <h1 className="text-5xl font-extrabold tracking-tight text-slate-900 md:text-7xl">
-          The Fastest Foundation for <br className="hidden md:block" />
-          <span className="text-blue-600">Your Content</span>
+        <h1 className="text-5xl font-bold tracking-tight text-blue-950 md:text-7xl">
+          The Fastest Foundation for Your Content
         </h1>
 
         <p className="max-w-2xl mx-auto mt-6 text-lg text-slate-600 md:text-xl">

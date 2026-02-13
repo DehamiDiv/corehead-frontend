@@ -23,7 +23,7 @@ export default function Navbar() {
           <Link
             key={item}
             href={`#${item.toLowerCase()}`}
-            className="text-sm font-medium text-slate-600 hover:text-blue-600 transition-colors"
+            className="text-sm font-medium text-slate-900 hover:text-blue-600 transition-colors"
           >
             {item}
           </Link>
@@ -33,7 +33,7 @@ export default function Navbar() {
       <div className="flex items-center gap-4">
         <Link
           href="/login"
-          className="text-sm font-medium text-slate-600 hover:text-blue-600 transition-colors"
+          className="text-sm font-medium text-slate-900 hover:text-blue-600 transition-colors"
         >
           Log in
         </Link>
