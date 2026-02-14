@@ -1,0 +1,387 @@
+.preview-page {
+  min-height: 100vh;
+  background: #0a0a0a;
+  color: #ffffff;
+}
+
+/* Header */
+.preview-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16px 32px;
+  background: #151515;
+  border-bottom: 1px solid #2a2a2a;
+  position: sticky;
+  top: 0;
+  z-index: 100;
+}
+
+.header-left {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+}
+
+.btn-back {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 16px;
+  background: transparent;
+  border: 1px solid #2a2a2a;
+  border-radius: 6px;
+  color: #a0a0a0;
+  cursor: pointer;
+  transition: all 0.2s;
+  font-size: 14px;
+}
+
+.btn-back:hover {
+  background: #1e1e1e;
+  color: #ffffff;
+}
+
+.preview-title {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.preview-title h1 {
+  font-size: 18px;
+  font-weight: 600;
+  margin: 0;
+}
+
+.post-status {
+  padding: 4px 12px;
+  border-radius: 12px;
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+}
+
+.post-status.draft {
+  background: rgba(245, 158, 11, 0.1);
+  color: #f59e0b;
+  border: 1px solid rgba(245, 158, 11, 0.3);
+}
+
+.header-actions {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+}
+
+/* Device Toggle */
+.device-toggle {
+  display: flex;
+  gap: 4px;
+  background: #1e1e1e;
+  padding: 4px;
+  border-radius: 8px;
+}
+
+.device-toggle button {
+  padding: 8px 12px;
+  background: transparent;
+  border: none;
+  color: #a0a0a0;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.device-toggle button:hover {
+  color: #ffffff;
+}
+
+.device-toggle button.active {
+  background: #8b5cf6;
+  color: white;
+}
+
+.btn-primary, .btn-secondary {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 20px;
+  border-radius: 8px;
+  border: none;
+  font-size: 14px;
+  font-weight: 500;
+  transition: all 0.2s;
+  cursor: pointer;
+}
+
+.btn-primary {
+  background: #8b5cf6;
+  color: white;
+}
+
+.btn-primary:hover {
+  background: #7c3aed;
+}
+
+.btn-secondary {
+  background: #1e1e1e;
+  color: #ffffff;
+  border: 1px solid #2a2a2a;
+}
+
+.btn-secondary:hover {
+  background: #252525;
+}
+
+/* Preview Container */
+.preview-container {
+  display: flex;
+  justify-content: center;
+  padding: 40px 20px;
+  background: #0a0a0a;
+  min-height: calc(100vh - 120px);
+}
+
+.device-frame {
+  width: 100%;
+  background: #ffffff;
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+  transition: all 0.3s ease;
+}
+
+.preview-content {
+  background: #ffffff;
+  color: #1a1a1a;
+}
+
+/* Blog Post Styles */
+.blog-post {
+  max-width: 800px;
+  margin: 0 auto;
+}
+
+.post-hero {
+  width: 100%;
+  height: 400px;
+  overflow: hidden;
+  background: #f5f5f5;
+}
+
+.post-hero img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.post-header-section {
+  padding: 60px 40px 40px;
+}
+
+.post-meta {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 20px;
+}
+
+.category-tag {
+  display: inline-block;
+  padding: 6px 16px;
+  background: #8b5cf6;
+  color: white;
+  border-radius: 20px;
+  font-size: 13px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.post-date {
+  color: #666666;
+  font-size: 14px;
+}
+
+.post-title {
+  font-size: 42px;
+  font-weight: 800;
+  line-height: 1.2;
+  margin: 0 0 24px 0;
+  color: #1a1a1a;
+}
+
+.post-excerpt {
+  font-size: 20px;
+  line-height: 1.6;
+  color: #666666;
+  margin: 0 0 32px 0;
+}
+
+.author-info {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding-top: 24px;
+  border-top: 1px solid #e5e5e5;
+}
+
+.author-avatar {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  background: #8b5cf6;
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 20px;
+  font-weight: 600;
+}
+
+.author-details {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.author-name {
+  font-weight: 600;
+  color: #1a1a1a;
+  font-size: 15px;
+}
+
+.read-time {
+  color: #999999;
+  font-size: 13px;
+}
+
+/* Post Body */
+.post-body {
+  padding: 40px;
+}
+
+.markdown-content {
+  font-size: 18px;
+  line-height: 1.8;
+  color: #333333;
+}
+
+.markdown-content h1 {
+  font-size: 36px;
+  font-weight: 700;
+  margin: 48px 0 24px 0;
+  color: #1a1a1a;
+}
+
+.markdown-content h2 {
+  font-size: 28px;
+  font-weight: 700;
+  margin: 40px 0 20px 0;
+  color: #1a1a1a;
+}
+
+.markdown-content h3 {
+  font-size: 22px;
+  font-weight: 600;
+  margin: 32px 0 16px 0;
+  color: #1a1a1a;
+}
+
+.markdown-content p {
+  margin: 0 0 24px 0;
+}
+
+.markdown-content ul {
+  margin: 24px 0;
+  padding-left: 32px;
+}
+
+.markdown-content li {
+  margin: 12px 0;
+  line-height: 1.8;
+}
+
+.markdown-content pre {
+  background: #1e1e1e;
+  color: #e5e5e5;
+  padding: 24px;
+  border-radius: 8px;
+  overflow-x: auto;
+  margin: 32px 0;
+  font-size: 14px;
+  line-height: 1.6;
+}
+
+.markdown-content code {
+  font-family: 'Monaco', 'Courier New', monospace;
+}
+
+/* Tags */
+.post-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  padding: 40px;
+  border-top: 1px solid #e5e5e5;
+}
+
+.tag {
+  padding: 8px 16px;
+  background: #f5f5f5;
+  border: 1px solid #e5e5e5;
+  border-radius: 20px;
+  font-size: 13px;
+  color: #666666;
+  font-weight: 500;
+}
+
+/* Device Label */
+.device-label {
+  position: fixed;
+  bottom: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 8px 16px;
+  background: #1e1e1e;
+  border: 1px solid #2a2a2a;
+  border-radius: 20px;
+  color: #a0a0a0;
+  font-size: 12px;
+  font-weight: 500;
+  z-index: 99;
+}
+
+/* Responsive Adjustments */
+@media (max-width: 768px) {
+  .preview-header {
+    flex-direction: column;
+    gap: 16px;
+    align-items: flex-start;
+  }
+  
+  .header-actions {
+    width: 100%;
+    flex-wrap: wrap;
+  }
+  
+  .post-title {
+    font-size: 32px;
+  }
+  
+  .post-hero {
+    height: 250px;
+  }
+  
+  .post-header-section {
+    padding: 40px 20px 20px;
+  }
+  
+  .post-body {
+    padding: 20px;
+  }
+}
