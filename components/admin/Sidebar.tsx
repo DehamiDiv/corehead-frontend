@@ -28,14 +28,14 @@ export function Sidebar() {
 
   return (
     <aside className="w-64 bg-white border-r border-gray-100 flex flex-col h-screen sticky top-0 left-0 z-40">
-      <div className="p-6 flex items-center gap-2">
+      <div className="p-6 flex items-center gap-3">
         <div className="w-8 h-8 bg-blue-600 rounded-full flex items-center justify-center text-white font-bold text-xl">
           C
         </div>
         <span className="text-xl font-bold text-gray-900">CoreHead</span>
       </div>
 
-      <nav className="flex-1 px-4 py-4 space-y-1 overflow-y-auto">
+      <nav className="flex-1 px-4 space-y-1 overflow-y-auto py-4">
         {sidebarItems.map((item) => {
           const isActive = pathname.startsWith(item.href);
           return (
@@ -43,17 +43,16 @@ export function Sidebar() {
               key={item.href}
               href={item.href}
               className={cn(
-                "flex items-center gap-3 px-4 py-3 rounded-xl transition-colors font-medium text-sm text-gray-600 hover:bg-gray-50 hover:text-gray-900",
-                isActive &&
-                  "bg-blue-50 text-blue-600 hover:bg-blue-50 hover:text-blue-700",
+                "flex items-center gap-3 px-4 py-3 rounded-xl transition-colors font-medium text-sm",
+                isActive
+                  ? "bg-blue-50 text-blue-600"
+                  : "text-gray-600 hover:bg-gray-50 hover:text-gray-900",
               )}
             >
               <item.icon
                 className={cn(
                   "w-5 h-5",
-                  isActive
-                    ? "text-blue-600"
-                    : "text-gray-400 group-hover:text-gray-600",
+                  isActive ? "text-blue-600" : "text-gray-400",
                 )}
               />
               {item.label}
@@ -61,13 +60,15 @@ export function Sidebar() {
           );
         })}
 
-        <button className="w-full flex items-center justify-between px-4 py-3 mt-4 rounded-xl transition-colors font-medium text-sm text-gray-600 hover:bg-gray-50 hover:text-gray-900">
-          <div className="flex items-center gap-3">
-            <Settings className="w-5 h-5 text-gray-400" />
-            <span>Settings</span>
-          </div>
-          <ChevronDown className="w-4 h-4 text-gray-400" />
-        </button>
+        <div className="pt-4 mt-auto">
+          <button className="w-full flex items-center justify-between px-4 py-3 rounded-xl transition-colors font-medium text-sm text-gray-600 hover:bg-gray-50 hover:text-gray-900">
+            <div className="flex items-center gap-3">
+              <Settings className="w-5 h-5 text-gray-400" />
+              <span>Settings</span>
+            </div>
+            <ChevronDown className="w-4 h-4 text-gray-400" />
+          </button>
+        </div>
       </nav>
     </aside>
   );
