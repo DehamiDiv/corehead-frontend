@@ -1,0 +1,154 @@
+.blog-builder {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  background: #0a0a0a;
+  color: #ffffff;
+}
+
+/* Header */
+.builder-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 24px;
+  background: #151515;
+  border-bottom: 1px solid #2a2a2a;
+  height: 60px;
+}
+
+.header-left {
+  display: flex;
+  align-items: center;
+  gap: 24px;
+}
+
+.logo {
+  font-size: 18px;
+  font-weight: 600;
+  color: #ffffff;
+  margin: 0;
+}
+
+.logo span {
+  color: #8b5cf6;
+}
+
+.page-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: #a0a0a0;
+  font-size: 14px;
+}
+
+.header-actions {
+  display: flex;
+  gap: 12px;
+}
+
+.btn-primary, .btn-secondary {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 16px;
+  border-radius: 6px;
+  border: none;
+  font-size: 14px;
+  font-weight: 500;
+  transition: all 0.2s;
+  cursor: pointer;
+}
+
+.btn-primary {
+  background: #8b5cf6;
+  color: white;
+}
+
+.btn-primary:hover {
+  background: #7c3aed;
+  transform: translateY(-1px);
+}
+
+.btn-secondary {
+  background: #1e1e1e;
+  color: #ffffff;
+  border: 1px solid #2a2a2a;
+}
+
+.btn-secondary:hover {
+  background: #252525;
+}
+
+/* Main Content */
+.builder-content {
+  display: flex;
+  flex: 1;
+  overflow: hidden;
+}
+
+.builder-main {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+/* Toolbar */
+.builder-toolbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16px 24px;
+  background: #151515;
+  border-bottom: 1px solid #2a2a2a;
+}
+
+.mode-toggle {
+  display: flex;
+  gap: 4px;
+  background: #1e1e1e;
+  padding: 4px;
+  border-radius: 8px;
+}
+
+.mode-toggle button {
+  padding: 8px 16px;
+  border: none;
+  background: transparent;
+  color: #a0a0a0;
+  border-radius: 6px;
+  font-size: 13px;
+  font-weight: 500;
+  transition: all 0.2s;
+  cursor: pointer;
+}
+
+.mode-toggle button.active {
+  background: #8b5cf6;
+  color: white;
+}
+
+.mode-toggle button:hover:not(.active) {
+  color: #ffffff;
+}
+
+.toolbar-right {
+  display: flex;
+  gap: 12px;
+}
+
+.layout-select {
+  padding: 8px 12px;
+  background: #1e1e1e;
+  color: #ffffff;
+  border: 1px solid #2a2a2a;
+  border-radius: 6px;
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.layout-select:focus {
+  outline: none;
+  border-color: #8b5cf6;
+}
