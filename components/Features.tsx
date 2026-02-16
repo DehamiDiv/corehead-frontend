@@ -1,41 +1,43 @@
 "use client";
 
 import { motion } from "framer-motion";
-import { Zap, Shield, Globe, Cpu, Layers, Activity } from "lucide-react";
+import { Zap, Users, Globe, LayoutGrid, BarChart3, Image } from "lucide-react";
 
 const features = [
   {
+    icon: <LayoutGrid className="w-6 h-6 text-blue-500" />,
+    title: "Visual Builder",
+    description:
+      "Drag and drop interface to create stunning blog posts without writing code.",
+  },
+  {
     icon: <Zap className="w-6 h-6 text-yellow-500" />,
-    title: "Lightning Fast",
+    title: "Instant Preview",
+    description: "See exactly how your content will look before you publish.",
+  },
+  {
+    icon: <Users className="w-6 h-6 text-green-500" />,
+    title: "Team Collaboration",
     description:
-      "Built on next-gen infrastructure for milliseconds latency anywhere in the world.",
+      "Invite your team, leave comments, and review changes in real-time.",
   },
   {
-    icon: <Shield className="w-6 h-6 text-green-500" />,
-    title: "Enterprise Security",
-    description: "Bank-grade encryption and SOC2 compliance out of the box.",
-  },
-  {
-    icon: <Globe className="w-6 h-6 text-blue-500" />,
-    title: "Global Edge",
-    description: "Deploy your app to 35+ regions with a single click.",
-  },
-  {
-    icon: <Cpu className="w-6 h-6 text-purple-500" />,
-    title: "AI Powered",
+    icon: <BarChart3 className="w-6 h-6 text-purple-500" />,
+    title: "Built-in SEO",
     description:
-      "Smart suggestions and automated optimizations for your workflow.",
+      "Automatic SEO optimization suggestions to help your content rank better.",
   },
   {
-    icon: <Layers className="w-6 h-6 text-pink-500" />,
-    title: "Seamless Integration",
+    icon: <Image className="w-6 h-6 text-pink-500" />,
+    title: "Media Management",
     description:
-      "Connect with your favorite tools like GitHub, Slack, and Linear.",
+      "Upload, organize, and edit your images and media files in one place.",
   },
   {
-    icon: <Activity className="w-6 h-6 text-orange-500" />,
-    title: "Real-time Analytics",
-    description: "Monitor performance and user engagement in real-time.",
+    icon: <Globe className="w-6 h-6 text-orange-500" />,
+    title: "Easy Publishing",
+    description:
+      "Publish to your existing site or use our hosted platform with one click.",
   },
 ];
 
@@ -48,11 +50,11 @@ export default function Features() {
       <div className="max-w-7xl mx-auto relative z-10">
         <div className="text-center mb-16">
           <h2 className="text-3xl md:text-5xl font-bold mb-6 text-slate-900">
-            Unleash your potential
+            Everything you need to blog
           </h2>
           <p className="text-slate-600 max-w-2xl mx-auto text-lg">
-            Everything you need to build, deploy, and scale your applications
-            with speed and confidence.
+            Focus on creating great content. We handle the formatting, SEO, and
+            publishing.
           </p>
         </div>
 

@@ -6,29 +6,29 @@ import { useState } from "react";
 
 const faqs = [
   {
-    question: "How does Corehead compare to Vercel or Netlify?",
+    question: "Do I need to know how to code?",
     answer:
-      "Corehead provides a more granular control over your infrastructure while maintaining the ease of use you expect. We offer specialized tools for Go and Next.js hybrid deployments that give you better performance at scale.",
+      "Not at all! Corehead is designed for content creators. You can build beautiful posts using our visual drag-and-drop editor without writing a single line of code.",
   },
   {
-    question: "Can I host my own database?",
+    question: "Can I use my own domain?",
     answer:
-      "Absolutely. While we offer managed PostgreSQL, you can easily connect to any external database or host your own within your private VPC on our platform.",
+      "Yes, you can connect your custom domain to your Corehead blog on all paid plans. We handle the SSL certificates and hosting for you.",
   },
   {
-    question: "Is there a free trial for the Pro plan?",
+    question: "Is there a free trial?",
     answer:
-      "Yes, we offer a 14-day free trial for all paid plans. No credit card is required to start your trial.",
+      "Yes, we offer a 14-day free trial for all paid plans. You can also start with our Free forever plan to explore the features.",
   },
   {
-    question: "Do you offer migration assistance?",
+    question: "Can I export my content?",
     answer:
-      "Yes! Our enterprise plan includes dedicated migration support. For other plans, we have comprehensive documentation and community guides to help you switch.",
+      "Absolutely. Your content belongs to you. You can export your posts to Markdown, JSON, or HTML at any time.",
   },
   {
-    question: "What kind of support do you provide?",
+    question: "Do you support multiple team members?",
     answer:
-      "All plans include community support. Pro plans get priority email support with 24h response time, and Enterprise plans receive 24/7 dedicated phone and Slack support.",
+      "Yes! Our Team and Enterprise plans allow you to invite editors, writers, and administrators with different permission levels.",
   },
 ];
 

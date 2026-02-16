@@ -5,23 +5,23 @@ import { motion } from "framer-motion";
 const testimonials = [
   {
     quote:
-      "Corehead has completely transformed how our team ships code. The speed and reliability are unmatched.",
+      "Corehead makes it so easy for our marketing team to publish content without needing engineering time.",
     author: "Sarah Jenkins",
-    role: "CTO at TechFlow",
+    role: "CMO at TechFlow",
     image: "https://api.dicebear.com/7.x/avataaars/svg?seed=Sarah",
   },
   {
     quote:
-      "The interface is stunning and intuitive. It's rare to find a dev tool that looks this good and works this well.",
+      "The visual builder is incredible. I can clearly see how my post will look on mobile and desktop while I'm writing.",
     author: "Michael Chen",
-    role: "Lead Developer",
+    role: "Content Creator",
     image: "https://api.dicebear.com/7.x/avataaars/svg?seed=Michael",
   },
   {
     quote:
-      "We've cut our deployment time by 50% since switching to Corehead. It's a game-changer for us.",
+      "Collaboration features are a lifesaver. No more passing Google Docs back and forth.",
     author: "Alex Rivera",
-    role: "DevOps Engineer",
+    role: "Editor in Chief",
     image: "https://api.dicebear.com/7.x/avataaars/svg?seed=Alex",
   },
 ];
@@ -34,7 +34,7 @@ export default function Testimonials() {
       <div className="max-w-7xl mx-auto">
         <div className="mb-16 text-center">
           <h2 className="text-3xl md:text-5xl font-bold mb-6 text-slate-900">
-            Trusted by innovators
+            Loved by content teams
           </h2>
         </div>
 

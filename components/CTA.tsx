@@ -19,7 +19,7 @@ export default function CTA() {
           viewport={{ once: true }}
           className="text-3xl md:text-5xl font-bold text-white mb-6"
         >
-          Ready to build something amazing?
+          Ready to start blogging?
         </motion.h2>
         <motion.p
           initial={{ opacity: 0, y: 20 }}
@@ -28,8 +28,8 @@ export default function CTA() {
           transition={{ delay: 0.1 }}
           className="text-blue-100 text-lg md:text-xl mb-10 max-w-2xl mx-auto"
         >
-          Join thousands of developers who are building faster, more secure
-          applications with Corehead.
+          Join thousands of writers who are building faster, better blogs with
+          Corehead.
         </motion.p>
 
         <motion.div
@@ -40,16 +40,16 @@ export default function CTA() {
           className="flex flex-col sm:flex-row gap-4 justify-center"
         >
           <button className="px-8 py-4 bg-white text-blue-600 font-bold rounded-full hover:bg-blue-50 transition-all shadow-lg hover:shadow-xl hover:scale-105 active:scale-95 flex items-center justify-center gap-2">
-            Start Building for Free
+            Start Writing for Free
             <ArrowRight className="w-5 h-5" />
           </button>
           <button className="px-8 py-4 bg-blue-700 text-white border border-blue-500 font-bold rounded-full hover:bg-blue-600 transition-all shadow-lg hover:shadow-xl active:scale-95">
-            Contact Sales
+            View Pricing
           </button>
         </motion.div>
 
         <p className="mt-8 text-blue-200 text-sm">
-          No credit card required. 14-day free trial on paid plans.
+          No credit card required. Free plan available forever.
         </p>
       </div>
     </section>

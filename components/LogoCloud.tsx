@@ -33,8 +33,8 @@ export default function LogoCloud() {
   return (
     <section className="py-12 bg-slate-50 border-y border-slate-200">
       <div className="max-w-7xl mx-auto px-6">
-        <p className="text-center text-sm font-semibold text-slate-500 uppercase tracking-widest mb-8">
-          Trusted by innovative teams at
+        <p className="text-center text-sm font-medium text-slate-500 mb-8">
+          Trusted by 1 Million+ Users Worldwide
         </p>
         <div className="flex flex-wrap justify-center items-center gap-8 md:gap-16 opacity-60 grayscale hover:grayscale-0 transition-all duration-500">
           {logos.map((logo, index) => (

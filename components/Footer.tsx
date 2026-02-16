@@ -1,3 +1,5 @@
+import { Github, Twitter } from "lucide-react";
+
 export default function Footer() {
   return (
     <footer className="py-12 px-6 border-t border-slate-200 bg-white/40 backdrop-blur-md">
@@ -14,10 +16,18 @@ export default function Footer() {
           <a href="#" className="hover:text-blue-600 transition-colors">
             Terms
           </a>
-          <a href="#" className="hover:text-blue-600 transition-colors">
+          <a
+            href="#"
+            className="hover:text-blue-600 transition-colors flex items-center gap-1"
+          >
+            <Twitter size={16} />
             Twitter
           </a>
-          <a href="#" className="hover:text-blue-600 transition-colors">
+          <a
+            href="#"
+            className="hover:text-blue-600 transition-colors flex items-center gap-1"
+          >
+            <Github size={16} />
             GitHub
           </a>
         </div>
