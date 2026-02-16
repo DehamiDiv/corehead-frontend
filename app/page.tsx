@@ -8,7 +8,7 @@ import GridFeatures from "@/components/GridFeatures";
 import Testimonials from "@/components/Testimonials";
 import Pricing from "@/components/Pricing";
 import CTA from "@/components/CTA";
-import Footer from "@/components/Footer";
+import DetailedFooter from "@/components/DetailedFooter";
 import FAQ from "@/components/FAQ";
 
 export default function LandingPage() {
@@ -23,7 +23,7 @@ export default function LandingPage() {
       <Pricing />
       <FAQ />
       <CTA />
-      <Footer />
+      <DetailedFooter />
     </main>
   );
 }
