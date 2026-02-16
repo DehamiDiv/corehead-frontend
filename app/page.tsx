@@ -4,6 +4,7 @@ import Navbar from "@/components/Navbar";
 import Hero from "@/components/Hero";
 import LogoCloud from "@/components/LogoCloud";
 import Features from "@/components/Features";
+import GridFeatures from "@/components/GridFeatures";
 import Testimonials from "@/components/Testimonials";
 import Pricing from "@/components/Pricing";
 import CTA from "@/components/CTA";
@@ -17,6 +18,7 @@ export default function LandingPage() {
       <Hero />
       <LogoCloud />
       <Features />
+      <GridFeatures />
       <Testimonials />
       <Pricing />
       <FAQ />
