@@ -24,7 +24,7 @@ export default function Navbar() {
         {["Home", "Features", "Pricing", "Guide"].map((item) => (
           <Link
             key={item}
-            href={`#${item.toLowerCase()}`}
+            href={item === "Pricing" ? "/pricing" : `#${item.toLowerCase()}`}
             className="text-sm font-medium text-slate-600 hover:text-blue-600 transition-colors"
           >
             {item}
