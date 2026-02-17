@@ -33,6 +33,7 @@ export default function Toolbox() {
       <h3 className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-4 px-2">
         Blog Components
       </h3>
+
       <div className="space-y-3 mb-8">
         {tools.map((tool) => (
           <div
@@ -49,7 +50,7 @@ export default function Toolbox() {
         {bottomTools.map((tool) => (
           <button
             key={tool.label}
-            className="flex items-center gap-3 p-2 text-slate-600 hover:bg-white/50 rounded-lg w-full text-sm font-medium transition-colors"
+            className="flex items-center gap-3 p-2 text-slate-600 hover:bg-blue-100/50 hover:text-blue-700 rounded-lg w-full text-sm font-medium transition-colors"
           >
             <tool.icon className="w-5 h-5" />
             {tool.label}
