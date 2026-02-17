@@ -297,11 +297,10 @@ const FilterBar = () => {
           <button
             key={tab}
             onClick={() => setActiveTab(tab)}
-            className={`whitespace-nowrap rounded-full px-4 py-1.5 text-xs font-semibold transition-all ${
-              activeTab === tab
+            className={`whitespace-nowrap rounded-full px-4 py-1.5 text-xs font-semibold transition-all ${activeTab === tab
                 ? "bg-blue-600 text-white shadow-md"
                 : "border border-slate-200 bg-white text-slate-500 hover:bg-blue-50"
-            }`}
+              }`}
           >
             {tab}
           </button>
@@ -314,7 +313,7 @@ const FilterBar = () => {
 // --- Page Component (NO extra navbar / NO full-screen wrapper) ---
 export default function BlogTemplatesPage() {
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 font-[family-name:var(--font-outfit)]">
       {/* Inner canvas like your screenshot (but inside AdminLayout) */}
       <div className="rounded-[28px] border border-slate-200/60 bg-white/70 p-6 shadow-sm backdrop-blur">
         {/* Header */}
