@@ -21,6 +21,7 @@ const sidebarItems = [
   { icon: MessageSquare, label: "Comments", href: "/admin/comments" },
   { icon: Users, label: "Users", href: "/admin/users" },
   { icon: Settings, label: "Settings", href: "/admin/settings" },
+  { icon: FileText, label: "Binding", href: "/admin/binding" },
 ];
 
 export default function Sidebar() {
