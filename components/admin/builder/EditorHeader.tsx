@@ -33,9 +33,11 @@ export default function EditorHeader() {
             Preview Post
           </button>
         </Link>
-        <button className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-200 text-slate-700 rounded-full text-sm font-medium hover:bg-gray-50 transition-colors">
-          Save Draft
-        </button>
+        <Link href="/admin/builder/draft">
+          <button className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-200 text-slate-700 rounded-full text-sm font-medium hover:bg-gray-50 transition-colors">
+            Save Draft
+          </button>
+        </Link>
       </div>
     </header>
   );

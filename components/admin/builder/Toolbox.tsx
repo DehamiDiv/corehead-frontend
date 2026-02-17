@@ -11,6 +11,7 @@ import {
   Settings,
   LayoutGrid,
 } from "lucide-react";
+import Link from "next/link";
 
 const tools = [
   { icon: Type, label: "Heading" },
@@ -47,15 +48,41 @@ export default function Toolbox() {
       </div>
 
       <div className="mt-auto pt-4 border-t border-gray-200 space-y-2">
-        {bottomTools.map((tool) => (
-          <button
-            key={tool.label}
-            className="flex items-center gap-3 p-2 text-slate-600 hover:bg-blue-100/50 hover:text-blue-700 rounded-lg w-full text-base font-medium transition-colors"
-          >
-            <tool.icon className="w-5 h-5" />
-            {tool.label}
-          </button>
-        ))}
+        {bottomTools.map((tool) => {
+          if (tool.label === "Blog settings") {
+            return (
+              <Link
+                key={tool.label}
+                href="/admin/builder/settings"
+                className="flex items-center gap-3 p-2 text-slate-600 hover:bg-blue-100/50 hover:text-blue-700 rounded-lg w-full text-base font-medium transition-colors"
+              >
+                <tool.icon className="w-5 h-5" />
+                {tool.label}
+              </Link>
+            );
+          }
+          if (tool.label === "Categories & Tags") {
+            return (
+              <Link
+                key={tool.label}
+                href="/admin/builder/taxonomy"
+                className="flex items-center gap-3 p-2 text-slate-600 hover:bg-blue-100/50 hover:text-blue-700 rounded-lg w-full text-base font-medium transition-colors"
+              >
+                <tool.icon className="w-5 h-5" />
+                {tool.label}
+              </Link>
+            );
+          }
+          return (
+            <button
+              key={tool.label}
+              className="flex items-center gap-3 p-2 text-slate-600 hover:bg-blue-100/50 hover:text-blue-700 rounded-lg w-full text-base font-medium transition-colors"
+            >
+              <tool.icon className="w-5 h-5" />
+              {tool.label}
+            </button>
+          );
+        })}
       </div>
     </aside>
   );
