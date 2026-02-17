@@ -37,10 +37,10 @@ export default function Toolbox() {
         {tools.map((tool) => (
           <div
             key={tool.label}
-            className="flex items-center gap-3 p-3 bg-white border border-gray-200 text-slate-700 rounded-lg cursor-grab hover:border-blue-400 hover:text-blue-600 hover:shadow-md transition-all shadow-sm group"
+            className="flex items-center gap-3 p-3.5 bg-blue-500 text-white rounded-lg cursor-grab hover:bg-blue-600 hover:shadow-md transition-all shadow-sm group border border-transparent"
           >
-            <tool.icon className="w-5 h-5 text-slate-400 group-hover:text-blue-500 transition-colors" />
-            <span className="font-medium text-sm">{tool.label}</span>
+            <tool.icon className="w-5 h-5 text-blue-100 group-hover:text-white transition-colors" />
+            <span className="font-medium text-base">{tool.label}</span>
           </div>
         ))}
       </div>
@@ -49,7 +49,7 @@ export default function Toolbox() {
         {bottomTools.map((tool) => (
           <button
             key={tool.label}
-            className="flex items-center gap-3 p-2 text-slate-600 hover:bg-white/50 rounded-lg w-full text-sm font-medium transition-colors"
+            className="flex items-center gap-3 p-2 text-slate-600 hover:bg-blue-100/50 hover:text-blue-700 rounded-lg w-full text-base font-medium transition-colors"
           >
             <tool.icon className="w-5 h-5" />
             {tool.label}
