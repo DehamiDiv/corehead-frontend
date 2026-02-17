@@ -10,12 +10,14 @@ import {
   MessageSquare,
   Users,
   Settings,
+  FileCode,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const sidebarItems = [
   { icon: LayoutDashboard, label: "Dashboard", href: "/admin" },
   { icon: FileText, label: "Posts", href: "/admin/blogs" },
+  { icon: FileCode, label: "Snippets", href: "/admin/snippets" },
   { icon: Tags, label: "Categories", href: "/admin/categories" },
   { icon: ImageIcon, label: "Media Library", href: "/admin/media" },
   { icon: MessageSquare, label: "Comments", href: "/admin/comments" },
