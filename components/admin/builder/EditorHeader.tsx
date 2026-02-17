@@ -25,9 +25,11 @@ export default function EditorHeader() {
         >
           Exit Editor
         </Link>
-        <button className="flex items-center gap-2 px-5 py-2 bg-blue-600 text-white rounded-full text-sm font-semibold hover:bg-blue-700 transition-all shadow-md shadow-blue-600/20">
-          Publish Post
-        </button>
+        <Link href="/admin/builder/publish">
+          <button className="flex items-center gap-2 px-5 py-2 bg-blue-600 text-white rounded-full text-sm font-semibold hover:bg-blue-700 transition-all shadow-md shadow-blue-600/20">
+            Publish Post
+          </button>
+        </Link>
         <Link href="/admin/builder/preview">
           <button className="flex items-center gap-2 px-4 py-2 bg-white border border-blue-200 text-blue-700 rounded-full text-sm font-medium hover:bg-blue-50 transition-colors">
             Preview Post
