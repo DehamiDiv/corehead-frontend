@@ -14,7 +14,7 @@ import {
 import { cn } from "@/lib/utils";
 
 const sidebarItems = [
-  { icon: LayoutDashboard, label: "Dashboard", href: "/admin/dashboard" }, // Assuming dashboard exists or will exist
+  { icon: LayoutDashboard, label: "Dashboard", href: "/admin" },
   { icon: FileText, label: "Posts", href: "/admin/blogs" },
   { icon: Tags, label: "Categories", href: "/admin/categories" },
   { icon: ImageIcon, label: "Media Library", href: "/admin/media" },
@@ -39,7 +39,11 @@ export default function Sidebar() {
       {/* Navigation */}
       <nav className="flex-1 py-6 px-3 space-y-1 overflow-y-auto">
         {sidebarItems.map((item) => {
-          const isActive = pathname.startsWith(item.href);
+          const isActive =
+            item.href === "/admin"
+              ? pathname === "/admin"
+              : pathname.startsWith(item.href);
+
           return (
             <Link
               key={item.href}

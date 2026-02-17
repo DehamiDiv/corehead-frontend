@@ -1,35 +1,32 @@
 "use client";
 
 import { motion } from "framer-motion";
-import { LayoutGrid, FileText, Sparkles } from "lucide-react";
+import { LayoutTemplate, FileText, Sparkles } from "lucide-react"; // Changed LayoutGrid to LayoutTemplate for better match
 
 const features = [
   {
     title: "Drag & Drop Builder",
     description:
       "create stunning blog layouts with an intuitive drag-and-drop interface, no coding needed",
-    icon: LayoutGrid,
-    color: "bg-blue-100/50",
+    icon: LayoutTemplate,
   },
   {
     title: "Dynamic CMS Snippets",
     description:
       "Easily bind blog content like titles, images, and experts from your CMS data.",
     icon: FileText,
-    color: "bg-blue-100/50",
   },
   {
     title: "AI - Powered Assistant",
     description:
       "Use AI to generate and refine blog layouts that match your content and style preferences",
-    icon: Sparkles, // Sparkles is a good fit for AI
-    color: "bg-blue-100/50",
+    icon: Sparkles,
   },
 ];
 
 export default function FeatureCards() {
   return (
-    <section className="px-6 pb-20">
+    <section className="px-6">
       <div className="max-w-6xl mx-auto grid md:grid-cols-3 gap-8">
         {features.map((feature, index) => (
           <motion.div
@@ -37,17 +34,20 @@ export default function FeatureCards() {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.2 + index * 0.1 }}
-            className="group relative p-8 rounded-3xl bg-blue-50/50 border border-blue-100 hover:bg-white hover:shadow-xl hover:shadow-blue-900/5 transition-all duration-300 text-center flex flex-col items-center"
+            className="p-10 rounded-[2.5rem] bg-blue-300/30 backdrop-blur-sm border border-white/20 text-center flex flex-col items-center hover:bg-blue-300/40 transition-colors shadow-lg shadow-blue-900/5 h-[320px] justify-center"
           >
-            <div className="mb-6 w-12 h-12 flex items-center justify-center rounded-xl bg-white border border-blue-100 shadow-sm text-slate-900 group-hover:scale-110 transition-transform">
-              <feature.icon className="w-6 h-6" />
+            <div className="mb-6">
+              <feature.icon
+                className="w-10 h-10 text-slate-800"
+                strokeWidth={1.5}
+              />
             </div>
 
-            <h3 className="text-lg font-bold text-slate-900 mb-3">
+            <h3 className="text-xl font-bold text-slate-900 mb-4">
               {feature.title}
             </h3>
 
-            <p className="text-sm text-slate-500 leading-relaxed max-w-[250px]">
+            <p className="text-sm text-slate-600 leading-relaxed max-w-[280px] font-medium">
               {feature.description}
             </p>
           </motion.div>
