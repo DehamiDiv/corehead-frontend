@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { Eye, EyeOff } from "lucide-react";
+import { Eye, EyeOff, LayoutGrid, BookOpen, Settings } from "lucide-react";
 
 export default function LoginPage() {
   const [showPassword, setShowPassword] = useState(false);
@@ -25,20 +25,23 @@ export default function LoginPage() {
         <div className="hidden md:flex items-center gap-8 absolute left-1/2 -translate-x-1/2">
           <Link
             href="#"
-            className="text-sm font-medium text-slate-800 hover:text-blue-700 transition-colors"
+            className="flex items-center gap-2 text-sm font-medium text-slate-800 hover:text-blue-700 transition-colors"
           >
+            <LayoutGrid className="w-4 h-4" />
             Dashboard
           </Link>
           <Link
             href="#"
-            className="text-sm font-medium text-slate-800 hover:text-blue-700 transition-colors"
+            className="flex items-center gap-2 text-sm font-medium text-slate-800 hover:text-blue-700 transition-colors"
           >
+            <BookOpen className="w-4 h-4" />
             All Blogs
           </Link>
           <Link
             href="#"
-            className="text-sm font-medium text-slate-800 hover:text-blue-700 transition-colors"
+            className="flex items-center gap-2 text-sm font-medium text-slate-800 hover:text-blue-700 transition-colors"
           >
+            <Settings className="w-4 h-4" />
             Settings
           </Link>
         </div>
