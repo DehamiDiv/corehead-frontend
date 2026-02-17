@@ -11,8 +11,9 @@ export default function AdminLayout({
 }) {
   const pathname = usePathname();
   const isDashboard = pathname === "/admin";
+  const isBuilder = pathname === "/admin/builder";
 
-  if (isDashboard) {
+  if (isDashboard || isBuilder) {
     return <main>{children}</main>;
   }
 

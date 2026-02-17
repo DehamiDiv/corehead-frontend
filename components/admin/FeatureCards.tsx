@@ -37,10 +37,19 @@ export default function FeatureCards() {
             className="p-10 rounded-[2.5rem] bg-blue-300/30 backdrop-blur-sm border border-white/20 text-center flex flex-col items-center hover:bg-blue-300/40 transition-colors shadow-lg shadow-blue-900/5 h-[320px] justify-center"
           >
             <div className="mb-6">
-              <feature.icon
-                className="w-10 h-10 text-slate-800"
-                strokeWidth={1.5}
-              />
+              {feature.title === "Drag & Drop Builder" ? (
+                <a href="/admin/builder">
+                  <feature.icon
+                    className="w-10 h-10 text-slate-800"
+                    strokeWidth={1.5}
+                  />
+                </a>
+              ) : (
+                <feature.icon
+                  className="w-10 h-10 text-slate-800"
+                  strokeWidth={1.5}
+                />
+              )}
             </div>
 
             <h3 className="text-xl font-bold text-slate-900 mb-4">
