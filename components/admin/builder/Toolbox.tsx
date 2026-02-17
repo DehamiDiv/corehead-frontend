@@ -39,7 +39,12 @@ export default function Toolbox() {
         {tools.map((tool) => (
           <div
             key={tool.label}
-            className="flex items-center gap-3 p-3.5 bg-blue-500 text-white rounded-lg cursor-grab hover:bg-blue-600 hover:shadow-md transition-all shadow-sm group border border-transparent"
+            draggable
+            onDragStart={(e) => {
+              e.dataTransfer.setData("application/react-dnd", tool.label);
+              e.dataTransfer.effectAllowed = "copy";
+            }}
+            className="flex items-center gap-3 p-3.5 bg-blue-500 text-white rounded-lg cursor-grab hover:bg-blue-600 hover:shadow-md transition-all shadow-sm group border border-transparent active:cursor-grabbing"
           >
             <tool.icon className="w-5 h-5 text-blue-100 group-hover:text-white transition-colors" />
             <span className="font-medium text-base">{tool.label}</span>
