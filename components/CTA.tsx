@@ -1,35 +1,32 @@
 "use client";
 
 import { motion } from "framer-motion";
-import { ArrowRight } from "lucide-react";
-import Link from "next/link";
 
 export default function CTA() {
   return (
-    <section className="py-24 px-6 relative overflow-hidden">
-      <div className="absolute inset-0 bg-blue-600">
-        <div className="absolute inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-20 brightness-100 contrast-150"></div>
-        <div className="absolute inset-0 bg-gradient-to-br from-blue-600 to-indigo-700"></div>
-      </div>
+    <section className="py-24 px-6 relative bg-blue-600 overflow-hidden">
+      {/* Background Elements */}
+      <div className="absolute inset-0 bg-blue-600" />
 
-      <div className="max-w-4xl mx-auto relative z-10 text-center">
+      <div className="max-w-5xl mx-auto relative z-10 text-center">
         <motion.h2
           initial={{ opacity: 0, y: 20 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
           className="text-3xl md:text-5xl font-bold text-white mb-6"
         >
-          Ready to build something amazing?
+          Ready to Build Something Faster?
         </motion.h2>
+
         <motion.p
           initial={{ opacity: 0, y: 20 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
           transition={{ delay: 0.1 }}
-          className="text-blue-100 text-lg md:text-xl mb-10 max-w-2xl mx-auto"
+          className="text-blue-100 text-lg md:text-xl mb-12 max-w-3xl mx-auto leading-relaxed"
         >
-          Join thousands of developers who are building faster, more secure
-          applications with Corehead.
+          Stop fighting legacy systems. Start with the modern, decoupled
+          CoreHead with security, speed, and confidence.
         </motion.p>
 
         <motion.div
@@ -39,18 +36,14 @@ export default function CTA() {
           transition={{ delay: 0.2 }}
           className="flex flex-col sm:flex-row gap-4 justify-center"
         >
-          <button className="px-8 py-4 bg-white text-blue-600 font-bold rounded-full hover:bg-blue-50 transition-all shadow-lg hover:shadow-xl hover:scale-105 active:scale-95 flex items-center justify-center gap-2">
-            Start Building for Free
-            <ArrowRight className="w-5 h-5" />
+          <button className="px-8 py-3.5 bg-blue-500/20 backdrop-blur-sm border border-blue-400 text-white font-semibold rounded-lg hover:bg-blue-500/30 transition-all">
+            Get Started Now
           </button>
-          <button className="px-8 py-4 bg-blue-700 text-white border border-blue-500 font-bold rounded-full hover:bg-blue-600 transition-all shadow-lg hover:shadow-xl active:scale-95">
-            Contact Sales
+
+          <button className="px-8 py-3.5 bg-white text-slate-900 font-semibold rounded-lg hover:bg-blue-50 transition-all shadow-lg active:scale-95">
+            Get a Demo
           </button>
         </motion.div>
-
-        <p className="mt-8 text-blue-200 text-sm">
-          No credit card required. 14-day free trial on paid plans.
-        </p>
       </div>
     </section>
   );

@@ -4,6 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useMemo, useState } from "react";
 import {
+  LayoutDashboard,
   FileText,
   Tags,
   Image as ImageIcon,
@@ -12,6 +13,7 @@ import {
   File,
   Settings as SettingsIcon,
   ChevronDown,
+  FileCode,
 } from "lucide-react";
 
 type NavItem = {
@@ -26,7 +28,9 @@ export default function Sidebar() {
 
   const navItems: NavItem[] = useMemo(
     () => [
+      { label: "Dashboard", href: "/admin", Icon: LayoutDashboard },
       { label: "Posts", href: "/admin/posts", Icon: FileText },
+      { label: "Snippets", href: "/admin/snippets", Icon: FileCode },
       { label: "Categories", href: "/admin/categories", Icon: Tags },
       { label: "Media Library", href: "/admin/media", Icon: ImageIcon },
       { label: "Comments", href: "/admin/comments", Icon: MessageSquare },
@@ -79,7 +83,7 @@ export default function Sidebar() {
           );
         })}
 
-        {/* Settings row (like your UI with dropdown) */}
+        {/* Settings row */}
         <button
           onClick={() => setSettingsOpen((v) => !v)}
           className="w-full mt-2 flex items-center justify-between px-3 py-2.5 rounded-2xl text-sm font-medium text-slate-700 hover:bg-slate-50 transition"
@@ -111,7 +115,7 @@ export default function Sidebar() {
         )}
       </nav>
 
-      {/* bottom profile circle (like your screenshot) */}
+      {/* bottom profile */}
       <div className="mt-auto p-4">
         <button className="h-12 w-12 rounded-full bg-slate-900 text-white flex items-center justify-center font-semibold">
           N

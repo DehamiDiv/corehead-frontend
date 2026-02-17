@@ -5,38 +5,38 @@ import { ArrowRight } from "lucide-react";
 
 export default function Hero() {
   return (
-    <section className="relative flex flex-col items-center justify-center pt-32 pb-20 overflow-hidden lg:pt-40 lg:pb-32">
+    <section className="relative flex flex-col items-center justify-center pt-32 pb-20 overflow-hidden lg:pt-40 lg:pb-32 bg-[#a3caff]">
+      {/* Background Gradients */}
+      <div className="absolute inset-0 overflow-hidden">
+        <div className="absolute -top-[50%] left-1/2 -translate-x-1/2 w-[150%] aspect-square rounded-full bg-white/20 blur-3xl"></div>
+        <div className="absolute top-[10%] left-1/2 -translate-x-1/2 w-[120%] aspect-square rounded-full bg-white/20 blur-3xl"></div>
+        <div className="absolute top-[30%] left-1/2 -translate-x-1/2 w-[90%] aspect-square rounded-full bg-white/20 blur-3xl"></div>
+      </div>
+
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.8, delay: 0.2 }}
         className="relative z-10 max-w-4xl px-6 mx-auto text-center"
       >
-        <div className="inline-flex items-center gap-2 px-3 py-1 mb-8 text-xs font-medium text-blue-700 bg-blue-100 border border-blue-200 rounded-full">
-          <span className="relative flex w-2 h-2">
-            <span className="absolute inline-flex w-full h-full bg-blue-400 rounded-full opacity-75 animate-ping"></span>
-            <span className="relative inline-flex w-2 h-2 bg-blue-500 rounded-full"></span>
-          </span>
+        <div className="inline-flex items-center gap-2 px-4 py-1.5 mb-8 text-xs font-medium text-blue-900 bg-blue-400/30 border border-blue-300 rounded-md backdrop-blur-sm">
           v1.0 is now live
         </div>
 
-        <h1 className="text-5xl font-bold tracking-tight text-blue-950 md:text-7xl">
-          The Fastest Foundation for Your Content
+        <h1 className="text-5xl font-bold tracking-tight text-slate-900 md:text-7xl mb-6">
+          The Fastest Foundation for
+          <br />
+          Your Content
         </h1>
 
-        <p className="max-w-2xl mx-auto mt-6 text-lg text-slate-600 md:text-xl">
+        <p className="max-w-2xl mx-auto mt-6 text-lg text-slate-700 md:text-xl leading-relaxed">
           CoreHead is a headless CMS built on Go, Next.js, and PostgreSQL,
           engineered for security, speed, and seamless deployment.
         </p>
 
         <div className="flex flex-col items-center justify-center gap-4 mt-10 md:flex-row">
-          <button className="flex items-center gap-2 px-8 py-4 text-sm font-bold text-white transition-all bg-blue-600 rounded-full hover:bg-blue-700 hover:scale-105 active:scale-95 shadow-lg shadow-blue-500/30">
+          <button className="px-8 py-3 text-base font-bold text-white transition-all bg-blue-700 rounded-full hover:bg-blue-800 shadow-lg shadow-blue-600/20">
             Get Started Now
-            <ArrowRight className="w-4 h-4" />
-          </button>
-
-          <button className="px-8 py-4 text-sm font-bold text-slate-700 transition-all bg-white border border-slate-200 rounded-full hover:bg-slate-50 hover:text-blue-600 shadow-sm">
-            View Documentation
           </button>
         </div>
       </motion.div>
