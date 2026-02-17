@@ -33,6 +33,7 @@ export default function Toolbox() {
       <h3 className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-4 px-2">
         Blog Components
       </h3>
+
       <div className="space-y-3 mb-8">
         {tools.map((tool) => (
           <div
