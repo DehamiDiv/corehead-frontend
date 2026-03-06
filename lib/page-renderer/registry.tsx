@@ -6,34 +6,34 @@ import { cn } from "@/lib/utils";
 
 // --- Basic Components ---
 
-const Container = ({ children, className, context, ...props }: any) => (
+const Container = ({ children, className, ...props }: any) => (
   <div className={cn("container mx-auto px-4", className)} {...props}>
     {children}
   </div>
 );
 
-const Row = ({ children, className, context, ...props }: any) => (
+const Row = ({ children, className, ...props }: any) => (
   <div className={cn("flex flex-wrap -mx-4", className)} {...props}>
     {children}
   </div>
 );
 
-const Column = ({ children, className, width, context, ...props }: any) => (
+const Column = ({ children, className, width, ...props }: any) => (
   <div className={cn("px-4 w-full", width, className)} {...props}>
     {children}
   </div>
 );
 
-const Heading = ({ level, content, className, context, ...props }: any) => {
-  const Tag = `h${level || 1}` as keyof JSX.IntrinsicElements;
+const Heading = ({ level, content, className, ...props }: any) => {
+  const Tag = `h${level || 1}` as keyof React.JSX.IntrinsicElements;
   return <Tag className={cn("font-bold", className)} {...props}>{content}</Tag>;
 };
 
-const Text = ({ content, className, context, ...props }: any) => (
+const Text = ({ content, className, ...props }: any) => (
   <p className={cn("text-neutral-600", className)} {...props}>{content}</p>
 );
 
-const CustomImage = ({ src, alt, width, height, className, context, ...props }: any) => (
+const CustomImage = ({ src, alt, width, height, className, ...props }: any) => (
   <div className={cn("relative overflow-hidden rounded-lg", className)}>
     <Image 
       src={src || "https://placehold.co/600x400"} 
@@ -84,10 +84,12 @@ const PostMeta = ({ context, className }: { context: RenderContext; className?: 
     let dateStr = "";
     try {
         if (context.post.date) {
+            // Ensure date is treated as UTC to avoid timezone shifts during hydration
             dateStr = new Date(context.post.date).toLocaleDateString("en-US", {
                 year: 'numeric',
                 month: 'long',
-                day: 'numeric'
+                day: 'numeric',
+                timeZone: 'UTC'
             });
         }
     } catch (e) {
@@ -186,7 +188,7 @@ const Footer = ({ className }: { className?: string }) => (
             </div>
         </div>
         <div className="container mx-auto px-4 mt-12 pt-8 border-t text-center text-sm text-neutral-400">
-            © {new Date().getFullYear()} CoreHead Inc. All rights reserved.
+            © 2025 CoreHead Inc. All rights reserved.
         </div>
     </footer>
 );
