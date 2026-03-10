@@ -1,4 +1,5 @@
 "use client";
+import React, { useState, useEffect } from "react";
 
 import Link from "next/link";
 import {
@@ -10,6 +11,120 @@ import {
 } from "lucide-react";
 
 export default function BlogPreviewPage() {
+  const [blocks, setBlocks] = useState<any[]>([]);
+
+  // Need to import useEffect, import useState at the top? Wait, it's missing imports!
+  // I will just use React.useState and React.useEffect
+
+  React.useEffect(() => {
+    const saved = localStorage.getItem("corehead_builder_layout");
+    if (saved) {
+      try {
+        setBlocks(JSON.parse(saved));
+      } catch (e) {
+        console.error("Failed to parse saved layout", e);
+      }
+    }
+  }, []);
+
+  const renderBlockTree = (parentId?: string) => {
+    const levelBlocks = blocks.filter(
+      (b) => b.parentId === parentId || (!b.parentId && !parentId),
+    );
+
+    return levelBlocks.map((block: any) => {
+      const styleString = block.styles || {};
+      const content = block.bindings?.content
+        ? `{${block.bindings.content}}`
+        : block.content;
+
+      let renderedContent = null;
+      switch (block.type) {
+        case "Heading":
+          renderedContent = (
+            <h2
+              className="text-3xl font-bold text-slate-800"
+              style={styleString}
+            >
+              {content}
+            </h2>
+          );
+          break;
+        case "Paragraph":
+          renderedContent = (
+            <p
+              className="text-slate-600 leading-relaxed text-lg"
+              style={styleString}
+            >
+              {content}
+            </p>
+          );
+          break;
+        case "Image":
+          renderedContent = (
+            <div style={styleString}>
+              <img
+                src={content}
+                alt="Block"
+                className="w-full h-auto rounded-lg"
+              />
+            </div>
+          );
+          break;
+        case "Quote":
+          renderedContent = (
+            <blockquote
+              className="border-l-4 border-blue-500 pl-4 italic text-slate-700 text-xl"
+              style={styleString}
+            >
+              {content}
+            </blockquote>
+          );
+          break;
+        case "Divider":
+          renderedContent = (
+            <hr
+              className="border-t border-slate-200 my-4"
+              style={styleString}
+            />
+          );
+          break;
+        case "Button":
+          renderedContent = (
+            <button
+              className="px-6 py-2 bg-blue-600 text-white rounded-lg font-medium"
+              style={styleString}
+            >
+              {block.content?.text || "Click Me"}
+            </button>
+          );
+          break;
+        case "Container":
+          renderedContent = (
+            <div style={styleString} className="my-4">
+              {renderBlockTree(block.id)}
+            </div>
+          );
+          break;
+        case "Columns":
+          const cols = block.content || 2;
+          renderedContent = (
+            <div
+              style={styleString}
+              className={`my-4 grid grid-cols-1 md:grid-cols-${cols} gap-4`}
+            >
+              {renderBlockTree(block.id)}
+            </div>
+          );
+          break;
+        default:
+          renderedContent = null;
+      }
+
+      return <div key={block.id}>{renderedContent}</div>;
+    });
+  };
+
   return (
     <div className="min-h-screen bg-white">
       {/* Navigation Bar (Preview Mode) */}
@@ -93,49 +208,15 @@ export default function BlogPreviewPage() {
           </div>
         </div>
 
-        {/* Body Content (Placeholder for dynamic content) */}
+        {/* Body Content (Dynamic content) */}
         <div className="prose prose-lg prose-slate max-w-none">
-          <p className="lead">
-            Artificial Intelligence is rapidly transforming how we build and
-            interact with the web. From automated code generation to
-            hyper-personalized user experiences, the landscape is shifting.
-          </p>
-          <p>
-            In this guide, we'll explore the key trends shaping the industry and
-            how developers can leverage these tools to build faster, smarter,
-            and more efficient applications.
-          </p>
-
-          <h3>1. Automated Coding Assistants</h3>
-          <p>
-            Tools like GitHub Copilot and Cursor are changing the way we write
-            code. By suggesting snippets and extensive blocks of logic, they
-            reduce boilerplate and allow developers to focus on architecture and
-            problem-solving.
-          </p>
-
-          <blockquote>
-            "AI won't replace developers, but developers using AI will replace
-            those who don't."
-          </blockquote>
-
-          <h3>2. Dynamic Content Generation</h3>
-          <p>
-            Imagine a CMS that not only stores content but suggests
-            improvements, generates meta tags, and even translates posts
-            automatically. This is the new standard for modern content
-            management systems.
-          </p>
-
-          <div className="bg-blue-50 p-6 rounded-xl border border-blue-100 my-8">
-            <h4 className="text-blue-800 font-semibold mb-2 mt-0">
-              Key Takeaway
-            </h4>
-            <p className="text-blue-700 mb-0">
-              Embracing AI tools early gives you a significant competitive
-              advantage. Start integrating them into your workflow today.
+          {blocks.length > 0 ? (
+            renderBlockTree()
+          ) : (
+            <p className="lead italic text-slate-400">
+              No content found in this post.
             </p>
-          </div>
+          )}
         </div>
 
         {/* Footer / Tags */}

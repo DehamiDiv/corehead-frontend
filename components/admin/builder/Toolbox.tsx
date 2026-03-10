@@ -20,6 +20,8 @@ const tools = [
   { icon: Quote, label: "Quote" },
   { icon: Minus, label: "Divider" },
   { icon: Square, label: "Button" },
+  { icon: LayoutGrid, label: "Container" },
+  { icon: LayoutGrid, label: "Columns" }, // Using LayoutGrid for columns as well for simplicity
   { icon: List, label: "Collection List" },
 ];
 

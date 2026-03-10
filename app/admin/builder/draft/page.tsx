@@ -94,6 +94,21 @@ export default function SaveDraftPage() {
             </div>
           </div>
 
+          {/* Serialized JSON Viewer for Verification */}
+          <div className="bg-slate-50 px-6 py-4 border-t border-slate-100">
+            <div className="flex items-center justify-between mb-2">
+              <h3 className="text-sm font-semibold text-slate-700">
+                Serialized Layout (JSON)
+              </h3>
+              <span className="text-xs text-slate-400">Canvas → JSON</span>
+            </div>
+            <pre className="bg-slate-800 text-slate-300 p-4 rounded-lg text-xs overflow-x-auto max-h-48">
+              {typeof window !== "undefined"
+                ? localStorage.getItem("corehead_builder_layout") || "[]"
+                : "[]"}
+            </pre>
+          </div>
+
           {/* Footer Info */}
           <div className="bg-slate-50 px-6 py-4 border-t border-slate-100 flex items-center gap-6 text-xs text-slate-500">
             <div className="flex items-center gap-1.5">
