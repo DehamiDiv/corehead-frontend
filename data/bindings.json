@@ -1,0 +1,16 @@
+{
+  "mode": "dynamic",
+  "selected": {
+    "navbar": true,
+    "footer": true,
+    "post_featured_image": true,
+    "post_content": true,
+    "post_author_info": true,
+    "post_date": true,
+    "post_category": true,
+    "post_tags": true,
+    "archive_listing": true,
+    "archive_pagination": true
+  },
+  "updatedAt": "2026-03-11T08:39:54.333Z"
+}
