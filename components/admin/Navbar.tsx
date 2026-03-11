@@ -7,7 +7,7 @@ export default function AdminNavbar() {
   const pathname = usePathname();
 
   const navItems = [
-    { label: "Dashboard", href: "/admin" },
+    { label: "Dashboard", href: "/dashboard" },
     { label: "All Blogs", href: "/admin/blogs" },
     { label: "Settings", href: "/admin/settings" },
   ];
@@ -15,7 +15,7 @@ export default function AdminNavbar() {
   return (
     <nav className="flex items-center justify-between px-12 py-6">
       {/* Logo */}
-      <Link href="/admin" className="flex items-center gap-2">
+      <Link href="/dashboard" className="flex items-center gap-2">
         <div className="w-8 h-8 rounded-full bg-blue-500/20 flex items-center justify-center">
           <div className="w-4 h-4 bg-blue-600 rounded-full" />
         </div>

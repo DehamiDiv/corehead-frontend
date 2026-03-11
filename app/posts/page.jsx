@@ -141,14 +141,12 @@ export default function BlogListPage() {
         </div>
         
         <div className="header-actions">
-          <Link href="/builder">
-            <button className="btn-secondary">Go to Builder</button>
+          <Link href="/builder" className="btn-secondary flex items-center justify-center">
+            Go to Builder
           </Link>
-          <Link href="/posts/new">
-            <button className="btn-primary">
-              <Plus size={18} />
-              New Post
-            </button>
+          <Link href="/posts/new" className="btn-primary flex items-center justify-center gap-2">
+            <Plus size={18} />
+            New Post
           </Link>
         </div>
       </header>
@@ -269,9 +267,9 @@ export default function BlogListPage() {
                 </td>
                 <td className="actions-cell">
                   <div className="action-buttons">
-                    <button className="action-btn" title="Edit">
+                    <Link href="/posts/new" className="action-btn" title="Edit">
                       <Edit size={16} />
-                    </button>
+                    </Link>
                     <button className="action-btn" title="Duplicate" onClick={() => handleDuplicate(post)}>
                       <Copy size={16} />
                     </button>

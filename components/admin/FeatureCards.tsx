@@ -70,6 +70,14 @@ export default function FeatureCards() {
             );
           }
 
+          if (feature.title === "AI - Powered Assistant") {
+            return (
+              <Link href="/admin/builder" key={index} className="block">
+                {CardContent}
+              </Link>
+            );
+          }
+
           return <div key={index}>{CardContent}</div>;
         })}
       </div>

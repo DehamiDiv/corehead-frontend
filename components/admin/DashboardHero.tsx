@@ -1,6 +1,7 @@
 "use client";
 
 import { motion } from "framer-motion";
+import Link from "next/link";
 
 export default function DashboardHero() {
   return (
@@ -27,9 +28,9 @@ export default function DashboardHero() {
               placeholder="Describe the blog design you want"
               className="flex-1 bg-transparent border-none outline-none text-slate-700 placeholder-slate-500 text-sm"
             />
-            <button className="bg-blue-600 hover:bg-blue-700 text-white font-semibold px-6 py-2 rounded-lg transition-colors shadow-md shadow-blue-600/20">
+            <Link href="/admin/builder" className="bg-blue-600 hover:bg-blue-700 text-white font-semibold px-6 py-2 rounded-lg transition-colors shadow-md shadow-blue-600/20">
               Start with AI
-            </button>
+            </Link>
           </div>
         </div>
       </motion.div>
