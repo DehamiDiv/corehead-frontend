@@ -116,10 +116,10 @@ export default function NewPostPage() {
         </div>
         
         <div className="header-actions">
-          <button className="btn-secondary">
+          <Link href="/preview/1" className="btn-secondary flex items-center justify-center gap-2" style={{ textDecoration: 'none' }}>
             <Eye size={18} />
             Preview
-          </button>
+          </Link>
           <button className="btn-secondary" onClick={() => handleSave('draft')}>
             <Save size={18} />
             Save Draft

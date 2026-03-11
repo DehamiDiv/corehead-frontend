@@ -133,7 +133,9 @@ export default function BlogListPage() {
       {/* Header */}
       <header className="page-header">
         <div className="header-left">
-          <h1 className="logo">CoreHead<span>.app</span></h1>
+          <Link href="/dashboard" className="logo" style={{ textDecoration: 'none' }}>
+            CoreHead<span>.app</span>
+          </Link>
           <div className="page-title">
             <span>All Posts</span>
             <span className="post-count">{posts.length} total</span>

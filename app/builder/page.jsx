@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { Sparkles, Eye, Code, FileText } from 'lucide-react';
 import Sidebar from '@/components/builder/Sidebar';
+import Link from 'next/link';
 import BuilderCanvas from '@/components/builder/BuilderCanvas';
 import CMSFieldsPanel from '@/components/builder/CMSFieldsPanel';
 import './page.css';
@@ -56,7 +57,9 @@ export default function BlogBuilderPage() {
       {/* Header */}
       <header className="builder-header">
         <div className="header-left">
-          <h1 className="logo">CoreHead<span>.app</span></h1>
+          <Link href="/dashboard" className="logo" style={{ textDecoration: 'none' }}>
+            CoreHead<span>.app</span>
+          </Link>
           <div className="page-title">
             <FileText size={20} />
             <span>Blog Builder</span>
@@ -64,10 +67,10 @@ export default function BlogBuilderPage() {
         </div>
         
         <div className="header-actions">
-          <button className="btn-secondary">
+          <Link href="/preview/1" className="btn-secondary" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', textDecoration: 'none' }}>
             <Eye size={18} />
             Preview
-          </button>
+          </Link>
           <button className="btn-secondary">
             <Code size={18} />
             Export

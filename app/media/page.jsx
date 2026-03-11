@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { Upload, Search, Grid, List, Trash2, Download, MoreVertical, Image as ImageIcon, X, Check } from 'lucide-react';
+import Link from 'next/link';
 import './page.css';
 
 export default function MediaLibraryPage() {
@@ -127,7 +128,9 @@ export default function MediaLibraryPage() {
       {/* Header */}
       <header className="media-header">
         <div className="header-left">
-          <h1 className="logo">CoreHead<span>.app</span></h1>
+          <Link href="/dashboard" className="logo" style={{ textDecoration: 'none' }}>
+            CoreHead<span>.app</span>
+          </Link>
           <div className="page-title">
             <ImageIcon size={20} />
             <span>Media Library</span>
