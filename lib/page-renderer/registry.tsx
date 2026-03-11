@@ -139,13 +139,13 @@ const Navbar = ({ className }: { className?: string }) => (
             </Link>
             <div className="hidden md:flex items-center gap-6 text-sm font-medium text-neutral-600">
                 <Link href="#" className="hover:text-blue-600 transition">Features</Link>
-                <Link href="#" className="hover:text-blue-600 transition">Pricing</Link>
-                <Link href="#" className="hover:text-blue-600 transition">Blog</Link>
+                <Link href="/pricing" className="hover:text-blue-600 transition">Pricing</Link>
+                <Link href="/blog" className="hover:text-blue-600 transition">Blog</Link>
                 <Link href="#" className="hover:text-blue-600 transition">Contact</Link>
             </div>
              <div className="flex items-center gap-4">
                 <Link href="/admin" className="text-sm font-medium text-neutral-600 hover:text-neutral-900">Sign in</Link>
-                <Link href="#" className="btn btn-primary text-sm px-4 py-2 rounded-lg bg-neutral-900 text-white hover:bg-neutral-800 transition">Get Started</Link>
+                <Link href="/pricing" className="btn btn-primary text-sm px-4 py-2 rounded-lg bg-neutral-900 text-white hover:bg-neutral-800 transition">Get Started</Link>
             </div>
         </div>
     </nav>
@@ -168,14 +168,14 @@ const Footer = ({ className }: { className?: string }) => (
                 <ul className="space-y-2 text-sm text-neutral-600">
                     <li><Link href="#" className="hover:text-neutral-900">Features</Link></li>
                     <li><Link href="#" className="hover:text-neutral-900">Integrations</Link></li>
-                    <li><Link href="#" className="hover:text-neutral-900">Pricing</Link></li>
+                    <li><Link href="/pricing" className="hover:text-neutral-900">Pricing</Link></li>
                 </ul>
             </div>
             <div>
                 <h4 className="font-bold mb-4">Company</h4>
                 <ul className="space-y-2 text-sm text-neutral-600">
                     <li><Link href="#" className="hover:text-neutral-900">About</Link></li>
-                    <li><Link href="#" className="hover:text-neutral-900">Blog</Link></li>
+                    <li><Link href="/blog" className="hover:text-neutral-900">Blog</Link></li>
                     <li><Link href="#" className="hover:text-neutral-900">Careers</Link></li>
                 </ul>
             </div>

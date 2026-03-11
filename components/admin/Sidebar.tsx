@@ -17,7 +17,7 @@ const sidebarItems = [
   { icon: LayoutDashboard, label: "Dashboard", href: "/admin" },
   { icon: FileText, label: "Posts", href: "/admin/blogs" },
   { icon: Tags, label: "Categories", href: "/admin/categories" },
-  { icon: ImageIcon, label: "Media Library", href: "/admin/media" },
+  { icon: ImageIcon, label: "Media Library", href: "/media" },
   { icon: MessageSquare, label: "Comments", href: "/admin/comments" },
   { icon: Users, label: "Users", href: "/admin/users" },
   { icon: Settings, label: "Settings", href: "/admin/settings" },

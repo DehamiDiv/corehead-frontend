@@ -12,11 +12,13 @@ import {
   X,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import Link from "next/link";
 
 // Dummy data to match screenshot
 const BLOG_POSTS = [
   {
     id: 26,
+    slug: "administration-works",
     title: "administration works",
     author: {
       name: "Sayuru Piy...",
@@ -28,6 +30,7 @@ const BLOG_POSTS = [
   },
   {
     id: 23,
+    slug: "test",
     title: "Test",
     author: {
       name: "Sayuru Piy...",
@@ -39,6 +42,7 @@ const BLOG_POSTS = [
   },
   {
     id: 22,
+    slug: "test-blog-uni-team",
     title: "test blog uni team",
     author: {
       name: "Sayuru Piy...",
@@ -50,6 +54,7 @@ const BLOG_POSTS = [
   },
   {
     id: 20,
+    slug: "mastering-remote-work",
     title: "Mastering Remote Work: Practical Strategies f...",
     author: {
       name: "Ahinsa Jay...",
@@ -61,6 +66,7 @@ const BLOG_POSTS = [
   },
   {
     id: 19,
+    slug: "how-to-scale-your-small-business",
     title: "How to Scale Your Small Business in 2025: Pr...",
     author: {
       name: "Sayuru Piy...",
@@ -84,14 +90,17 @@ export default function BlogsPage() {
           </p>
         </div>
         <div className="flex items-center gap-3">
-          <button className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-200 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors shadow-sm">
+          <button 
+            onClick={() => window.location.reload()}
+            className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-200 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors shadow-sm"
+          >
             <RotateCcw className="w-4 h-4" />
             Refresh
           </button>
-          <button className="flex items-center gap-2 px-4 py-2 bg-blue-600 rounded-lg text-sm font-medium text-white hover:bg-blue-700 transition-colors shadow-sm shadow-blue-200">
+          <Link href="/posts/new" className="flex items-center gap-2 px-4 py-2 bg-blue-600 rounded-lg text-sm font-medium text-white hover:bg-blue-700 transition-colors shadow-sm shadow-blue-200">
             <Plus className="w-4 h-4" />
             Create Blog
-          </button>
+          </Link>
         </div>
       </div>
 
@@ -138,10 +147,12 @@ export default function BlogsPage() {
                 >
                   <td className="px-6 py-4 text-gray-500">{post.id}</td>
                   <td
-                    className="px-6 py-4 font-medium text-gray-900 max-w-xs truncate"
+                    className="px-6 py-4 font-medium max-w-xs truncate"
                     title={post.title}
                   >
-                    {post.title}
+                    <Link href={`/blog/${post.slug || post.id}`} className="text-gray-900 hover:text-blue-600 transition-colors">
+                      {post.title}
+                    </Link>
                   </td>
                   <td className="px-6 py-4">
                     <div className="flex items-center gap-2">
@@ -196,9 +207,9 @@ export default function BlogsPage() {
                   </td>
                   <td className="px-6 py-4 text-right">
                     <div className="flex items-center justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                      <button className="p-1.5 text-gray-400 hover:text-gray-900 rounded-lg transition-colors">
+                      <Link href="/builder" className="p-1.5 text-gray-400 hover:text-gray-900 rounded-lg transition-colors">
                         <Edit className="w-4 h-4" />
-                      </button>
+                      </Link>
                       <button className="p-1.5 text-gray-400 hover:text-red-600 rounded-lg transition-colors">
                         <Trash2 className="w-4 h-4" />
                       </button>
