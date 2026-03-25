@@ -64,6 +64,7 @@ export default function FeatureCards() {
 
           if (feature.title === "Dynamic CMS Snippets") {
             return (
+<<<<<<< HEAD
               <Link href="/admin/binding" key={index} className="block">
                 {CardContent}
               </Link>
@@ -73,6 +74,9 @@ export default function FeatureCards() {
           if (feature.title === "AI - Powered Assistant") {
             return (
               <Link href="/admin/builder" key={index} className="block">
+=======
+              <Link href="/admin/snippets" key={index} className="block">
+>>>>>>> 2812590f1db149dc24621a1e9cc9e3ba5e6dd176
                 {CardContent}
               </Link>
             );
