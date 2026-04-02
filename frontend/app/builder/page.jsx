@@ -5,12 +5,19 @@ import { Sparkles, Eye, Code, FileText } from 'lucide-react';
 import Sidebar from '@/components/builder/Sidebar';
 import BuilderCanvas from '@/components/builder/BuilderCanvas';
 import CMSFieldsPanel from '@/components/builder/CMSFieldsPanel';
+import PreviewModal from '@/components/builder/PreviewModal';
+import ExportModal from '@/components/builder/ExportModal';
 import './page.css';
 
 export default function BlogBuilderPage() {
   const [activeTab, setActiveTab] = useState('builder');
   const [contentMode, setContentMode] = useState('static');
   const [selectedCard, setSelectedCard] = useState(null);
+
+  const [previewOpen, setPreviewOpen] = useState(false);
+  const [exportOpen, setExportOpen] = useState(false);
+  const [aiOpen, setAiOpen] = useState(false);
+
   const [blogPosts, setBlogPosts] = useState([
     {
       id: 1,
@@ -47,8 +54,8 @@ export default function BlogBuilderPage() {
     seo: ['Meta Title', 'Meta Description', 'Keywords', 'OG Image']
   });
 
-  const handleAIGenerate = () => {
-    alert('AI Layout Generation: This would generate a new blog layout based on your content and preferences.');
+  const handleAddAIPost = (newPost) => {
+    setBlogPosts(prev => [newPost, ...prev]);
   };
 
   return (
@@ -62,17 +69,17 @@ export default function BlogBuilderPage() {
             <span>Blog Builder</span>
           </div>
         </div>
-        
+
         <div className="header-actions">
-          <button className="btn-secondary">
+          <button className="btn-secondary" onClick={() => setPreviewOpen(true)}>
             <Eye size={18} />
             Preview
           </button>
-          <button className="btn-secondary">
+          <button className="btn-secondary" onClick={() => setExportOpen(true)}>
             <Code size={18} />
             Export
           </button>
-          <button className="btn-primary" onClick={handleAIGenerate}>
+          <button className="btn-primary" onClick={(e) => { e.preventDefault(); e.stopPropagation(); setAiOpen(true); }}>
             <Sparkles size={18} />
             Generate with AI
           </button>
@@ -82,25 +89,25 @@ export default function BlogBuilderPage() {
       {/* Main Content */}
       <div className="builder-content">
         <Sidebar activeTab={activeTab} setActiveTab={setActiveTab} />
-        
+
         <main className="builder-main">
           {/* Toolbar */}
           <div className="builder-toolbar">
             <div className="mode-toggle">
-              <button 
+              <button
                 className={contentMode === 'static' ? 'active' : ''}
                 onClick={() => setContentMode('static')}
               >
                 Static Content
               </button>
-              <button 
+              <button
                 className={contentMode === 'dynamic' ? 'active' : ''}
                 onClick={() => setContentMode('dynamic')}
               >
                 Dynamic Content
               </button>
             </div>
-            
+
             <div className="toolbar-right">
               <select className="layout-select">
                 <option>Grid Layout</option>
@@ -110,23 +117,71 @@ export default function BlogBuilderPage() {
             </div>
           </div>
 
-          {/* Canvas */}
-          <BuilderCanvas 
-            blogPosts={blogPosts}
-            contentMode={contentMode}
-            selectedCard={selectedCard}
-            setSelectedCard={setSelectedCard}
-          />
+          {/* Tab Content */}
+          {activeTab === 'builder' && (
+            <BuilderCanvas
+              blogPosts={blogPosts}
+              contentMode={contentMode}
+              selectedCard={selectedCard}
+              setSelectedCard={setSelectedCard}
+            />
+          )}
+
+          {activeTab === 'components' && (
+            <div className="tab-panel">
+              <h2>Components</h2>
+              <p>Drag and drop elements into your layout.</p>
+            </div>
+          )}
+
+          {activeTab === 'cms' && (
+            <div className="tab-panel">
+              <h2>CMS Fields</h2>
+              <p>Manage your post, author and SEO fields.</p>
+            </div>
+          )}
+
+          {activeTab === 'settings' && (
+            <div className="tab-panel">
+              <h2>Settings</h2>
+              <p>Configure fonts, colors, and spacing.</p>
+            </div>
+          )}
+
+          {activeTab === 'preview' && (
+            <div className="tab-panel">
+              <h2>Preview</h2>
+              <button className="btn-secondary" onClick={() => setPreviewOpen(true)}>
+                <Eye size={18} /> Open Preview
+              </button>
+            </div>
+          )}
         </main>
 
         {/* Right Panel */}
-        <CMSFieldsPanel 
+        <CMSFieldsPanel
           cmsFields={cmsFields}
           selectedCard={selectedCard}
           contentMode={contentMode}
         />
       </div>
+
+      {/* Modals */}
+      <PreviewModal
+        isOpen={previewOpen}
+        onClose={() => setPreviewOpen(false)}
+        blogPosts={blogPosts}
+        contentMode={contentMode}
+      />
+
+      <ExportModal
+        isOpen={exportOpen}
+        onClose={() => setExportOpen(false)}
+        blogPosts={blogPosts}
+        contentMode={contentMode}
+      />
+
+      
     </div>
   );
 }
-
