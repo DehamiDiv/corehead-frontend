@@ -7,6 +7,7 @@ import React, {
   ReactNode,
   useEffect,
 } from "react";
+import { api } from "@/lib/api";
 
 export type BlockType =
   | "Heading"
@@ -43,6 +44,7 @@ interface BuilderContextType {
   reorderBlocks: (startIndex: number, endIndex: number) => void;
   serializeLayout: () => string;
   loadLayout: (json: string) => void;
+  saveToBackend: (name: string, type: string, status: string, id?: string) => Promise<any>;
 }
 
 const BuilderContext = createContext<BuilderContextType | undefined>(undefined);
@@ -156,6 +158,21 @@ export function BuilderProvider({ children }: { children: ReactNode }) {
     }
   };
 
+  const saveToBackend = async (name: string, type: string, status: string, id?: string) => {
+    const layoutData = {
+      name,
+      type,
+      layoutJson: blocks,
+      status
+    };
+
+    if (id) {
+      return await api.updateTemplate(id, layoutData);
+    } else {
+      return await api.createTemplate(layoutData);
+    }
+  };
+
   return (
     <BuilderContext.Provider
       value={{
@@ -168,6 +185,7 @@ export function BuilderProvider({ children }: { children: ReactNode }) {
         reorderBlocks,
         serializeLayout,
         loadLayout,
+        saveToBackend,
       }}
     >
       {children}
