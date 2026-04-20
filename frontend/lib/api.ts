@@ -1,5 +1,7 @@
 const BASE_URL = 'http://localhost:5000/api';
 
+// getAuthHeader: Helper function to attach the JWT token to outgoing API requests.
+// This allows the backend to verify the user's identity and role via authMiddleware.
 const getAuthHeader = (): Record<string, string> => {
   if (typeof window !== 'undefined') {
     const token = localStorage.getItem('token');
@@ -62,6 +64,33 @@ export const api = {
   async getPreviewPosts(limit: number = 3) {
     const res = await fetch(`${BASE_URL}/preview/posts?limit=${limit}`);
     if (!res.ok) throw new Error('Failed to fetch preview posts');
+    return res.json();
+  },
+
+  // Auth
+  async login(credentials: { email: string, password: string }) {
+    const res = await fetch(`${BASE_URL}/auth/login`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(credentials)
+    });
+    if (!res.ok) {
+        const err = await res.json();
+        throw new Error(err.error || 'Login failed');
+    }
+    return res.json();
+  },
+
+  async register(data: { email: string, password: string }) {
+    const res = await fetch(`${BASE_URL}/auth/register`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data)
+    });
+    if (!res.ok) {
+        const err = await res.json();
+        throw new Error(err.error || 'Registration failed');
+    }
     return res.json();
   }
 };

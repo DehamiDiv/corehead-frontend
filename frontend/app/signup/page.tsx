@@ -3,7 +3,8 @@
 import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Eye, EyeOff, LayoutGrid, BookOpen, Settings } from "lucide-react";
+import { Eye, EyeOff, LayoutGrid, BookOpen, Settings, AlertCircle, Loader2 } from "lucide-react";
+import { api } from "@/lib/api";
 
 export default function SignupPage() {
   const router = useRouter();
@@ -11,6 +12,7 @@ export default function SignupPage() {
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
+  const [success, setSuccess] = useState("");
 
   const [formData, setFormData] = useState({
     name: "",
@@ -41,27 +43,20 @@ export default function SignupPage() {
     setIsLoading(true);
 
     try {
-      const res = await fetch("http://localhost:3001/api/auth/register", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          name: formData.name,
-          email: formData.email,
-          password: formData.password,
-        }),
+      const data = await api.register({
+        email: formData.email,
+        password: formData.password,
+        // Backend register currenty only takes email and password based on authService.js
       });
 
-      const data = await res.json();
-
-      if (!res.ok) {
-        setError(data.error || "Registration failed. Please try again.");
-        return;
-      }
-
-      // Redirect to login after success
-      router.push("/login?registered=true");
-    } catch {
-      setError("Could not connect to server. Please try again.");
+      setSuccess("Account created successfully! Redirecting to login...");
+      
+      // Redirect to login after success (small delay to show message)
+      setTimeout(() => {
+        router.push("/login?registered=true");
+      }, 2000);
+    } catch (err: any) {
+      setError(err.message || "Registration failed. Please try again.");
     } finally {
       setIsLoading(false);
     }
@@ -125,10 +120,17 @@ export default function SignupPage() {
             </p>
           </div>
 
-          {/* Error Message */}
+          {/* Success/Error Message */}
           {error && (
-            <div className="mb-5 px-4 py-3 bg-red-100 border border-red-300 text-red-700 text-sm rounded-lg">
+            <div className="mb-5 px-4 py-3 bg-red-100 border border-red-300 text-red-700 text-sm rounded-lg flex items-center gap-2">
+              <AlertCircle className="w-4 h-4 shrink-0" />
               {error}
+            </div>
+          )}
+          {success && (
+            <div className="mb-5 px-4 py-3 bg-emerald-100 border border-emerald-300 text-emerald-700 text-sm rounded-lg flex items-center gap-2">
+              <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+              {success}
             </div>
           )}
 
