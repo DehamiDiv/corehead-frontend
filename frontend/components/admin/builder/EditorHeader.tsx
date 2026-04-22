@@ -16,6 +16,7 @@ export default function EditorHeader() {
     try {
       // Connect to real PostgreSQL DB using API
       await saveToBackend(status);
+      alert(status === "published" ? "Layout published successfully!" : "Layout saved as draft successfully!");
     } catch (error: any) {
       alert("Error saving: " + error.message);
     } finally {
