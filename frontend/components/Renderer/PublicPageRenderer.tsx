@@ -1,12 +1,7 @@
+import React from 'react';
 import { BindingResolver } from './BindingResolver';
-
-interface LayoutBlock {
-  type: string;
-  content?: string;
-  cardTemplate?: string;
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  [key: string]: any;
-}
+import { BlockRegistry } from './BlockRegistry';
+import { LayoutBlock } from './blocks/types';
 
 interface Layout {
   blocks: LayoutBlock[];
@@ -25,33 +20,20 @@ export function PublicPageRenderer({ layout, data, isLoop = false }: PageRendere
   return (
     <div className="public-rendered-page">
       {layout.blocks.map((block, index) => {
-        if (block.type === 'loop' && isLoop && Array.isArray(data)) {
-          // Render loop template multiple times
-          return (
-            <div key={index} className="rendered-loop">
-              {data.map((item, itemIndex) => {
-                const resolvedHtml = BindingResolver(block.cardTemplate || '', item);
-                return (
-                  <div 
-                    key={itemIndex} 
-                    dangerouslySetInnerHTML={{ __html: resolvedHtml }} 
-                  />
-                );
-              })}
-            </div>
-          );
-        }
-
-        // Default rendering for static or single dynamic blocks (hero, html, heading)
-        // If it's a loop flag but data is not array, it might be an error or fallback
+        // Resolve bindings for single data
         const singleData = isLoop && Array.isArray(data) ? {} : data;
-        const resolvedHtml = BindingResolver(block.content || '', singleData);
+        const resolvedContent = BindingResolver(block.content || '', singleData);
+
+        // Find the appropriate component from the registry, fallback to 'html'
+        const BlockComponent = BlockRegistry[block.type] || BlockRegistry['html'];
 
         return (
-          <div 
-            key={index} 
-            className={`rendered-block type-${block.type}`}
-            dangerouslySetInnerHTML={{ __html: resolvedHtml }} 
+          <BlockComponent 
+            key={index}
+            block={block}
+            resolvedContent={resolvedContent}
+            data={data}
+            isLoop={isLoop}
           />
         );
       })}
