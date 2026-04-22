@@ -270,6 +270,8 @@ function getDefaultContent(type: BlockType): any {
       return ""; // No specific content, acts as a wrapper
     case "Columns":
       return 2; // Default to 2 columns, content holds the number of columns
+    case "Collection List":
+      return { limit: 6, category: "" };
     default:
       return "";
   }

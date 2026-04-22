@@ -210,6 +210,23 @@ function renderBlockContent(block: BuilderBlock, isSelected: boolean) {
           <LayoutGrid className="w-4 h-4" /> {block.content || 2} Columns
         </div>
       );
+    case "Collection List":
+      return (
+        <div style={styleString} className="border-2 border-blue-100 bg-blue-50/30 rounded-xl p-8 flex flex-col items-center justify-center text-center">
+          <div className="w-12 h-12 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center mb-3">
+             <LayoutGrid className="w-6 h-6" />
+          </div>
+          <h4 className="text-blue-900 font-bold">Collection List (Blog Loop)</h4>
+          <p className="text-blue-600/70 text-sm max-w-xs mt-1">
+            Displaying up to <span className="font-bold">{block.content?.limit || 6}</span> posts from {block.content?.category || "all categories"}.
+          </p>
+          <div className="mt-4 flex gap-2">
+             {[1, 2, 3].map(i => (
+               <div key={i} className="w-24 h-2 bg-blue-200 rounded-full opacity-50"></div>
+             ))}
+          </div>
+        </div>
+      );
     default:
       return <div className="text-red-500">Unknown block type</div>;
   }
