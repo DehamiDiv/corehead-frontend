@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import React, { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Eye, EyeOff, LayoutGrid, BookOpen, Settings } from "lucide-react";
@@ -90,7 +90,7 @@ export default function SignupPage() {
             Dashboard
           </Link>
           <Link
-            href="#"
+            href="/blog"
             className="flex items-center gap-2 text-sm font-medium text-slate-800 hover:text-blue-700 transition-colors"
           >
             <BookOpen className="w-4 h-4" />
