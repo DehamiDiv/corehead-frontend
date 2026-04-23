@@ -20,10 +20,11 @@ export async function generateMetadata({ params }: SinglePostPageProps) {
 export default async function SinglePostPage({ params }: SinglePostPageProps) {
   const resolvedParams = await params;
   
-  // Fetch layout and post sequentially or concurrently
-  const [layout, post] = await Promise.all([
+  // Fetch layout, post, and bindings sequentially or concurrently
+  const [layout, post, bindings] = await Promise.all([
     api.getPublicLayout('single-post'),
-    api.getPostBySlug(resolvedParams.slug)
+    api.getPostBySlug(resolvedParams.slug),
+    api.getBindings().catch(() => ({ mode: 'dynamic', selected: {} })) // fallback if not set
   ]);
 
 
@@ -31,7 +32,8 @@ export default async function SinglePostPage({ params }: SinglePostPageProps) {
     <article className="single-post-page">
       <PublicPageRenderer 
         layout={layout} 
-        data={post} 
+        data={post}
+        bindings={bindings}
       />
     </article>
   );

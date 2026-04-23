@@ -60,8 +60,14 @@ export const api = {
 
   // Preview Data
   async getPreviewPosts(limit: number = 3) {
-    const res = await fetch(`${BASE_URL}/preview/posts?limit=${limit}`);
+    const res = await fetch(`${BASE_URL}/preview/posts?limit=${limit}`, { cache: 'no-store' });
     if (!res.ok) throw new Error('Failed to fetch preview posts');
+    return res.json();
+  },
+
+  async getBindings() {
+    const res = await fetch(`${BASE_URL}/bindings`, { cache: 'no-store' });
+    if (!res.ok) throw new Error('Failed to fetch bindings');
     return res.json();
   },
 
@@ -91,7 +97,7 @@ export const api = {
       return {
         blocks: [
           { type: 'heading', content: '<h1>Latest Posts</h1>' },
-          { type: 'loop', cardTemplate: '<article class="post-card"><img src="{{ imageUrl }}" /><h3>{{ title }}</h3><p>{{ excerpt }}</p><span>{{ author.name }}</span></article>' }
+          { type: 'loop', cardTemplate: '<a href="/blog/{{ slug }}" class="post-link"><article class="post-card"><img src="{{ imageUrl }}" /><h3>{{ title }}</h3><p>{{ excerpt }}</p><span>{{ author.name }}</span></article></a>' }
         ]
       };
     } else {

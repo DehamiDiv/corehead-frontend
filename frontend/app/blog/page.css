@@ -82,3 +82,10 @@
   text-transform: uppercase;
   letter-spacing: 0.05em;
 }
+
+.post-link {
+  text-decoration: none;
+  color: inherit;
+  display: block;
+  height: 100%;
+}

@@ -9,9 +9,10 @@ export const metadata = {
 
 export default async function BlogArchivePage() {
   // Fetch layout and posts concurrently
-  const [layout, posts] = await Promise.all([
+  const [layout, posts, bindings] = await Promise.all([
     api.getPublicLayout('blog-loop'),
-    api.getPreviewPosts(6) // Fetch 6 posts
+    api.getPreviewPosts(16), // Fetch 6 posts
+    api.getBindings().catch(() => ({ mode: 'dynamic', selected: {} }))
   ]);
 
   return (
@@ -20,6 +21,7 @@ export default async function BlogArchivePage() {
         layout={layout} 
         data={posts} 
         isLoop={true} 
+        bindings={bindings}
       />
     </main>
   );

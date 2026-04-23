@@ -3,7 +3,7 @@ import type { NextRequest } from 'next/server';
 
 // Add paths that require authentication here
 const protectedPaths = [
-  '/admin',
+  // '/admin', // Temporarily disabled for development
   '/builder',
   '/dashboard'
 ];
