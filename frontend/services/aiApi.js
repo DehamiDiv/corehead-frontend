@@ -21,4 +21,4 @@ export const aiApi = {
     if (!res.ok) throw new Error('Failed to fetch history');
     return res.json();
   }
-};
+}; 

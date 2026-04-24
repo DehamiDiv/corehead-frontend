@@ -60,6 +60,46 @@ export const api = {
     return res.json();
   },
 
+  async deleteTemplate(id: string) {
+    const res = await fetch(`${BASE_URL}/templates/${id}`, {
+      method: 'DELETE',
+      headers: { ...getAuthHeader() }
+    });
+    if (!res.ok) {
+      const err = await res.json();
+      throw new Error(err.error || 'Failed to delete template');
+    }
+    return res.json();
+  },
+
+  async publishTemplate(id: string) {
+    const res = await fetch(`${BASE_URL}/templates/${id}/publish`, {
+      method: 'PATCH',
+      headers: { ...getAuthHeader() }
+    });
+    if (!res.ok) {
+      const err = await res.json();
+      throw new Error(err.error || 'Failed to publish template');
+    }
+    return res.json();
+  },
+
+  async assignTemplate(id: string, data: { categoryId?: string; isGlobalDefault?: boolean }) {
+    const res = await fetch(`${BASE_URL}/templates/${id}/assign`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        ...getAuthHeader()
+      },
+      body: JSON.stringify(data)
+    });
+    if (!res.ok) {
+      const err = await res.json();
+      throw new Error(err.error || 'Failed to assign template');
+    }
+    return res.json();
+  },
+
   // Preview Data
   async getPreviewPosts(limit: number = 3) {
     const res = await fetch(`${BASE_URL}/preview/posts?limit=${limit}`, { cache: 'no-store' });
