@@ -21,8 +21,8 @@ export default function BuilderCanvas({ blogPosts, contentMode, selectedCard, se
               <BlogCard
                 key={post.id}
                 post={post}
-                isSelected={selectedCard === post.id}
-                onClick={() => setSelectedCard(post.id)}
+                isSelected={selectedCard?.id === post.id}
+                 onClick={() => setSelectedCard(post)}
                 contentMode={contentMode}
               />
             ))}
