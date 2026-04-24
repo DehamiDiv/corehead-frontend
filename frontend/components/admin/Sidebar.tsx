@@ -12,6 +12,7 @@ import {
   File,
   Settings as SettingsIcon,
   ChevronDown,
+  LayoutTemplate,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -36,12 +37,13 @@ function SidebarContent() {
 
   const navItems: NavItem[] = useMemo(
     () => [
-      { label: "Posts",         href: "/admin/posts",      Icon: FileText       },
-      { label: "Categories",    href: "/admin/categories", Icon: Tags           },
-      { label: "Media Library", href: "/admin/media",      Icon: ImageIcon      },
-      { label: "Interactions",  href: "/admin/comments",   Icon: MessageSquare  },
-      { label: "Users",         href: "/admin/users",      Icon: Users          },
-      { label: "Pages",         href: "/admin/pages",      Icon: File           },
+      { label: "Posts",         href: "/admin/blogs",     Icon: FileText       },
+      { label: "Layouts",       href: "/admin/layouts",   Icon: LayoutTemplate },
+      { label: "Categories",    href: "/admin/categories", Icon: Tags          },
+      { label: "Media Library", href: "/admin/media",      Icon: ImageIcon     },
+      { label: "Interactions",  href: "/admin/comments",   Icon: MessageSquare },
+      { label: "Users",         href: "/admin/users",      Icon: Users         },
+      { label: "Pages",         href: "/admin/pages",      Icon: File          },
     ],
     []
   );
