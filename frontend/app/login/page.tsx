@@ -3,48 +3,44 @@
 import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Eye, EyeOff, LayoutGrid, BookOpen, Settings } from "lucide-react";
+import { Eye, EyeOff, LayoutGrid, BookOpen, Settings, AlertCircle, Loader2 } from "lucide-react";
+import { api } from "@/lib/api";
 
 export default function LoginPage() {
   const router = useRouter();
   const [showPassword, setShowPassword] = useState(false);
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState("");
-  const [formData, setFormData] = useState({
-    email: "",
-    password: "",
-  });
-
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setFormData({ ...formData, [e.target.name]: e.target.value });
-    setError("");
-  };
+  const [error, setError] = useState<string | null>(null);
+  const [success, setSuccess] = useState<string | null>(null);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setError("");
     setIsLoading(true);
+    setError(null);
+    setSuccess(null);
 
     try {
-      const res = await fetch("http://localhost:3001/api/auth/login", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(formData),
-      });
-
-      const data = await res.json();
-
-      if (!res.ok) {
-        setError(data.error || "Login failed. Please check your credentials.");
-        return;
-      }
-
-      // Set cookie in browser
-      document.cookie = `auth_token=${data.token}; path=/; max-age=86400; SameSite=Strict`;
+      const data = await api.login({ email, password });
       
-      router.push("/admin");
-    } catch {
-      setError("Could not connect to server. Please try again.");
+      // PERSIST AUTH STATE
+      localStorage.setItem("token", data.token);
+      localStorage.setItem("user", JSON.stringify(data.user));
+
+      // ROLE-BASED REDIRECTION
+      if (data.user.role === "admin") {
+        setSuccess("Login successful! Redirecting to dashboard...");
+        setTimeout(() => {
+          router.push("/admin");
+        }, 1500);
+      } else {
+        setError("Access denied. Admin privileges required.");
+        localStorage.removeItem("token");
+        localStorage.removeItem("user");
+      }
+    } catch (err: any) {
+      setError(err.message || "An error occurred during login.");
     } finally {
       setIsLoading(false);
     }
@@ -103,10 +99,18 @@ export default function LoginPage() {
               Enter your email below to login to your account
             </p>
           </div>
-          {/* Error Message */}
+
+          {/* Error & Success Messages */}
           {error && (
-            <div className="mb-5 px-4 py-3 bg-red-100 border border-red-300 text-red-700 text-sm rounded-lg">
-              {error}
+            <div className="bg-red-50 border border-red-200 text-red-600 px-4 py-3 rounded-lg flex items-center gap-3 text-sm mb-5 animate-in fade-in slide-in-from-top-1">
+              <AlertCircle className="w-4 h-4 shrink-0" />
+              <p>{error}</p>
+            </div>
+          )}
+          {success && (
+            <div className="bg-emerald-50 border border-emerald-200 text-emerald-600 px-4 py-3 rounded-lg flex items-center gap-3 text-sm mb-5 animate-in fade-in slide-in-from-top-1">
+              <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+              <p>{success}</p>
             </div>
           )}
 
@@ -122,10 +126,10 @@ export default function LoginPage() {
                 id="email"
                 name="email"
                 type="email"
-                placeholder="m@example.com"
-                value={formData.email}
-                onChange={handleChange}
                 required
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="m@example.com"
                 className="w-full px-4 py-3 bg-white border border-slate-200 rounded-lg text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all shadow-sm"
               />
             </div>
@@ -142,10 +146,10 @@ export default function LoginPage() {
                   id="password"
                   name="password"
                   type={showPassword ? "text" : "password"}
-                  placeholder="Password"
-                  value={formData.password}
-                  onChange={handleChange}
                   required
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  placeholder="Password"
                   className="w-full px-4 py-3 bg-white border border-slate-200 rounded-lg text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all shadow-sm"
                 />
                 <button
@@ -174,9 +178,16 @@ export default function LoginPage() {
             <button
               type="submit"
               disabled={isLoading}
-              className="w-full py-3 px-4 bg-blue-700 hover:bg-blue-800 disabled:bg-blue-400 text-white font-semibold rounded-lg shadow-md hover:shadow-lg transition-all active:scale-[0.98] mt-2"
+              className="w-full py-3 px-4 bg-blue-700 hover:bg-blue-800 text-white font-semibold rounded-lg shadow-md hover:shadow-lg transition-all active:scale-[0.98] mt-2 flex items-center justify-center gap-2 disabled:opacity-70 disabled:cursor-not-allowed"
             >
-              {isLoading ? "Logging in..." : "Login"}
+              {isLoading ? (
+                <>
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                  Signing in...
+                </>
+              ) : (
+                "Login"
+              )}
             </button>
 
             <p className="text-center text-sm text-slate-600 mt-2">

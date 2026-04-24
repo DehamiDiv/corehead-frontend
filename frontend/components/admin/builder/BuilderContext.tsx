@@ -44,7 +44,20 @@ interface BuilderContextType {
   reorderBlocks: (startIndex: number, endIndex: number) => void;
   serializeLayout: () => string;
   loadLayout: (json: string) => void;
-  saveToBackend: (name: string, type: string, status: string, id?: string) => Promise<any>;
+  saveToBackend: (status: string) => Promise<any>;
+  // FR-07: The system shall allow selecting template type
+  templateName: string;
+  setTemplateName: (name: string) => void;
+  templateType: "Single Post" | "Blog Archive";
+  setTemplateType: (type: "Single Post" | "Blog Archive") => void;
+  templateId: string | null;
+  setTemplateId: (id: string | null) => void; 
+  activeSidebar: "chat" | "blocks" | "settings";
+  setActiveSidebar: (tab: "chat" | "blocks" | "settings") => void;
+  deviceMode: "desktop" | "tablet" | "mobile";
+  setDeviceMode: (mode: "desktop" | "tablet" | "mobile") => void;
+  isAnalyzing: boolean;
+  setIsAnalyzing: (analyzing: boolean) => void;
 }
 
 const BuilderContext = createContext<BuilderContextType | undefined>(undefined);
@@ -52,6 +65,15 @@ const BuilderContext = createContext<BuilderContextType | undefined>(undefined);
 export function BuilderProvider({ children }: { children: ReactNode }) {
   const [blocks, setBlocks] = useState<BuilderBlock[]>([]);
   const [selectedBlockId, setSelectedBlockId] = useState<string | null>(null);
+
+  // Template Database Metadata (Stored in real PostgreSQL via backend API)
+  const [templateId, setTemplateId] = useState<string | null>(null);
+  const [templateName, setTemplateName] = useState("New Layout");
+  const [templateType, setTemplateType] = useState<"Single Post" | "Blog Archive">("Single Post");
+
+  const [activeSidebar, setActiveSidebar] = useState<"chat" | "blocks" | "settings">("chat");
+  const [deviceMode, setDeviceMode] = useState<"desktop" | "tablet" | "mobile">("desktop");
+  const [isAnalyzing, setIsAnalyzing] = useState(false);
 
   const [isLoaded, setIsLoaded] = useState(false);
 
@@ -158,19 +180,25 @@ export function BuilderProvider({ children }: { children: ReactNode }) {
     }
   };
 
-  const saveToBackend = async (name: string, type: string, status: string, id?: string) => {
+  // Saves layout to real PostgreSQL backend via the Node API.
+  const saveToBackend = async (status: string) => {
     const layoutData = {
-      name,
-      type,
+      name: templateName,
+      type: templateType,
       layoutJson: blocks,
       status
     };
 
-    if (id) {
-      return await api.updateTemplate(id, layoutData);
+    let result;
+    if (templateId) {
+      result = await api.updateTemplate(templateId, layoutData);
     } else {
-      return await api.createTemplate(layoutData);
+      result = await api.createTemplate(layoutData);
+      if (result.id) {
+         setTemplateId(result.id);
+      }
     }
+    return result;
   };
 
   return (
@@ -186,6 +214,18 @@ export function BuilderProvider({ children }: { children: ReactNode }) {
         serializeLayout,
         loadLayout,
         saveToBackend,
+        templateName,
+        setTemplateName,
+        templateType,
+        setTemplateType,
+        templateId,
+        setTemplateId,
+        activeSidebar,
+        setActiveSidebar,
+        deviceMode,
+        setDeviceMode,
+        isAnalyzing,
+        setIsAnalyzing,
       }}
     >
       {children}
@@ -230,6 +270,8 @@ function getDefaultContent(type: BlockType): any {
       return ""; // No specific content, acts as a wrapper
     case "Columns":
       return 2; // Default to 2 columns, content holds the number of columns
+    case "Collection List":
+      return { limit: 6, category: "" };
     default:
       return "";
   }

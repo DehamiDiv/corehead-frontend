@@ -1,74 +1,147 @@
-import React from 'react';
-import { BindingResolver } from './BindingResolver';
-import { BlockRegistry } from './BlockRegistry';
-import { LayoutBlock } from './blocks/types';
+"use client";
 
-interface Layout {
-  blocks: LayoutBlock[];
+import React from "react";
+import Image from "next/image";
+import Link from "next/link";
+import { BuilderBlock } from "../admin/builder/BuilderContext";
+
+/**
+ * FR-25: Public Page Renderer Component
+ * Takes the raw JSON schema stored in PostgreSQL and renders it using optimized Next.js components.
+ * 
+ * @param {BuilderBlock[]} layout - The layout array extracted from the DB JSON.
+ * @param {any} data - The real CMS data (e.g. { post: { title: "Hello", content: "...", featured_image: "url" } })
+ */
+
+interface PublicPageRendererProps {
+  layout: BuilderBlock[];
+  data?: Record<string, any>;
 }
 
-interface Bindings {
-  mode: string;
-  selected: Record<string, boolean>;
-}
-
-interface PageRendererProps {
-  layout: Layout;
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  data: any | any[]; // single post or array of posts
-  isLoop?: boolean; // whether the data is an array intended for a loop
-  bindings?: Bindings;
-}
-
-export function PublicPageRenderer({ layout, data, isLoop = false, bindings }: PageRendererProps) {
-  if (!layout || !layout.blocks) return null;
-
-  // Filter entire blocks if necessary (e.g. authorbox)
-  let finalBlocks = layout.blocks;
-  if (bindings?.selected) {
-    finalBlocks = finalBlocks.filter(block => {
-      if (block.type === 'authorbox' && bindings.selected['author.info'] === false) return false;
-      if (block.type === 'comments' && bindings.selected['post.comments'] === false) return false;
-      return true;
-    });
+// FR-26: Dynamic Template Binding Helper
+// Evaluates `{post.title}` type syntax and replaces it with real CMS data.
+function bindData(content: any, bindings: Record<string, string> | undefined, data: any) {
+  if (!bindings?.content) return content;
+  
+  const path = bindings.content.split(".");
+  let resolvedData = data;
+  for (const key of path) {
+    if (resolvedData && resolvedData[key] !== undefined) {
+      resolvedData = resolvedData[key];
+    } else {
+      resolvedData = null;
+      break;
+    }
   }
 
-  return (
-    <div className="public-rendered-page">
-      {finalBlocks.map((block, index) => {
-        // Resolve bindings for single data
-        const singleData = isLoop && Array.isArray(data) ? {} : data;
-        let content = block.content || '';
+  return resolvedData || content;
+}
 
-        // Dynamically strip elements based on user's bindings configuration
-        if (bindings?.selected) {
-           if (bindings.selected['post.coverImage'] === false) {
-              content = content.replace(/<img[^>]*>/ig, ''); // Strip images
-           }
-           if (bindings.selected['post.title'] === false) {
-              content = content.replace(/<h1[^>]*>.*?<\/h1>/ig, ''); // Strip h1 titles
-           }
-           if (bindings.selected['post.excerpt'] === false) {
-              // Usually mapped to paragraph right after h1 in our mock
-              content = content.replace(/<p[^>]*>.*?<\/p>/i, ''); // Strip first paragraph (mock excerpt)
-           }
-        }
+export function PublicPageRenderer({ layout, data = {} }: PublicPageRendererProps) {
+  
+  const renderBlock = (block: BuilderBlock) => {
+    const styleString = block.styles || {};
+    
+    // Resolve any dynamic CMS bindings
+    const content = bindData(block.content, block.bindings, data);
 
-        const resolvedContent = BindingResolver(content, singleData);
-
-        // Find the appropriate component from the registry, fallback to 'html'
-        const BlockComponent = BlockRegistry[block.type] || BlockRegistry['html'];
-
+    switch (block.type) {
+      case "Heading":
+        return <h2 key={block.id} style={styleString} className="font-bold mb-4">{content}</h2>;
+        
+      case "Paragraph":
+        return <p key={block.id} style={styleString} className="mb-4 text-gray-700 leading-relaxed">{content}</p>;
+        
+      case "Image":
+        // FR-27: Optimized Next.js `next/image` usage
         return (
-          <BlockComponent 
-            key={index}
-            block={block}
-            resolvedContent={resolvedContent}
-            data={data}
-            isLoop={isLoop}
-          />
+          <div key={block.id} style={styleString} className="relative w-full aspect-video my-4 rounded-lg overflow-hidden">
+            <Image 
+              src={content || "https://placehold.co/800x400"} 
+              alt="Dynamic Blog Image" 
+              fill
+              className="object-cover"
+              sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+            />
+          </div>
         );
-      })}
-    </div>
-  );
+        
+      case "Quote":
+        return (
+          <blockquote key={block.id} style={styleString} className="border-l-4 border-blue-500 pl-4 py-2 my-4 italic text-gray-600 bg-gray-50">
+            {content}
+          </blockquote>
+        );
+        
+      case "Divider":
+        return <hr key={block.id} style={styleString} className="my-6 border-gray-200" />;
+        
+      case "Button":
+        // FR-27: Optimized Next.js `next/link` usage
+        const url = content?.url || "#";
+        const text = content?.text || "Click Here";
+        return (
+          <div key={block.id} style={styleString} className="my-4">
+            <Link href={url} className="px-6 py-2 bg-blue-600 text-white rounded-md font-medium hover:bg-blue-700 transition">
+              {text}
+            </Link>
+          </div>
+        );
+        
+      case "Container":
+        return (
+          <div key={block.id} style={styleString}>
+            {renderChildren(block.id)}
+          </div>
+        );
+        
+      case "Columns":
+        const cols = content || 2;
+        return (
+          <div key={block.id} style={styleString} className={`grid grid-cols-1 md:grid-cols-${cols} gap-6 my-6`}>
+            {renderChildren(block.id)}
+          </div>
+        );
+
+      case "Collection List":
+        // FR-18: Blog Loop handling
+        const limit = content?.limit || 6;
+        const posts = Array.isArray(data?.posts) ? data.posts.slice(0, limit) : [];
+        
+        return (
+          <div key={block.id} style={styleString} className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 my-8">
+            {posts.length > 0 ? (
+              posts.map((post: any) => (
+                <Link href={`/posts/${post.slug || post.id}`} key={post.id} className="group block border border-gray-200 rounded-xl overflow-hidden hover:shadow-lg transition bg-white flex flex-col h-full">
+                  <div className="relative w-full h-48 bg-gray-100">
+                    <Image src={post.featured_image || "https://placehold.co/400x300"} fill className="object-cover group-hover:scale-105 transition-transform duration-300" alt={post.title} />
+                  </div>
+                  <div className="p-5 flex flex-col flex-grow">
+                    <span className="text-xs font-semibold text-blue-600 mb-2 uppercase tracking-wider">{post.category || "Article"}</span>
+                    <h3 className="font-bold text-gray-900 mb-2 line-clamp-2">{post.title}</h3>
+                    <p className="text-gray-600 text-sm line-clamp-2 mt-auto">{post.excerpt}</p>
+                  </div>
+                </Link>
+              ))
+            ) : (
+              <div className="col-span-full text-center p-8 border border-dashed border-gray-300 rounded-lg text-gray-500">
+                No blog posts available in this collection loop.
+              </div>
+            )}
+          </div>
+        );
+        
+      default:
+        return null;
+    }
+  };
+
+  const renderChildren = (parentId?: string) => {
+    const levelBlocks = layout.filter(
+      (b) => b.parentId === parentId || (!b.parentId && !parentId)
+    );
+    return levelBlocks.map((block) => renderBlock(block));
+  };
+
+  return <div className="public-renderer-wrapper">{renderChildren()}</div>;
 }

@@ -1,5 +1,7 @@
 const BASE_URL = 'http://localhost:5000/api';
 
+// getAuthHeader: Helper function to attach the JWT token to outgoing API requests.
+// This allows the backend to verify the user's identity and role via authMiddleware.
 const getAuthHeader = (): Record<string, string> => {
   if (typeof window !== 'undefined') {
     const token = localStorage.getItem('token');
@@ -73,8 +75,6 @@ export const api = {
 
   // Public Facing / Receiver Mock Endpoints
   async getPostBySlug(slug: string) {
-    // In the future this should call a real backend endpoint e.g. /api/public/posts/${slug}
-    // returning mock data for now
     return {
       id: `mock-${slug}`,
       title: `The Ultimate Guide to ${slug.replace(/-/g, ' ')}`,
@@ -89,10 +89,6 @@ export const api = {
   },
 
   async getPublicLayout(type: 'blog-loop' | 'single-post') {
-    // In the future this should call /api/public/templates/active?type=${type}
-    // return mock layout JSON to unblock the frontend BindingResolver
-    
-    // Using a simplistic layout json structure for demonstration
     if (type === 'blog-loop') {
       return {
         blocks: [
@@ -109,5 +105,32 @@ export const api = {
          ]
       };
     }
+  },
+
+  // Auth
+  async login(credentials: { email: string, password: string }) {
+    const res = await fetch(`${BASE_URL}/auth/login`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(credentials)
+    });
+    if (!res.ok) {
+        const err = await res.json();
+        throw new Error(err.error || 'Login failed');
+    }
+    return res.json();
+  },
+
+  async register(data: { email: string, password: string }) {
+    const res = await fetch(`${BASE_URL}/auth/register`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data)
+    });
+    if (!res.ok) {
+        const err = await res.json();
+        throw new Error(err.error || 'Registration failed');
+    }
+    return res.json();
   }
 };
