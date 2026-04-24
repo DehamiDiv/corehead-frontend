@@ -1,109 +1,136 @@
 "use client";
 
-import { UserPlus, Search, MoreHorizontal, Shield, Mail } from "lucide-react";
+import { useState } from "react";
+import { UserPlus, Search, MoreHorizontal, Shield, Mail, Edit, Trash2, CheckCircle2, XCircle } from "lucide-react";
+import { cn } from "@/lib/utils";
 
-const users = [
+const INITIAL_USERS = [
   {
     id: 1,
-    name: "Admin User",
-    email: "admin@corehead.app",
+    name: "Dehami Div",
+    email: "dehamidivyanjali166@gmail.com",
     role: "Administrator",
     status: "Active",
+    lastActive: "Now",
   },
   {
     id: 2,
-    name: "Editor User",
-    email: "editor@corehead.app",
+    name: "Nimasha D",
+    email: "disanayakanimasha548@gmail.com",
     role: "Editor",
     status: "Active",
+    lastActive: "2h ago",
   },
   {
     id: 3,
     name: "Guest User",
-    email: "guest@example.com",
+    email: "guest@corehead.app",
     role: "Viewer",
     status: "Inactive",
+    lastActive: "3 days ago",
   },
 ];
 
 export default function UsersPage() {
+  const [searchQuery, setSearchQuery] = useState("");
+
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
+    <div className="space-y-6 max-w-[1600px] mx-auto pb-10">
+      {/* Header */}
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-slate-800">Users</h1>
-          <p className="text-slate-500 mt-1">Manage team members and access.</p>
+          <h1 className="text-3xl font-bold text-gray-900">Users & Team</h1>
+          <p className="text-gray-500 mt-1">Manage team roles and access permissions.</p>
         </div>
-        <button className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg font-medium flex items-center gap-2 transition-colors">
+        <button className="flex items-center gap-2 px-5 py-2.5 bg-blue-600 rounded-xl text-sm font-bold text-white hover:bg-blue-700 transition-all shadow-lg shadow-blue-200">
           <UserPlus className="w-4 h-4" />
-          Invite User
+          Invite Member
         </button>
       </div>
 
-      <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
-        <div className="p-4 border-b border-slate-100">
-          <div className="relative max-w-sm">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-            <input
-              type="text"
-              placeholder="Search users..."
-              className="w-full pl-9 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
-            />
-          </div>
+      {/* Filter & Search */}
+      <div className="bg-white p-4 rounded-2xl shadow-sm border border-gray-100 flex flex-col md:flex-row items-center justify-between gap-4">
+        <div className="relative w-full max-w-md">
+          <Search className="w-4 h-4 text-gray-400 absolute left-4 top-1/2 -translate-y-1/2" />
+          <input
+            type="text"
+            placeholder="Search users by name or email..."
+            className="w-full pl-11 pr-4 py-3 bg-gray-50/50 border border-gray-100 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/10 transition-all text-sm"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+          />
         </div>
+        <div className="flex items-center gap-6">
+           <div className="text-sm font-bold text-gray-400">
+             {INITIAL_USERS.length} Total Users
+           </div>
+        </div>
+      </div>
 
-        <table className="w-full text-left text-sm text-slate-600">
-          <thead className="bg-slate-50/50 text-slate-500 font-medium border-b border-slate-100">
-            <tr>
-              <th className="px-6 py-3">User</th>
-              <th className="px-6 py-3">Role</th>
-              <th className="px-6 py-3">Status</th>
-              <th className="px-6 py-3 text-right">Actions</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-slate-50">
-            {users.map((user) => (
-              <tr
-                key={user.id}
-                className="hover:bg-slate-50/80 transition-colors"
-              >
-                <td className="px-6 py-4">
-                  <div className="flex items-center gap-3">
-                    <div className="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 font-bold">
-                      {user.name[0]}
-                    </div>
-                    <div>
-                      <div className="font-medium text-slate-700">
-                        {user.name}
-                      </div>
-                      <div className="text-xs text-slate-400 flex items-center gap-1">
-                        <Mail className="w-3 h-3" /> {user.email}
-                      </div>
-                    </div>
-                  </div>
-                </td>
-                <td className="px-6 py-4">
-                  <div className="flex items-center gap-1.5 text-slate-600">
-                    <Shield className="w-3.5 h-3.5 text-slate-400" />
-                    {user.role}
-                  </div>
-                </td>
-                <td className="px-6 py-4">
-                  <span
-                    className={`px-2.5 py-1 rounded-full text-xs font-medium border ${user.status === "Active" ? "bg-green-50 text-green-700 border-green-200" : "bg-slate-100 text-slate-600 border-slate-200"}`}
-                  >
-                    {user.status}
-                  </span>
-                </td>
-                <td className="px-6 py-4 text-right">
-                  <button className="p-2 hover:bg-slate-100 rounded-lg text-slate-400 hover:text-slate-600 transition-colors">
-                    <MoreHorizontal className="w-4 h-4" />
-                  </button>
-                </td>
+      {/* Table */}
+      <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+        <div className="overflow-x-auto">
+          <table className="w-full text-left">
+            <thead>
+              <tr className="bg-gray-50/50 border-b border-gray-100">
+                <th className="px-8 py-5 text-xs font-bold text-gray-400 uppercase tracking-wider">User Details</th>
+                <th className="px-6 py-5 text-xs font-bold text-gray-400 uppercase tracking-wider">Role</th>
+                <th className="px-6 py-5 text-xs font-bold text-gray-400 uppercase tracking-wider">Status</th>
+                <th className="px-6 py-5 text-xs font-bold text-gray-400 uppercase tracking-wider">Last Active</th>
+                <th className="px-8 py-5 text-xs font-bold text-gray-400 uppercase tracking-wider text-right">Actions</th>
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            <tbody className="divide-y divide-gray-50">
+              {INITIAL_USERS.map((user) => (
+                <tr key={user.id} className="hover:bg-gray-50/50 transition-all group">
+                  <td className="px-8 py-5">
+                    <div className="flex items-center gap-4">
+                      <div className="w-10 h-10 rounded-full bg-blue-50 text-blue-600 flex items-center justify-center font-bold border border-blue-100 shadow-sm overflow-hidden">
+                        <img src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${user.name}`} alt="" />
+                      </div>
+                      <div>
+                        <p className="text-sm font-bold text-gray-900">{user.name}</p>
+                        <p className="text-[11px] font-medium text-gray-400 flex items-center gap-1">
+                          <Mail className="w-3 h-3" /> {user.email}
+                        </p>
+                      </div>
+                    </div>
+                  </td>
+                  <td className="px-6 py-5">
+                    <div className="flex items-center gap-2 text-sm font-bold text-gray-700">
+                      <Shield className="w-4 h-4 text-blue-500" />
+                      {user.role}
+                    </div>
+                  </td>
+                  <td className="px-6 py-5">
+                    <span className={cn(
+                      "inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-bold border",
+                      user.status === "Active" 
+                        ? "bg-emerald-50 text-emerald-600 border-emerald-100" 
+                        : "bg-gray-50 text-gray-400 border-gray-100"
+                    )}>
+                      {user.status === "Active" ? <CheckCircle2 className="w-3 h-3" /> : <XCircle className="w-3 h-3" />}
+                      {user.status}
+                    </span>
+                  </td>
+                  <td className="px-6 py-5 text-sm font-bold text-gray-400">
+                    {user.lastActive}
+                  </td>
+                  <td className="px-8 py-5 text-right">
+                    <div className="flex items-center justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                      <button className="p-2.5 bg-white border border-gray-100 rounded-xl text-gray-500 hover:text-blue-600 shadow-sm transition-all">
+                        <Edit className="w-4 h-4" />
+                      </button>
+                      <button className="p-2.5 bg-white border border-gray-100 rounded-xl text-gray-500 hover:text-red-600 shadow-sm transition-all">
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
       </div>
     </div>
   );
