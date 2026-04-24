@@ -1,0 +1,107 @@
+﻿/* ========================================
+   BUILDER CANVAS - No Black Theme
+   Purple/Blue Gradient Theme
+   ======================================== */
+
+.builder-canvas {
+  flex: 1;
+  overflow-y: auto;
+  background: linear-gradient(160deg, #f0eeff 0%, #e8e0f8 100%);
+  padding: 24px;
+}
+
+.builder-canvas::-webkit-scrollbar {
+  width: 6px;
+}
+.builder-canvas::-webkit-scrollbar-track {
+  background: #ede9f8;
+  border-radius: 4px;
+}
+.builder-canvas::-webkit-scrollbar-thumb {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  border-radius: 4px;
+}
+
+.canvas-container {
+  max-width: 1400px;
+  margin: 0 auto;
+}
+
+/* ΓöÇΓöÇ Blog Loop / Collection Wrapper ΓöÇΓöÇ */
+.blog-loop {
+  background: rgba(255, 255, 255, 0.75);
+  border: 2px dashed #a89cd4;
+  border-radius: 12px;
+  padding: 24px;
+  backdrop-filter: blur(6px);
+  box-shadow: 0 8px 32px rgba(102, 126, 234, 0.1);
+}
+
+/* ΓöÇΓöÇ Loop Header ΓöÇΓöÇ */
+.loop-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 24px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid #d4cef0;
+}
+
+.loop-header h2 {
+  font-size: 18px;
+  font-weight: 600;
+  color: #3a2d6a;
+  margin: 0;
+}
+
+.loop-info {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.badge {
+  display: inline-block;
+  padding: 4px 12px;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  border-radius: 12px;
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+  box-shadow: 0 2px 8px rgba(102, 126, 234, 0.3);
+}
+
+.count {
+  color: #8b7db5;
+  font-size: 14px;
+}
+
+/* ΓöÇΓöÇ Blog Grid ΓöÇΓöÇ */
+.blog-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  gap: 24px;
+}
+
+/* ΓöÇΓöÇ Loop Template Indicator ΓöÇΓöÇ */
+.loop-template-indicator {
+  margin-top: 24px;
+  padding-top: 16px;
+  border-top: 1px solid #d4cef0;
+  text-align: center;
+  color: #a89cd4;
+  font-size: 13px;
+  font-style: italic;
+  position: relative;
+}
+
+.indicator-line {
+  position: absolute;
+  top: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 2px;
+  height: 16px;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+}
