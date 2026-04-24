@@ -2,11 +2,11 @@
 
 import { useState, useEffect } from 'react';
 import { Sparkles, Eye, Code, FileText } from 'lucide-react';
-import Sidebar from '@/components/builder/Sidebar';
+//import Sidebar from '@/components/builder/Sidebar';
 import BuilderCanvas from '@/components/builder/BuilderCanvas';
 import CMSFieldsPanel from '@/components/builder/CMSFieldsPanel';
-import PreviewModal from '@/components/builder/PreviewModal';
-import ExportModal from '@/components/builder/ExportModal';
+//import PreviewModal from '@/components/builder/PreviewModal';
+//import ExportModal from '@/components/builder/ExportModal';
 import ComponentsPanel from '@/components/builder/ComponentsPanel';
 import SettingsPanel from '@/components/builder/SettingsPanel';
 import AIGenerateModal from '@/components/builder/AIGenerateModal';
