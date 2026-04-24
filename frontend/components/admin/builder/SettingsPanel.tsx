@@ -12,7 +12,7 @@ import { useBuilder } from "@/components/admin/builder/BuilderContext";
 import { useState } from "react";
 
 export default function SettingsPanel() {
-  const { blocks, selectedBlockId, updateBlock } = useBuilder();
+  const { blocks, selectedBlockId, updateBlock, removeBlock, templateName, setTemplateName, templateType, setTemplateType } = useBuilder();
   const [activeTab, setActiveTab] = useState<"Content" | "Style" | "Advanced">(
     "Content",
   );
@@ -23,13 +23,42 @@ export default function SettingsPanel() {
     return (
       <aside className="w-72 bg-slate-50 border-l border-gray-200 flex flex-col p-4 h-[calc(100vh-64px)]">
         <h3 className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-4">
-          Component Settings
+          Template Settings
         </h3>
-        <div className="flex-1 flex flex-col items-center justify-center text-center p-6 border-2 border-dashed border-gray-300 rounded-xl bg-gray-50/50">
-          <Layout className="w-12 h-12 text-gray-300 mb-4" />
-          <p className="text-sm text-slate-500">
-            Select a block on the canvas to edit its properties.
-          </p>
+        {/* FR-07: The system shall allow selecting template type (Single Post vs Blog Archive) */}
+        <div className="flex-1 flex flex-col gap-6">
+          <div className="space-y-2">
+            <label className="text-sm font-medium text-slate-700">Template Name</label>
+            <input 
+              type="text" 
+              value={templateName}
+              onChange={(e) => setTemplateName(e.target.value)}
+              className="w-full px-3 py-2 bg-white border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 outline-none"
+              placeholder="e.g. My Default Blog Layout"
+            />
+          </div>
+          
+          <div className="space-y-2">
+            <label className="text-sm font-medium text-slate-700">Template Type</label>
+            <select 
+              value={templateType}
+              onChange={(e) => setTemplateType(e.target.value as any)}
+              className="w-full px-3 py-2 bg-white border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 outline-none"
+            >
+              <option value="Single Post">Single Post Template</option>
+              <option value="Blog Archive">Blog Archive Template</option>
+            </select>
+            <p className="text-[11px] text-slate-500 mt-1">
+              "Single Post" is used for individual articles. "Blog Archive" is used for category and index pages displaying lists.
+            </p>
+          </div>
+
+          <div className="mt-8 pt-8 border-t border-gray-200 flex flex-col items-center justify-center text-center">
+            <Layout className="w-10 h-10 text-gray-300 mb-3" />
+            <p className="text-sm text-slate-500">
+              Select a block on the canvas to configure styling and data bindings.
+            </p>
+          </div>
         </div>
       </aside>
     );
@@ -232,6 +261,8 @@ export default function SettingsPanel() {
                   <option value="">None (Static Content)</option>
                   <option value="post.title">Post Title</option>
                   <option value="post.excerpt">Post Excerpt</option>
+                  <option value="post.content">Post Body (Markdown)</option>
+                  <option value="post.featured_image">Featured Image URL</option>
                   <option value="post.author">Author Name</option>
                   <option value="post.date">Publish Date</option>
                   <option value="site.name">Site Name</option>
@@ -243,6 +274,16 @@ export default function SettingsPanel() {
             </div>
           </div>
         )}
+      </div>
+
+      {/* Delete Block Actions */}
+      <div className="mt-auto p-4 border-t border-gray-100 bg-gray-50/50">
+        <button
+          onClick={() => removeBlock(selectedBlock.id)}
+          className="w-full py-2.5 px-4 bg-white border border-red-200 text-red-600 rounded-lg text-sm font-semibold hover:bg-red-50 hover:border-red-300 transition-colors"
+        >
+          Delete Component
+        </button>
       </div>
     </aside>
   );
@@ -339,6 +380,37 @@ function ContentTab({ selectedBlock, updateBlock }: any) {
             }
             className="w-full px-3 py-2 bg-slate-50 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 outline-none"
           />
+        </div>
+      </div>
+    );
+  }
+  
+  if (selectedBlock.type === "Collection List") {
+    // Handling Blog Loop / Collection List (FR-18)
+    return (
+      <div className="space-y-4">
+        <div className="space-y-2">
+           <label className="text-sm text-slate-700">Display Limit</label>
+           <input 
+              type="number"
+              value={selectedBlock.content?.limit || 6}
+              onChange={(e) => updateBlock(selectedBlock.id, { ...selectedBlock.content, limit: parseInt(e.target.value) })}
+              className="w-full px-3 py-2 bg-slate-50 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 outline-none"
+           />
+           <p className="text-xs text-slate-500">Maximum posts to show in the loop.</p>
+        </div>
+        <div className="space-y-2">
+           <label className="text-sm text-slate-700">Filter by Category</label>
+           <select 
+              value={selectedBlock.content?.category || ""}
+              onChange={(e) => updateBlock(selectedBlock.id, { ...selectedBlock.content, category: e.target.value })}
+              className="w-full px-3 py-2 bg-slate-50 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 outline-none"
+           >
+              <option value="">All Categories</option>
+              <option value="technology">Technology</option>
+              <option value="lifestyle">Lifestyle</option>
+              <option value="development">Development</option>
+           </select>
         </div>
       </div>
     );

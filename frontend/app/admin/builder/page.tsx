@@ -1,7 +1,7 @@
 "use client";
 
 import EditorHeader from "@/components/admin/builder/EditorHeader";
-import Toolbox from "@/components/admin/builder/Toolbox";
+import LeftSidebar from "@/components/admin/builder/LeftSidebar";
 import SettingsPanel from "@/components/admin/builder/SettingsPanel";
 import Canvas from "@/components/admin/builder/Canvas";
 import BottomBar from "@/components/admin/builder/BottomBar";
@@ -14,8 +14,8 @@ export default function BuilderPage() {
         <EditorHeader />
 
         <div className="flex flex-1 overflow-hidden">
-          {/* Left Sidebar */}
-          <Toolbox />
+          {/* Left Sidebar (Icon Rail + Chat / Blocks / Settings) */}
+          <LeftSidebar />
 
           {/* Main Canvas Area */}
           <div className="flex-1 flex flex-col bg-slate-50 relative">

@@ -1,10 +1,20 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 
 export default function AdminNavbar() {
   const pathname = usePathname();
+  const router = useRouter();
+
+  const handleLogout = () => {
+    // Clear auth data from local storage
+    localStorage.removeItem("token");
+    localStorage.removeItem("user");
+    
+    // Redirect to login page
+    router.push("/login");
+  };
 
   const navItems = [
     { label: "Dashboard", href: "/admin" },
@@ -47,7 +57,10 @@ export default function AdminNavbar() {
       </div>
 
       {/* Logout Button */}
-      <button className="px-6 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-bold rounded-lg transition-colors shadow-lg shadow-blue-600/20">
+      <button 
+        onClick={handleLogout}
+        className="px-6 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-bold rounded-lg transition-colors shadow-lg shadow-blue-600/20"
+      >
         Logout
       </button>
     </nav>
