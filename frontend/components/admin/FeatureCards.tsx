@@ -2,76 +2,66 @@
 
 import { motion } from "framer-motion";
 import Link from "next/link";
-import { LayoutTemplate, FileText, Sparkles } from "lucide-react"; // Changed LayoutGrid to LayoutTemplate for better match
+import { LayoutTemplate, FileText, Sparkles, ArrowUpRight } from "lucide-react";
 
 const features = [
   {
-    title: "Drag & Drop Builder",
-    description:
-      "create stunning blog layouts with an intuitive drag-and-drop interface, no coding needed",
+    title: "Visual Builder",
+    description: "Create stunning layouts with an intuitive drag-and-drop interface. No coding required.",
     icon: LayoutTemplate,
+    color: "blue",
+    href: "/admin/builder"
   },
   {
-    title: "Dynamic CMS Snippets",
-    description:
-      "Easily bind blog content like titles, images, and experts from your CMS data.",
+    title: "Content Sync",
+    description: "Easily bind dynamic CMS data like titles, images, and excerpts to your layouts.",
     icon: FileText,
+    color: "emerald",
+    href: "/admin/snippets"
   },
   {
-    title: "AI - Powered Assistant",
-    description:
-      "Use AI to generate and refine blog layouts that match your content and style preferences",
+    title: "AI Co-pilot",
+    description: "Use advanced AI to generate and refine layouts that perfectly match your brand.",
     icon: Sparkles,
+    color: "purple",
+    href: "/admin/posts"
   },
 ];
 
 export default function FeatureCards() {
   return (
-    <section className="px-6">
-      <div className="max-w-6xl mx-auto grid md:grid-cols-3 gap-8">
-        {features.map((feature, index) => {
-          const CardContent = (
+    <section className="px-8 pb-20">
+      <div className="max-w-7xl mx-auto grid md:grid-cols-3 gap-8">
+        {features.map((feature, index) => (
+          <Link href={feature.href} key={index} className="block group">
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.2 + index * 0.1 }}
-              className="p-10 rounded-[2.5rem] bg-blue-300/30 backdrop-blur-sm border border-white/20 text-center flex flex-col items-center hover:bg-blue-300/40 transition-colors shadow-lg shadow-blue-900/5 h-[320px] justify-center cursor-pointer"
+              className="relative p-8 rounded-[2.5rem] bg-white border border-gray-100 text-left flex flex-col hover:border-blue-200 transition-all duration-300 shadow-xl shadow-gray-200/20 h-full min-h-[300px]"
             >
-              <div className="mb-6">
-                <feature.icon
-                  className="w-10 h-10 text-slate-800"
-                  strokeWidth={1.5}
-                />
+              <div className="flex justify-between items-start mb-8">
+                <div className={`p-4 rounded-2xl bg-${feature.color}-50 text-${feature.color}-600 group-hover:bg-${feature.color}-600 group-hover:text-white transition-colors duration-300`}>
+                  <feature.icon className="w-8 h-8" strokeWidth={2} />
+                </div>
+                <div className="p-2 rounded-full bg-gray-50 text-gray-300 group-hover:text-blue-600 transition-colors">
+                  <ArrowUpRight className="w-5 h-5" />
+                </div>
               </div>
 
-              <h3 className="text-xl font-bold text-slate-900 mb-4">
+              <h3 className="text-2xl font-black text-gray-900 mb-4 tracking-tight">
                 {feature.title}
               </h3>
 
-              <p className="text-sm text-slate-600 leading-relaxed max-w-[280px] font-medium">
+              <p className="text-gray-500 leading-relaxed font-semibold text-sm">
                 {feature.description}
               </p>
+
+              {/* Decorative line */}
+              <div className="mt-8 h-1 w-12 bg-gray-100 rounded-full group-hover:w-full group-hover:bg-blue-600 transition-all duration-500" />
             </motion.div>
-          );
-
-          if (feature.title === "Drag & Drop Builder") {
-            return (
-              <Link href="/admin/builder" key={index} className="block">
-                {CardContent}
-              </Link>
-            );
-          }
-
-          if (feature.title === "Dynamic CMS Snippets") {
-            return (
-              <Link href="/admin/snippets" key={index} className="block">
-                {CardContent}
-              </Link>
-            );
-          }
-
-          return <div key={index}>{CardContent}</div>;
-        })}
+          </Link>
+        ))}
       </div>
     </section>
   );
