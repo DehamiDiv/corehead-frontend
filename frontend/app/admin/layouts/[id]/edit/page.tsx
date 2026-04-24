@@ -2,40 +2,58 @@
 
 import React, { useState, useEffect } from "react";
 import Link from "next/link";
-import { useParams } from "next/navigation";
-import { ArrowLeft, Save, UploadCloud, Code, FileType, Layout as LayoutIcon, CheckCircle2 } from "lucide-react";
+import { useParams, useRouter } from "next/navigation";
+import { ArrowLeft, Save, UploadCloud, Code, FileType, Layout as LayoutIcon, CheckCircle2, Loader2 } from "lucide-react";
+import { api } from "@/lib/api";
 
 export default function EditLayoutPage() {
     const params = useParams();
+    const router = useRouter();
     const id = params?.id as string;
 
     const [name, setName] = useState("Loading...");
     const [type, setType] = useState("Single Post");
     const [schema, setSchema] = useState("");
     const [status, setStatus] = useState("draft");
+    const [version, setVersion] = useState(1);
+    const [isSaving, setIsSaving] = useState(false);
 
     useEffect(() => {
-        // Simulate fetching data
-        if (id) {
-            setName(id === "1" ? "Standard Blog Post" : "Masonry Archive Grid");
-            setType(id === "1" ? "Single Post" : "Archive");
-            setStatus("published");
-            setSchema(JSON.stringify({
-                version: "1.0",
-                id: id,
-                sections: [
-                    {
-                        id: "header",
-                        type: "hero-section",
-                        props: { title: "{post.title}" }
-                    }
-                ]
-            }, null, 2));
-        }
-    }, [id]);
+        const fetchTemplate = async () => {
+            if (!id) return;
+            try {
+                const template = await api.getTemplateById(id);
+                setName(template.name);
+                setType(template.type);
+                setStatus(template.status);
+                setVersion(template.version || 1);
+                setSchema(JSON.stringify(template.layoutJson, null, 2));
+            } catch (error) {
+                console.error("Failed to fetch template", error);
+                alert("Error: Template not found");
+                router.push("/admin/layouts");
+            }
+        };
+        fetchTemplate();
+    }, [id, router]);
 
-    const handleSave = () => {
-        alert("Changes saved! (Demo)");
+    const handleSave = async () => {
+        setIsSaving(true);
+        try {
+            const layoutJson = JSON.parse(schema);
+            const updated = await api.updateTemplate(id, {
+                name,
+                type,
+                layoutJson,
+                status
+            });
+            setVersion(updated.version); // Update the version number on the UI
+            alert("Changes saved! New version created.");
+        } catch (error: any) {
+            alert("Error saving: " + error.message);
+        } finally {
+            setIsSaving(false);
+        }
     };
 
     return (
@@ -52,7 +70,7 @@ export default function EditLayoutPage() {
                     <div>
                         <h1 className="text-2xl font-bold text-slate-800 flex items-center gap-2">
                             Edit Layout
-                            <span className="text-sm font-normal text-slate-400 bg-slate-100 px-2 py-0.5 rounded-full">v2.4</span>
+                            <span className="text-sm font-normal text-slate-400 bg-slate-100 px-2 py-0.5 rounded-full">v{version}</span>
                         </h1>
                         <p className="text-slate-500 text-sm">Update your existing layout configuration</p>
                     </div>
@@ -64,9 +82,10 @@ export default function EditLayoutPage() {
                     </div>
                     <button
                         onClick={handleSave}
-                        className="px-4 py-2 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition-colors flex items-center gap-2 shadow-sm"
+                        disabled={isSaving}
+                        className="px-4 py-2 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition-colors flex items-center gap-2 shadow-sm disabled:opacity-50"
                     >
-                        <Save size={18} />
+                        {isSaving ? <Loader2 size={18} className="animate-spin" /> : <Save size={18} />}
                         Save Changes
                     </button>
                 </div>
