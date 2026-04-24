@@ -37,6 +37,24 @@ export default function BlogsPage() {
     fetchPosts();
   }, []);
 
+  const handleDelete = async (id: number) => {
+    if (!confirm("Are you sure you want to delete this post?")) return;
+    
+    try {
+      const res = await fetch(`http://localhost:5000/api/posts/${id}`, {
+        method: "DELETE",
+      });
+      if (res.ok) {
+        setPosts(posts.filter((post) => post.id !== id));
+      } else {
+        alert("Failed to delete post");
+      }
+    } catch (err) {
+      console.error("Error deleting post:", err);
+      alert("Error deleting post");
+    }
+  };
+
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -94,6 +112,9 @@ export default function BlogsPage() {
                 </th>
                 <th className="px-6 py-4 font-medium text-gray-500">
                   Featured
+                </th>
+                <th className="px-6 py-4 font-medium text-gray-500">
+                  Status
                 </th>
                 <th className="px-6 py-4 font-medium text-gray-500 text-right">
                   Actions
@@ -166,10 +187,16 @@ export default function BlogsPage() {
                   </td>
                   <td className="px-6 py-4 text-right">
                     <div className="flex items-center justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                      <button className="p-1.5 text-gray-400 hover:text-gray-900 rounded-lg transition-colors">
+                      <Link 
+                        href={`/admin/posts/edit/${post.id}`}
+                        className="p-1.5 text-gray-400 hover:text-gray-900 rounded-lg transition-colors"
+                      >
                         <Edit className="w-4 h-4" />
-                      </button>
-                      <button className="p-1.5 text-gray-400 hover:text-red-600 rounded-lg transition-colors">
+                      </Link>
+                      <button 
+                        onClick={() => handleDelete(post.id)}
+                        className="p-1.5 text-gray-400 hover:text-red-600 rounded-lg transition-colors"
+                      >
                         <Trash2 className="w-4 h-4" />
                       </button>
                     </div>
