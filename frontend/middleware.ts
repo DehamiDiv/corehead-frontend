@@ -4,10 +4,9 @@ import type { NextRequest } from 'next/server';
 // Add paths that require authentication here
 const protectedPaths = [
   // '/admin', // Temporarily disabled for development
-  '/builder',
-  '/dashboard'
+  // '/builder',  // Temporarily disabled for development
+  // '/dashboard' // Temporarily disabled for development
 ];
-
 export function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
   
