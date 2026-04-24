@@ -1,22 +1,53 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Sparkles, Eye, Code, FileText } from 'lucide-react';
+
 import Sidebar from '@/components/builder/Sidebar';
 import BuilderCanvas from '@/components/builder/BuilderCanvas';
 import CMSFieldsPanel from '@/components/builder/CMSFieldsPanel';
 import PreviewModal from '@/components/builder/PreviewModal';
 import ExportModal from '@/components/builder/ExportModal';
+import ComponentsPanel from '@/components/builder/ComponentsPanel';
+import SettingsPanel from '@/components/builder/SettingsPanel';
+import AIGenerateModal from '@/components/builder/AIGenerateModal';
+import SaveLayoutModal from '@/components/builder/SaveLayoutModal';
+import LoadLayoutModal from '@/components/builder/LoadLayoutModal';
+
 import './page.css';
+import { builderApi } from '@/services/builderApi';
+
+const defaultSettings = {
+  font: 'inter',
+  fontStyle: 'Inter, sans-serif',
+  theme: 'default',
+  colors: { id: 'default', label: 'Default', primary: '#4f46e5', bg: '#ffffff', text: '#1a1a1a' },
+  spacing: 'normal',
+  spacingValue: '16px',
+  radius: 'medium',
+  radiusValue: '8px',
+  columns: 3,
+};
 
 export default function BlogBuilderPage() {
   const [activeTab, setActiveTab] = useState('builder');
   const [contentMode, setContentMode] = useState('static');
   const [selectedCard, setSelectedCard] = useState(null);
+  const [settings, setSettings] = useState(defaultSettings);
 
   const [previewOpen, setPreviewOpen] = useState(false);
   const [exportOpen, setExportOpen] = useState(false);
   const [aiOpen, setAiOpen] = useState(false);
+
+  // Save
+  const [saveModalOpen, setSaveModalOpen] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
+  const [saveStatus, setSaveStatus] = useState(null);
+
+  // Load
+  const [savedLayouts, setSavedLayouts] = useState([]);
+  const [showLayoutPicker, setShowLayoutPicker] = useState(false);
+  const [loadingLayouts, setLoadingLayouts] = useState(false);
 
   const [blogPosts, setBlogPosts] = useState([
     {
@@ -54,13 +85,120 @@ export default function BlogBuilderPage() {
     seo: ['Meta Title', 'Meta Description', 'Keywords', 'OG Image']
   });
 
-  const handleAddAIPost = (newPost) => {
-    setBlogPosts(prev => [newPost, ...prev]);
+  // Load AI layout on mount
+  useEffect(() => {
+    const aiLayout = localStorage.getItem('ai_generated_layout');
+    if (aiLayout) {
+      try {
+        const parsed = JSON.parse(aiLayout);
+        if (parsed.cards) setBlogPosts(parsed.cards);
+        localStorage.removeItem('ai_generated_layout');
+      } catch (e) {
+        console.error(e);
+      }
+    }
+  }, []);
+
+  /* ── SAVE ── */
+  const handleSaveClick = () => setSaveModalOpen(true);
+
+  const handleSaveWithName = async (name) => {
+    try {
+      setIsSaving(true);
+      await builderApi.saveLayout({
+        name,
+        layout_data: { cards: blogPosts, settings },
+        content_mode: contentMode,
+        grid_layout: 'grid'
+      });
+      setSaveModalOpen(false);
+      setSaveStatus('saved');
+      setTimeout(() => setSaveStatus(null), 2500);
+    } catch (err) {
+      console.error(err);
+      setSaveStatus('error');
+      setTimeout(() => setSaveStatus(null), 3000);
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  /* ── LOAD ── */
+  const handleOpenLayoutPicker = async () => {
+    try {
+      setShowLayoutPicker(true);
+      setLoadingLayouts(true);
+      const data = await builderApi.getLayouts();
+      setSavedLayouts(data.layouts);
+    } catch (err) {
+      alert('Failed to fetch layouts');
+      setShowLayoutPicker(false);
+    } finally {
+      setLoadingLayouts(false);
+    }
+  };
+
+  const handleLoadSelected = async (id) => {
+    try {
+      const data = await builderApi.getLayout(id);
+      if (data.layout.layout_data?.cards) {
+        setBlogPosts(data.layout.layout_data.cards);
+      }
+      if (data.layout.layout_data?.settings) {
+        setSettings(data.layout.layout_data.settings);
+      }
+      setSelectedCard(null); // clear selection on load
+      setShowLayoutPicker(false);
+    } catch (err) {
+      alert('Failed to load layout');
+    }
+  };
+
+  const handleDeleteLayout = async (id) => {
+    if (!confirm('Delete this layout?')) return;
+    try {
+      await builderApi.deleteLayout(id);
+      setSavedLayouts(prev => prev.filter(l => l.id !== id));
+    } catch (err) {
+      alert('Failed to delete');
+    }
+  };
+
+  /* ── COMPONENTS ── */
+  const handleAddComponent = (template) => {
+    setBlogPosts(prev => [...prev, { ...template, id: Date.now() }]);
+    setActiveTab('builder');
+  };
+
+  /* ── DELETE CARD ── */
+  const handleDeleteCard = (id) => {
+    setBlogPosts(prev => prev.filter(p => p.id !== id));
+    if (selectedCard?.id === id) setSelectedCard(null);
+  };
+
+  /* ── ✅ UPDATE CARD — fixes CMS panel Apply Changes ── */
+  const handleUpdateCard = (id, values) => {
+    const updated = { ...selectedCard, ...values };
+
+    // Update blogPosts array
+    setBlogPosts(prev =>
+      prev.map(p => p.id === id ? updated : p)
+    );
+
+    // ✅ Also update selectedCard so CMS panel reflects changes immediately
+    setSelectedCard(updated);
+  };
+
+  /* ── AI ── */
+  const handleAIGenerated = (cards) => {
+    setBlogPosts(cards);
+    setSelectedCard(null);
   };
 
   return (
     <div className="blog-builder">
-      {/* Header */}
+
+      {/* HEADER */}
       <header className="builder-header">
         <div className="header-left">
           <h1 className="logo">CoreHead<span>.app</span></h1>
@@ -71,27 +209,28 @@ export default function BlogBuilderPage() {
         </div>
 
         <div className="header-actions">
+          {/* ✅ Preview button directly sets previewOpen true */}
           <button className="btn-secondary" onClick={() => setPreviewOpen(true)}>
-            <Eye size={18} />
-            Preview
+            <Eye size={18} /> Preview
           </button>
+
           <button className="btn-secondary" onClick={() => setExportOpen(true)}>
-            <Code size={18} />
-            Export
+            <Code size={18} /> Export
           </button>
-          <button className="btn-primary" onClick={(e) => { e.preventDefault(); e.stopPropagation(); setAiOpen(true); }}>
-            <Sparkles size={18} />
-            Generate with AI
+
+          <button className="btn-primary" onClick={() => setAiOpen(true)}>
+            <Sparkles size={18} /> Generate with AI
           </button>
         </div>
       </header>
 
-      {/* Main Content */}
+      {/* MAIN */}
       <div className="builder-content">
         <Sidebar activeTab={activeTab} setActiveTab={setActiveTab} />
 
         <main className="builder-main">
-          {/* Toolbar */}
+
+          {/* TOOLBAR */}
           <div className="builder-toolbar">
             <div className="mode-toggle">
               <button
@@ -109,64 +248,136 @@ export default function BlogBuilderPage() {
             </div>
 
             <div className="toolbar-right">
-              <select className="layout-select">
-                <option>Grid Layout</option>
-                <option>List Layout</option>
-                <option>Masonry Layout</option>
+              <select
+                className="layout-select"
+                value={settings.columns}
+                onChange={e =>
+                  setSettings(prev => ({ ...prev, columns: Number(e.target.value) }))
+                }
+              >
+                <option value={1}>1 Column</option>
+                <option value={2}>2 Columns</option>
+                <option value={3}>3 Columns</option>
+                <option value={4}>4 Columns</option>
               </select>
             </div>
           </div>
 
-          {/* Tab Content */}
+          {/* SAVE / LOAD */}
+          <div className="layout-actions">
+            <button className="btn-secondary" onClick={handleSaveClick}>
+              {saveStatus === 'saved' ? '✅ Saved!' :
+               saveStatus === 'error' ? '❌ Failed' :
+               '💾 Save Layout'}
+            </button>
+
+            <button className="btn-secondary" onClick={handleOpenLayoutPicker}>
+              📂 Load Layout
+            </button>
+          </div>
+
+          {/* TAB CONTENT */}
           {activeTab === 'builder' && (
             <BuilderCanvas
               blogPosts={blogPosts}
               contentMode={contentMode}
               selectedCard={selectedCard}
               setSelectedCard={setSelectedCard}
+              settings={settings}
+              onDeleteCard={handleDeleteCard}
             />
           )}
 
           {activeTab === 'components' && (
-            <div className="tab-panel">
-              <h2>Components</h2>
-              <p>Drag and drop elements into your layout.</p>
-            </div>
+            <ComponentsPanel onAddComponent={handleAddComponent} />
           )}
 
           {activeTab === 'cms' && (
-            <div className="tab-panel">
-              <h2>CMS Fields</h2>
-              <p>Manage your post, author and SEO fields.</p>
+            <div style={{ padding: '16px' }}>
+              <h2 style={{ fontSize: '16px', fontWeight: '600', marginBottom: '8px' }}>
+                🗄️ CMS Fields
+              </h2>
+              <p style={{ fontSize: '13px', color: '#888', marginBottom: '16px' }}>
+                Click a card below to select and edit it in the right panel.
+              </p>
+              {blogPosts.map(post => (
+                <div
+                  key={post.id}
+                  onClick={() => { setSelectedCard(post); setActiveTab('builder'); }}
+                  style={{
+                    padding: '10px 14px', marginBottom: '8px',
+                    border: `2px solid ${selectedCard?.id === post.id ? '#4f46e5' : '#e5e5e5'}`,
+                    borderRadius: '10px', cursor: 'pointer',
+                    display: 'flex', justifyContent: 'space-between',
+                    alignItems: 'center',
+                    background: selectedCard?.id === post.id ? '#f5f3ff' : '#fff',
+                    transition: 'all 0.2s'
+                  }}
+                >
+                  <div>
+                    <div style={{ fontSize: '13px', fontWeight: '600', color: '#333' }}>
+                      {post.title}
+                    </div>
+                    <div style={{ fontSize: '11px', color: '#888' }}>
+                      {post.category} · {post.author}
+                    </div>
+                  </div>
+                  <span style={{ fontSize: '12px', color: '#4f46e5', fontWeight: '600' }}>
+                    Edit →
+                  </span>
+                </div>
+              ))}
             </div>
           )}
 
           {activeTab === 'settings' && (
-            <div className="tab-panel">
-              <h2>Settings</h2>
-              <p>Configure fonts, colors, and spacing.</p>
-            </div>
+            <SettingsPanel settings={settings} onSettingsChange={setSettings} />
           )}
 
           {activeTab === 'preview' && (
-            <div className="tab-panel">
-              <h2>Preview</h2>
+            <div className="tab-panel" style={{ padding: '24px', textAlign: 'center' }}>
+              <h2 style={{ marginBottom: '16px' }}>Preview</h2>
               <button className="btn-secondary" onClick={() => setPreviewOpen(true)}>
-                <Eye size={18} /> Open Preview
+                <Eye size={18} /> Open Full Preview
               </button>
             </div>
           )}
+
         </main>
 
-        {/* Right Panel */}
+        {/* ✅ RIGHT PANEL — selectedCard passed correctly */}
         <CMSFieldsPanel
           cmsFields={cmsFields}
           selectedCard={selectedCard}
           contentMode={contentMode}
+          onUpdateCard={handleUpdateCard}
         />
       </div>
 
-      {/* Modals */}
+      {/* MODALS */}
+      <SaveLayoutModal
+        isOpen={saveModalOpen}
+        onClose={() => setSaveModalOpen(false)}
+        onSave={handleSaveWithName}
+        isSaving={isSaving}
+      />
+
+      <LoadLayoutModal
+        isOpen={showLayoutPicker}
+        onClose={() => setShowLayoutPicker(false)}
+        layouts={savedLayouts}
+        loading={loadingLayouts}
+        onLoad={handleLoadSelected}
+        onDelete={handleDeleteLayout}
+      />
+
+      <AIGenerateModal
+        isOpen={aiOpen}
+        onClose={() => setAiOpen(false)}
+        onGenerated={handleAIGenerated}
+      />
+
+      {/* ✅ PreviewModal — isOpen and blogPosts passed correctly */}
       <PreviewModal
         isOpen={previewOpen}
         onClose={() => setPreviewOpen(false)}
@@ -181,7 +392,6 @@ export default function BlogBuilderPage() {
         contentMode={contentMode}
       />
 
-      
     </div>
   );
 }
