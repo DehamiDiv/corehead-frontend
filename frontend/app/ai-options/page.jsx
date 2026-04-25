@@ -60,8 +60,17 @@ export default function AIOptionsPage() {
     }));
   };
 
+  const handleSaveOptions = () => {
+    localStorage.setItem('ai_options', JSON.stringify({ 
+      layoutType: selectedTemplate, 
+      designStyle: selectedStyle, 
+      features 
+    }));
+  };
+
   const handleGenerate = () => {
-    alert('AI Layout would be generated!\n\nTemplate: ' + selectedTemplate + '\nStyle: ' + selectedStyle);
+    handleSaveOptions();
+    router.push('/builder');
   };
 
   return (
@@ -196,7 +205,7 @@ export default function AIOptionsPage() {
               <ArrowLeft size={18} />
               Back to Prompt
             </Link>
-            <Link href="/ai-templates" className="btn-next">
+            <Link href="/ai-templates" className="btn-next" onClick={handleSaveOptions}>
               Next: Choose Template
               <ArrowRight size={18} />
             </Link>

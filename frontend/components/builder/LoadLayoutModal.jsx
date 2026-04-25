@@ -23,8 +23,8 @@ export default function LoadLayoutModal({
 
   if (!isOpen) return null;
 
-  const filteredLayouts = layouts.filter(l =>
-    l.name.toLowerCase().includes(search.toLowerCase())
+  const filteredLayouts = (layouts || []).filter(l =>
+    l.name?.toLowerCase().includes(search.toLowerCase())
   );
 
   return (

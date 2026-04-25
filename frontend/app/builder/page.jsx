@@ -78,18 +78,53 @@ export default function BlogBuilderPage() {
     seo: ['Meta Title', 'Meta Description', 'Keywords', 'OG Image']
   });
 
-  // Load AI generated layout from localStorage on mount
+  // Handle AI flows from separate pages
   useEffect(() => {
-    const aiLayout = localStorage.getItem('ai_generated_layout');
-    if (aiLayout) {
-      try {
-        const parsed = JSON.parse(aiLayout);
-        if (parsed.cards) setBlogPosts(parsed.cards);
-        localStorage.removeItem('ai_generated_layout');
-      } catch (e) {
-        console.error('Failed to load AI layout:', e);
+    const triggerAIFlow = async () => {
+      const aiPrompt = localStorage.getItem('ai_prompt');
+      const selectedTemplate = localStorage.getItem('selected_template');
+      const aiOptions = localStorage.getItem('ai_options');
+
+      if (aiPrompt || selectedTemplate) {
+        try {
+          const options = aiOptions ? JSON.parse(aiOptions) : {};
+          const template = selectedTemplate ? JSON.parse(selectedTemplate) : null;
+          
+          const result = await builderApi.generateAILayout({
+            prompt: aiPrompt || `Template: ${template?.name}`,
+            layoutType: options.layoutType || 'single-post',
+            designStyle: options.designStyle || 'modern',
+            features: options.features || {}
+          });
+
+          if (result.layout?.cards) {
+            setBlogPosts(result.layout.cards);
+          }
+
+          // Clear after use
+          localStorage.removeItem('ai_prompt');
+          localStorage.removeItem('selected_template');
+          localStorage.removeItem('ai_options');
+          
+        } catch (err) {
+          console.error('AI Flow error:', err);
+        }
       }
-    }
+
+      // Existing direct generated layout pick-up
+      const aiLayout = localStorage.getItem('ai_generated_layout');
+      if (aiLayout) {
+        try {
+          const parsed = JSON.parse(aiLayout);
+          if (parsed.cards) setBlogPosts(parsed.cards);
+          localStorage.removeItem('ai_generated_layout');
+        } catch (e) {
+          console.error('Failed to load AI layout:', e);
+        }
+      }
+    };
+
+    triggerAIFlow();
   }, []);
 
   // Open save modal
