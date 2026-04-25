@@ -28,13 +28,13 @@ export default function Sidebar() {
 
   const navItems: NavItem[] = useMemo(
     () => [
-      { label: "Posts",         href: "/admin/blogs",      Icon: FileText      },
+      { label: "Posts",         href: "/admin/posts",      Icon: FileText       },
       { label: "Layouts",       href: "/admin/layouts",    Icon: LayoutTemplate },
-      { label: "Categories",    href: "/admin/categories", Icon: Tags          },
-      { label: "Media Library", href: "/admin/media",      Icon: ImageIcon     },
-      { label: "Interactions",  href: "/admin/comments",   Icon: MessageSquare },
-      { label: "Users",         href: "/admin/users",      Icon: Users         },
-      { label: "Pages",         href: "/admin/pages",      Icon: File          },
+      { label: "Categories",    href: "/admin/categories", Icon: Tags           },
+      { label: "Media Library", href: "/admin/media",      Icon: ImageIcon      },
+      { label: "Interactions",  href: "/admin/comments",   Icon: MessageSquare  },
+      { label: "Users",         href: "/admin/users",      Icon: Users          },
+      { label: "Pages",         href: "/admin/pages",      Icon: File           },
     ],
     []
   );
@@ -151,4 +151,4 @@ export default function Sidebar() {
       </div>
     </aside>
   );
-}
+}

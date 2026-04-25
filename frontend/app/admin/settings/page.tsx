@@ -17,8 +17,8 @@ export default function SettingsPage() {
   return (
     <div className="max-w-6xl mx-auto pb-20">
       <div className="mb-8">
-        <h1 className="text-3xl font-bold text-gray-900">Settings</h1>
-        <p className="text-gray-500 mt-1">Configure your global platform settings and preferences.</p>
+        <h1 className="text-3xl font-black text-gray-900 tracking-tight">Settings</h1>
+        <p className="text-gray-500 font-medium mt-1">Configure your global platform settings and preferences.</p>
       </div>
 
       <div className="flex flex-col lg:flex-row gap-8">

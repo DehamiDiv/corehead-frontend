@@ -2,8 +2,9 @@
 
 import { useState, useEffect } from "react";
 import { useRouter, useParams } from "next/navigation";
-import { ChevronDown, Star, Search, FileText, ImagePlus, X, Loader2 } from "lucide-react";
+import { ChevronDown, Star, Search, FileText, ImagePlus, X, Loader2, Library } from "lucide-react";
 import { cn } from "@/lib/utils";
+import MediaLibraryModal from "@/components/admin/MediaLibraryModal";
 
 export default function EditPostPage() {
   const router = useRouter();
@@ -34,6 +35,7 @@ export default function EditPostPage() {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState("Content");
+  const [isMediaModalOpen, setIsMediaModalOpen] = useState(false);
 
   const availableCategories = ["Business", "Education", "Marketing", "StartUps", "Tech", "Lifestyle"];
 
@@ -283,19 +285,50 @@ export default function EditPostPage() {
 
               <div className="space-y-6">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Thumbnail URL</label>
-                  <input 
-                    type="text" 
-                    placeholder="Enter image URL"
-                    className="w-full px-4 py-2.5 bg-white border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all"
-                    value={formData.thumbnailUrl}
-                    onChange={e => setFormData({...formData, thumbnailUrl: e.target.value})}
-                  />
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div className="border-2 border-dashed border-gray-200 rounded-2xl p-10 flex flex-col items-center justify-center text-center hover:border-blue-400 hover:bg-blue-50/30 transition-all cursor-pointer group">
+                      <div className="w-14 h-14 bg-gray-50 rounded-2xl flex items-center justify-center mb-4 group-hover:bg-blue-100 transition-colors">
+                        <ImagePlus className="w-7 h-7 text-gray-400 group-hover:text-blue-600" />
+                      </div>
+                      <span className="text-sm font-bold text-gray-900 mb-1">Upload from Device</span>
+                      <span className="text-[10px] text-gray-500 uppercase tracking-wider font-bold">PNG, JPG, GIF up to 5MB</span>
+                    </div>
+
+                    <div 
+                      onClick={() => setIsMediaModalOpen(true)}
+                      className="border-2 border-dashed border-gray-200 rounded-2xl p-10 flex flex-col items-center justify-center text-center hover:border-blue-400 hover:bg-blue-50/30 transition-all cursor-pointer group"
+                    >
+                      <div className="w-14 h-14 bg-gray-50 rounded-2xl flex items-center justify-center mb-4 group-hover:bg-blue-100 transition-colors">
+                        <Library className="w-7 h-7 text-gray-400 group-hover:text-blue-600" />
+                      </div>
+                      <span className="text-sm font-bold text-gray-900 mb-1">Choose from Library</span>
+                      <span className="text-[10px] text-gray-500 uppercase tracking-wider font-bold">Select existing media</span>
+                    </div>
+                  </div>
+
                   {formData.thumbnailUrl && (
-                    <div className="mt-4 relative w-full h-48 rounded-xl overflow-hidden border border-gray-200 bg-gray-50">
-                       <img src={formData.thumbnailUrl} alt="Preview" className="w-full h-full object-cover" />
+                    <div className="mt-8 p-4 bg-gray-50 rounded-3xl border border-gray-100 flex items-center gap-6 animate-in slide-in-from-bottom-4 duration-500">
+                      <div className="w-24 h-24 rounded-2xl overflow-hidden border-2 border-white shadow-md shrink-0">
+                        <img src={formData.thumbnailUrl} className="w-full h-full object-cover" alt="Preview" />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-xs font-black text-gray-400 uppercase tracking-widest mb-1">Current Thumbnail</p>
+                        <p className="text-sm font-bold text-gray-900 truncate">{formData.thumbnailUrl}</p>
+                      </div>
+                      <button 
+                        onClick={() => setFormData({...formData, thumbnailUrl: ""})}
+                        className="p-3 bg-white hover:bg-red-50 text-gray-400 hover:text-red-500 rounded-xl transition-all shadow-sm"
+                      >
+                        <X className="w-5 h-5" />
+                      </button>
                     </div>
                   )}
+
+                  <MediaLibraryModal 
+                    isOpen={isMediaModalOpen}
+                    onClose={() => setIsMediaModalOpen(false)}
+                    onSelect={(url) => setFormData({...formData, thumbnailUrl: url})}
+                  />
                 </div>
               </div>
             </div>

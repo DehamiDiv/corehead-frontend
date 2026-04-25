@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { motion } from "framer-motion";
 import { Sparkles, ArrowRight, Zap, Layout, Rocket } from "lucide-react";
 
@@ -42,10 +43,10 @@ export default function DashboardHero() {
                 className="w-full bg-transparent border-none outline-none text-gray-700 placeholder-gray-400 text-[15px] font-semibold"
               />
             </div>
-            <button className="bg-blue-600 hover:bg-blue-700 text-white font-bold px-8 py-4 rounded-2xl transition-all shadow-lg shadow-blue-200 flex items-center gap-2 group">
+            <Link href="/admin/builder" className="bg-blue-600 hover:bg-blue-700 text-white font-bold px-8 py-4 rounded-2xl transition-all shadow-lg shadow-blue-200 flex items-center gap-2 group">
               Start with AI
               <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
-            </button>
+            </Link>
           </div>
         </div>
 

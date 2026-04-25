@@ -13,6 +13,7 @@ import {
   Filter,
   MoreHorizontal,
   ExternalLink,
+  FileText,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import Link from "next/link";
@@ -53,9 +54,16 @@ export default function BlogsPage() {
     }
   };
 
-  const filteredPosts = (posts || []).filter(post => 
-    post.title?.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  const filteredPosts = Array.isArray(posts) 
+    ? posts.filter(post => post.title?.toLowerCase().includes(searchQuery.toLowerCase()))
+    : [];
+
+  const stats = [
+    { label: "Total Posts", value: Array.isArray(posts) ? posts.length : 0, color: "blue" },
+    { label: "Published", value: Array.isArray(posts) ? posts.filter(p => p.status === 'Published').length : 0, color: "emerald" },
+    { label: "Drafts", value: Array.isArray(posts) ? posts.filter(p => p.status === 'Draft').length : 0, color: "amber" },
+    { label: "Featured", value: Array.isArray(posts) ? posts.filter(p => p.featured).length : 0, color: "purple" },
+  ];
 
   return (
     <div className="space-y-6 max-w-[1600px] mx-auto pb-10">
@@ -87,12 +95,7 @@ export default function BlogsPage() {
 
       {/* Stats Quick View */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        {[
-          { label: "Total Posts", value: (posts || []).length, color: "blue" },
-          { label: "Published", value: (posts || []).filter(p => p.status === 'Published').length, color: "emerald" },
-          { label: "Drafts", value: (posts || []).filter(p => p.status === 'Draft').length, color: "amber" },
-          { label: "Featured", value: (posts || []).filter(p => p.featured).length, color: "purple" },
-        ].map((stat, i) => (
+        {stats.map((stat, i) => (
           <div key={i} className="bg-white p-5 rounded-2xl border border-gray-100 shadow-sm">
             <p className="text-sm font-medium text-gray-500">{stat.label}</p>
             <p className="text-2xl font-bold text-gray-900 mt-1">{stat.value}</p>
@@ -137,7 +140,7 @@ export default function BlogsPage() {
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-50">
-              {loading ? (
+                {loading ? (
                 <tr>
                   <td colSpan={5} className="px-8 py-20 text-center">
                     <div className="flex flex-col items-center gap-3">
@@ -175,11 +178,11 @@ export default function BlogsPage() {
                       <div className="flex items-center gap-3">
                         <div className="w-8 h-8 rounded-full bg-blue-100 border border-white shadow-sm overflow-hidden">
                           <img 
-                            src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${post.author.name}`} 
+                            src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${post.author?.name || 'User'}`} 
                             alt="" 
                           />
                         </div>
-                        <span className="text-sm font-bold text-gray-700">{post.author.name}</span>
+                        <span className="text-sm font-bold text-gray-700">{post.author?.name || 'Unknown Author'}</span>
                       </div>
                     </td>
                     <td className="px-6 py-5">
@@ -190,7 +193,7 @@ export default function BlogsPage() {
                           : "bg-amber-50 text-amber-600 border-amber-100"
                       )}>
                         <div className={cn("w-1.5 h-1.5 rounded-full", post.status === "Published" ? "bg-emerald-500" : "bg-amber-500")} />
-                        {post.status}
+                        {post.status || 'Draft'}
                       </span>
                     </td>
                     <td className="px-6 py-5">
@@ -222,6 +225,7 @@ export default function BlogsPage() {
                     </td>
                   </tr>
                 ))
+
               ) : (
                 <tr>
                   <td colSpan={5} className="px-8 py-20 text-center">
