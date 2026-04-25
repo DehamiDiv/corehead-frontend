@@ -46,4 +46,15 @@ export const builderApi = {
     if (!res.ok) throw new Error('Failed to delete layout');
     return res.json();
   },
+
+  // AI Layout Generation
+  generateAILayout: async (data) => {
+    const res = await fetch(`${BASE_URL}/ai/generate-layout`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data),
+    });
+    if (!res.ok) throw new Error('Failed to generate AI layout');
+    return res.json();
+  },
 };

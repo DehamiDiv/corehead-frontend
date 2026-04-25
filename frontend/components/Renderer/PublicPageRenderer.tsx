@@ -14,7 +14,7 @@ import { BuilderBlock } from "../admin/builder/BuilderContext";
  */
 
 interface PublicPageRendererProps {
-  layout: BuilderBlock[];
+  layout: BuilderBlock[] | { blocks: BuilderBlock[] };
   data?: Record<string, any>;
 }
 
@@ -38,7 +38,8 @@ function bindData(content: any, bindings: Record<string, string> | undefined, da
 }
 
 export function PublicPageRenderer({ layout, data = {} }: PublicPageRendererProps) {
-  
+  const blocksArray = Array.isArray(layout) ? layout : (layout as any)?.blocks || [];
+
   const renderBlock = (block: BuilderBlock) => {
     const styleString = block.styles || {};
     
@@ -137,10 +138,10 @@ export function PublicPageRenderer({ layout, data = {} }: PublicPageRendererProp
   };
 
   const renderChildren = (parentId?: string) => {
-    const levelBlocks = layout.filter(
-      (b) => b.parentId === parentId || (!b.parentId && !parentId)
+    const levelBlocks = blocksArray.filter(
+      (b: any) => b.parentId === parentId || (!b.parentId && !parentId)
     );
-    return levelBlocks.map((block) => renderBlock(block));
+    return levelBlocks.map((block: any) => renderBlock(block));
   };
 
   return <div className="public-renderer-wrapper">{renderChildren()}</div>;

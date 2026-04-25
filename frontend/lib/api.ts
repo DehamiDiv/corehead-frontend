@@ -92,16 +92,17 @@ export const api = {
     if (type === 'blog-loop') {
       return {
         blocks: [
-          { type: 'heading', content: '<h1>Latest Posts</h1>' },
-          { type: 'loop', cardTemplate: '<a href="/blog/{{ slug }}" class="post-link"><article class="post-card"><img src="{{ imageUrl }}" /><h3>{{ title }}</h3><p>{{ excerpt }}</p><span>{{ author.name }}</span></article></a>' }
+          { id: '1', type: 'Heading', content: 'Latest Posts' },
+          { id: '2', type: 'Collection List', limit: 6 }
         ]
       };
     } else {
       return {
          blocks: [
-           { type: 'hero', content: '<div class="post-hero"><img src="{{ imageUrl }}" /><h1>{{ title }}</h1><p class="category">{{ category }}</p></div>' },
-           { type: 'html', content: '<div class="post-body">{{ content }}</div>' },
-           { type: 'authorbox', content: '<div class="author-box"><h4>Written by {{ author.name }}</h4><p>{{ author.bio }}</p></div>' }
+           { id: '1', type: 'Image', bindings: { content: 'featured_image' } },
+           { id: '2', type: 'Heading', bindings: { content: 'title' } },
+           { id: '3', type: 'Paragraph', bindings: { content: 'category' }, styles: { color: 'blue', textTransform: 'uppercase' } },
+           { id: '4', type: 'Paragraph', bindings: { content: 'content' } }
          ]
       };
     }

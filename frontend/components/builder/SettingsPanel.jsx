@@ -180,6 +180,7 @@ export default function SettingsPanel({ settings, onSettingsChange }) {
         padding: '16px', borderRadius: settings.radiusValue || '8px',
         background: settings.colors?.bg || '#fff',
         border: `2px solid ${settings.colors?.primary || '#4f46e5'}`,
+        marginBottom: '24px'
       }}>
         <p style={{
           fontFamily: settings.fontStyle || 'Inter, sans-serif',
@@ -196,6 +197,25 @@ export default function SettingsPanel({ settings, onSettingsChange }) {
           Theme: {settings.colors?.label || 'Default'} · Spacing: {settings.spacing || 'normal'}
         </p>
       </div>
+
+      {/* Save Button */}
+      <button
+        onClick={() => {
+            // Find the floating save button or trigger parent save
+            const saveBtn = document.querySelector('.layout-actions button:first-child');
+            if (saveBtn) saveBtn.click();
+        }}
+        style={{
+          width: '100%', padding: '12px',
+          background: '#4f46e5', color: '#fff',
+          border: 'none', borderRadius: '10px',
+          fontSize: '14px', fontWeight: '600', cursor: 'pointer',
+          boxShadow: '0 4px 12px rgba(79, 70, 229, 0.25)',
+          display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px'
+        }}
+      >
+        💾 Save All Settings
+      </button>
 
     </div>
   );

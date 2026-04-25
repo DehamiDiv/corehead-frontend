@@ -53,8 +53,8 @@ export default function BlogsPage() {
     }
   };
 
-  const filteredPosts = posts.filter(post => 
-    post.title.toLowerCase().includes(searchQuery.toLowerCase())
+  const filteredPosts = (posts || []).filter(post => 
+    post.title?.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
   return (
@@ -88,10 +88,10 @@ export default function BlogsPage() {
       {/* Stats Quick View */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
         {[
-          { label: "Total Posts", value: posts.length, color: "blue" },
-          { label: "Published", value: posts.filter(p => p.status === 'Published').length, color: "emerald" },
-          { label: "Drafts", value: posts.filter(p => p.status === 'Draft').length, color: "amber" },
-          { label: "Featured", value: posts.filter(p => p.featured).length, color: "purple" },
+          { label: "Total Posts", value: (posts || []).length, color: "blue" },
+          { label: "Published", value: (posts || []).filter(p => p.status === 'Published').length, color: "emerald" },
+          { label: "Drafts", value: (posts || []).filter(p => p.status === 'Draft').length, color: "amber" },
+          { label: "Featured", value: (posts || []).filter(p => p.featured).length, color: "purple" },
         ].map((stat, i) => (
           <div key={i} className="bg-white p-5 rounded-2xl border border-gray-100 shadow-sm">
             <p className="text-sm font-medium text-gray-500">{stat.label}</p>
