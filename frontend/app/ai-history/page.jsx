@@ -66,7 +66,7 @@ export default function AIHistoryPage() {
   // Style badge colors
   const getStyleColor = (style) => {
     const colors = {
-      modern:     { bg: 'rgba(102,126,234,0.1)', color: '#667eea', border: 'rgba(102,126,234,0.3)' },
+      modern:     { bg: 'rgba(79,70,229,0.1)',  color: '#4f46e5', border: 'rgba(79,70,229,0.3)' },
       editorial:  { bg: 'rgba(16,185,129,0.1)',  color: '#10b981', border: 'rgba(16,185,129,0.3)' },
       magazine:   { bg: 'rgba(245,158,11,0.1)',  color: '#f59e0b', border: 'rgba(245,158,11,0.3)' },
       minimalist: { bg: 'rgba(107,114,128,0.1)', color: '#6b7280', border: 'rgba(107,114,128,0.3)' },
@@ -124,7 +124,7 @@ export default function AIHistoryPage() {
             <div style={{
               width: '32px', height: '32px',
               border: '3px solid #e0e0e0',
-              borderTopColor: '#667eea', borderRadius: '50%',
+              borderTopColor: '#4f46e5', borderRadius: '50%',
               animation: 'spin 1s linear infinite'
             }} />
             <p style={{ margin: 0, fontSize: '15px' }}>Loading history...</p>
@@ -174,13 +174,13 @@ export default function AIHistoryPage() {
               ].map((stat, i) => (
                 <div key={i} style={{
                   padding: '16px 20px',
-                  background: 'linear-gradient(135deg, rgba(102,126,234,0.08) 0%, rgba(118,75,162,0.08) 100%)',
-                  border: '2px solid rgba(102,126,234,0.15)',
+                  background: '#eff6ff',
+                  border: '2px solid #bfdbfe',
                   borderRadius: '12px', textAlign: 'center'
                 }}>
                   <div style={{ fontSize: '28px', marginBottom: '4px' }}>{stat.icon}</div>
-                  <div style={{ fontSize: '24px', fontWeight: '700', color: stat.color }}>{stat.value}</div>
-                  <div style={{ fontSize: '12px', color: '#888', fontWeight: '500' }}>{stat.label}</div>
+                  <div style={{ fontSize: '24px', fontWeight: '700', color: '#4f46e5' }}>{stat.value}</div>
+                  <div style={{ fontSize: '12px', color: '#64748b', fontWeight: '500' }}>{stat.label}</div>
                 </div>
               ))}
             </div>
@@ -203,8 +203,8 @@ export default function AIHistoryPage() {
                   }}
                   onMouseEnter={e => {
                     e.currentTarget.style.background = 'white';
-                    e.currentTarget.style.borderColor = '#667eea';
-                    e.currentTarget.style.boxShadow = '0 4px 12px rgba(102,126,234,0.15)';
+                    e.currentTarget.style.borderColor = '#4f46e5';
+                    e.currentTarget.style.boxShadow = '0 4px 12px rgba(79,70,229,0.15)';
                   }}
                   onMouseLeave={e => {
                     e.currentTarget.style.background = '#f9f9f9';
@@ -217,8 +217,8 @@ export default function AIHistoryPage() {
                     width: '56px', height: '56px', flexShrink: 0,
                     display: 'flex', alignItems: 'center', justifyContent: 'center',
                     fontSize: '28px', borderRadius: '12px',
-                    background: 'linear-gradient(135deg, rgba(102,126,234,0.1) 0%, rgba(118,75,162,0.1) 100%)',
-                    border: '1px solid rgba(102,126,234,0.2)'
+                    background: '#eff6ff',
+                    border: '1px solid #bfdbfe'
                   }}>
                     {getLayoutIcon(item.layout_type)}
                   </div>
@@ -242,8 +242,8 @@ export default function AIHistoryPage() {
                       <span style={{
                         display: 'inline-flex', alignItems: 'center', gap: '4px',
                         padding: '3px 10px', borderRadius: '999px', fontSize: '12px',
-                        fontWeight: '600', background: 'rgba(102,126,234,0.1)',
-                        color: '#667eea', border: '1px solid rgba(102,126,234,0.2)'
+                        fontWeight: '600', background: '#eff6ff',
+                        color: '#4f46e5', border: '1px solid #bfdbfe'
                       }}>
                         <Layers size={10} />
                         {item.layout_type || 'single-post'}
@@ -297,7 +297,7 @@ export default function AIHistoryPage() {
                         padding: '10px 20px',
                         background: loadingId === item.id
                           ? '#a5b4fc'
-                          : 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                          : 'linear-gradient(135deg, #4f46e5 0%, #3730a3 100%)',
                         color: 'white', border: 'none', borderRadius: '10px',
                         fontSize: '13px', fontWeight: '600', cursor: loadingId === item.id ? 'not-allowed' : 'pointer',
                         transition: 'all 0.3s', whiteSpace: 'nowrap'
@@ -305,7 +305,7 @@ export default function AIHistoryPage() {
                       onMouseEnter={e => {
                         if (loadingId !== item.id) {
                           e.currentTarget.style.transform = 'translateY(-2px)';
-                          e.currentTarget.style.boxShadow = '0 4px 12px rgba(102,126,234,0.4)';
+                          e.currentTarget.style.boxShadow = '0 4px 12px rgba(79,70,229,0.4)';
                         }
                       }}
                       onMouseLeave={e => {
