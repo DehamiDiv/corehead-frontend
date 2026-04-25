@@ -157,7 +157,7 @@ export default function AIGenerateModal({ isOpen, onClose, onGenerated }) {
                     flex: 1, padding: '8px 12px',
                     border: `2px solid ${layoutType === type.id ? '#4f46e5' : '#e5e5e5'}`,
                     borderRadius: '8px', cursor: 'pointer', fontSize: '13px',
-                    background: layoutType === type.id ? '#f5f3ff' : '#fff',
+                    background: layoutType === type.id ? '#eff6ff' : '#fff',
                     color: layoutType === type.id ? '#4f46e5' : '#444',
                     fontWeight: layoutType === type.id ? '600' : '400'
                   }}
@@ -182,7 +182,7 @@ export default function AIGenerateModal({ isOpen, onClose, onGenerated }) {
                     padding: '8px 12px',
                     border: `2px solid ${designStyle === style.id ? '#4f46e5' : '#e5e5e5'}`,
                     borderRadius: '8px', cursor: 'pointer', fontSize: '13px',
-                    background: designStyle === style.id ? '#f5f3ff' : '#fff',
+                    background: designStyle === style.id ? '#eff6ff' : '#fff',
                     color: designStyle === style.id ? '#4f46e5' : '#444',
                     fontWeight: designStyle === style.id ? '600' : '400'
                   }}
@@ -206,8 +206,8 @@ export default function AIGenerateModal({ isOpen, onClose, onGenerated }) {
                     display: 'flex', alignItems: 'center', gap: '8px',
                     padding: '8px 10px', border: '1px solid #e5e5e5',
                     borderRadius: '8px', cursor: 'pointer', fontSize: '12px',
-                    background: value ? '#f5f3ff' : '#fff',
-                    borderColor: value ? '#c7d2fe' : '#e5e5e5'
+                    background: value ? '#eff6ff' : '#fff',
+                    borderColor: value ? '#bfdbfe' : '#e5e5e5'
                   }}
                 >
                   <input

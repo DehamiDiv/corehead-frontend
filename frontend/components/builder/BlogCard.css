@@ -1,4 +1,4 @@
-﻿/* ── Blog Card ── */
+/* ── Blog Card ── */
 .blog-card {
   background: #f9f9f9;
   border: 2px solid #e0e0e0;
@@ -11,20 +11,20 @@
 
 .blog-card:hover {
   background: white;
-  border-color: #667eea;
+  border-color: #4f46e5;
   transform: translateY(-4px);
-  box-shadow: 0 8px 20px rgba(102,126,234,0.2);
+  box-shadow: 0 8px 20px rgba(79, 70, 229, 0.2);
 }
 
 .blog-card.selected {
-  border-color: #667eea;
+  border-color: #4f46e5;
   background: white;
-  box-shadow: 0 0 0 3px rgba(102,126,234,0.2);
+  box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.2);
 }
 
 .blog-card.dynamic {
   border-style: dashed;
-  border-color: #a78bfa;
+  border-color: #4f46e5;
 }
 
 /* Template badge */
@@ -33,7 +33,7 @@
   top: 10px;
   right: 10px;
   padding: 3px 10px;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, #4f46e5 0%, #3730a3 100%);
   color: white;
   border-radius: 999px;
   font-size: 10px;
@@ -65,7 +65,7 @@
   bottom: 10px;
   left: 10px;
   padding: 4px 12px;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, #4f46e5 0%, #3730a3 100%);
   color: white;
   border-radius: 999px;
   font-size: 11px;
@@ -122,7 +122,7 @@
 .selection-indicator {
   position: absolute;
   inset: 0;
-  border: 3px solid #667eea;
+  border: 3px solid #4f46e5;
   border-radius: 16px;
   pointer-events: none;
   animation: pulse 1.5s ease-in-out infinite;

@@ -18,14 +18,23 @@ import { builderApi } from '@/services/builderApi';
 const defaultSettings = {
   font: 'inter',
   fontStyle: 'Inter, sans-serif',
-  theme: 'default',
-  colors: { id: 'default', label: 'Default', primary: '#4f46e5', bg: '#ffffff', text: '#1a1a1a' },
+  theme: 'premium-indigo',
+  colors: { 
+    id: 'premium-indigo', 
+    label: 'Indigo Royale', 
+    primary: '#4f46e5', 
+    bg: '#ffffff', 
+    text: '#1e1e2e',
+    gradient: 'linear-gradient(135deg, #4f46e5 0%, #3730a3 100%)'
+  },
+
   spacing: 'normal',
   spacingValue: '16px',
   radius: 'medium',
-  radiusValue: '8px',
+  radiusValue: '12px',
   columns: 3,
 };
+
 
 export default function BlogBuilderPage() {
   const [activeTab, setActiveTab]           = useState('builder');
@@ -318,7 +327,7 @@ export default function BlogBuilderPage() {
                     border: `1px solid ${selectedCard?.id === post.id ? '#4f46e5' : '#e5e5e5'}`,
                     borderRadius: '8px', cursor: 'pointer',
                     display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-                    background: selectedCard?.id === post.id ? '#f5f3ff' : '#fff'
+                    background: selectedCard?.id === post.id ? '#eff6ff' : '#fff'
                   }}
                 >
                   <div>

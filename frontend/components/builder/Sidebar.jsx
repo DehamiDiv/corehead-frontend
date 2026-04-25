@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 
 import { Layout, Grid, Database, Settings, Eye } from 'lucide-react';
 
@@ -15,13 +15,13 @@ export default function Sidebar({ activeTab, setActiveTab }) {
     <aside style={{
       width: '64px',
       minWidth: '64px',
-      background: '#1e1e2e',
+      background: '#ffffff',
       display: 'flex',
       flexDirection: 'column',
       alignItems: 'center',
       paddingTop: '16px',
       gap: '4px',
-      borderRight: '1px solid #2a2a3e'
+      borderRight: '1px solid #e2e8f0'
     }}>
       {tabs.map(({ id, icon: Icon, label }) => (
         <button
@@ -40,23 +40,24 @@ export default function Sidebar({ activeTab, setActiveTab }) {
             justifyContent: 'center',
             gap: '2px',
             background: activeTab === id
-              ? 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)'
+              ? 'linear-gradient(135deg, #4f46e5 0%, #3730a3 100%)'
               : 'transparent',
-            color: activeTab === id ? '#fff' : '#888',
+            color: activeTab === id ? '#fff' : '#64748b',
             transition: 'all 0.2s',
           }}
           onMouseEnter={e => {
             if (activeTab !== id) {
-              e.currentTarget.style.background = 'rgba(102,126,234,0.15)';
-              e.currentTarget.style.color = '#fff';
+              e.currentTarget.style.background = '#f1f5f9';
+              e.currentTarget.style.color = '#1e293b';
             }
           }}
           onMouseLeave={e => {
             if (activeTab !== id) {
               e.currentTarget.style.background = 'transparent';
-              e.currentTarget.style.color = '#888';
+              e.currentTarget.style.color = '#64748b';
             }
           }}
+
         >
           <Icon size={18} />
           <span style={{ fontSize: '9px', fontWeight: '600', letterSpacing: '0.3px' }}>
