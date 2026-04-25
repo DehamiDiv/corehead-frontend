@@ -19,11 +19,11 @@ const defaultSettings = {
   font: 'inter',
   fontStyle: 'Inter, sans-serif',
   theme: 'premium-indigo',
-  colors: { 
-    id: 'premium-indigo', 
-    label: 'Indigo Royale', 
-    primary: '#4f46e5', 
-    bg: '#ffffff', 
+  colors: {
+    id: 'premium-indigo',
+    label: 'Indigo Royale',
+    primary: '#4f46e5',
+    bg: '#ffffff',
     text: '#1e1e2e',
     gradient: 'linear-gradient(135deg, #4f46e5 0%, #3730a3 100%)'
   },
@@ -37,17 +37,17 @@ const defaultSettings = {
 
 
 export default function BlogBuilderPage() {
-  const [activeTab, setActiveTab]           = useState('builder');
-  const [contentMode, setContentMode]       = useState('static');
-  const [selectedCard, setSelectedCard]     = useState(null);
-  const [settings, setSettings]             = useState(defaultSettings);
-  const [previewOpen, setPreviewOpen]       = useState(false);
-  const [exportOpen, setExportOpen]         = useState(false);
-  const [aiOpen, setAiOpen]                 = useState(false);
-  const [saveModalOpen, setSaveModalOpen]   = useState(false);
-  const [isSaving, setIsSaving]             = useState(false);
-  const [saveStatus, setSaveStatus]         = useState(null);
-  const [savedLayouts, setSavedLayouts]     = useState([]);
+  const [activeTab, setActiveTab] = useState('builder');
+  const [contentMode, setContentMode] = useState('static');
+  const [selectedCard, setSelectedCard] = useState(null);
+  const [settings, setSettings] = useState(defaultSettings);
+  const [previewOpen, setPreviewOpen] = useState(false);
+  const [exportOpen, setExportOpen] = useState(false);
+  const [aiOpen, setAiOpen] = useState(false);
+  const [saveModalOpen, setSaveModalOpen] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
+  const [saveStatus, setSaveStatus] = useState(null);
+  const [savedLayouts, setSavedLayouts] = useState([]);
   const [showLayoutPicker, setShowLayoutPicker] = useState(false);
   const [loadingLayouts, setLoadingLayouts] = useState(false);
 
@@ -98,7 +98,7 @@ export default function BlogBuilderPage() {
         try {
           const options = aiOptions ? JSON.parse(aiOptions) : {};
           const template = selectedTemplate ? JSON.parse(selectedTemplate) : null;
-          
+
           const result = await builderApi.generateAILayout({
             prompt: aiPrompt || `Template: ${template?.name}`,
             layoutType: options.layoutType || 'single-post',
@@ -114,7 +114,7 @@ export default function BlogBuilderPage() {
           localStorage.removeItem('ai_prompt');
           localStorage.removeItem('selected_template');
           localStorage.removeItem('ai_options');
-          
+
         } catch (err) {
           console.error('AI Flow error:', err);
         }
@@ -180,7 +180,7 @@ export default function BlogBuilderPage() {
   const handleLoadSelected = async (id) => {
     try {
       const data = await builderApi.getLayout(id);
-      if (data.layout.layout_data?.cards)    setBlogPosts(data.layout.layout_data.cards);
+      if (data.layout.layout_data?.cards) setBlogPosts(data.layout.layout_data.cards);
       if (data.layout.layout_data?.settings) setSettings(data.layout.layout_data.settings);
       setShowLayoutPicker(false);
     } catch (err) {
@@ -285,9 +285,9 @@ export default function BlogBuilderPage() {
           {/* Save / Load */}
           <div className="layout-actions">
             <button className="btn-secondary" onClick={handleSaveClick}>
-              {saveStatus === 'saved'  ? '✅ Saved!'      : null}
-              {saveStatus === 'error'  ? '❌ Save Failed' : null}
-              {saveStatus === null     ? '💾 Save Layout' : null}
+              {saveStatus === 'saved' ? '✅ Saved!' : null}
+              {saveStatus === 'error' ? '❌ Save Failed' : null}
+              {saveStatus === null ? '💾 Save Layout' : null}
             </button>
             <button className="btn-secondary" onClick={handleOpenLayoutPicker}>
               📂 Load Layout
