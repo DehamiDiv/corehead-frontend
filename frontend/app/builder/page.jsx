@@ -50,6 +50,8 @@ export default function BlogBuilderPage() {
   const [savedLayouts, setSavedLayouts] = useState([]);
   const [showLayoutPicker, setShowLayoutPicker] = useState(false);
   const [loadingLayouts, setLoadingLayouts] = useState(false);
+  const [aiPosts, setAiPosts]               = useState([]);    // AI cards stored separately
+  const [compareMode, setCompareMode]       = useState(false); // show both side by side
 
   const [blogPosts, setBlogPosts] = useState([
     {
@@ -216,9 +218,10 @@ export default function BlogBuilderPage() {
     );
   };
 
-  // AI generated posts
+  // AI generated posts — store separately, enable compare mode
   const handleAIGenerated = (newCards) => {
-    setBlogPosts(newCards);
+    setAiPosts(newCards);
+    setCompareMode(true);
   };
 
   return (
@@ -296,14 +299,107 @@ export default function BlogBuilderPage() {
 
           {/* Tab Content */}
           {activeTab === 'builder' && (
-            <BuilderCanvas
-              blogPosts={blogPosts}
-              contentMode={contentMode}
-              selectedCard={selectedCard}
-              setSelectedCard={setSelectedCard}
-              settings={settings}
-              onDeleteCard={handleDeleteCard}
-            />
+            <>
+              {/* ── Compare Mode Banner ── */}
+              {aiPosts.length > 0 && (
+                <div style={{
+                  display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap',
+                  padding: '10px 16px',
+                  background: compareMode ? 'rgba(79,70,229,0.06)' : '#fffbeb',
+                  borderBottom: `2px solid ${compareMode ? 'rgba(79,70,229,0.2)' : '#fde68a'}`,
+                  fontSize: '13px',
+                }}>
+                  <span style={{ fontWeight: '700', color: compareMode ? '#4f46e5' : '#92400e', marginRight: '4px' }}>
+                    {compareMode ? '⚡ Compare Mode — Your Layout vs AI' : '🤖 AI layout is ready!'}
+                  </span>
+                  <button
+                    onClick={() => setCompareMode(v => !v)}
+                    style={{
+                      padding: '6px 14px', borderRadius: '8px', border: 'none',
+                      background: compareMode ? '#4f46e5' : '#f59e0b',
+                      color: '#fff', fontWeight: '700', fontSize: '12px',
+                      cursor: 'pointer', fontFamily: 'inherit',
+                    }}
+                  >
+                    {compareMode ? 'Exit Compare' : 'Compare Side by Side'}
+                  </button>
+                  <button
+                    onClick={() => { setBlogPosts(aiPosts); setAiPosts([]); setCompareMode(false); }}
+                    style={{
+                      padding: '6px 14px', borderRadius: '8px',
+                      border: '2px solid #4f46e5', background: '#fff',
+                      color: '#4f46e5', fontWeight: '700', fontSize: '12px',
+                      cursor: 'pointer', fontFamily: 'inherit',
+                    }}
+                  >
+                    ✅ Use AI Layout
+                  </button>
+                  <button
+                    onClick={() => { setAiPosts([]); setCompareMode(false); }}
+                    style={{
+                      padding: '6px 12px', borderRadius: '8px',
+                      border: '2px solid #e0e0e0', background: '#fff',
+                      color: '#888', fontWeight: '600', fontSize: '12px',
+                      cursor: 'pointer', fontFamily: 'inherit',
+                    }}
+                  >
+                    ✖ Discard AI
+                  </button>
+                </div>
+              )}
+
+              {/* ── Split View (Compare) ── */}
+              {compareMode && aiPosts.length > 0 ? (
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', flex: 1, overflow: 'hidden' }}>
+                  <div style={{ borderRight: '3px solid #e2e8f0', overflowY: 'auto' }}>
+                    <div style={{
+                      padding: '8px 16px', background: '#f8fafc',
+                      borderBottom: '1px solid #e2e8f0',
+                      fontSize: '11px', fontWeight: '700', color: '#64748b',
+                      textTransform: 'uppercase', letterSpacing: '0.5px',
+                    }}>
+                      📌 Your Layout
+                    </div>
+                    <BuilderCanvas
+                      blogPosts={blogPosts}
+                      contentMode={contentMode}
+                      selectedCard={selectedCard}
+                      setSelectedCard={setSelectedCard}
+                      settings={settings}
+                      onDeleteCard={handleDeleteCard}
+                    />
+                  </div>
+                  <div style={{ overflowY: 'auto' }}>
+                    <div style={{
+                      padding: '8px 16px',
+                      background: 'rgba(79,70,229,0.06)',
+                      borderBottom: '1px solid rgba(79,70,229,0.15)',
+                      fontSize: '11px', fontWeight: '700', color: '#4f46e5',
+                      textTransform: 'uppercase', letterSpacing: '0.5px',
+                    }}>
+                      ⚡ AI Generated Layout
+                    </div>
+                    <BuilderCanvas
+                      blogPosts={aiPosts}
+                      contentMode={contentMode}
+                      selectedCard={null}
+                      setSelectedCard={() => {}}
+                      settings={settings}
+                      onDeleteCard={() => {}}
+                    />
+                  </div>
+                </div>
+              ) : (
+                <BuilderCanvas
+                  blogPosts={blogPosts}
+                  contentMode={contentMode}
+                  selectedCard={selectedCard}
+                  setSelectedCard={setSelectedCard}
+                  settings={settings}
+                  onDeleteCard={handleDeleteCard}
+                />
+              )}
+            </>
           )}
 
           {activeTab === 'components' && (
