@@ -1,9 +1,9 @@
 'use client';
 
-import { Calendar, User } from 'lucide-react';
+import { Calendar, User, Clock } from 'lucide-react';
 import './BlogCard.css';
 
-export default function BlogCard({ post, isSelected, onClick, contentMode, settings }) {
+export default function BlogCard({ post, isSelected, onClick, contentMode, settings, cardLayout = 'grid' }) {
   const activePrimary = settings?.colors?.primary || '#667eea';
   const activeGradient = settings?.colors?.gradient || 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)';
   const fontStyle = settings?.fontStyle || 'inherit';
@@ -18,7 +18,7 @@ export default function BlogCard({ post, isSelected, onClick, contentMode, setti
 
   return (
     <article 
-      className={`blog-card ${isSelected ? 'selected' : ''} ${contentMode === 'dynamic' ? 'dynamic' : ''}`}
+      className={`blog-card ${isSelected ? 'selected' : ''} ${contentMode === 'dynamic' ? 'dynamic' : ''} card-layout-${cardLayout}`}
       onClick={onClick}
       style={cardStyle}
     >
@@ -26,12 +26,19 @@ export default function BlogCard({ post, isSelected, onClick, contentMode, setti
         <div className="card-badge" style={{ background: activeGradient }}>Template</div>
       )}
       
+      {/* Image section — hidden via CSS for minimal, shown for all others */}
       <div className="card-image">
         <img src={post.image} alt={post.title} />
         <div className="card-category" style={{ background: activeGradient }}>{post.category}</div>
       </div>
       
       <div className="card-content">
+        {/* Show category as inline text for minimal layout */}
+        {cardLayout === 'minimal' && (
+          <span className="card-category-text" style={{ color: activePrimary }}>
+            {post.category}
+          </span>
+        )}
         <h3 className="card-title" style={{ fontFamily: fontStyle }}>{post.title}</h3>
         <p className="card-excerpt" style={{ fontFamily: fontStyle }}>{post.excerpt}</p>
         
@@ -41,7 +48,7 @@ export default function BlogCard({ post, isSelected, onClick, contentMode, setti
             <span>{post.author}</span>
           </div>
           <div className="meta-item">
-            <Calendar size={14} color={activePrimary} />
+            <Clock size={14} color={activePrimary} />
             <span>{new Date(post.date).toLocaleDateString('en-US', { 
               month: 'short', 
               day: 'numeric', 

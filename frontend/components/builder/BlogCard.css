@@ -128,6 +128,99 @@
   animation: pulse 1.5s ease-in-out infinite;
 }
 
+/* ── Layout Variations ── */
+
+/* List Layout (Horizontal) */
+.card-layout-list {
+  display: flex;
+  align-items: stretch;
+  min-height: 140px;
+}
+
+.card-layout-list .card-image {
+  width: 30%;
+  height: auto;
+  min-height: 140px;
+  flex-shrink: 0;
+}
+
+.card-layout-list .card-image img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.card-layout-list .card-content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+/* Overlay Layout */
+.card-layout-overlay {
+  height: 280px;
+}
+
+.card-layout-overlay .card-image {
+  height: 100%;
+}
+
+.card-layout-overlay .card-content {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  padding: 24px 16px 16px;
+  background: linear-gradient(to top, rgba(0,0,0,0.85) 0%, rgba(0,0,0,0.4) 65%, transparent 100%);
+  color: white;
+}
+
+.card-layout-overlay .card-title  { color: white; }
+.card-layout-overlay .card-excerpt { color: rgba(255,255,255,0.8); -webkit-line-clamp: 2; }
+.card-layout-overlay .card-meta   { border-top: 1px solid rgba(255,255,255,0.2); }
+.card-layout-overlay .meta-item   { color: rgba(255,255,255,0.65); }
+
+/* Minimal Layout — typography only, no image */
+.card-layout-minimal .card-image {
+  display: none;
+}
+
+.card-layout-minimal {
+  background: #ffffff;
+  border-left: 4px solid #4f46e5;
+  border-top: none;
+  border-right: none;
+  border-bottom: none;
+  border-radius: 0 12px 12px 0 !important;
+  padding: 4px 0;
+}
+
+.card-layout-minimal .card-content {
+  padding: 20px 20px 16px;
+}
+
+.card-layout-minimal .card-title {
+  font-size: 16px;
+  font-weight: 800;
+  -webkit-line-clamp: 3;
+}
+
+.card-layout-minimal .card-excerpt {
+  font-size: 13px;
+  -webkit-line-clamp: 4;
+}
+
+.card-layout-minimal .card-category-text {
+  display: inline-block;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.8px;
+  margin-bottom: 8px;
+  color: #4f46e5;
+}
+
 @keyframes pulse {
   0%, 100% { opacity: 1; }
   50%       { opacity: 0.5; }
