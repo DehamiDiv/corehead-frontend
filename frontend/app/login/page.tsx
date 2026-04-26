@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
@@ -16,9 +16,14 @@ export default function LoginPage() {
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
 
+  useEffect(() => {
+    if (typeof window !== "undefined" && window.location.search.includes("registered=true")) {
+      setSuccess("Account created successfully! Please login.");
+    }
+  }, []);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setIsLoading(true);
     setError(null);
     setSuccess(null);
 
@@ -28,6 +33,10 @@ export default function LoginPage() {
       // PERSIST AUTH STATE
       localStorage.setItem("token", data.token);
       localStorage.setItem("user", JSON.stringify(data.user));
+      
+      // SET COOKIES for middleware
+      document.cookie = `auth_token=${data.token}; path=/; max-age=86400; SameSite=Lax`;
+      document.cookie = `user_role=${data.user.role}; path=/; max-age=86400; SameSite=Lax`;
 
       // ROLE-BASED REDIRECTION
       if (data.user.role === "admin") {
@@ -36,9 +45,10 @@ export default function LoginPage() {
           router.push("/admin");
         }, 1500);
       } else {
-        setError("Access denied. Admin privileges required.");
-        localStorage.removeItem("token");
-        localStorage.removeItem("user");
+        setSuccess("Login successful! Redirecting...");
+        setTimeout(() => {
+          router.push("/");
+        }, 1500);
       }
     } catch (err: any) {
       setError(err.message || "An error occurred during login.");
