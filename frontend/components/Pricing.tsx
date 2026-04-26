@@ -1,6 +1,4 @@
-"use client";
-
-import { motion } from "framer-motion";
+import Link from "next/link";
 import { Check } from "lucide-react";
 
 const plans = [
@@ -9,7 +7,7 @@ const plans = [
     price: "$0",
     period: "/month",
     features: ["50 Assets", "Unlimited users", "Email Support"],
-    cta: "Start Now",
+    cta: "Get Started Now",
     variant: "light",
   },
   {
@@ -19,100 +17,97 @@ const plans = [
     features: [
       "50 Assets",
       "Unlimited Users",
-      "Email Supports",
-      "Chat Supports",
+      "Email Support",
+      "Chat Support",
       "API & Integrations",
     ],
-    cta: "Start 14-day trial",
+    cta: "Start 14-day Trial",
     variant: "premium",
   },
   {
-    name: "Free",
-    price: "$0",
-    period: "/month",
-    features: ["50 Assets", "Unlimited users", "Email Support"],
-    cta: "Start Now",
+    name: "Enterprise",
+    price: "Custom",
+    period: "",
+    features: [
+      "Unlimited Assets",
+      "Unlimited users",
+      "24/7 Priority Support",
+      "Custom SLA",
+      "Dedicated Success Manager",
+    ],
+    cta: "Contact Sales",
     variant: "light",
   },
 ];
 
 export default function Pricing() {
   return (
-    <section id="pricing" className="py-24 px-6 bg-[#2563EB]">
+    <section id="pricing" className="py-32 px-6 bg-[#2563EB]">
       <div className="max-w-7xl mx-auto">
-        <div className="text-center mb-16 text-white">
-          <h2 className="text-3xl md:text-5xl font-bold mb-4">
+        <div className="text-center mb-20 text-white">
+          <h2 className="text-4xl md:text-6xl font-bold mb-6">
             Plans & Pricing
           </h2>
-          <p className="text-blue-100 text-lg max-w-2xl mx-auto">
+          <p className="text-blue-100 text-xl max-w-2xl mx-auto leading-relaxed">
             Simple, transparent pricing. No setup fees or contracts.
-            <br />
             Try without a credit card, cancel anytime.
           </p>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-5xl mx-auto">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-6xl mx-auto items-center">
           {plans.map((plan, index) => (
-            <motion.div
+            <div
               key={index}
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              transition={{ delay: index * 0.1 }}
-              className={`relative rounded-3xl overflow-hidden ${
-                plan.variant === "premium"
-                  ? "bg-white transform scale-105 shadow-2xl z-10"
-                  : "bg-white"
+              className={`relative rounded-[40px] overflow-hidden bg-white shadow-2xl transition-transform duration-300 hover:-translate-y-2 ${
+                plan.variant === "premium" ? "scale-105 z-10" : "scale-100 opacity-95"
               }`}
             >
               {plan.variant === "premium" && (
-                <div className="bg-gradient-to-r from-blue-700 to-indigo-600 p-6 text-white">
-                  <h3 className="text-sm font-semibold uppercase tracking-wider opacity-90">
+                <div className="h-28 bg-gradient-to-r from-blue-400 to-cyan-300 p-8 flex flex-col justify-end">
+                  <h3 className="text-2xl font-bold text-white tracking-tight">
                     Premium
                   </h3>
-                  <div className="flex items-baseline gap-1 mt-2">
-                    <span className="text-3xl font-bold">{plan.price}</span>
-                    <span className="text-white/80">{plan.period}</span>
-                  </div>
                 </div>
               )}
 
-              <div
-                className={`p-8 ${plan.variant === "premium" ? "pt-6" : ""}`}
-              >
+              <div className="p-10">
                 {plan.variant === "light" && (
-                  <div className="mb-6">
-                    <h3 className="text-xl font-bold text-slate-900 mb-2">
-                      {plan.name}
-                    </h3>
-                    <div className="flex items-baseline gap-1">
-                      <span className="text-3xl font-bold text-slate-900">
-                        {plan.price}
-                      </span>
-                      <span className="text-slate-500">{plan.period}</span>
-                    </div>
-                  </div>
+                  <h3 className="text-2xl font-bold text-slate-900 mb-6">
+                    {plan.name}
+                  </h3>
                 )}
 
-                <div className="space-y-4 mb-8">
+                <div className="flex items-baseline gap-1 mb-8">
+                  <span className="text-6xl font-bold text-slate-900 tracking-tighter">
+                    {plan.price}
+                  </span>
+                  <span className="text-xl text-slate-500 font-medium">{plan.period}</span>
+                </div>
+
+                <div className="space-y-5 mb-10">
                   {plan.features.map((feature, i) => (
                     <div
                       key={i}
-                      className="flex items-center gap-3 text-sm font-medium text-slate-700"
+                      className="flex items-center gap-4 text-base font-semibold text-slate-700"
                     >
-                      <div className="w-5 h-5 rounded-full bg-blue-100 flex items-center justify-center flex-shrink-0">
-                        <Check className="w-3 h-3 text-blue-600" />
+                      <div className="w-6 h-6 rounded-full bg-blue-100 flex items-center justify-center flex-shrink-0">
+                        <Check className="w-4 h-4 text-blue-600" />
                       </div>
                       {feature}
                     </div>
                   ))}
                 </div>
 
-                <button className="w-full py-3 px-6 rounded-full bg-black text-white font-bold text-sm hover:bg-slate-800 transition-colors">
-                  {plan.cta}
-                </button>
+                <div className="pt-6 border-t border-slate-100">
+                  <Link 
+                    href="/signup"
+                    className="block w-full py-4 px-8 rounded-full bg-[#111111] text-white font-bold text-lg text-center hover:bg-slate-800 transition-all hover:scale-105 active:scale-95"
+                  >
+                    {plan.cta}
+                  </Link>
+                </div>
               </div>
-            </motion.div>
+            </div>
           ))}
         </div>
       </div>
