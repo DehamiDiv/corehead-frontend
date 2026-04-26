@@ -173,5 +173,30 @@ export const api = {
         throw new Error(err.error || 'Registration failed');
     }
     return res.json();
+  },
+
+  // AI Layouts
+  async generateLayout(data: { prompt: string, layoutType: string, designStyle: string, features?: any }) {
+    const res = await fetch(`${BASE_URL}/ai/generate-layout`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        ...getAuthHeader()
+      },
+      body: JSON.stringify(data)
+    });
+    if (!res.ok) {
+      const err = await res.json();
+      throw new Error(err.error || 'AI generation failed');
+    }
+    return res.json();
+  },
+
+  async getAiHistory(limit: number = 50) {
+    const res = await fetch(`${BASE_URL}/ai/history?limit=${limit}`, {
+      headers: { ...getAuthHeader() }
+    });
+    if (!res.ok) throw new Error('Failed to fetch AI history');
+    return res.json();
   }
 };
