@@ -1,5 +1,6 @@
 import { Github, Twitter, Facebook, X } from "lucide-react";
 import Link from "next/link";
+import Image from "next/image";
 
 export default function DetailedFooter() {
   return (
@@ -8,14 +9,15 @@ export default function DetailedFooter() {
         <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-12 mb-24">
           {/* Brand Column */}
           <div className="col-span-2 lg:col-span-2 space-y-6">
-            <div className="flex items-center gap-2 mb-4">
-              <div className="w-9 h-9 rounded-full bg-[#2563eb] flex items-center justify-center text-white font-bold text-sm shadow-md">
-                C
-              </div>
-              <span className="text-2xl font-bold text-slate-900 tracking-tight">
-                corehead.app
-              </span>
-            </div>
+            <Link href="/" className="inline-block mb-2">
+              <Image 
+                src="/logo.png" 
+                alt="CoreHead Logo" 
+                width={160} 
+                height={40} 
+                className="h-14 w-auto object-contain" 
+              />
+            </Link>
             <p className="text-slate-500 text-lg leading-relaxed max-w-sm">
               The ultimate headless CMS for modern web development. Build, manage, and scale your content with ease.
             </p>
@@ -27,8 +29,8 @@ export default function DetailedFooter() {
             <ul className="space-y-4 text-slate-500 font-medium">
               <li><Link href="/#features" className="hover:text-blue-600 transition-colors">Features</Link></li>
               <li><Link href="/#pricing" className="hover:text-blue-600 transition-colors">Pricing</Link></li>
-              <li><Link href="#" className="hover:text-blue-600 transition-colors">Integrations</Link></li>
-              <li><Link href="#" className="hover:text-blue-600 transition-colors">Demo</Link></li>
+              <li><Link href="/guides" className="hover:text-blue-600 transition-colors">Guides</Link></li>
+              <li><Link href="/signup" className="hover:text-blue-600 transition-colors">Demo</Link></li>
             </ul>
           </div>
 
@@ -36,7 +38,7 @@ export default function DetailedFooter() {
           <div>
             <h4 className="font-bold text-slate-900 mb-6 text-lg">Company</h4>
             <ul className="space-y-4 text-slate-500 font-medium">
-              <li><Link href="#" className="hover:text-blue-600 transition-colors">About Us</Link></li>
+              <li><Link href="/" className="hover:text-blue-600 transition-colors">About Us</Link></li>
               <li><Link href="#" className="hover:text-blue-600 transition-colors">Careers</Link></li>
               <li><Link href="/blog" className="hover:text-blue-600 transition-colors">Blog</Link></li>
             </ul>
@@ -46,8 +48,8 @@ export default function DetailedFooter() {
           <div>
             <h4 className="font-bold text-slate-900 mb-6 text-lg">Support</h4>
             <ul className="space-y-4 text-slate-500 font-medium">
-              <li><Link href="#" className="hover:text-blue-600 transition-colors">Help Center</Link></li>
-              <li><Link href="#" className="hover:text-blue-600 transition-colors">FAQs</Link></li>
+              <li><Link href="/#faq" className="hover:text-blue-600 transition-colors">Help Center</Link></li>
+              <li><Link href="/#faq" className="hover:text-blue-600 transition-colors">FAQs</Link></li>
               <li><Link href="#" className="hover:text-blue-600 transition-colors">Contact Us</Link></li>
             </ul>
           </div>

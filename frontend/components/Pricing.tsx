@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { Check } from "lucide-react";
 
 const plans = [
@@ -24,11 +25,17 @@ const plans = [
     variant: "premium",
   },
   {
-    name: "Free",
-    price: "$0",
-    period: "/month",
-    features: ["50 Assets", "Unlimited users", "Email Support"],
-    cta: "Get Started Now",
+    name: "Enterprise",
+    price: "Custom",
+    period: "",
+    features: [
+      "Unlimited Assets",
+      "Unlimited users",
+      "24/7 Priority Support",
+      "Custom SLA",
+      "Dedicated Success Manager",
+    ],
+    cta: "Contact Sales",
     variant: "light",
   },
 ];
@@ -92,9 +99,12 @@ export default function Pricing() {
                 </div>
 
                 <div className="pt-6 border-t border-slate-100">
-                  <button className="w-full py-4 px-8 rounded-full bg-[#111111] text-white font-bold text-lg hover:bg-slate-800 transition-all hover:scale-105 active:scale-95">
+                  <Link 
+                    href="/signup"
+                    className="block w-full py-4 px-8 rounded-full bg-[#111111] text-white font-bold text-lg text-center hover:bg-slate-800 transition-all hover:scale-105 active:scale-95"
+                  >
                     {plan.cta}
-                  </button>
+                  </Link>
                 </div>
               </div>
             </div>

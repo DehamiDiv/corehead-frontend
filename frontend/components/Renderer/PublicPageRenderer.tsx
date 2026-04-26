@@ -16,6 +16,8 @@ import { BuilderBlock } from "../admin/builder/BuilderContext";
 interface PublicPageRendererProps {
   layout: BuilderBlock[] | { blocks: BuilderBlock[] };
   data?: Record<string, any>;
+  isLoop?: boolean;
+  bindings?: Record<string, any>;
 }
 
 // FR-26: Dynamic Template Binding Helper
@@ -44,6 +46,8 @@ function bindData(
 export function PublicPageRenderer({
   layout,
   data = {},
+  isLoop,
+  bindings,
 }: PublicPageRendererProps) {
   const blocksArray = Array.isArray(layout)
     ? layout

@@ -10,15 +10,33 @@ export default function Features() {
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-20 items-center">
           <div className="relative order-2 lg:order-1">
              {/* Blue Background Container */}
-             <div className="relative rounded-[32px] overflow-hidden bg-[#0066FF] aspect-[1.2] p-8 shadow-2xl shadow-blue-200">
+             <div className="relative rounded-[32px] overflow-hidden bg-[#0066FF] shadow-2xl shadow-blue-200">
                 <div className="absolute inset-0 bg-gradient-to-br from-blue-600 to-blue-400 opacity-50" />
-                <div className="relative z-10 bg-white rounded-2xl h-full shadow-lg overflow-hidden border border-white/20">
-                   <Image 
-                    src="https://images.unsplash.com/photo-1551288049-bbbda536639a?w=1200&q=80" 
-                    fill 
-                    className="object-cover" 
-                    alt="CoreHead Admin Posts" 
-                   />
+                {/* Mac Window Chrome */}
+                <div className="relative z-10 m-5 bg-white rounded-2xl shadow-lg overflow-hidden border border-white/20 flex flex-col">
+                   {/* Mac-like UI Header */}
+                   <div className="flex-shrink-0 border-b border-slate-200 bg-slate-50 px-4 py-3 flex items-center gap-2">
+                     <div className="flex gap-1.5">
+                       <div className="w-3 h-3 rounded-full bg-[#FF5F56] border border-[#E0443E]"></div>
+                       <div className="w-3 h-3 rounded-full bg-[#FFBD2E] border border-[#DEA123]"></div>
+                       <div className="w-3 h-3 rounded-full bg-[#27C93F] border border-[#1AAB29]"></div>
+                     </div>
+                     <div className="flex-1 mx-4 h-5 bg-slate-200 rounded-full text-[10px] text-slate-400 flex items-center justify-center">
+                       corehead.io/admin
+                     </div>
+                   </div>
+                   
+                   {/* Admin Image — full width, no clipping */}
+                   <div className="group overflow-hidden">
+                     <Image
+                       src="/dashboard.png"
+                       alt="CoreHead Admin Dashboard"
+                       width={900}
+                       height={600}
+                       className="w-full h-auto object-cover object-top transition-transform duration-700 group-hover:scale-105"
+                       priority
+                     />
+                   </div>
                 </div>
              </div>
           </div>
