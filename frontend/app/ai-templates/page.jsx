@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect } from 'react';
-import { Sparkles, ArrowLeft } from 'lucide-react';
+import { Sparkles, ArrowLeft, ArrowRight } from 'lucide-react';
 import Link from 'next/link';
 import './page.css';
 import { useRouter } from 'next/navigation';
@@ -124,6 +124,10 @@ export default function AITemplatesPage() {
               <ArrowLeft size={18} />
               Back to Prompt
             </Link>
+            <button className="btn-next" onClick={() => router.push('/builder')}>
+              Go to Builder
+              <ArrowRight size={18} />
+            </button>
           </div>
         </div>
       </div>

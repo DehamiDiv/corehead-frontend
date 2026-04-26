@@ -136,6 +136,10 @@ export default function AIPromptPage() {
           </div>
 
           <div className="action-buttons">
+            <button className="btn-back" onClick={handleGenerate} title="Generate with current description">
+              Skip to Builder
+              <Sparkles size={18} />
+            </button>
             <Link href="/ai-options" className="btn-next" onClick={handleNext}>
               Next: Configure Options
               <ArrowRight size={18} />

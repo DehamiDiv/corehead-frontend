@@ -15,13 +15,14 @@ export default function Sidebar({ activeTab, setActiveTab }) {
     <aside style={{
       width: '64px',
       minWidth: '64px',
-      background: '#ffffff',
+      background: 'rgba(255, 255, 255, 0.4)',
+      backdropFilter: 'blur(10px)',
       display: 'flex',
       flexDirection: 'column',
       alignItems: 'center',
       paddingTop: '16px',
       gap: '4px',
-      borderRight: '1px solid #e2e8f0'
+      borderRight: '1px solid rgba(255, 255, 255, 0.5)'
     }}>
       {tabs.map(({ id, icon: Icon, label }) => (
         <button
@@ -40,21 +41,21 @@ export default function Sidebar({ activeTab, setActiveTab }) {
             justifyContent: 'center',
             gap: '2px',
             background: activeTab === id
-              ? 'linear-gradient(135deg, #4f46e5 0%, #3730a3 100%)'
+              ? '#2563eb'
               : 'transparent',
-            color: activeTab === id ? '#fff' : '#64748b',
+            color: activeTab === id ? '#fff' : '#475569',
             transition: 'all 0.2s',
           }}
           onMouseEnter={e => {
             if (activeTab !== id) {
-              e.currentTarget.style.background = '#f1f5f9';
+              e.currentTarget.style.background = 'rgba(255, 255, 255, 0.3)';
               e.currentTarget.style.color = '#1e293b';
             }
           }}
           onMouseLeave={e => {
             if (activeTab !== id) {
               e.currentTarget.style.background = 'transparent';
-              e.currentTarget.style.color = '#64748b';
+              e.currentTarget.style.color = '#475569';
             }
           }}
 

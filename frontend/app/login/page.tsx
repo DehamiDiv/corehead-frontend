@@ -50,7 +50,7 @@ function LoginForm() {
   };
 
   return (
-    <div className="min-h-screen w-full bg-gradient-to-br from-blue-200 via-blue-300 to-blue-400 flex flex-col font-sans">
+    <div className="min-h-screen w-full bg-gradient-to-br from-blue-100 via-blue-200 to-blue-400 flex flex-col font-sans">
       {/* Custom Navbar for Login Page */}
       <nav className="w-full px-6 py-4 flex items-center justify-between mx-auto max-w-7xl">
         <Link href="/" className="flex items-center gap-2">
