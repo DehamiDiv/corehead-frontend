@@ -1,13 +1,16 @@
 "use client";
 
-import { useState } from "react";
+import { useState, Suspense } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { Eye, EyeOff, LayoutGrid, BookOpen, Settings, AlertCircle, Loader2 } from "lucide-react";
 import { api } from "@/lib/api";
 
-export default function LoginPage() {
+function LoginForm() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const callbackUrl = searchParams.get('callback') || '/admin';
+  
   const [showPassword, setShowPassword] = useState(false);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -30,9 +33,9 @@ export default function LoginPage() {
 
       // ROLE-BASED REDIRECTION
       if (data.user.role === "admin") {
-        setSuccess("Login successful! Redirecting to dashboard...");
+        setSuccess("Login successful! Redirecting...");
         setTimeout(() => {
-          router.push("/admin");
+          router.push(callbackUrl);
         }, 1500);
       } else {
         setError("Access denied. Admin privileges required.");
@@ -203,5 +206,17 @@ export default function LoginPage() {
         </div>
       </main>
     </div>
+  );
+}
+
+export default function LoginPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen flex items-center justify-center bg-blue-200">
+        <Loader2 className="w-8 h-8 animate-spin text-blue-700" />
+      </div>
+    }>
+      <LoginForm />
+    </Suspense>
   );
 }
