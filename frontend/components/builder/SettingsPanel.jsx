@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { Save } from 'lucide-react';
 
 const fontOptions = [
   { id: 'inter',    label: 'Inter',    style: 'Inter, sans-serif',         preview: 'Modern & Clean' },
@@ -10,13 +11,14 @@ const fontOptions = [
 ];
 
 const colorThemes = [
-  { id: 'default',  label: 'Default',  primary: '#4f46e5', bg: '#ffffff', text: '#1a1a1a' },
-  { id: 'dark',     label: 'Dark',     primary: '#818cf8', bg: '#0f172a', text: '#f1f5f9' },
-  { id: 'green',    label: 'Forest',   primary: '#16a34a', bg: '#f0fdf4', text: '#14532d' },
-  { id: 'rose',     label: 'Rose',     primary: '#e11d48', bg: '#fff1f2', text: '#881337' },
-  { id: 'amber',    label: 'Amber',    primary: '#d97706', bg: '#fffbeb', text: '#78350f' },
-  { id: 'slate',    label: 'Slate',    primary: '#475569', bg: '#f8fafc', text: '#0f172a' },
+  { id: 'premium-indigo', label: 'Indigo Royale', primary: '#4f46e5', bg: '#ffffff', text: '#1e1e2e', gradient: 'linear-gradient(135deg, #4f46e5 0%, #3730a3 100%)' },
+  { id: 'midnight',       label: 'Midnight',      primary: '#38bdf8', bg: '#0f172a', text: '#f1f5f9', gradient: 'linear-gradient(135deg, #0f172a 0%, #1e293b 100%)' },
+  { id: 'sunset',         label: 'Sunset Ember',  primary: '#f43f5e', bg: '#fffafb', text: '#4c0519', gradient: 'linear-gradient(135deg, #f43f5e 0%, #fb923c 100%)' },
+  { id: 'oceanic',        label: 'Oceanic',       primary: '#06b6d4', bg: '#f0f9ff', text: '#083344', gradient: 'linear-gradient(135deg, #06b6d4 0%, #3b82f6 100%)' },
+  { id: 'emerald',        label: 'Emerald Aura',  primary: '#10b981', bg: '#f0fdf4', text: '#064e3b', gradient: 'linear-gradient(135deg, #10b981 0%, #3b82f6 100%)' },
+  { id: 'slate',          label: 'Slate Minimal', primary: '#64748b', bg: '#f8fafc', text: '#0f172a', gradient: 'linear-gradient(135deg, #64748b 0%, #334155 100%)' },
 ];
+
 
 const spacingOptions = [
   { id: 'compact',  label: 'Compact',  value: '8px' },
@@ -27,43 +29,56 @@ const spacingOptions = [
 const radiusOptions = [
   { id: 'none',   label: 'Sharp',    value: '0px' },
   { id: 'small',  label: 'Small',    value: '4px' },
-  { id: 'medium', label: 'Medium',   value: '8px' },
-  { id: 'large',  label: 'Large',    value: '16px' },
+  { id: 'medium', label: 'Medium',   value: '12px' },
+  { id: 'large',  label: 'Large',    value: '24px' },
   { id: 'full',   label: 'Rounded',  value: '999px' },
 ];
 
 export default function SettingsPanel({ settings, onSettingsChange }) {
-  return (
-    <div style={{ padding: '16px', overflowY: 'auto', maxHeight: '100%' }}>
-      <h2 style={{ fontSize: '16px', fontWeight: '600', marginBottom: '4px' }}>
-        ⚙️ Settings
-      </h2>
-      <p style={{ fontSize: '13px', color: '#888', marginBottom: '20px' }}>
-        Customize fonts, colors and spacing
-      </p>
+  const activePrimary = settings.colors?.primary || '#667eea';
+  const activeGradient = settings.colors?.gradient || 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)';
 
-      {/* Font Picker */}
+  return (
+    <div style={{ padding: '20px', overflowY: 'auto', maxHeight: '100%', background: '#fff' }}>
       <div style={{ marginBottom: '24px' }}>
-        <h3 style={{ fontSize: '13px', fontWeight: '600', marginBottom: '10px', color: '#444' }}>
-          🔤 Font Family
+        <h2 style={{ 
+          fontSize: '18px', fontWeight: '800', marginBottom: '6px',
+          background: activeGradient,
+          WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent',
+          backgroundClip: 'text',
+        }}>
+          ⚙️ Builder Settings
+        </h2>
+        <p style={{ fontSize: '12px', color: '#888', marginBottom: '0' }}>
+          Personalize your layout, typography, and colors
+        </p>
+      </div>
+
+      {/* Font Family */}
+      <div style={{ marginBottom: '28px' }}>
+        <h3 style={{ fontSize: '13px', fontWeight: '700', marginBottom: '12px', color: '#444', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+          🔤 Typography
         </h3>
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
           {fontOptions.map(font => (
             <div
               key={font.id}
               onClick={() => onSettingsChange({ ...settings, font: font.id, fontStyle: font.style })}
               style={{
-                padding: '10px 12px',
-                border: `2px solid ${settings.font === font.id ? '#4f46e5' : '#e5e5e5'}`,
-                borderRadius: '8px', cursor: 'pointer',
-                background: settings.font === font.id ? '#f5f3ff' : '#fff',
-                transition: 'all 0.2s'
+                padding: '12px',
+                border: '2px solid',
+                borderColor: settings.font === font.id ? activePrimary : '#f0f0f0',
+                borderRadius: '12px', cursor: 'pointer',
+                background: settings.font === font.id ? `${activePrimary}08` : '#fff',
+                transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
+                boxShadow: settings.font === font.id ? `0 4px 12px ${activePrimary}15` : 'none',
+                transform: settings.font === font.id ? 'translateY(-1px)' : 'none'
               }}
             >
-              <div style={{ fontFamily: font.style, fontSize: '14px', fontWeight: '600' }}>
+              <div style={{ fontFamily: font.style, fontSize: '14px', fontWeight: '700', color: settings.font === font.id ? activePrimary : '#1a1a1a' }}>
                 {font.label}
               </div>
-              <div style={{ fontFamily: font.style, fontSize: '11px', color: '#888' }}>
+              <div style={{ fontFamily: font.style, fontSize: '11px', color: '#888', marginTop: '2px' }}>
                 {font.preview}
               </div>
             </div>
@@ -71,28 +86,32 @@ export default function SettingsPanel({ settings, onSettingsChange }) {
         </div>
       </div>
 
-      {/* Color Theme */}
-      <div style={{ marginBottom: '24px' }}>
-        <h3 style={{ fontSize: '13px', fontWeight: '600', marginBottom: '10px', color: '#444' }}>
-          🎨 Color Theme
+      {/* Color Themes */}
+      <div style={{ marginBottom: '28px' }}>
+        <h3 style={{ fontSize: '13px', fontWeight: '700', marginBottom: '12px', color: '#444', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+          🎨 Visual Theme
         </h3>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '8px' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '10px' }}>
           {colorThemes.map(theme => (
             <div
               key={theme.id}
               onClick={() => onSettingsChange({ ...settings, theme: theme.id, colors: theme })}
               style={{
-                padding: '10px 8px', textAlign: 'center',
-                border: `2px solid ${settings.theme === theme.id ? theme.primary : '#e5e5e5'}`,
-                borderRadius: '8px', cursor: 'pointer',
-                background: theme.bg, transition: 'all 0.2s'
+                padding: '12px 8px', textAlign: 'center',
+                border: '2px solid',
+                borderColor: settings.theme === theme.id ? theme.primary : '#f0f0f0',
+                borderRadius: '12px', cursor: 'pointer',
+                background: settings.theme === theme.id ? `${theme.primary}08` : theme.bg,
+                transition: 'all 0.2s',
+                transform: settings.theme === theme.id ? 'scale(1.02)' : 'none'
               }}
             >
               <div style={{
-                width: '24px', height: '24px', borderRadius: '50%',
-                background: theme.primary, margin: '0 auto 6px'
+                width: '28px', height: '28px', borderRadius: '50%',
+                background: theme.gradient || theme.primary, margin: '0 auto 8px',
+                boxShadow: `0 4px 8px ${theme.primary}33`
               }} />
-              <div style={{ fontSize: '11px', color: theme.text, fontWeight: '500' }}>
+              <div style={{ fontSize: '11px', color: theme.text, fontWeight: '700' }}>
                 {theme.label}
               </div>
             </div>
@@ -100,59 +119,65 @@ export default function SettingsPanel({ settings, onSettingsChange }) {
         </div>
       </div>
 
-      {/* Spacing */}
-      <div style={{ marginBottom: '24px' }}>
-        <h3 style={{ fontSize: '13px', fontWeight: '600', marginBottom: '10px', color: '#444' }}>
-          📐 Card Spacing
-        </h3>
-        <div style={{ display: 'flex', gap: '8px' }}>
-          {spacingOptions.map(opt => (
-            <button
-              key={opt.id}
-              onClick={() => onSettingsChange({ ...settings, spacing: opt.id, spacingValue: opt.value })}
-              style={{
-                flex: 1, padding: '8px',
-                border: `2px solid ${settings.spacing === opt.id ? '#4f46e5' : '#e5e5e5'}`,
-                borderRadius: '8px', cursor: 'pointer', fontSize: '12px',
-                background: settings.spacing === opt.id ? '#f5f3ff' : '#fff',
-                fontWeight: settings.spacing === opt.id ? '600' : '400',
-                color: settings.spacing === opt.id ? '#4f46e5' : '#444'
-              }}
-            >
-              {opt.label}
-            </button>
-          ))}
+      {/* Spacing & Radius in a row */}
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '24px', marginBottom: '28px' }}>
+        <div>
+          <h3 style={{ fontSize: '13px', fontWeight: '700', marginBottom: '12px', color: '#444', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+            📐 Spacing
+          </h3>
+          <div style={{ display: 'flex', gap: '8px' }}>
+            {spacingOptions.map(opt => (
+              <button
+                key={opt.id}
+                onClick={() => onSettingsChange({ ...settings, spacing: opt.id, spacingValue: opt.value })}
+                style={{
+                  flex: 1, padding: '10px',
+                  border: '2px solid',
+                  borderColor: settings.spacing === opt.id ? activePrimary : '#f0f0f0',
+                  borderRadius: '10px', cursor: 'pointer', fontSize: '12px',
+                  background: settings.spacing === opt.id ? `${activePrimary}08` : '#fff',
+                  fontWeight: settings.spacing === opt.id ? '700' : '500',
+                  color: settings.spacing === opt.id ? activePrimary : '#666',
+                  transition: 'all 0.2s'
+                }}
+              >
+                {opt.label}
+              </button>
+            ))}
+          </div>
         </div>
-      </div>
 
-      {/* Border Radius */}
-      <div style={{ marginBottom: '24px' }}>
-        <h3 style={{ fontSize: '13px', fontWeight: '600', marginBottom: '10px', color: '#444' }}>
-          🔲 Card Corners
-        </h3>
-        <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
-          {radiusOptions.map(opt => (
-            <button
-              key={opt.id}
-              onClick={() => onSettingsChange({ ...settings, radius: opt.id, radiusValue: opt.value })}
-              style={{
-                padding: '6px 12px',
-                border: `2px solid ${settings.radius === opt.id ? '#4f46e5' : '#e5e5e5'}`,
-                borderRadius: opt.value, cursor: 'pointer', fontSize: '12px',
-                background: settings.radius === opt.id ? '#f5f3ff' : '#fff',
-                fontWeight: settings.radius === opt.id ? '600' : '400',
-                color: settings.radius === opt.id ? '#4f46e5' : '#444'
-              }}
-            >
-              {opt.label}
-            </button>
-          ))}
+        <div>
+          <h3 style={{ fontSize: '13px', fontWeight: '700', marginBottom: '12px', color: '#444', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+            🔲 Corner Radius
+          </h3>
+          <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+            {radiusOptions.map(opt => (
+              <button
+                key={opt.id}
+                onClick={() => onSettingsChange({ ...settings, radius: opt.id, radiusValue: opt.value })}
+                style={{
+                  padding: '8px 14px',
+                  border: '2px solid',
+                  borderColor: settings.radius === opt.id ? activePrimary : '#f0f0f0',
+                  borderRadius: opt.value === '999px' ? '20px' : (parseInt(opt.value) > 10 ? '12px' : '8px'),
+                  cursor: 'pointer', fontSize: '12px',
+                  background: settings.radius === opt.id ? `${activePrimary}08` : '#fff',
+                  fontWeight: settings.radius === opt.id ? '700' : '500',
+                  color: settings.radius === opt.id ? activePrimary : '#666',
+                  transition: 'all 0.2s'
+                }}
+              >
+                {opt.label}
+              </button>
+            ))}
+          </div>
         </div>
       </div>
 
       {/* Grid Columns */}
-      <div style={{ marginBottom: '24px' }}>
-        <h3 style={{ fontSize: '13px', fontWeight: '600', marginBottom: '10px', color: '#444' }}>
+      <div style={{ marginBottom: '28px' }}>
+        <h3 style={{ fontSize: '13px', fontWeight: '700', marginBottom: '12px', color: '#444', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
           ⚏ Grid Columns
         </h3>
         <div style={{ display: 'flex', gap: '8px' }}>
@@ -161,12 +186,14 @@ export default function SettingsPanel({ settings, onSettingsChange }) {
               key={col}
               onClick={() => onSettingsChange({ ...settings, columns: col })}
               style={{
-                flex: 1, padding: '8px',
-                border: `2px solid ${settings.columns === col ? '#4f46e5' : '#e5e5e5'}`,
-                borderRadius: '8px', cursor: 'pointer', fontSize: '14px',
-                background: settings.columns === col ? '#f5f3ff' : '#fff',
-                fontWeight: settings.columns === col ? '700' : '400',
-                color: settings.columns === col ? '#4f46e5' : '#444'
+                flex: 1, padding: '10px',
+                border: '2px solid',
+                borderColor: settings.columns === col ? activePrimary : '#f0f0f0',
+                borderRadius: '10px', cursor: 'pointer', fontSize: '14px',
+                background: settings.columns === col ? `${activePrimary}08` : '#fff',
+                fontWeight: settings.columns === col ? '800' : '500',
+                color: settings.columns === col ? activePrimary : '#666',
+                transition: 'all 0.2s'
               }}
             >
               {col}
@@ -175,48 +202,65 @@ export default function SettingsPanel({ settings, onSettingsChange }) {
         </div>
       </div>
 
-      {/* Preview Box */}
+      {/* Preview Box - Glassmorphism */}
       <div style={{
-        padding: '16px', borderRadius: settings.radiusValue || '8px',
+        padding: '20px', borderRadius: settings.radiusValue || '12px',
         background: settings.colors?.bg || '#fff',
-        border: `2px solid ${settings.colors?.primary || '#4f46e5'}`,
-        marginBottom: '24px'
+        border: '2px solid',
+        borderColor: activePrimary,
+        marginBottom: '28px',
+        boxShadow: `0 10px 30px ${activePrimary}15`,
+        position: 'relative',
+        overflow: 'hidden'
       }}>
+        <div style={{
+          position: 'absolute', top: 0, right: 0, padding: '4px 10px',
+          background: activeGradient, color: '#fff', fontSize: '10px',
+          fontWeight: '800', borderBottomLeftRadius: '10px', textTransform: 'uppercase'
+        }}>
+          Live Preview
+        </div>
         <p style={{
           fontFamily: settings.fontStyle || 'Inter, sans-serif',
           color: settings.colors?.text || '#1a1a1a',
-          fontSize: '14px', fontWeight: '600', margin: '0 0 4px'
+          fontSize: '15px', fontWeight: '800', margin: '0 0 6px'
         }}>
-          Preview: {settings.font || 'Inter'} font
+          {settings.font?.toUpperCase() || 'INTER'} TYPOGRAPHY
         </p>
         <p style={{
           fontFamily: settings.fontStyle || 'Inter, sans-serif',
-          color: settings.colors?.primary || '#4f46e5',
-          fontSize: '12px', margin: 0
+          color: activePrimary,
+          fontSize: '13px', fontWeight: '500', margin: 0, opacity: 0.8
         }}>
-          Theme: {settings.colors?.label || 'Default'} · Spacing: {settings.spacing || 'normal'}
+          Theme: {settings.colors?.label || 'Default'} · Radius: {settings.radius || 'medium'}
         </p>
       </div>
 
       {/* Save Button */}
       <button
         onClick={() => {
-            // Find the floating save button or trigger parent save
             const saveBtn = document.querySelector('.layout-actions button:first-child');
             if (saveBtn) saveBtn.click();
         }}
         style={{
-          width: '100%', padding: '12px',
-          background: '#4f46e5', color: '#fff',
-          border: 'none', borderRadius: '10px',
-          fontSize: '14px', fontWeight: '600', cursor: 'pointer',
-          boxShadow: '0 4px 12px rgba(79, 70, 229, 0.25)',
-          display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px'
+          width: '100%', padding: '14px',
+          background: activeGradient, color: '#fff',
+          border: 'none', borderRadius: '12px',
+          fontSize: '15px', fontWeight: '700', cursor: 'pointer',
+          boxShadow: `0 8px 20px ${activePrimary}40`,
+          display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px',
+          transition: 'all 0.3s',
+          transform: 'translateY(0)'
         }}
+        onMouseEnter={e => e.currentTarget.style.transform = 'translateY(-2px)'}
+        onMouseLeave={e => e.currentTarget.style.transform = 'translateY(0)'}
       >
-        💾 Save All Settings
+        <div style={{ background: 'rgba(255,255,255,0.2)', padding: '5px', borderRadius: '8px', display: 'flex' }}>
+          <Save size={18} />
+        </div>
+        Apply & Save All Settings
       </button>
 
     </div>
   );
-}
+}

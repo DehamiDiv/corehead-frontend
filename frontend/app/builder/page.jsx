@@ -9,38 +9,50 @@ import PreviewModal from '@/components/builder/PreviewModal';
 import ExportModal from '@/components/builder/ExportModal';
 import ComponentsPanel from '@/components/builder/ComponentsPanel';
 import SettingsPanel from '@/components/builder/SettingsPanel';
-import AIGenerateModal from '@/components/builder/AIGenerateModal';
 import SaveLayoutModal from '@/components/builder/SaveLayoutModal';
 import LoadLayoutModal from '@/components/builder/LoadLayoutModal';
+import { useRouter } from 'next/navigation';
 import './page.css';
 import { builderApi } from '@/services/builderApi';
 
 const defaultSettings = {
   font: 'inter',
   fontStyle: 'Inter, sans-serif',
-  theme: 'default',
-  colors: { id: 'default', label: 'Default', primary: '#4f46e5', bg: '#ffffff', text: '#1a1a1a' },
+  theme: 'premium-indigo',
+  colors: {
+    id: 'premium-indigo',
+    label: 'Indigo Royale',
+    primary: '#4f46e5',
+    bg: '#ffffff',
+    text: '#1e1e2e',
+    gradient: 'linear-gradient(135deg, #4f46e5 0%, #3730a3 100%)'
+  },
+
   spacing: 'normal',
   spacingValue: '16px',
   radius: 'medium',
-  radiusValue: '8px',
+  radiusValue: '12px',
   columns: 3,
 };
 
+
 export default function BlogBuilderPage() {
-  const [activeTab, setActiveTab]           = useState('builder');
-  const [contentMode, setContentMode]       = useState('static');
-  const [selectedCard, setSelectedCard]     = useState(null);
-  const [settings, setSettings]             = useState(defaultSettings);
-  const [previewOpen, setPreviewOpen]       = useState(false);
-  const [exportOpen, setExportOpen]         = useState(false);
-  const [aiOpen, setAiOpen]                 = useState(false);
-  const [saveModalOpen, setSaveModalOpen]   = useState(false);
-  const [isSaving, setIsSaving]             = useState(false);
-  const [saveStatus, setSaveStatus]         = useState(null);
-  const [savedLayouts, setSavedLayouts]     = useState([]);
+  const router = useRouter();
+  const [activeTab, setActiveTab] = useState('builder');
+  const [contentMode, setContentMode] = useState('static');
+  const [selectedCard, setSelectedCard] = useState(null);
+  const [settings, setSettings] = useState(defaultSettings);
+  const [previewOpen, setPreviewOpen] = useState(false);
+  const [exportOpen, setExportOpen] = useState(false);
+  const [saveModalOpen, setSaveModalOpen] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
+  const [saveStatus, setSaveStatus] = useState(null);
+  const [savedLayouts, setSavedLayouts] = useState([]);
   const [showLayoutPicker, setShowLayoutPicker] = useState(false);
   const [loadingLayouts, setLoadingLayouts] = useState(false);
+  const [aiPosts, setAiPosts]               = useState([]);    // AI cards stored separately
+  const [aiSettings, setAiSettings]         = useState(null);  // AI settings stored separately
+  const [compareMode, setCompareMode]       = useState(false); // show both side by side
 
   const [blogPosts, setBlogPosts] = useState([
     {
@@ -89,7 +101,7 @@ export default function BlogBuilderPage() {
         try {
           const options = aiOptions ? JSON.parse(aiOptions) : {};
           const template = selectedTemplate ? JSON.parse(selectedTemplate) : null;
-          
+
           const result = await builderApi.generateAILayout({
             prompt: aiPrompt || `Template: ${template?.name}`,
             layoutType: options.layoutType || 'single-post',
@@ -98,25 +110,27 @@ export default function BlogBuilderPage() {
           });
 
           if (result.layout?.cards) {
-            setBlogPosts(result.layout.cards);
+            handleAIGenerated(result.layout.cards, result.layout.settings);
           }
 
           // Clear after use
           localStorage.removeItem('ai_prompt');
           localStorage.removeItem('selected_template');
           localStorage.removeItem('ai_options');
-          
+
         } catch (err) {
           console.error('AI Flow error:', err);
         }
       }
 
-      // Existing direct generated layout pick-up
+      // Existing direct generated layout pick-up (from History)
       const aiLayout = localStorage.getItem('ai_generated_layout');
       if (aiLayout) {
         try {
           const parsed = JSON.parse(aiLayout);
-          if (parsed.cards) setBlogPosts(parsed.cards);
+          if (parsed.cards) {
+            handleAIGenerated(parsed.cards, parsed.settings);
+          }
           localStorage.removeItem('ai_generated_layout');
         } catch (e) {
           console.error('Failed to load AI layout:', e);
@@ -171,7 +185,7 @@ export default function BlogBuilderPage() {
   const handleLoadSelected = async (id) => {
     try {
       const data = await builderApi.getLayout(id);
-      if (data.layout.layout_data?.cards)    setBlogPosts(data.layout.layout_data.cards);
+      if (data.layout.layout_data?.cards) setBlogPosts(data.layout.layout_data.cards);
       if (data.layout.layout_data?.settings) setSettings(data.layout.layout_data.settings);
       setShowLayoutPicker(false);
     } catch (err) {
@@ -207,9 +221,11 @@ export default function BlogBuilderPage() {
     );
   };
 
-  // AI generated posts
-  const handleAIGenerated = (newCards) => {
-    setBlogPosts(newCards);
+  // AI generated posts — store separately, enable compare mode
+  const handleAIGenerated = (newCards, newSettings) => {
+    setAiPosts(newCards);
+    if (newSettings) setAiSettings(newSettings);
+    setCompareMode(true);
   };
 
   return (
@@ -231,7 +247,7 @@ export default function BlogBuilderPage() {
           <button className="btn-secondary" onClick={() => setExportOpen(true)}>
             <Code size={18} /> Export
           </button>
-          <button className="btn-primary" onClick={() => setAiOpen(true)}>
+          <button className="btn-primary" onClick={() => router.push('/ai-prompt')}>
             <Sparkles size={18} /> Generate with AI
           </button>
         </div>
@@ -276,9 +292,9 @@ export default function BlogBuilderPage() {
           {/* Save / Load */}
           <div className="layout-actions">
             <button className="btn-secondary" onClick={handleSaveClick}>
-              {saveStatus === 'saved'  ? '✅ Saved!'      : null}
-              {saveStatus === 'error'  ? '❌ Save Failed' : null}
-              {saveStatus === null     ? '💾 Save Layout' : null}
+              {saveStatus === 'saved' ? '✅ Saved!' : null}
+              {saveStatus === 'error' ? '❌ Save Failed' : null}
+              {saveStatus === null ? '💾 Save Layout' : null}
             </button>
             <button className="btn-secondary" onClick={handleOpenLayoutPicker}>
               📂 Load Layout
@@ -287,14 +303,113 @@ export default function BlogBuilderPage() {
 
           {/* Tab Content */}
           {activeTab === 'builder' && (
-            <BuilderCanvas
-              blogPosts={blogPosts}
-              contentMode={contentMode}
-              selectedCard={selectedCard}
-              setSelectedCard={setSelectedCard}
-              settings={settings}
-              onDeleteCard={handleDeleteCard}
-            />
+            <>
+              {/* ── Compare Mode Banner ── */}
+              {aiPosts.length > 0 && (
+                <div style={{
+                  display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap',
+                  padding: '10px 16px',
+                  background: compareMode ? 'rgba(79,70,229,0.06)' : '#fffbeb',
+                  borderBottom: `2px solid ${compareMode ? 'rgba(79,70,229,0.2)' : '#fde68a'}`,
+                  fontSize: '13px',
+                }}>
+                  <span style={{ fontWeight: '700', color: compareMode ? '#4f46e5' : '#92400e', marginRight: '4px' }}>
+                    {compareMode ? '⚡ Compare Mode — Your Layout vs AI' : '🤖 AI layout is ready!'}
+                  </span>
+                  <button
+                    onClick={() => setCompareMode(v => !v)}
+                    style={{
+                      padding: '6px 14px', borderRadius: '8px', border: 'none',
+                      background: compareMode ? '#4f46e5' : '#f59e0b',
+                      color: '#fff', fontWeight: '700', fontSize: '12px',
+                      cursor: 'pointer', fontFamily: 'inherit',
+                    }}
+                  >
+                    {compareMode ? 'Exit Compare' : 'Compare Side by Side'}
+                  </button>
+                  <button
+                    onClick={() => { 
+                      setBlogPosts(aiPosts); 
+                      if (aiSettings) setSettings(prev => ({ ...prev, ...aiSettings }));
+                      setAiPosts([]); 
+                      setAiSettings(null);
+                      setCompareMode(false); 
+                    }}
+                    style={{
+                      padding: '6px 14px', borderRadius: '8px',
+                      border: '2px solid #4f46e5', background: '#fff',
+                      color: '#4f46e5', fontWeight: '700', fontSize: '12px',
+                      cursor: 'pointer', fontFamily: 'inherit',
+                    }}
+                  >
+                    ✅ Use AI Layout
+                  </button>
+                  <button
+                    onClick={() => { setAiPosts([]); setAiSettings(null); setCompareMode(false); }}
+                    style={{
+                      padding: '6px 12px', borderRadius: '8px',
+                      border: '2px solid #e0e0e0', background: '#fff',
+                      color: '#888', fontWeight: '600', fontSize: '12px',
+                      cursor: 'pointer', fontFamily: 'inherit',
+                    }}
+                  >
+                    ✖ Discard AI
+                  </button>
+                </div>
+              )}
+
+              {/* ── Split View (Compare) ── */}
+              {compareMode && aiPosts.length > 0 ? (
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', flex: 1, overflow: 'hidden' }}>
+                  <div style={{ borderRight: '3px solid #e2e8f0', overflowY: 'auto' }}>
+                    <div style={{
+                      padding: '8px 16px', background: '#f8fafc',
+                      borderBottom: '1px solid #e2e8f0',
+                      fontSize: '11px', fontWeight: '700', color: '#64748b',
+                      textTransform: 'uppercase', letterSpacing: '0.5px',
+                    }}>
+                      📌 Your Layout
+                    </div>
+                    <BuilderCanvas
+                      blogPosts={blogPosts}
+                      contentMode={contentMode}
+                      selectedCard={selectedCard}
+                      setSelectedCard={setSelectedCard}
+                      settings={settings}
+                      onDeleteCard={handleDeleteCard}
+                    />
+                  </div>
+                  <div style={{ overflowY: 'auto' }}>
+                    <div style={{
+                      padding: '8px 16px',
+                      background: 'rgba(79,70,229,0.06)',
+                      borderBottom: '1px solid rgba(79,70,229,0.15)',
+                      fontSize: '11px', fontWeight: '700', color: '#4f46e5',
+                      textTransform: 'uppercase', letterSpacing: '0.5px',
+                    }}>
+                      ⚡ AI Generated Layout
+                    </div>
+                    <BuilderCanvas
+                      blogPosts={aiPosts}
+                      contentMode={contentMode}
+                      selectedCard={null}
+                      setSelectedCard={() => {}}
+                      settings={settings}
+                      onDeleteCard={() => {}}
+                    />
+                  </div>
+                </div>
+              ) : (
+                <BuilderCanvas
+                  blogPosts={blogPosts}
+                  contentMode={contentMode}
+                  selectedCard={selectedCard}
+                  setSelectedCard={setSelectedCard}
+                  settings={settings}
+                  onDeleteCard={handleDeleteCard}
+                />
+              )}
+            </>
           )}
 
           {activeTab === 'components' && (
@@ -318,7 +433,7 @@ export default function BlogBuilderPage() {
                     border: `1px solid ${selectedCard?.id === post.id ? '#4f46e5' : '#e5e5e5'}`,
                     borderRadius: '8px', cursor: 'pointer',
                     display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-                    background: selectedCard?.id === post.id ? '#f5f3ff' : '#fff'
+                    background: selectedCard?.id === post.id ? '#eff6ff' : '#fff'
                   }}
                 >
                   <div>
@@ -376,11 +491,6 @@ export default function BlogBuilderPage() {
       />
 
       {/* Other Modals */}
-      <AIGenerateModal
-        isOpen={aiOpen}
-        onClose={() => setAiOpen(false)}
-        onGenerated={handleAIGenerated}
-      />
       <PreviewModal
         isOpen={previewOpen}
         onClose={() => setPreviewOpen(false)}

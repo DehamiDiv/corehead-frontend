@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 
 import { useState, useEffect } from 'react';
 import { ChevronDown, ChevronRight, Save } from 'lucide-react';
@@ -105,8 +105,8 @@ export default function CMSFieldsPanel({ cmsFields, selectedCard, contentMode, o
     <aside style={{
       width: '260px',
       minWidth: '260px',
-      borderLeft: '1px solid #e0e0e0',
-      background: '#fafafa',
+      borderLeft: '1px solid #e2e8f0',
+      background: '#ffffff',
       overflowY: 'auto',
       display: 'flex',
       flexDirection: 'column',
@@ -114,9 +114,9 @@ export default function CMSFieldsPanel({ cmsFields, selectedCard, contentMode, o
 
       {/* ── Panel Header ── */}
       <div style={{
-        padding: '14px 16px',
-        borderBottom: '2px solid #e0e0e0',
-        background: 'linear-gradient(135deg, rgba(102,126,234,0.08) 0%, rgba(118,75,162,0.08) 100%)',
+        padding: '16px',
+        borderBottom: '1px solid #e2e8f0',
+        background: '#f8fafc',
       }}>
         <h3 style={{
           fontSize: '14px', fontWeight: '700', margin: '0 0 2px',

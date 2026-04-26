@@ -111,9 +111,9 @@ export default function AITemplatesPage() {
           </div>
 
           <div className="action-buttons">
-            <Link href="/ai-options" className="btn-back">
+            <Link href="/ai-prompt" className="btn-back">
               <ArrowLeft size={18} />
-              Back to Options
+              Back to Prompt
             </Link>
           </div>
         </div>
