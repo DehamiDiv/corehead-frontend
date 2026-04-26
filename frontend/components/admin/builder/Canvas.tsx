@@ -227,6 +227,19 @@ function renderBlockContent(block: BuilderBlock, isSelected: boolean) {
           </div>
         </div>
       );
+    case "Featured Carousel":
+      return (
+        <div style={styleString} className="border border-slate-200 bg-slate-800 rounded-3xl p-8 h-64 flex flex-col items-center justify-center text-center relative overflow-hidden">
+          <div className="absolute inset-0 bg-gradient-to-t from-black/80 to-transparent"></div>
+          <div className="relative z-10 w-12 h-12 bg-white/20 text-white rounded-full flex items-center justify-center mb-3 backdrop-blur-sm">
+             <ImageIcon className="w-6 h-6" />
+          </div>
+          <h4 className="relative z-10 text-white font-bold text-xl">Featured Carousel Hero</h4>
+          <p className="relative z-10 text-white/70 text-sm max-w-sm mt-1">
+            Displays top {block.content?.limit || 3} posts in a large premium carousel.
+          </p>
+        </div>
+      );
     default:
       return <div className="text-red-500">Unknown block type</div>;
   }

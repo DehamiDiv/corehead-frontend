@@ -13,12 +13,10 @@ import FAQ from "@/components/FAQ";
 
 export default function LandingPage() {
   return (
-    <main className="min-h-screen bg-slate-50">
+    <main className="min-h-screen bg-white">
       <Navbar />
       <Hero />
-      <LogoCloud />
       <Features />
-      <GridFeatures />
       <Testimonials />
       <Pricing />
       <FAQ />

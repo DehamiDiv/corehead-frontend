@@ -88,7 +88,7 @@ export default function BlogsPage() {
             className="flex items-center gap-2 px-5 py-2.5 bg-blue-600 rounded-xl text-sm font-bold text-white hover:bg-blue-700 transition-all shadow-lg shadow-blue-200"
           >
             <Plus className="w-4 h-4" />
-            Create Post
+            Create Blogs
           </Link>
         </div>
       </div>

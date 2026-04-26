@@ -18,7 +18,8 @@ export type BlockType =
   | "Button"
   | "Container"
   | "Columns"
-  | "Collection List";
+  | "Collection List"
+  | "Featured Carousel";
 
 export interface BuilderBlock {
   id: string;
@@ -272,6 +273,8 @@ function getDefaultContent(type: BlockType): any {
       return 2; // Default to 2 columns, content holds the number of columns
     case "Collection List":
       return { limit: 6, category: "" };
+    case "Featured Carousel":
+      return { limit: 3 };
     default:
       return "";
   }

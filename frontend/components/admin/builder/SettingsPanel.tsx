@@ -415,6 +415,23 @@ function ContentTab({ selectedBlock, updateBlock }: any) {
       </div>
     );
   }
+  
+  if (selectedBlock.type === "Featured Carousel") {
+    return (
+      <div className="space-y-4">
+        <div className="space-y-2">
+           <label className="text-sm text-slate-700">Carousel Limit</label>
+           <input 
+              type="number"
+              value={selectedBlock.content?.limit || 3}
+              onChange={(e) => updateBlock(selectedBlock.id, { ...selectedBlock.content, limit: parseInt(e.target.value) })}
+              className="w-full px-3 py-2 bg-slate-50 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 outline-none"
+           />
+           <p className="text-xs text-slate-500">Maximum posts to show in the carousel.</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <p className="text-sm text-slate-500">
