@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useMemo, useState } from "react";
@@ -44,14 +45,17 @@ export default function Sidebar() {
   return (
     <aside className="fixed top-0 left-0 h-screen w-[280px] bg-white border-r border-gray-100 flex flex-col z-50">
       {/* Logo */}
-      <div className="h-24 px-8 flex items-center gap-3">
-        <div className="relative h-10 w-10 flex items-center justify-center">
-          <div className="absolute inset-0 bg-blue-600 rounded-xl rotate-6 opacity-20"></div>
-          <div className="relative h-10 w-10 rounded-xl bg-blue-600 flex items-center justify-center shadow-lg shadow-blue-200">
-            <span className="text-white font-black text-xl italic">C</span>
-          </div>
-        </div>
-        <span className="text-2xl font-bold text-slate-900 tracking-tight">CoreHead</span>
+      <div className="h-24 px-8 flex items-center">
+        <Link href="/" className="flex items-center">
+          <Image 
+            src="/logo.png" 
+            alt="CoreHead Logo" 
+            width={160} 
+            height={40} 
+            className="h-14 w-auto object-contain" 
+            priority
+          />
+        </Link>
       </div>
 
       {/* Nav */}

@@ -3,6 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import Image from "next/image";
 import { Eye, EyeOff, LayoutGrid, BookOpen, Settings, AlertCircle, Loader2 } from "lucide-react";
 import { api } from "@/lib/api";
 
@@ -49,45 +50,27 @@ export default function LoginPage() {
   return (
     <div className="min-h-screen w-full bg-gradient-to-br from-blue-200 via-blue-300 to-blue-400 flex flex-col font-sans">
       {/* Custom Navbar for Login Page */}
-      <nav className="w-full px-6 py-4 flex items-center justify-between mx-auto max-w-7xl">
-        <Link href="/" className="flex items-center gap-2">
-          <div className="relative flex items-center justify-center w-8 h-8 rounded-full bg-white/20 backdrop-blur-sm">
-            <div className="w-4 h-4 rounded-full bg-blue-600 relative z-10" />
-            <div className="absolute w-6 h-6 rounded-full border border-blue-600/30" />
-          </div>
-          <span className="text-xl font-bold text-slate-900 tracking-tight">
-            CoreHead
-          </span>
+      <nav className="w-full px-6 py-4 flex items-center justify-between mx-auto max-w-7xl relative z-10">
+        <Link href="/" className="flex items-center">
+          <Image 
+            src="/logo.png" 
+            alt="CoreHead Logo" 
+            width={160} 
+            height={40} 
+            className="h-14 w-auto object-contain" 
+            priority
+          />
         </Link>
 
-        {/* Centered Links */}
-        <div className="hidden md:flex items-center gap-8 absolute left-1/2 -translate-x-1/2">
-          <Link
-            href="#"
-            className="flex items-center gap-2 text-sm font-medium text-slate-800 hover:text-blue-700 transition-colors"
+        <div className="flex items-center gap-4">
+          <span className="hidden sm:inline text-sm text-slate-700">Don't have an account?</span>
+          <Link 
+            href="/signup"
+            className="px-5 py-2 text-sm font-bold text-blue-700 transition-all bg-white/50 backdrop-blur-md border border-white/50 rounded-full hover:bg-white/80 shadow-sm"
           >
-            <LayoutGrid className="w-4 h-4" />
-            Dashboard
-          </Link>
-          <Link
-            href="#"
-            className="flex items-center gap-2 text-sm font-medium text-slate-800 hover:text-blue-700 transition-colors"
-          >
-            <BookOpen className="w-4 h-4" />
-            All Blogs
-          </Link>
-          <Link
-            href="#"
-            className="flex items-center gap-2 text-sm font-medium text-slate-800 hover:text-blue-700 transition-colors"
-          >
-            <Settings className="w-4 h-4" />
-            Settings
+            Sign Up
           </Link>
         </div>
-
-        <button className="px-5 py-2 text-sm font-medium text-white transition-all bg-blue-700 rounded-md hover:bg-blue-800 shadow-sm">
-          Get Started
-        </button>
       </nav>
 
       {/* Main Content */}

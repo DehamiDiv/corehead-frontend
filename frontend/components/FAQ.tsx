@@ -1,29 +1,26 @@
-"use client";
-
-import { motion, AnimatePresence } from "framer-motion";
-import { Plus, Minus, HelpCircle } from "lucide-react";
+import { Plus, Minus } from "lucide-react";
 import { useState } from "react";
 
 const faqs = [
   {
     question: "What is CoreHead?",
     answer:
-      "CoreHead is an ultra-lightweight, high-performance CMS built on Go and Next.js, designed for speed and ease of use.",
+      "CoreHead is a high-performance headless CMS and blogging platform built for speed, collaboration, SEO, and scalable content management. It lets you create blogs, pages, authors, metadata, and more with ease.",
   },
   {
     question: "Do I need technical knowledge to use CoreHead?",
     answer:
-      "No, CoreHead offers a visual builder and intuitive interface that allows non-technical users to create and manage content easily.",
+      "No, CoreHead offers a visual builder and intuitive interface that allows non-technical users to create and manage content easily, while providing powerful APIs for developers.",
   },
   {
     question: "Does CoreHead support SEO features?",
     answer:
-      "Yes, CoreHead comes with built-in SEO controls, automatic sitemaps, and optimized metadata management to help your content rank better.",
+      "Yes, CoreHead comes with built-in SEO controls, automatic sitemaps, and optimized metadata management to help your content rank better on search engines.",
   },
   {
     question: "Can I manage multiple authors?",
     answer:
-      "Absolutely. CoreHead supports role-based access control, allowing you to manage authors, editors, and admins with different permissions.",
+      "Absolutely. CoreHead supports role-based access control, allowing you to manage authors, editors, and admins with different permissions seamlessly.",
   },
 ];
 
@@ -31,73 +28,51 @@ export default function FAQ() {
   const [openIndex, setOpenIndex] = useState<number | null>(0);
 
   return (
-    <section className="py-24 px-6 md:px-12 bg-slate-50">
+    <section id="faq" className="py-32 px-6 bg-white">
       <div className="max-w-7xl mx-auto">
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 lg:gap-24">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-20">
           {/* Left Column */}
-          <div className="space-y-6">
-            <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-slate-100 border border-slate-200 text-slate-600 text-xs font-medium uppercase tracking-wider">
-              <HelpCircle className="w-3.5 h-3.5" />
-              FAQs
-            </div>
-
-            <h2 className="text-3xl md:text-5xl font-bold text-slate-900 leading-tight">
-              Frequently Asked Questions?
+          <div className="space-y-8">
+            <h2 className="text-4xl md:text-6xl font-bold text-slate-900 leading-tight">
+              Frequently <br />
+              Asked Questions
             </h2>
 
-            <p className="text-lg text-slate-500 leading-relaxed max-w-md">
+            <p className="text-xl text-slate-500 leading-relaxed max-w-md">
               Get answers to common questions about deployment, the tech stack,
               and managing your content with CoreHead.
             </p>
-
-            <button className="px-6 py-3 bg-blue-600 text-white font-semibold rounded-full hover:bg-blue-700 transition-colors shadow-lg shadow-blue-600/20">
-              More Questions
-            </button>
           </div>
 
           {/* Right Column - Accordion */}
-          <div className="space-y-4">
+          <div className="divide-y divide-slate-100">
             {faqs.map((faq, index) => (
-              <div
-                key={index}
-                className="bg-white rounded-2xl border border-slate-100 overflow-hidden shadow-sm"
-              >
+              <div key={index} className="py-8 first:pt-0 last:pb-0">
                 <button
                   onClick={() =>
                     setOpenIndex(openIndex === index ? null : index)
                   }
-                  className="w-full flex items-center justify-between p-6 text-left focus:outline-none group"
+                  className="w-full flex items-start justify-between text-left focus:outline-none group"
                 >
                   <span
-                    className={`font-semibold text-lg transition-colors ${openIndex === index ? "text-blue-600" : "text-slate-900"}`}
+                    className={`font-bold text-2xl transition-colors pr-8 ${openIndex === index ? "text-[#0066FF]" : "text-slate-900"}`}
                   >
                     {faq.question}
                   </span>
-                  <span
-                    className={`shrink-0 ml-4 p-1 rounded-full transition-colors ${openIndex === index ? "bg-blue-100 text-blue-600" : "bg-slate-50 text-slate-400 group-hover:text-slate-600"}`}
-                  >
+                  <span className="shrink-0 mt-2">
                     {openIndex === index ? (
-                      <Minus className="w-5 h-5" />
+                      <Minus className="w-8 h-8 text-slate-400" />
                     ) : (
-                      <Plus className="w-5 h-5" />
+                      <Plus className="w-8 h-8 text-slate-400 group-hover:text-slate-900 transition-colors" />
                     )}
                   </span>
                 </button>
 
-                <AnimatePresence>
-                  {openIndex === index && (
-                    <motion.div
-                      initial={{ height: 0, opacity: 0 }}
-                      animate={{ height: "auto", opacity: 1 }}
-                      exit={{ height: 0, opacity: 0 }}
-                      transition={{ duration: 0.3, ease: "easeInOut" }}
-                    >
-                      <div className="px-6 pb-6 text-slate-600 leading-relaxed border-t border-slate-50 pt-4">
-                        {faq.answer}
-                      </div>
-                    </motion.div>
-                  )}
-                </AnimatePresence>
+                {openIndex === index && (
+                  <div className="mt-6 text-xl text-slate-500 leading-relaxed max-w-2xl">
+                    {faq.answer}
+                  </div>
+                )}
               </div>
             ))}
           </div>

@@ -1,7 +1,8 @@
 "use client";
 
-import { motion } from "framer-motion";
-import { Star, Play, ChevronLeft, ChevronRight } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
+import { Star, Play, ChevronLeft, ChevronRight, X } from "lucide-react";
+import { useState, useRef, useEffect } from "react";
 
 const testimonials = [
   {
@@ -9,7 +10,7 @@ const testimonials = [
     role: "Homeowner",
     title: "Sparkling Clean Home",
     quote: "Tellus aliquam faucibus imperdiet eget interdum risus diam.",
-    image: "", // Placeholder or use initials/color
+    image: "",
     color: "bg-blue-600",
   },
   {
@@ -28,6 +29,15 @@ const testimonials = [
     image: "",
     color: "bg-blue-600",
   },
+];
+
+const shortVideos = [
+  "LA2tadwk-aw",
+  "cM2iK-xpRAs",
+  "gOfTY08EDu4",
+  "LA2tadwk-aw",
+  "cM2iK-xpRAs",
+  "gOfTY08EDu4",
 ];
 
 export default function Testimonials() {
@@ -94,38 +104,129 @@ export default function Testimonials() {
             </p>
           </div>
 
-          {/* Video Carousel Mockup */}
-          <div className="relative z-10">
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-              {[1, 2, 3, 4].map((_, i) => (
-                <div
-                  key={i}
-                  className="aspect-[3/4] rounded-xl bg-slate-200/20 relative overflow-hidden group cursor-pointer hover:bg-slate-200/30 transition-colors"
-                >
-                  {/* Placeholder user image */}
-                  <div className="absolute inset-0 bg-blue-800/40"></div>
-                  <div className="absolute bottom-0 left-0 right-0 h-1/2 bg-gradient-to-t from-black/50 to-transparent"></div>
-
-                  {/* Play Button */}
-                  <div className="absolute inset-0 flex items-center justify-center">
-                    <div className="w-12 h-12 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center group-hover:scale-110 transition-transform">
-                      <Play className="w-5 h-5 text-white fill-white ml-1" />
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
-
-            {/* Nav arrows */}
-            <button className="absolute top-1/2 -left-4 -translate-y-1/2 w-8 h-8 flex items-center justify-center text-white/50 hover:text-white">
-              <ChevronLeft className="w-6 h-6" />
-            </button>
-            <button className="absolute top-1/2 -right-4 -translate-y-1/2 w-8 h-8 flex items-center justify-center text-white/50 hover:text-white">
-              <ChevronRight className="w-6 h-6" />
-            </button>
-          </div>
+          {/* Video Carousel */}
+          <VideoCarousel />
         </div>
       </div>
     </section>
+  );
+}
+
+function VideoCarousel() {
+  const [index, setIndex] = useState(0);
+  const [playingVideo, setPlayingVideo] = useState<string | null>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  const handleNext = () => {
+    if (index < shortVideos.length - 1) {
+      setIndex(index + 1);
+    } else {
+      setIndex(0); // Loop back
+    }
+  };
+
+  const handlePrev = () => {
+    if (index > 0) {
+      setIndex(index - 1);
+    } else {
+      setIndex(shortVideos.length - 1); // Loop to end
+    }
+  };
+
+  return (
+    <div className="relative z-10">
+      <div className="overflow-hidden cursor-grab active:cursor-grabbing" ref={containerRef}>
+        <motion.div
+          drag="x"
+          dragConstraints={containerRef}
+          animate={{ x: `-${index * (100 / shortVideos.length)}%` }} 
+          transition={{ type: "spring", damping: 30, stiffness: 150 }}
+          className="flex gap-4 md:gap-5"
+          onDragEnd={(_, info) => {
+            if (info.offset.x < -50) handleNext();
+            if (info.offset.x > 50) handlePrev();
+          }}
+        >
+          {shortVideos.map((id, i) => (
+            <motion.div
+              key={i}
+              className="w-[85%] md:w-[calc(25%-1.25rem)] aspect-[2/3] rounded-3xl bg-blue-700/50 border border-blue-400/30 relative overflow-hidden group shadow-xl shrink-0"
+            >
+              {/* Thumbnail Placeholder with User Style */}
+              <div className="absolute inset-0 bg-gradient-to-br from-blue-500/10 to-blue-900/60 z-10" />
+              
+              {/* YouTube Thumbnail */}
+              <img 
+                src={`https://img.youtube.com/vi/${id}/hqdefault.jpg`} 
+                alt="Video thumbnail"
+                className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
+              />
+
+              {/* Play Button Overlay */}
+              <div className="absolute inset-0 flex items-center justify-center z-20">
+                <button
+                  onClick={() => setPlayingVideo(id)}
+                  className="w-14 h-14 rounded-full bg-white flex items-center justify-center shadow-xl group-hover:scale-110 transition-transform"
+                >
+                  <Play className="w-6 h-6 text-blue-600 fill-blue-600 ml-1" />
+                </button>
+              </div>
+            </motion.div>
+          ))}
+        </motion.div>
+      </div>
+
+      {/* Navigation Arrows */}
+      <div className="absolute top-1/2 -left-4 md:-left-8 -translate-y-1/2 z-20">
+        <button
+          onClick={handlePrev}
+          className="w-10 h-10 md:w-12 md:h-12 rounded-full bg-white/10 backdrop-blur-md border border-white/20 flex items-center justify-center hover:bg-white/20 transition-all"
+        >
+          <ChevronLeft className="w-6 h-6 text-white" />
+        </button>
+      </div>
+      <div className="absolute top-1/2 -right-4 md:-right-8 -translate-y-1/2 z-20">
+        <button
+          onClick={handleNext}
+          className="w-10 h-10 md:w-12 md:h-12 rounded-full bg-white/10 backdrop-blur-md border border-white/20 flex items-center justify-center hover:bg-white/20 transition-all"
+        >
+          <ChevronRight className="w-6 h-6 text-white" />
+        </button>
+      </div>
+
+      {/* Video Modal Overlay */}
+      <AnimatePresence>
+        {playingVideo && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[100] flex items-center justify-center bg-black/90 p-4 md:p-10 backdrop-blur-sm"
+            onClick={() => setPlayingVideo(null)}
+          >
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.9, opacity: 0 }}
+              className="relative w-full max-w-[400px] aspect-[9/16] bg-black rounded-3xl overflow-hidden shadow-2xl border border-white/10"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <iframe
+                src={`https://www.youtube.com/embed/${playingVideo}?autoplay=1`}
+                className="w-full h-full"
+                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                allowFullScreen
+              />
+              <button
+                onClick={() => setPlayingVideo(null)}
+                className="absolute top-4 right-4 w-10 h-10 rounded-full bg-white/10 backdrop-blur-md flex items-center justify-center text-white hover:bg-white/20 transition-colors"
+              >
+                <X className="w-6 h-6" />
+              </button>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </div>
   );
 }

@@ -113,7 +113,7 @@ export default function LayoutsListPage() {
                         Refresh
                     </button>
                     <Link
-                        href="/admin/layouts/new"
+                        href="/admin/builder"
                         className="flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-5 py-2.5 rounded-xl text-sm font-bold shadow-lg shadow-blue-200 transition-all"
                     >
                         <Plus size={18} />

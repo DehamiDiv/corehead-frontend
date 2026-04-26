@@ -23,6 +23,7 @@ const tools = [
   { icon: LayoutGrid, label: "Container" },
   { icon: LayoutGrid, label: "Columns" }, // Using LayoutGrid for columns as well for simplicity
   { icon: List, label: "Collection List" },
+  { icon: ImageIcon, label: "Featured Carousel" },
 ];
 
 const bottomTools = [
