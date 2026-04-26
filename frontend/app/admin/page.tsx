@@ -13,7 +13,7 @@ export default function AdminPage() {
       </div>
 
       {/* Features & Tech Stack */}
-      <div className="mt-8 relative z-10 space-y-20">
+      <div className="mt-4 relative z-10 space-y-12">
         <FeatureCards />
         <TechStack />
       </div>

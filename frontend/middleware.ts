@@ -5,7 +5,8 @@ import type { NextRequest } from 'next/server';
 const protectedPaths: string[] = [
   '/admin',
   '/builder',
-  '/dashboard'
+  '/dashboard',
+  '/ai-prompt'
 ];
 
 export function middleware(request: NextRequest) {
