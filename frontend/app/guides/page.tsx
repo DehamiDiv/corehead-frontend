@@ -1,6 +1,6 @@
 "use client";
 
-import Navbar from "@/components/Navbar";
+
 import Footer from "@/components/Footer";
 import GuidesHero from "@/components/GuidesHero";
 import GuideCard from "@/components/GuideCard";
@@ -34,10 +34,10 @@ const quickstartGuides = [
 
 const buildGuides = [
   {
-    title: "Building a Custom Plugin",
+    title: "Customizing the Dashboard",
     description:
-      "Extend the dashboard functionality by writing custom Go plugins for the backend.",
-    tags: ["Go", "Plugin"],
+      "Extend the dashboard functionality by creating custom React components for the frontend.",
+    tags: ["React", "Customization"],
     link: "#",
   },
   {
@@ -59,8 +59,6 @@ const buildGuides = [
 export default function GuidesPage() {
   return (
     <main className="min-h-screen bg-slate-50">
-      <Navbar />
-
       <GuidesHero />
 
       {/* Quickstart Guides Section */}

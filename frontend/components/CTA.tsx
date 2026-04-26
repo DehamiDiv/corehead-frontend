@@ -1,3 +1,5 @@
+import Link from "next/link";
+
 export default function CTA() {
   return (
     <section className="py-32 px-6 bg-[#2563EB] relative overflow-hidden">
@@ -12,13 +14,19 @@ export default function CTA() {
         </p>
 
         <div className="flex flex-col sm:flex-row gap-6 justify-center">
-          <button className="px-12 py-4 bg-white/10 backdrop-blur-md border border-white/20 text-white font-bold rounded-full hover:bg-white/20 transition-all text-lg">
+          <Link 
+            href="/signup"
+            className="px-12 py-4 bg-white/10 backdrop-blur-md border border-white/20 text-white font-bold rounded-full hover:bg-white/20 transition-all text-lg text-center"
+          >
             Get Started Now
-          </button>
+          </Link>
 
-          <button className="px-12 py-4 bg-white text-blue-600 font-bold rounded-full hover:bg-blue-50 transition-all shadow-xl text-lg hover:scale-105 active:scale-95">
+          <Link 
+            href="/signup"
+            className="px-12 py-4 bg-white text-blue-600 font-bold rounded-full hover:bg-blue-50 transition-all shadow-xl text-lg hover:scale-105 active:scale-95 text-center"
+          >
             Get a Demo
-          </button>
+          </Link>
         </div>
       </div>
     </section>
