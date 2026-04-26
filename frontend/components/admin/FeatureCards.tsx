@@ -24,7 +24,7 @@ const features = [
     description: "Use advanced AI to generate and refine layouts that perfectly match your brand.",
     icon: Sparkles,
     color: "purple",
-    href: "/admin/posts"
+    href: "/ai-prompt"
   },
 ];
 
