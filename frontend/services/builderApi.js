@@ -1,12 +1,23 @@
 // services/builderApi.js  (Next.js frontend)
 const BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api';
 
+const getAuthHeader = () => {
+  if (typeof window !== 'undefined') {
+    const token = localStorage.getItem('token');
+    return token ? { 'Authorization': `Bearer ${token}` } : {};
+  }
+  return {};
+};
+
 export const builderApi = {
   // Save a layout
   saveLayout: async ({ name, layout_data, content_mode, grid_layout }) => {
     const res = await fetch(`${BASE_URL}/builder/layouts`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 
+        'Content-Type': 'application/json',
+        ...getAuthHeader()
+      },
       body: JSON.stringify({ name, layout_data, content_mode, grid_layout }),
     });
     if (!res.ok) throw new Error('Failed to save layout');
@@ -15,14 +26,18 @@ export const builderApi = {
 
   // Get all layouts
   getLayouts: async () => {
-    const res = await fetch(`${BASE_URL}/builder/layouts`);
+    const res = await fetch(`${BASE_URL}/builder/layouts`, {
+      headers: { ...getAuthHeader() }
+    });
     if (!res.ok) throw new Error('Failed to fetch layouts');
     return res.json();
   },
 
   // Get single layout by ID
   getLayout: async (id) => {
-    const res = await fetch(`${BASE_URL}/builder/layouts/${id}`);
+    const res = await fetch(`${BASE_URL}/builder/layouts/${id}`, {
+      headers: { ...getAuthHeader() }
+    });
     if (!res.ok) throw new Error('Layout not found');
     return res.json();
   },
@@ -31,7 +46,10 @@ export const builderApi = {
   updateLayout: async (id, data) => {
     const res = await fetch(`${BASE_URL}/builder/layouts/${id}`, {
       method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 
+        'Content-Type': 'application/json',
+        ...getAuthHeader()
+      },
       body: JSON.stringify(data),
     });
     if (!res.ok) throw new Error('Failed to update layout');
@@ -42,6 +60,7 @@ export const builderApi = {
   deleteLayout: async (id) => {
     const res = await fetch(`${BASE_URL}/builder/layouts/${id}`, {
       method: 'DELETE',
+      headers: { ...getAuthHeader() }
     });
     if (!res.ok) throw new Error('Failed to delete layout');
     return res.json();
@@ -51,7 +70,10 @@ export const builderApi = {
   generateAILayout: async (data) => {
     const res = await fetch(`${BASE_URL}/ai/generate-layout`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 
+        'Content-Type': 'application/json',
+        ...getAuthHeader()
+      },
       body: JSON.stringify(data),
     });
     if (!res.ok) {
@@ -60,4 +82,4 @@ export const builderApi = {
     }
     return res.json();
   },
-};
+};

@@ -19,7 +19,7 @@ export default async function BlogArchivePage() {
     <main className="blog-archive-page">
       <PublicPageRenderer 
         layout={layout} 
-        data={posts} 
+        data={{ posts }} 
         isLoop={true} 
         bindings={bindings}
       />

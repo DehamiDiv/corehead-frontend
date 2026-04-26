@@ -132,17 +132,17 @@ export const api = {
     if (type === 'blog-loop') {
       return {
         blocks: [
-          { id: '1', type: 'Heading', content: 'Latest Posts' },
-          { id: '2', type: 'Collection List', limit: 6 }
+          { id: '1', type: 'Heading' as any, content: 'Latest Posts' },
+          { id: '2', type: 'Collection List' as any, content: { limit: 6 } }
         ]
       };
     } else {
       return {
          blocks: [
-           { id: '1', type: 'Image', bindings: { content: 'featured_image' } },
-           { id: '2', type: 'Heading', bindings: { content: 'title' } },
-           { id: '3', type: 'Paragraph', bindings: { content: 'category' }, styles: { color: 'blue', textTransform: 'uppercase' } },
-           { id: '4', type: 'Paragraph', bindings: { content: 'content' } }
+           { id: '1', type: 'Image' as any, bindings: { content: 'featured_image' }, content: '' },
+           { id: '2', type: 'Heading' as any, bindings: { content: 'title' }, content: '' },
+           { id: '3', type: 'Paragraph' as any, bindings: { content: 'category' }, styles: { color: 'blue', textTransform: 'uppercase' }, content: '' },
+           { id: '4', type: 'Paragraph' as any, bindings: { content: 'content' }, content: '' }
          ]
       };
     }
