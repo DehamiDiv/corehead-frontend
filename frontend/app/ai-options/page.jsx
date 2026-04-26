@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Sparkles, ArrowRight, ArrowLeft } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
@@ -8,6 +8,14 @@ import './page.css';
 
 export default function AIOptionsPage() {
   const router = useRouter();
+
+  // Protect the page - must be logged in to use AI features
+  useEffect(() => {
+    const token = localStorage.getItem('token');
+    if (!token) {
+      router.push('/login?callback=/ai-options');
+    }
+  }, [router]);
   const [selectedTemplate, setSelectedTemplate] = useState('single-post');
   const [selectedStyle, setSelectedStyle] = useState('modern');
   const [features, setFeatures] = useState({

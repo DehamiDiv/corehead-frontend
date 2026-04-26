@@ -11,6 +11,14 @@ export default function AIPromptPage() {
   const [error, setError] = useState('');
   const router = useRouter();
 
+  // Protect the page - must be logged in to use AI features
+  useEffect(() => {
+    const token = localStorage.getItem('token');
+    if (!token) {
+      router.push('/login?callback=/ai-prompt');
+    }
+  }, [router]);
+
   const quickSuggestions = [
     { icon: '📄', label: 'Minimal blog post' },
     { icon: '📰', label: 'Magazine style' },

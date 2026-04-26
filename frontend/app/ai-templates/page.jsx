@@ -1,5 +1,6 @@
 'use client';
 
+import { useEffect } from 'react';
 import { Sparkles, ArrowLeft } from 'lucide-react';
 import Link from 'next/link';
 import './page.css';
@@ -7,6 +8,14 @@ import { useRouter } from 'next/navigation';
 
 export default function AITemplatesPage() {
   const router = useRouter();
+
+  // Protect the page - must be logged in to use AI features
+  useEffect(() => {
+    const token = localStorage.getItem('token');
+    if (!token) {
+      router.push('/login?callback=/ai-templates');
+    }
+  }, [router]);
 
   const templates = [
     {

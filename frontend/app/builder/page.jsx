@@ -53,6 +53,7 @@ export default function BlogBuilderPage() {
   const [aiPosts, setAiPosts]               = useState([]);    // AI cards stored separately
   const [aiSettings, setAiSettings]         = useState(null);  // AI settings stored separately
   const [compareMode, setCompareMode]       = useState(false); // show both side by side
+  const [error, setError]                   = useState(null);
 
   const [blogPosts, setBlogPosts] = useState([
     {
@@ -99,6 +100,15 @@ export default function BlogBuilderPage() {
 
       if (aiPrompt || selectedTemplate) {
         try {
+          const token = localStorage.getItem('token');
+          if (!token) {
+             setError('Authentication required. Please login to use AI features.');
+             // Clear AI prompt to prevent infinite loop/retry without login
+             localStorage.removeItem('ai_prompt');
+             router.push('/login?callback=/builder');
+             return;
+          }
+
           const options = aiOptions ? JSON.parse(aiOptions) : {};
           const template = selectedTemplate ? JSON.parse(selectedTemplate) : null;
 
@@ -120,6 +130,12 @@ export default function BlogBuilderPage() {
 
         } catch (err) {
           console.error('AI Flow error:', err);
+          if (err.message?.includes('Access denied') || err.message?.includes('token')) {
+             setError('Your session has expired. Please login again.');
+             router.push('/login');
+          } else {
+             setError('Failed to generate AI layout. ' + err.message);
+          }
         }
       }
 
@@ -300,6 +316,28 @@ export default function BlogBuilderPage() {
               📂 Load Layout
             </button>
           </div>
+
+          {/* Error Banner */}
+          {error && (
+            <div style={{
+              padding: '12px 20px',
+              background: '#fef2f2',
+              borderBottom: '1px solid #fecaca',
+              color: '#dc2626',
+              fontSize: '14px',
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center'
+            }}>
+              <span>⚠️ {error}</span>
+              <button 
+                onClick={() => setError(null)}
+                style={{ background: 'none', border: 'none', color: '#dc2626', cursor: 'pointer', fontWeight: '700' }}
+              >
+                ✕
+              </button>
+            </div>
+          )}
 
           {/* Tab Content */}
           {activeTab === 'builder' && (

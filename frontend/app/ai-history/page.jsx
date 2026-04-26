@@ -33,6 +33,14 @@ export default function AIHistoryPage() {
   const [filterStyle, setFilterStyle] = useState('all');
   const [expandedId, setExpandedId] = useState(null);
 
+  // Protect the page - must be logged in to see history
+  useEffect(() => {
+    const token = localStorage.getItem('token');
+    if (!token) {
+      router.push('/login?callback=/ai-history');
+    }
+  }, [router]);
+
   /* ── Fetch history ── */
   const fetchHistory = async () => {
     try {
@@ -44,6 +52,9 @@ export default function AIHistoryPage() {
       setFiltered(layouts);
     } catch (err) {
       setError(err.message);
+      if (err.message?.includes('Access denied') || err.message?.includes('token')) {
+        router.push('/login?callback=/ai-history');
+      }
     } finally {
       setLoading(false);
     }
