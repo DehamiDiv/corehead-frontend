@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Sparkles, ArrowRight } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
@@ -10,6 +10,14 @@ export default function AIPromptPage() {
   const [prompt, setPrompt] = useState('');
   const [error, setError] = useState('');
   const router = useRouter();
+
+  // Protect the page - must be logged in to use AI features
+  useEffect(() => {
+    const token = localStorage.getItem('token');
+    if (!token) {
+      router.push('/login?callback=/ai-prompt');
+    }
+  }, [router]);
 
   const quickSuggestions = [
     { icon: '📄', label: 'Minimal blog post' },
@@ -128,6 +136,10 @@ export default function AIPromptPage() {
           </div>
 
           <div className="action-buttons">
+            <button className="btn-back" onClick={handleGenerate} title="Generate with current description">
+              Skip to Builder
+              <Sparkles size={18} />
+            </button>
             <Link href="/ai-options" className="btn-next" onClick={handleNext}>
               Next: Configure Options
               <ArrowRight size={18} />
