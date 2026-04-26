@@ -11,7 +11,7 @@ function LoginForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const callbackUrl = searchParams.get('callback') || '/admin';
-  
+
   const [showPassword, setShowPassword] = useState(false);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -32,11 +32,11 @@ function LoginForm() {
 
     try {
       const data = await api.login({ email, password });
-      
+
       // PERSIST AUTH STATE
       localStorage.setItem("token", data.token);
       localStorage.setItem("user", JSON.stringify(data.user));
-      
+
       // SET COOKIES for middleware
       document.cookie = `auth_token=${data.token}; path=/; max-age=86400; SameSite=Lax`;
       document.cookie = `user_role=${data.user.role}; path=/; max-age=86400; SameSite=Lax`;
@@ -65,19 +65,19 @@ function LoginForm() {
       {/* Custom Navbar for Login Page */}
       <nav className="w-full px-6 py-4 flex items-center justify-between mx-auto max-w-7xl relative z-10">
         <Link href="/" className="flex items-center">
-          <Image 
-            src="/logo.png" 
-            alt="CoreHead Logo" 
-            width={160} 
-            height={40} 
-            className="h-14 w-auto object-contain" 
+          <Image
+            src="/logo.png"
+            alt="CoreHead Logo"
+            width={160}
+            height={40}
+            className="h-14 w-auto object-contain"
             priority
           />
         </Link>
 
         <div className="flex items-center gap-4">
           <span className="hidden sm:inline text-sm text-slate-700">Don't have an account?</span>
-          <Link 
+          <Link
             href="/signup"
             className="px-5 py-2 text-sm font-bold text-blue-700 transition-all bg-white/50 backdrop-blur-md border border-white/50 rounded-full hover:bg-white/80 shadow-sm"
           >
