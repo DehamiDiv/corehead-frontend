@@ -3,10 +3,11 @@ import type { NextRequest } from 'next/server';
 
 // Add paths that require authentication here
 const protectedPaths: string[] = [
-  // '/admin', // Temporarily disabled for development
-  // '/builder',  // Temporarily disabled for development
-  // '/dashboard' // Temporarily disabled for development
+  '/admin',
+  '/builder',
+  '/dashboard'
 ];
+
 export function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
   
@@ -16,11 +17,18 @@ export function middleware(request: NextRequest) {
   if (isProtectedPath) {
     // Check for the auth token in cookies
     const token = request.cookies.get('auth_token')?.value;
+    const role = request.cookies.get('user_role')?.value;
 
     if (!token) {
       // Missing token, redirect to login page
       const loginUrl = new URL('/login', request.url);
       return NextResponse.redirect(loginUrl);
+    }
+
+    // Role-based access control for /admin routes
+    if (pathname.startsWith('/admin') && role !== 'admin') {
+      const homeUrl = new URL('/', request.url);
+      return NextResponse.redirect(homeUrl);
     }
   }
 
