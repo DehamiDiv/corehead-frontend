@@ -73,17 +73,31 @@ export default function AIHistoryPage() {
   const handleRestore = async (item) => {
     try {
       setLoadingId(item.id);
-      const layoutData = {
-        cards: [1, 2, 3].map((n) => ({
-          id: Date.now() + n,
-          title: n === 1 ? (item.prompt?.slice(0, 60) || 'AI Generated Post') : `Sample Post ${n}`,
-          excerpt: `Generated with ${item.design_style || 'modern'} style — ${item.layout_type || 'single-post'} layout`,
-          author: 'AI Author',
-          date: new Date(item.created_at).toISOString().split('T')[0],
-          image: `https://picsum.photos/400/250?random=${item.id + n}`,
-          category: item.layout_type === 'blog-archive' ? 'Archive' : 'Post',
-        }))
-      };
+      
+      // Use the actual generated layout if available, otherwise fallback
+      let layoutData;
+      if (item.generated_layout && (item.generated_layout.cards || item.generated_layout.layout_data?.cards)) {
+        // Handle both possible structures
+        layoutData = item.generated_layout;
+        // Normalize if it's nested under layout_data
+        if (item.generated_layout.layout_data) {
+          layoutData = item.generated_layout.layout_data;
+        }
+      } else {
+        // Fallback for older items or malformed data
+        layoutData = {
+          cards: [1, 2, 3].map((n) => ({
+            id: Date.now() + n,
+            title: n === 1 ? (item.prompt?.slice(0, 60) || 'AI Generated Post') : `Sample Post ${n}`,
+            excerpt: `Generated with ${item.design_style || 'modern'} style — ${item.layout_type || 'single-post'} layout`,
+            author: 'AI Author',
+            date: new Date(item.created_at).toISOString().split('T')[0],
+            image: `https://picsum.photos/400/250?random=${item.id + n}`,
+            category: item.layout_type === 'blog-archive' ? 'Archive' : 'Post',
+          }))
+        };
+      }
+      
       localStorage.setItem('ai_generated_layout', JSON.stringify(layoutData));
       router.push('/builder');
     } catch (err) {

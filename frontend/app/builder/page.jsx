@@ -9,9 +9,9 @@ import PreviewModal from '@/components/builder/PreviewModal';
 import ExportModal from '@/components/builder/ExportModal';
 import ComponentsPanel from '@/components/builder/ComponentsPanel';
 import SettingsPanel from '@/components/builder/SettingsPanel';
-import AIGenerateModal from '@/components/builder/AIGenerateModal';
 import SaveLayoutModal from '@/components/builder/SaveLayoutModal';
 import LoadLayoutModal from '@/components/builder/LoadLayoutModal';
+import { useRouter } from 'next/navigation';
 import './page.css';
 import { builderApi } from '@/services/builderApi';
 
@@ -37,13 +37,13 @@ const defaultSettings = {
 
 
 export default function BlogBuilderPage() {
+  const router = useRouter();
   const [activeTab, setActiveTab] = useState('builder');
   const [contentMode, setContentMode] = useState('static');
   const [selectedCard, setSelectedCard] = useState(null);
   const [settings, setSettings] = useState(defaultSettings);
   const [previewOpen, setPreviewOpen] = useState(false);
   const [exportOpen, setExportOpen] = useState(false);
-  const [aiOpen, setAiOpen] = useState(false);
   const [saveModalOpen, setSaveModalOpen] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [saveStatus, setSaveStatus] = useState(null);
@@ -51,6 +51,7 @@ export default function BlogBuilderPage() {
   const [showLayoutPicker, setShowLayoutPicker] = useState(false);
   const [loadingLayouts, setLoadingLayouts] = useState(false);
   const [aiPosts, setAiPosts]               = useState([]);    // AI cards stored separately
+  const [aiSettings, setAiSettings]         = useState(null);  // AI settings stored separately
   const [compareMode, setCompareMode]       = useState(false); // show both side by side
 
   const [blogPosts, setBlogPosts] = useState([
@@ -109,7 +110,7 @@ export default function BlogBuilderPage() {
           });
 
           if (result.layout?.cards) {
-            setBlogPosts(result.layout.cards);
+            handleAIGenerated(result.layout.cards, result.layout.settings);
           }
 
           // Clear after use
@@ -122,12 +123,14 @@ export default function BlogBuilderPage() {
         }
       }
 
-      // Existing direct generated layout pick-up
+      // Existing direct generated layout pick-up (from History)
       const aiLayout = localStorage.getItem('ai_generated_layout');
       if (aiLayout) {
         try {
           const parsed = JSON.parse(aiLayout);
-          if (parsed.cards) setBlogPosts(parsed.cards);
+          if (parsed.cards) {
+            handleAIGenerated(parsed.cards, parsed.settings);
+          }
           localStorage.removeItem('ai_generated_layout');
         } catch (e) {
           console.error('Failed to load AI layout:', e);
@@ -219,8 +222,9 @@ export default function BlogBuilderPage() {
   };
 
   // AI generated posts — store separately, enable compare mode
-  const handleAIGenerated = (newCards) => {
+  const handleAIGenerated = (newCards, newSettings) => {
     setAiPosts(newCards);
+    if (newSettings) setAiSettings(newSettings);
     setCompareMode(true);
   };
 
@@ -243,7 +247,7 @@ export default function BlogBuilderPage() {
           <button className="btn-secondary" onClick={() => setExportOpen(true)}>
             <Code size={18} /> Export
           </button>
-          <button className="btn-primary" onClick={() => setAiOpen(true)}>
+          <button className="btn-primary" onClick={() => router.push('/ai-prompt')}>
             <Sparkles size={18} /> Generate with AI
           </button>
         </div>
@@ -324,7 +328,13 @@ export default function BlogBuilderPage() {
                     {compareMode ? 'Exit Compare' : 'Compare Side by Side'}
                   </button>
                   <button
-                    onClick={() => { setBlogPosts(aiPosts); setAiPosts([]); setCompareMode(false); }}
+                    onClick={() => { 
+                      setBlogPosts(aiPosts); 
+                      if (aiSettings) setSettings(prev => ({ ...prev, ...aiSettings }));
+                      setAiPosts([]); 
+                      setAiSettings(null);
+                      setCompareMode(false); 
+                    }}
                     style={{
                       padding: '6px 14px', borderRadius: '8px',
                       border: '2px solid #4f46e5', background: '#fff',
@@ -335,7 +345,7 @@ export default function BlogBuilderPage() {
                     ✅ Use AI Layout
                   </button>
                   <button
-                    onClick={() => { setAiPosts([]); setCompareMode(false); }}
+                    onClick={() => { setAiPosts([]); setAiSettings(null); setCompareMode(false); }}
                     style={{
                       padding: '6px 12px', borderRadius: '8px',
                       border: '2px solid #e0e0e0', background: '#fff',
@@ -481,11 +491,6 @@ export default function BlogBuilderPage() {
       />
 
       {/* Other Modals */}
-      <AIGenerateModal
-        isOpen={aiOpen}
-        onClose={() => setAiOpen(false)}
-        onGenerated={handleAIGenerated}
-      />
       <PreviewModal
         isOpen={previewOpen}
         onClose={() => setPreviewOpen(false)}

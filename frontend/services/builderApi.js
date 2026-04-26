@@ -54,7 +54,10 @@ export const builderApi = {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(data),
     });
-    if (!res.ok) throw new Error('Failed to generate AI layout');
+    if (!res.ok) {
+        const errObj = await res.json().catch(() => ({}));
+        throw new Error(errObj.error || errObj.message || 'Failed to generate AI layout');
+    }
     return res.json();
   },
 };
