@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 
 // Add paths that require authentication here
-const protectedPaths = [
+const protectedPaths: string[] = [
   // '/admin', // Temporarily disabled for development
   // '/builder',  // Temporarily disabled for development
   // '/dashboard' // Temporarily disabled for development

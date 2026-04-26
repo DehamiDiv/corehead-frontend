@@ -8,6 +8,7 @@ import {
 } from 'lucide-react';
 import Link from 'next/link';
 import './page.css';
+import { aiApi } from '@/services/aiApi';
 
 const BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api';
 
@@ -37,9 +38,7 @@ export default function AIHistoryPage() {
     try {
       setLoading(true);
       setError(null);
-      const res = await fetch(`${BASE_URL}/ai/history?limit=50`);
-      if (!res.ok) throw new Error('Failed to fetch history');
-      const data = await res.json();
+      const data = await aiApi.getHistory(50);
       const layouts = data.layouts || [];
       setHistory(layouts);
       setFiltered(layouts);
@@ -112,10 +111,21 @@ export default function AIHistoryPage() {
     if (!confirm('Remove this generation from history?')) return;
     try {
       setDeletingId(id);
-      await fetch(`${BASE_URL}/ai/history/${id}`, { method: 'DELETE' });
+      
+      // Get the auth header for direct fetch or update aiApi to have a delete method
+      const token = localStorage.getItem('token');
+      const res = await fetch(`${BASE_URL}/ai/history/${id}`, { 
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+      
+      if (!res.ok) throw new Error('Failed to delete');
+
       setHistory(prev => prev.filter(h => h.id !== id));
-    } catch {
-      setHistory(prev => prev.filter(h => h.id !== id)); // optimistic
+    } catch (err) {
+      alert('Delete failed: ' + err.message);
     } finally {
       setDeletingId(null);
     }
