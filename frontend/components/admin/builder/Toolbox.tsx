@@ -32,7 +32,7 @@ const bottomTools = [
 
 export default function Toolbox() {
   return (
-    <aside className="w-64 bg-slate-50 border-r border-gray-200 flex flex-col p-4 h-[calc(100vh-64px)] overflow-y-auto">
+    <aside className="w-full flex-1 flex flex-col p-4 overflow-y-auto">
       <h3 className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-4 px-2">
         Blog Components
       </h3>

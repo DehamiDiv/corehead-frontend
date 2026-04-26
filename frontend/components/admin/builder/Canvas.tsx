@@ -7,6 +7,7 @@ import {
   Minus,
   Square,
   LayoutGrid,
+  Search,
 } from "lucide-react";
 import {
   useBuilder,
@@ -15,7 +16,7 @@ import {
 } from "@/components/admin/builder/BuilderContext";
 
 export default function Canvas() {
-  const { blocks, addBlock, selectBlock, selectedBlockId } = useBuilder();
+  const { blocks, addBlock, selectBlock, selectedBlockId, deviceMode, isAnalyzing } = useBuilder();
 
   const handleDragOver = (e: React.DragEvent) => {
     e.preventDefault();
@@ -83,25 +84,47 @@ export default function Canvas() {
     });
   };
 
+  // Determine width based on deviceMode
+  const maxWidthClass = 
+    deviceMode === "mobile" ? "max-w-[375px]" :
+    deviceMode === "tablet" ? "max-w-[768px]" :
+    "max-w-5xl";
+
   return (
     <div
-      className="flex-1 bg-slate-100/50 p-8 flex justify-center overflow-y-auto"
+      className="flex-1 bg-slate-100 p-8 flex justify-center overflow-y-auto relative"
       onDragOver={handleDragOver}
       onDrop={handleDropRoot}
     >
-      <div className="w-full max-w-3xl bg-white min-h-[800px] rounded-xl shadow-sm border border-slate-200 p-12 flex flex-col relative">
-        {blocks.length === 0 ? (
-          <div className="flex flex-col items-center justify-center text-center opacity-40 hover:opacity-100 transition-opacity flex-1">
-            <div className="w-32 h-32 border-2 border-dashed border-slate-300 rounded-xl flex items-center justify-center mb-6 bg-slate-50">
-              <FileText className="w-12 h-12 text-slate-300" />
+      <div className={`w-full ${maxWidthClass} bg-white min-h-[800px] rounded-xl shadow-sm border border-slate-200 p-12 flex flex-col transition-all duration-300 relative`}>
+        
+        {/* Analyzing Overlay */}
+        {isAnalyzing && (
+          <div className="absolute inset-0 z-10 bg-slate-900/90 rounded-xl flex flex-col items-center justify-center p-8 backdrop-blur-sm">
+            <div className="w-20 h-20 bg-white rounded-2xl flex items-center justify-center mb-8 shadow-2xl relative overflow-hidden">
+               <FileText size={32} className="text-slate-800" />
+               <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 mt-3 ml-3">
+                 <div className="bg-slate-900 rounded-full p-1 border-2 border-white">
+                   <Search size={14} className="text-white" />
+                 </div>
+               </div>
             </div>
-            <h2 className="text-2xl font-bold text-slate-700 mb-2">
-              Start Building your blog post
-            </h2>
-            <p className="text-slate-500">
-              Drag components from the left panel
-            </p>
+            
+            <h2 className="text-2xl font-bold text-white mb-3">Analyzing your request...</h2>
+            <p className="text-slate-400 mb-8 text-sm">This may take around 2-3 minutes...</p>
+
+            <div className="flex gap-1.5 opacity-80">
+              <div className="w-6 h-1 bg-indigo-500 rounded-full animate-pulse"></div>
+              <div className="w-1.5 h-1 bg-indigo-500 rounded-full animate-pulse" style={{ animationDelay: '150ms' }}></div>
+              <div className="w-1.5 h-1 bg-indigo-500 rounded-full animate-pulse" style={{ animationDelay: '300ms' }}></div>
+              <div className="w-1.5 h-1 bg-indigo-500/30 rounded-full"></div>
+            </div>
           </div>
+        )}
+
+        {/* Builder Content */}
+        {blocks.length === 0 ? (
+          <div className="flex-1 min-h-[400px]"></div>
         ) : (
           <div className="space-y-4">{renderBlockTree()}</div>
         )}
@@ -185,6 +208,23 @@ function renderBlockContent(block: BuilderBlock, isSelected: boolean) {
           className={`flex items-center gap-2 mb-2 text-slate-500 font-medium text-sm grid-cols-${block.content || 2}`}
         >
           <LayoutGrid className="w-4 h-4" /> {block.content || 2} Columns
+        </div>
+      );
+    case "Collection List":
+      return (
+        <div style={styleString} className="border-2 border-blue-100 bg-blue-50/30 rounded-xl p-8 flex flex-col items-center justify-center text-center">
+          <div className="w-12 h-12 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center mb-3">
+             <LayoutGrid className="w-6 h-6" />
+          </div>
+          <h4 className="text-blue-900 font-bold">Collection List (Blog Loop)</h4>
+          <p className="text-blue-600/70 text-sm max-w-xs mt-1">
+            Displaying up to <span className="font-bold">{block.content?.limit || 6}</span> posts from {block.content?.category || "all categories"}.
+          </p>
+          <div className="mt-4 flex gap-2">
+             {[1, 2, 3].map(i => (
+               <div key={i} className="w-24 h-2 bg-blue-200 rounded-full opacity-50"></div>
+             ))}
+          </div>
         </div>
       );
     default:

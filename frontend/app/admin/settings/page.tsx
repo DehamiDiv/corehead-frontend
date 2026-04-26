@@ -1,83 +1,154 @@
 "use client";
 
-import { Save, Globe, Lock, Bell, Palette } from "lucide-react";
+import { useState } from "react";
+import { Save, Globe, Lock, Bell, Palette, Layout, Shield, Cloud } from "lucide-react";
+import { cn } from "@/lib/utils";
 
 export default function SettingsPage() {
+  const [activeSection, setActiveSection] = useState("General");
+
+  const sections = [
+    { id: "General", icon: Globe },
+    { id: "Appearance", icon: Palette },
+    { id: "Security", icon: Shield },
+    { id: "Notifications", icon: Bell },
+  ];
+
   return (
-    <div className="max-w-4xl space-y-8">
-      <div>
-        <h1 className="text-2xl font-bold text-slate-800">Settings</h1>
-        <p className="text-slate-500 mt-1">Manage global site configuration.</p>
+    <div className="max-w-6xl mx-auto pb-20">
+      <div className="mb-8">
+        <h1 className="text-3xl font-black text-gray-900 tracking-tight">Settings</h1>
+        <p className="text-gray-500 font-medium mt-1">Configure your global platform settings and preferences.</p>
       </div>
 
-      <div className="grid gap-8">
-        {/* General Section */}
-        <section className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
-          <div className="p-6 border-b border-slate-100">
-            <h2 className="text-lg font-semibold text-slate-800 flex items-center gap-2">
-              <Globe className="w-5 h-5 text-blue-600" />
-              General
-            </h2>
-          </div>
-          <div className="p-6 space-y-4">
-            <div className="grid gap-2">
-              <label className="text-sm font-medium text-slate-700">
-                Site Name
-              </label>
-              <input
-                type="text"
-                defaultValue="CoreHead"
-                className="input-field"
-              />
-            </div>
-            <div className="grid gap-2">
-              <label className="text-sm font-medium text-slate-700">
-                Site Description
-              </label>
-              <textarea
-                defaultValue="Design intelligent blogs in minutes."
-                className="input-field h-24"
-              />
-            </div>
-          </div>
-        </section>
+      <div className="flex flex-col lg:flex-row gap-8">
+        {/* Sidebar Nav */}
+        <div className="w-full lg:w-64 space-y-1">
+          {sections.map((section) => (
+            <button
+              key={section.id}
+              onClick={() => setActiveSection(section.id)}
+              className={cn(
+                "w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-bold transition-all duration-200",
+                activeSection === section.id
+                  ? "bg-blue-600 text-white shadow-lg shadow-blue-100"
+                  : "text-gray-500 hover:bg-gray-50 hover:text-gray-900"
+              )}
+            >
+              <section.icon className="w-4 h-4" />
+              {section.id}
+            </button>
+          ))}
+        </div>
 
-        {/* Appearance Section */}
-        <section className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
-          <div className="p-6 border-b border-slate-100">
-            <h2 className="text-lg font-semibold text-slate-800 flex items-center gap-2">
-              <Palette className="w-5 h-5 text-purple-600" />
-              Appearance
-            </h2>
-          </div>
-          <div className="p-6 space-y-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <div className="font-medium text-slate-700">Dark Mode</div>
-                <div className="text-xs text-slate-500">
-                  Enable dark theme for the site
+        {/* Content Area */}
+        <div className="flex-1 space-y-8">
+          {activeSection === "General" && (
+            <div className="bg-white rounded-3xl shadow-sm border border-gray-100 overflow-hidden animate-in fade-in duration-500">
+              <div className="p-8 border-b border-gray-50">
+                <h2 className="text-xl font-bold text-gray-900">General Configuration</h2>
+                <p className="text-sm text-gray-500 mt-1">Basic site information and global metadata.</p>
+              </div>
+              <div className="p-8 space-y-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div className="space-y-2">
+                    <label className="text-sm font-bold text-gray-700">Site Name</label>
+                    <input 
+                      type="text" 
+                      defaultValue="CoreHead CMS"
+                      className="w-full px-4 py-3 bg-gray-50/50 border border-gray-100 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/10 focus:border-blue-500 transition-all text-sm font-medium"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-sm font-bold text-gray-700">Support Email</label>
+                    <input 
+                      type="email" 
+                      defaultValue="support@corehead.app"
+                      className="w-full px-4 py-3 bg-gray-50/50 border border-gray-100 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/10 focus:border-blue-500 transition-all text-sm font-medium"
+                    />
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  <label className="text-sm font-bold text-gray-700">Site Description</label>
+                  <textarea 
+                    rows={4}
+                    defaultValue="Design intelligent blogs in minutes with our AI-powered visual builder."
+                    className="w-full px-4 py-3 bg-gray-50/50 border border-gray-100 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/10 focus:border-blue-500 transition-all text-sm font-medium resize-none"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <label className="text-sm font-bold text-gray-700">Brand Keywords</label>
+                  <input 
+                    type="text" 
+                    defaultValue="AI, CMS, Blog, Builder, Visual"
+                    className="w-full px-4 py-3 bg-gray-50/50 border border-gray-100 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/10 focus:border-blue-500 transition-all text-sm font-medium"
+                  />
                 </div>
               </div>
-              <div className="w-10 h-6 bg-slate-200 rounded-full relative cursor-pointer opacity-80">
-                <div className="absolute left-1 top-1 w-4 h-4 bg-white rounded-full shadow-sm" />
+            </div>
+          )}
+
+          {activeSection === "Appearance" && (
+            <div className="bg-white rounded-3xl shadow-sm border border-gray-100 overflow-hidden animate-in fade-in duration-500">
+              <div className="p-8 border-b border-gray-50">
+                <h2 className="text-xl font-bold text-gray-900">Branding & Look</h2>
+                <p className="text-sm text-gray-500 mt-1">Customize the visual identity of your platform.</p>
+              </div>
+              <div className="p-8 space-y-8">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                   <div className="space-y-4">
+                     <p className="text-sm font-bold text-gray-700">Primary Color</p>
+                     <div className="flex items-center gap-3">
+                       <div className="w-12 h-12 rounded-xl bg-blue-600 shadow-lg shadow-blue-100" />
+                       <input 
+                         type="text" 
+                         defaultValue="#2563EB"
+                         className="flex-1 px-4 py-3 bg-gray-50/50 border border-gray-100 rounded-xl text-sm font-mono"
+                       />
+                     </div>
+                   </div>
+                   <div className="space-y-4">
+                     <p className="text-sm font-bold text-gray-700">Secondary Color</p>
+                     <div className="flex items-center gap-3">
+                       <div className="w-12 h-12 rounded-xl bg-slate-900" />
+                       <input 
+                         type="text" 
+                         defaultValue="#0F172A"
+                         className="flex-1 px-4 py-3 bg-gray-50/50 border border-gray-100 rounded-xl text-sm font-mono"
+                       />
+                     </div>
+                   </div>
+                </div>
+
+                <div className="space-y-4">
+                   <p className="text-sm font-bold text-gray-700">Theme Selection</p>
+                   <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                      {["Light", "Dark", "System"].map(theme => (
+                        <div key={theme} className={cn(
+                          "p-4 rounded-2xl border cursor-pointer transition-all flex flex-col gap-3",
+                          theme === "Light" ? "bg-blue-50 border-blue-200" : "bg-white border-gray-100 hover:border-gray-200"
+                        )}>
+                          <div className={cn(
+                            "h-24 w-full rounded-xl",
+                            theme === "Light" ? "bg-white shadow-sm" : theme === "Dark" ? "bg-slate-900" : "bg-gradient-to-r from-white to-slate-900"
+                          )} />
+                          <span className="text-sm font-bold text-gray-900">{theme} Mode</span>
+                        </div>
+                      ))}
+                   </div>
+                </div>
               </div>
             </div>
-          </div>
-        </section>
+          )}
 
-        <div className="flex justify-end">
-          <button className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2.5 rounded-lg font-medium flex items-center gap-2 transition-colors shadow-sm shadow-blue-200">
-            <Save className="w-4 h-4" />
-            Save Changes
-          </button>
+          <div className="flex justify-end pt-4">
+            <button className="flex items-center gap-2 px-8 py-3 bg-blue-600 rounded-xl text-sm font-bold text-white hover:bg-blue-700 transition-all shadow-lg shadow-blue-200">
+              <Save className="w-4 h-4" />
+              Apply Changes
+            </button>
+          </div>
         </div>
       </div>
-
-      <style jsx>{`
-        .input-field {
-          @apply w-full px-3 py-2 bg-white border border-slate-200 rounded-lg text-sm text-slate-700 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all;
-        }
-      `}</style>
     </div>
   );
 }

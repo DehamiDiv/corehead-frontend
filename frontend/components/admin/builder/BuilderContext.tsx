@@ -7,26 +7,13 @@ import React, {
   ReactNode,
   useEffect,
 } from "react";
+import { api } from "@/lib/api";
 
-export type BlockType =
-  | "Heading"
-  | "Paragraph"
-  | "Image"
-  | "Quote"
-  | "Divider"
-  | "Button"
-  | "Container"
-  | "Columns"
-  | "Collection List";
+import { BlockType, BuilderBlock } from "@/lib/types";
+export type { BlockType, BuilderBlock };
 
-export interface BuilderBlock {
-  id: string;
-  type: BlockType;
-  content: any; // Text content, image URL, etc.
-  styles?: Record<string, string>;
-  bindings?: Record<string, string>; // e.g. { content: "post.title" }
-  parentId?: string;
-}
+
+
 
 interface BuilderContextType {
   blocks: BuilderBlock[];
@@ -43,6 +30,20 @@ interface BuilderContextType {
   reorderBlocks: (startIndex: number, endIndex: number) => void;
   serializeLayout: () => string;
   loadLayout: (json: string) => void;
+  saveToBackend: (status: string) => Promise<any>;
+  // FR-07: The system shall allow selecting template type
+  templateName: string;
+  setTemplateName: (name: string) => void;
+  templateType: "Single Post" | "Blog Archive";
+  setTemplateType: (type: "Single Post" | "Blog Archive") => void;
+  templateId: string | null;
+  setTemplateId: (id: string | null) => void; 
+  activeSidebar: "chat" | "blocks" | "settings";
+  setActiveSidebar: (tab: "chat" | "blocks" | "settings") => void;
+  deviceMode: "desktop" | "tablet" | "mobile";
+  setDeviceMode: (mode: "desktop" | "tablet" | "mobile") => void;
+  isAnalyzing: boolean;
+  setIsAnalyzing: (analyzing: boolean) => void;
 }
 
 const BuilderContext = createContext<BuilderContextType | undefined>(undefined);
@@ -50,6 +51,15 @@ const BuilderContext = createContext<BuilderContextType | undefined>(undefined);
 export function BuilderProvider({ children }: { children: ReactNode }) {
   const [blocks, setBlocks] = useState<BuilderBlock[]>([]);
   const [selectedBlockId, setSelectedBlockId] = useState<string | null>(null);
+
+  // Template Database Metadata (Stored in real PostgreSQL via backend API)
+  const [templateId, setTemplateId] = useState<string | null>(null);
+  const [templateName, setTemplateName] = useState("New Layout");
+  const [templateType, setTemplateType] = useState<"Single Post" | "Blog Archive">("Single Post");
+
+  const [activeSidebar, setActiveSidebar] = useState<"chat" | "blocks" | "settings">("chat");
+  const [deviceMode, setDeviceMode] = useState<"desktop" | "tablet" | "mobile">("desktop");
+  const [isAnalyzing, setIsAnalyzing] = useState(false);
 
   const [isLoaded, setIsLoaded] = useState(false);
 
@@ -156,6 +166,27 @@ export function BuilderProvider({ children }: { children: ReactNode }) {
     }
   };
 
+  // Saves layout to real PostgreSQL backend via the Node API.
+  const saveToBackend = async (status: string) => {
+    const layoutData = {
+      name: templateName,
+      type: templateType,
+      layoutJson: blocks,
+      status
+    };
+
+    let result;
+    if (templateId) {
+      result = await api.updateTemplate(templateId, layoutData);
+    } else {
+      result = await api.createTemplate(layoutData);
+      if (result.id) {
+         setTemplateId(result.id);
+      }
+    }
+    return result;
+  };
+
   return (
     <BuilderContext.Provider
       value={{
@@ -168,6 +199,19 @@ export function BuilderProvider({ children }: { children: ReactNode }) {
         reorderBlocks,
         serializeLayout,
         loadLayout,
+        saveToBackend,
+        templateName,
+        setTemplateName,
+        templateType,
+        setTemplateType,
+        templateId,
+        setTemplateId,
+        activeSidebar,
+        setActiveSidebar,
+        deviceMode,
+        setDeviceMode,
+        isAnalyzing,
+        setIsAnalyzing,
       }}
     >
       {children}
@@ -212,6 +256,8 @@ function getDefaultContent(type: BlockType): any {
       return ""; // No specific content, acts as a wrapper
     case "Columns":
       return 2; // Default to 2 columns, content holds the number of columns
+    case "Collection List":
+      return { limit: 6, category: "" };
     default:
       return "";
   }

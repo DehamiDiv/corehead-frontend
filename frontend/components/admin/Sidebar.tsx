@@ -4,7 +4,6 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useMemo, useState } from "react";
 import {
-  LayoutDashboard,
   FileText,
   Tags,
   Image as ImageIcon,
@@ -13,8 +12,9 @@ import {
   File,
   Settings as SettingsIcon,
   ChevronDown,
-  FileCode,
+  LayoutTemplate,
 } from "lucide-react";
+import { cn } from "@/lib/utils";
 
 type NavItem = {
   label: string;
@@ -24,18 +24,17 @@ type NavItem = {
 
 export default function Sidebar() {
   const pathname = usePathname();
-  const [settingsOpen, setSettingsOpen] = useState(false);
+  const [settingsOpen, setSettingsOpen] = useState(true);
 
   const navItems: NavItem[] = useMemo(
     () => [
-      { label: "Dashboard", href: "/admin", Icon: LayoutDashboard },
-      { label: "Posts", href: "/admin/posts", Icon: FileText },
-      { label: "Snippets", href: "/admin/snippets", Icon: FileCode },
-      { label: "Categories", href: "/admin/categories", Icon: Tags },
-      { label: "Media Library", href: "/admin/media", Icon: ImageIcon },
-      { label: "Comments", href: "/admin/comments", Icon: MessageSquare },
-      { label: "Users", href: "/admin/users", Icon: Users },
-      { label: "Pages", href: "/admin/pages", Icon: File },
+      { label: "Posts",         href: "/admin/posts",      Icon: FileText       },
+      { label: "Layouts",       href: "/admin/layouts",    Icon: LayoutTemplate },
+      { label: "Categories",    href: "/admin/categories", Icon: Tags           },
+      { label: "Media Library", href: "/admin/media",      Icon: ImageIcon      },
+      { label: "Interactions",  href: "/admin/comments",   Icon: MessageSquare  },
+      { label: "Users",         href: "/admin/users",      Icon: Users          },
+      { label: "Pages",         href: "/admin/pages",      Icon: File           },
     ],
     []
   );
@@ -43,17 +42,20 @@ export default function Sidebar() {
   const isActive = (href: string) => pathname === href || pathname.startsWith(href + "/");
 
   return (
-    <aside className="h-screen w-[280px] bg-white border-r border-slate-200 flex flex-col">
+    <aside className="fixed top-0 left-0 h-screen w-[280px] bg-white border-r border-gray-100 flex flex-col z-50">
       {/* Logo */}
-      <div className="h-16 px-6 flex items-center gap-3">
-        <div className="h-10 w-10 rounded-full bg-blue-600 text-white flex items-center justify-center font-bold">
-          C
+      <div className="h-24 px-8 flex items-center gap-3">
+        <div className="relative h-10 w-10 flex items-center justify-center">
+          <div className="absolute inset-0 bg-blue-600 rounded-xl rotate-6 opacity-20"></div>
+          <div className="relative h-10 w-10 rounded-xl bg-blue-600 flex items-center justify-center shadow-lg shadow-blue-200">
+            <span className="text-white font-black text-xl italic">C</span>
+          </div>
         </div>
-        <span className="text-xl font-semibold text-slate-900">CoreHead</span>
+        <span className="text-2xl font-bold text-slate-900 tracking-tight">CoreHead</span>
       </div>
 
       {/* Nav */}
-      <nav className="px-4 py-4 space-y-1">
+      <nav className="flex-1 px-4 py-4 space-y-1 overflow-y-auto custom-scrollbar">
         {navItems.map(({ label, href, Icon }) => {
           const active = isActive(href);
 
@@ -61,66 +63,92 @@ export default function Sidebar() {
             <Link
               key={href}
               href={href}
-              className={[
-                "flex items-center gap-3 px-3 py-2.5 rounded-2xl text-sm font-medium transition",
-                active ? "bg-slate-100 text-slate-900" : "text-slate-700 hover:bg-slate-50",
-              ].join(" ")}
+              className={cn(
+                "flex items-center gap-3 px-3 py-2.5 rounded-2xl text-[15px] font-semibold transition-all duration-200",
+                active
+                  ? "bg-blue-50/50 text-blue-600 shadow-sm shadow-blue-50/20"
+                  : "text-slate-600 hover:bg-slate-50 hover:text-slate-900"
+              )}
             >
               {/* icon chip */}
               <span
-                className={[
-                  "h-9 w-9 rounded-xl flex items-center justify-center border transition",
+                className={cn(
+                  "h-10 w-10 rounded-xl flex items-center justify-center transition-all duration-200",
                   active
-                    ? "bg-blue-50 border-blue-100 text-blue-600"
-                    : "bg-white border-slate-200 text-slate-500",
-                ].join(" ")}
+                    ? "bg-blue-100 text-blue-600"
+                    : "bg-gray-50 text-gray-400 group-hover:bg-white border border-transparent group-hover:border-gray-100"
+                )}
               >
-                <Icon size={18} />
+                <Icon size={20} />
               </span>
 
-              <span className={active ? "text-blue-700" : ""}>{label}</span>
+              <span>{label}</span>
             </Link>
           );
         })}
 
         {/* Settings row */}
-        <button
-          onClick={() => setSettingsOpen((v) => !v)}
-          className="w-full mt-2 flex items-center justify-between px-3 py-2.5 rounded-2xl text-sm font-medium text-slate-700 hover:bg-slate-50 transition"
-        >
-          <span className="flex items-center gap-3">
-            <span className="h-9 w-9 rounded-xl flex items-center justify-center border border-slate-200 text-slate-500">
-              <SettingsIcon size={18} />
+        <div className="pt-2">
+          <button
+            onClick={() => setSettingsOpen((v) => !v)}
+            className={cn(
+              "w-full flex items-center justify-between px-3 py-2.5 rounded-2xl text-[15px] font-semibold text-slate-600 hover:bg-slate-50 hover:text-slate-900 transition-all duration-200",
+              settingsOpen && "bg-slate-50/30"
+            )}
+          >
+            <span className="flex items-center gap-3">
+              <span className="h-10 w-10 rounded-xl bg-gray-50 flex items-center justify-center text-gray-400">
+                <SettingsIcon size={20} />
+              </span>
+              Settings
             </span>
-            Settings
-          </span>
-          <ChevronDown size={16} className={settingsOpen ? "rotate-180 transition" : "transition"} />
-        </button>
+            <ChevronDown
+              size={18}
+              className={cn("text-gray-400 transition-transform duration-300", settingsOpen && "rotate-180")}
+            />
+          </button>
 
-        {settingsOpen && (
-          <div className="ml-4 mt-1 pl-3 border-l border-slate-200 space-y-1">
-            <Link
-              href="/admin/settings/general"
-              className="block px-3 py-2 rounded-xl text-sm text-slate-600 hover:bg-slate-50"
-            >
-              General
-            </Link>
-            <Link
-              href="/admin/settings/profile"
-              className="block px-3 py-2 rounded-xl text-sm text-slate-600 hover:bg-slate-50"
-            >
-              Profile
-            </Link>
-          </div>
-        )}
+          {settingsOpen && (
+            <div className="mt-2 ml-4 space-y-1 animate-in slide-in-from-top-2 duration-300">
+              {[
+                { label: "Profile Settings", href: "/admin/settings/profile" },
+                { label: "Website Settings", href: "/admin/settings/website" },
+                { label: "Appearance",       href: "/admin/settings/appearance" },
+              ].map((subItem) => (
+                <Link
+                  key={subItem.href}
+                  href={subItem.href}
+                  className={cn(
+                    "flex items-center gap-3 px-10 py-2.5 rounded-xl text-sm font-semibold transition-all duration-200",
+                    isActive(subItem.href)
+                      ? "text-blue-600"
+                      : "text-slate-500 hover:text-slate-900"
+                  )}
+                >
+                  <div className={cn(
+                    "w-1.5 h-1.5 rounded-full",
+                    isActive(subItem.href) ? "bg-blue-600" : "bg-gray-300"
+                  )} />
+                  {subItem.label}
+                </Link>
+              ))}
+            </div>
+          )}
+        </div>
       </nav>
 
-      {/* bottom profile */}
-      <div className="mt-auto p-4">
-        <button className="h-12 w-12 rounded-full bg-slate-900 text-white flex items-center justify-center font-semibold">
-          N
-        </button>
+      {/* Profile/Footer */}
+      <div className="p-6 border-t border-gray-50">
+        <div className="flex items-center gap-3 p-2 rounded-2xl hover:bg-gray-50 transition-colors cursor-pointer">
+          <div className="w-10 h-10 rounded-xl bg-gray-900 text-white flex items-center justify-center font-bold">
+            D
+          </div>
+          <div className="flex-1 min-w-0">
+            <p className="text-sm font-bold text-slate-900 truncate">Dehami Div</p>
+            <p className="text-[11px] text-slate-400 truncate">Admin Account</p>
+          </div>
+        </div>
       </div>
     </aside>
   );
-}
+}

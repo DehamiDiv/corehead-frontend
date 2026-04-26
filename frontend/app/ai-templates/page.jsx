@@ -3,8 +3,11 @@
 import { Sparkles, ArrowLeft } from 'lucide-react';
 import Link from 'next/link';
 import './page.css';
+import { useRouter } from 'next/navigation';
 
 export default function AITemplatesPage() {
+  const router = useRouter();
+
   const templates = [
     {
       id: 'minimal-single',
@@ -43,8 +46,9 @@ export default function AITemplatesPage() {
     }
   ];
 
-  const handleUseTemplate = (templateName) => {
-    alert('Using template: ' + templateName);
+  const handleUseTemplate = (templateId, templateName) => {
+    localStorage.setItem('selected_template', JSON.stringify({ id: templateId, name: templateName }));
+    router.push('/builder');
   };
 
   return (
@@ -55,7 +59,7 @@ export default function AITemplatesPage() {
           <h1>AI Layout Generator</h1>
           <p>Describe your vision, we'll build the perfect layout</p>
         </div>
-        <button className="btn-generate" onClick={() => alert('Generate Layout!')}>
+        <button className="btn-generate" onClick={() => router.push('/builder')}>
           <Sparkles size={20} />
           Generate Layout
         </button>
@@ -72,6 +76,7 @@ export default function AITemplatesPage() {
         <Link href="/ai-templates" className="nav-item active">
           Quick templates
         </Link>
+        <Link href="/ai-history" className="nav-item">History</Link>
       </div>
 
       {/* Content */}
@@ -95,9 +100,9 @@ export default function AITemplatesPage() {
                     ))}
                   </div>
                 </div>
-                <button 
+                <button
                   className="btn-use-template"
-                  onClick={() => handleUseTemplate(template.name)}
+                  onClick={() => handleUseTemplate(template.id, template.name)}
                 >
                   Use Template
                 </button>
@@ -106,9 +111,9 @@ export default function AITemplatesPage() {
           </div>
 
           <div className="action-buttons">
-            <Link href="/ai-options" className="btn-back">
+            <Link href="/ai-prompt" className="btn-back">
               <ArrowLeft size={18} />
-              Back to Options
+              Back to Prompt
             </Link>
           </div>
         </div>

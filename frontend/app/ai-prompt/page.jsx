@@ -3,10 +3,13 @@
 import { useState } from 'react';
 import { Sparkles, ArrowRight } from 'lucide-react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import './page.css';
 
 export default function AIPromptPage() {
   const [prompt, setPrompt] = useState('');
+  const [error, setError] = useState('');
+  const router = useRouter();
 
   const quickSuggestions = [
     { icon: '📄', label: 'Minimal blog post' },
@@ -18,7 +21,21 @@ export default function AIPromptPage() {
   ];
 
   const handleGenerate = () => {
-    alert('AI Layout would be generated!\n\nPrompt: ' + prompt);
+    if (!prompt.trim()) {
+      setError('Please enter a prompt first.');
+      return;
+    }
+    localStorage.setItem('ai_prompt', prompt.trim());
+    router.push('/builder');
+  };
+
+  const handleNext = (e) => {
+    if (!prompt.trim()) {
+      e.preventDefault();
+      setError('Please enter a prompt before continuing.');
+      return;
+    }
+    localStorage.setItem('ai_prompt', prompt.trim());
   };
 
   return (
@@ -46,6 +63,7 @@ export default function AIPromptPage() {
         <Link href="/ai-templates" className="nav-item">
           Quick templates
         </Link>
+        <Link href="/ai-history" className="nav-item">History</Link>
       </div>
 
       {/* Content */}
@@ -56,24 +74,39 @@ export default function AIPromptPage() {
             <p className="section-description">
               Tell us what kind of blog layout you want to create. Be specific about elements, structure, and style.
             </p>
-            
+
             <textarea
               className="prompt-textarea"
               placeholder="Create a modern single-post layout with a full-width hero image, a sticky table of contents on the left, and a related posts section at the bottom."
               value={prompt}
-              onChange={(e) => setPrompt(e.target.value)}
+              onChange={(e) => { setPrompt(e.target.value); setError(''); }}
               rows={6}
+              style={{ borderColor: error ? '#ef4444' : '' }}
             />
+
+            {/* Error message */}
+            {error && (
+              <div style={{
+                marginTop: '8px', padding: '10px 14px',
+                background: '#fef2f2', border: '1px solid #fecaca',
+                borderRadius: '8px', fontSize: '13px', color: '#dc2626'
+              }}>
+                ⚠️ {error}
+              </div>
+            )}
           </div>
 
           <div className="suggestions-section">
             <h3>💡 Quick suggestions</h3>
             <div className="suggestions-grid">
               {quickSuggestions.map((suggestion, index) => (
-                <button 
+                <button
                   key={index}
                   className="suggestion-chip"
-                  onClick={() => setPrompt(`Create a ${suggestion.label} layout with full content display and modern design`)}
+                  onClick={() => {
+                    setPrompt(`Create a ${suggestion.label} layout with full content display and modern design`);
+                    setError('');
+                  }}
                 >
                   <span className="suggestion-icon">{suggestion.icon}</span>
                   {suggestion.label}
@@ -95,7 +128,7 @@ export default function AIPromptPage() {
           </div>
 
           <div className="action-buttons">
-            <Link href="/ai-options" className="btn-next">
+            <Link href="/ai-options" className="btn-next" onClick={handleNext}>
               Next: Configure Options
               <ArrowRight size={18} />
             </Link>

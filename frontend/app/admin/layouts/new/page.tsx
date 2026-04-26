@@ -2,7 +2,9 @@
 
 import React, { useState } from "react";
 import Link from "next/link";
-import { ArrowLeft, Save, UploadCloud, Code, FileType, Layout as LayoutIcon } from "lucide-react";
+import { ArrowLeft, Save, UploadCloud, Code, FileType, Layout as LayoutIcon, Loader2 } from "lucide-react";
+import { api } from "@/lib/api";
+import { useRouter } from "next/navigation";
 
 export default function CreateLayoutPage() {
     const [name, setName] = useState("");
@@ -28,10 +30,26 @@ export default function CreateLayoutPage() {
         ]
     }, null, 2));
 
-    const handleSave = (status: "draft" | "published") => {
-        // Simulate save
-        console.log("Saving layout:", { name, type, schema, status });
-        alert(`Layout ${status === 'published' ? 'published' : 'saved as draft'}! (Demo)`);
+    const [isSaving, setIsSaving] = useState(false);
+    const router = useRouter();
+
+    const handleSave = async (status: "draft" | "published") => {
+        setIsSaving(true);
+        try {
+            const layoutJson = JSON.parse(schema);
+            await api.createTemplate({
+                name,
+                type,
+                layoutJson,
+                status
+            });
+            alert(`Layout ${status === 'published' ? 'published' : 'saved as draft'} successfully!`);
+            router.push("/admin/layouts");
+        } catch (error: any) {
+            alert("Error: " + error.message);
+        } finally {
+            setIsSaving(false);
+        }
     };
 
     return (
@@ -53,9 +71,10 @@ export default function CreateLayoutPage() {
                 <div className="flex items-center gap-3">
                     <button
                         onClick={() => handleSave("draft")}
-                        className="px-4 py-2 bg-white border border-slate-200 text-slate-700 rounded-lg font-medium hover:bg-slate-50 transition-colors flex items-center gap-2"
+                        disabled={isSaving}
+                        className="px-4 py-2 bg-white border border-slate-200 text-slate-700 rounded-lg font-medium hover:bg-slate-50 transition-colors flex items-center gap-2 disabled:opacity-50"
                     >
-                        <Save size={18} />
+                        {isSaving ? <Loader2 size={18} className="animate-spin" /> : <Save size={18} />}
                         Save Draft
                     </button>
                     <button

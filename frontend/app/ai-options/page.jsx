@@ -3,9 +3,11 @@
 import { useState } from 'react';
 import { Sparkles, ArrowRight, ArrowLeft } from 'lucide-react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import './page.css';
 
 export default function AIOptionsPage() {
+  const router = useRouter();
   const [selectedTemplate, setSelectedTemplate] = useState('single-post');
   const [selectedStyle, setSelectedStyle] = useState('modern');
   const [features, setFeatures] = useState({
@@ -60,8 +62,17 @@ export default function AIOptionsPage() {
     }));
   };
 
+  const handleSaveOptions = () => {
+    localStorage.setItem('ai_options', JSON.stringify({ 
+      layoutType: selectedTemplate, 
+      designStyle: selectedStyle, 
+      features 
+    }));
+  };
+
   const handleGenerate = () => {
-    alert('AI Layout would be generated!\n\nTemplate: ' + selectedTemplate + '\nStyle: ' + selectedStyle);
+    handleSaveOptions();
+    router.push('/builder');
   };
 
   return (
@@ -89,6 +100,7 @@ export default function AIOptionsPage() {
         <Link href="/ai-templates" className="nav-item">
           Quick templates
         </Link>
+        <Link href="/ai-history" className="nav-item">History</Link> 
       </div>
 
       {/* Content */}
@@ -195,10 +207,10 @@ export default function AIOptionsPage() {
               <ArrowLeft size={18} />
               Back to Prompt
             </Link>
-            <Link href="/ai-templates" className="btn-next">
-              Next: Choose Template
+            <button className="btn-next" onClick={handleGenerate}>
+              Go to Builder
               <ArrowRight size={18} />
-            </Link>
+            </button>
           </div>
         </div>
       </div>

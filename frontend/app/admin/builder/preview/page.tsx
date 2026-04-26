@@ -9,6 +9,7 @@ import {
   Heart,
   MessageCircle,
 } from "lucide-react";
+import { api } from "@/lib/api";
 
 export default function BlogPreviewPage() {
   const [blocks, setBlocks] = useState<any[]>([]);
@@ -16,7 +17,10 @@ export default function BlogPreviewPage() {
   // Need to import useEffect, import useState at the top? Wait, it's missing imports!
   // I will just use React.useState and React.useEffect
 
-  React.useEffect(() => {
+  const [blogPosts, setBlogPosts] = useState<any[]>([]);
+
+  useEffect(() => {
+    // 1. Load layout from local storage
     const saved = localStorage.getItem("corehead_builder_layout");
     if (saved) {
       try {
@@ -25,6 +29,17 @@ export default function BlogPreviewPage() {
         console.error("Failed to parse saved layout", e);
       }
     }
+
+    // 2. Fetch real data from backend preview API
+    const fetchPosts = async () => {
+        try {
+            const posts = await api.getPreviewPosts(3);
+            setBlogPosts(posts);
+        } catch (error) {
+            console.error("Failed to fetch preview posts", error);
+        }
+    };
+    fetchPosts();
   }, []);
 
   const renderBlockTree = (parentId?: string) => {
@@ -114,6 +129,21 @@ export default function BlogPreviewPage() {
               className={`my-4 grid grid-cols-1 md:grid-cols-${cols} gap-4`}
             >
               {renderBlockTree(block.id)}
+            </div>
+          );
+          break;
+        case "Collection List":
+          renderedContent = (
+            <div className="my-8 grid grid-cols-1 md:grid-cols-3 gap-6" style={styleString}>
+              {blogPosts.map((post) => (
+                <div key={post.id} className="group border border-slate-100 rounded-xl overflow-hidden hover:shadow-lg transition-all bg-white">
+                    <img src={post.imageUrl} alt={post.title} className="w-full h-40 object-cover" />
+                    <div className="p-4">
+                        <h4 className="font-bold text-slate-800 line-clamp-2">{post.title}</h4>
+                        <p className="text-sm text-slate-500 mt-1 line-clamp-2">{post.excerpt}</p>
+                    </div>
+                </div>
+              ))}
             </div>
           );
           break;
