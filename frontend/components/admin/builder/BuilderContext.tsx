@@ -19,7 +19,12 @@ export type BlockType =
   | "Container"
   | "Columns"
   | "Collection List"
-  | "Featured Carousel";
+  | "Featured Carousel"
+  | "Video"
+  | "Newsletter"
+  | "Social Links"
+  | "Spacer"
+  | "Code Block";
 
 export interface BuilderBlock {
   id: string;
@@ -59,6 +64,7 @@ interface BuilderContextType {
   setDeviceMode: (mode: "desktop" | "tablet" | "mobile") => void;
   isAnalyzing: boolean;
   setIsAnalyzing: (analyzing: boolean) => void;
+  generateLayout: (prompt: string) => Promise<void>;
 }
 
 const BuilderContext = createContext<BuilderContextType | undefined>(undefined);
@@ -202,6 +208,30 @@ export function BuilderProvider({ children }: { children: ReactNode }) {
     return result;
   };
 
+  // AI Layout Generation logic moved to context for global access
+  const generateLayout = async (prompt: string) => {
+    if (!prompt.trim() || isAnalyzing) return;
+
+    setIsAnalyzing(true);
+    try {
+      const data = await api.generateLayout({
+        prompt,
+        layoutType: templateType === "Blog Archive" ? "blog-archive" : "single-post",
+        designStyle: "modern",
+      });
+
+      if (data.blocks) {
+        setBlocks(data.blocks);
+        localStorage.setItem("corehead_builder_layout", JSON.stringify(data.blocks));
+      }
+    } catch (error: any) {
+      console.error("AI Generation error:", error);
+      alert("AI Generation failed: " + error.message);
+    } finally {
+      setIsAnalyzing(false);
+    }
+  };
+
   return (
     <BuilderContext.Provider
       value={{
@@ -227,6 +257,7 @@ export function BuilderProvider({ children }: { children: ReactNode }) {
         setDeviceMode,
         isAnalyzing,
         setIsAnalyzing,
+        generateLayout,
       }}
     >
       {children}
@@ -275,6 +306,16 @@ function getDefaultContent(type: BlockType): any {
       return { limit: 6, category: "" };
     case "Featured Carousel":
       return { limit: 3 };
+    case "Video":
+      return "https://www.youtube.com/watch?v=dQw4w9WgXcQ";
+    case "Newsletter":
+      return { title: "Subscribe to our newsletter", buttonText: "Subscribe", placeholder: "your@email.com" };
+    case "Social Links":
+      return ["facebook", "twitter", "instagram", "linkedin"];
+    case "Spacer":
+      return "40px";
+    case "Code Block":
+      return { code: "console.log('Hello World');", language: "javascript" };
     default:
       return "";
   }

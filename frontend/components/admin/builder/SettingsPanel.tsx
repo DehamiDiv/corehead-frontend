@@ -172,29 +172,94 @@ export default function SettingsPanel() {
 
             <div className="border-t border-gray-100 pt-4 space-y-3">
               <h4 className="text-xs font-semibold text-slate-500 uppercase tracking-wider flex items-center gap-2">
-                <Palette className="w-3 h-3" /> Background
+                <Palette className="w-3 h-3" /> Background & Border
               </h4>
-              <div className="space-y-1">
-                <label className="text-xs text-slate-600">
-                  Background Color
-                </label>
-                <div className="flex items-center gap-2">
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-1">
+                  <label className="text-xs text-slate-600">BG Color</label>
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="color"
+                      className="w-8 h-8 rounded border border-gray-200 cursor-pointer"
+                      value={selectedBlock.styles?.backgroundColor || "#ffffff"}
+                      onChange={(e) =>
+                        updateBlock(selectedBlock.id, selectedBlock.content, {
+                          backgroundColor: e.target.value,
+                        })
+                      }
+                    />
+                  </div>
+                </div>
+                <div className="space-y-1">
+                  <label className="text-xs text-slate-600">Radius (px)</label>
                   <input
-                    type="color"
-                    className="w-8 h-8 rounded border border-gray-200 cursor-pointer"
-                    value={selectedBlock.styles?.backgroundColor || "#ffffff"}
+                    type="number"
+                    className="w-full px-2 py-1.5 bg-slate-50 border border-gray-200 rounded text-sm"
+                    placeholder="0"
+                    value={parseInt(selectedBlock.styles?.borderRadius || "0") || ""}
                     onChange={(e) =>
                       updateBlock(selectedBlock.id, selectedBlock.content, {
-                        backgroundColor: e.target.value,
+                        borderRadius: `${e.target.value}px`,
                       })
                     }
                   />
-                  <span className="text-xs text-slate-500 uppercase">
-                    {selectedBlock.styles?.backgroundColor || "None"}
-                  </span>
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-1">
+                  <label className="text-xs text-slate-600">Border Width</label>
+                  <input
+                    type="number"
+                    className="w-full px-2 py-1.5 bg-slate-50 border border-gray-200 rounded text-sm"
+                    placeholder="0"
+                    value={parseInt(selectedBlock.styles?.borderWidth || "0") || ""}
+                    onChange={(e) =>
+                      updateBlock(selectedBlock.id, selectedBlock.content, {
+                        borderWidth: `${e.target.value}px`,
+                        borderStyle: "solid",
+                      })
+                    }
+                  />
+                </div>
+                <div className="space-y-1">
+                  <label className="text-xs text-slate-600">Border Color</label>
+                  <input
+                    type="color"
+                    className="w-full h-8 rounded border border-gray-200 cursor-pointer"
+                    value={selectedBlock.styles?.borderColor || "#e2e8f0"}
+                    onChange={(e) =>
+                      updateBlock(selectedBlock.id, selectedBlock.content, {
+                        borderColor: e.target.value,
+                      })
+                    }
+                  />
                 </div>
               </div>
             </div>
+
+            <div className="border-t border-gray-100 pt-4 space-y-3">
+              <h4 className="text-xs font-semibold text-slate-500 uppercase tracking-wider flex items-center gap-2">
+                <Maximize className="w-3 h-3" /> Effects
+              </h4>
+              <div className="space-y-1">
+                <label className="text-xs text-slate-600">Shadow</label>
+                <select
+                  className="w-full px-2 py-1.5 bg-slate-50 border border-gray-200 rounded text-sm"
+                  value={selectedBlock.styles?.boxShadow || "none"}
+                  onChange={(e) =>
+                    updateBlock(selectedBlock.id, selectedBlock.content, {
+                      boxShadow: e.target.value,
+                    })
+                  }
+                >
+                  <option value="none">None</option>
+                  <option value="0 1px 2px 0 rgb(0 0 0 / 0.05)">Small</option>
+                  <option value="0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1)">Medium</option>
+                  <option value="0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1)">Large</option>
+                </select>
+              </div>
+            </div>
+
           </div>
         )}
 
@@ -428,6 +493,131 @@ function ContentTab({ selectedBlock, updateBlock }: any) {
               className="w-full px-3 py-2 bg-slate-50 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 outline-none"
            />
            <p className="text-xs text-slate-500">Maximum posts to show in the carousel.</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (selectedBlock.type === "Container") {
+    return (
+      <div className="space-y-4">
+        <p className="text-xs text-slate-500">
+          Containers act as wrappers. You can drag other blocks inside them.
+          Go to the <strong>Style</strong> tab to change padding and background.
+        </p>
+      </div>
+    );
+  }
+
+  if (selectedBlock.type === "Columns") {
+    return (
+      <div className="space-y-4">
+        <div className="space-y-2">
+          <label className="text-sm text-slate-700">Number of Columns</label>
+          <div className="flex gap-2">
+            {[2, 3, 4].map((num) => (
+              <button
+                key={num}
+                onClick={() => updateBlock(selectedBlock.id, num)}
+                className={`flex-1 py-2 text-sm font-medium rounded-lg border transition-all ${
+                  (selectedBlock.content || 2) === num
+                    ? "bg-blue-600 border-blue-600 text-white shadow-md"
+                    : "bg-white border-gray-200 text-slate-600 hover:bg-gray-50"
+                }`}
+              >
+                {num}
+              </button>
+            ))}
+          </div>
+        </div>
+        <p className="text-xs text-slate-500 mt-2">
+          Column content can be dragged into the individual slots on the canvas.
+        </p>
+      </div>
+    );
+  }
+
+  if (selectedBlock.type === "Video") {
+    return (
+      <div className="space-y-4">
+        <div className="space-y-2">
+          <label className="text-sm text-slate-700">Video URL (YouTube/Vimeo)</label>
+          <input
+            type="text"
+            value={selectedBlock.content}
+            onChange={(e) => updateBlock(selectedBlock.id, e.target.value)}
+            className="w-full px-3 py-2 bg-slate-50 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 outline-none"
+            placeholder="https://youtube.com/..."
+          />
+        </div>
+      </div>
+    );
+  }
+
+  if (selectedBlock.type === "Newsletter") {
+    return (
+      <div className="space-y-4">
+        <div className="space-y-2">
+          <label className="text-sm text-slate-700">Form Title</label>
+          <input
+            type="text"
+            value={selectedBlock.content.title}
+            onChange={(e) => updateBlock(selectedBlock.id, { ...selectedBlock.content, title: e.target.value })}
+            className="w-full px-3 py-2 bg-slate-50 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 outline-none"
+          />
+        </div>
+        <div className="space-y-2">
+          <label className="text-sm text-slate-700">Button Text</label>
+          <input
+            type="text"
+            value={selectedBlock.content.buttonText}
+            onChange={(e) => updateBlock(selectedBlock.id, { ...selectedBlock.content, buttonText: e.target.value })}
+            className="w-full px-3 py-2 bg-slate-50 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 outline-none"
+          />
+        </div>
+      </div>
+    );
+  }
+
+  if (selectedBlock.type === "Spacer") {
+    return (
+      <div className="space-y-2">
+        <label className="text-sm text-slate-700">Height (e.g. 40px)</label>
+        <input
+          type="text"
+          value={selectedBlock.content}
+          onChange={(e) => updateBlock(selectedBlock.id, e.target.value)}
+          className="w-full px-3 py-2 bg-slate-50 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 outline-none"
+        />
+      </div>
+    );
+  }
+
+  if (selectedBlock.type === "Code Block") {
+    return (
+      <div className="space-y-4">
+        <div className="space-y-2">
+          <label className="text-sm text-slate-700">Language</label>
+          <select
+            value={selectedBlock.content.language}
+            onChange={(e) => updateBlock(selectedBlock.id, { ...selectedBlock.content, language: e.target.value })}
+            className="w-full px-3 py-2 bg-slate-50 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 outline-none"
+          >
+            <option value="javascript">JavaScript</option>
+            <option value="typescript">TypeScript</option>
+            <option value="python">Python</option>
+            <option value="css">CSS</option>
+            <option value="html">HTML</option>
+          </select>
+        </div>
+        <div className="space-y-2">
+          <label className="text-sm text-slate-700">Code</label>
+          <textarea
+            rows={8}
+            value={selectedBlock.content.code}
+            onChange={(e) => updateBlock(selectedBlock.id, { ...selectedBlock.content, code: e.target.value })}
+            className="w-full px-3 py-2 bg-slate-900 text-blue-300 font-mono text-xs border border-gray-700 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
+          />
         </div>
       </div>
     );

@@ -4,6 +4,7 @@ import { MessageSquare, LayoutGrid, Bot, User, CornerDownLeft, Sparkles, AlertCi
 import { useBuilder } from "./BuilderContext";
 import Toolbox from "./Toolbox";
 import { useState } from "react";
+import { api } from "@/lib/api";
 
 export default function LeftSidebar() {
   const { activeSidebar, setActiveSidebar, setIsAnalyzing } = useBuilder();
@@ -57,7 +58,7 @@ type Message = {
 
 // ─── Chat Panel ────────────────────────────────────────────────
 function ChatPanel({ onAnalyze, onDone }: { onAnalyze: () => void; onDone: () => void }) {
-  const { loadLayout } = useBuilder();
+  const { loadLayout, generateLayout } = useBuilder();
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
   const [messages, setMessages] = useState<Message[]>([
@@ -76,29 +77,14 @@ function ChatPanel({ onAnalyze, onDone }: { onAnalyze: () => void; onDone: () =>
     setMessages((prev) => [...prev, { role: "user", text: prompt }]);
     setInput("");
     setLoading(true);
-    onAnalyze();
-
     try {
-      const res = await fetch("http://localhost:5000/api/ai/generate-layout", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ prompt }),
-      });
-
-      const data = await res.json();
-
-      if (!res.ok || !data.blocks) {
-        throw new Error(data.error || "Failed to generate layout");
-      }
-
-      // Load the generated blocks into the canvas
-      loadLayout(JSON.stringify(data.blocks));
+      await generateLayout(prompt);
 
       setMessages((prev) => [
         ...prev,
         {
           role: "ai",
-          text: `✅ Done! I generated ${data.blocks.length} blocks for "${prompt}". You can now drag, reorder, and edit them on the canvas.`,
+          text: `✅ Done! I've updated the layout based on your request: "${prompt}". You can now drag, reorder, and edit the blocks.`,
         },
       ]);
     } catch (err: any) {

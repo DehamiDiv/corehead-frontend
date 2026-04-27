@@ -49,9 +49,20 @@ export default function BlogPreviewPage() {
 
     return levelBlocks.map((block: any) => {
       const styleString = block.styles || {};
-      const content = block.bindings?.content
-        ? `{${block.bindings.content}}`
-        : block.content;
+      
+      // Data Binding Logic: Replace content if bound to a field
+      let content = block.content;
+      if (block.bindings?.content) {
+          const binding = block.bindings.content;
+          if (binding === 'post.title') content = "The Future of AI in Web Development: A Comprehensive Guide";
+          else if (binding === 'post.excerpt') content = "Exploring how artificial intelligence is transforming the way we build and interact with the web.";
+          else if (binding === 'post.content') content = "Full blog post content would go here in a real scenario...";
+          else if (binding === 'post.category') content = "Development";
+          else if (binding === 'post.author') content = "Felix Vance";
+          else if (binding === 'post.date') content = "Oct 24, 2024";
+          else if (binding === 'site.name') content = "CoreHead Blog";
+          else if (binding === 'post.featured_image') content = "https://images.unsplash.com/photo-1499750310107-5fef28a66643?w=1200&q=80";
+      }
 
       let renderedContent = null;
       switch (block.type) {
@@ -125,8 +136,8 @@ export default function BlogPreviewPage() {
           const cols = block.content || 2;
           renderedContent = (
             <div
-              style={styleString}
-              className={`my-4 grid grid-cols-1 md:grid-cols-${cols} gap-4`}
+              style={{ ...styleString, display: 'grid', gridTemplateColumns: `repeat(${cols}, minmax(0, 1fr))`, gap: '1rem' }}
+              className="my-4"
             >
               {renderBlockTree(block.id)}
             </div>
@@ -147,6 +158,68 @@ export default function BlogPreviewPage() {
             </div>
           );
           break;
+        case "Featured Carousel":
+          renderedContent = (
+            <div className="my-8 relative rounded-3xl overflow-hidden bg-slate-900 aspect-[21/9]" style={styleString}>
+                {blogPosts[0] && (
+                    <>
+                        <img src={blogPosts[0].imageUrl} className="absolute inset-0 w-full h-full object-cover opacity-50" />
+                        <div className="absolute inset-0 bg-gradient-to-t from-black/80 to-transparent flex flex-col justify-end p-12">
+                            <span className="text-blue-400 font-bold uppercase tracking-widest text-sm mb-4">Featured Article</span>
+                            <h2 className="text-white text-4xl font-extrabold max-w-2xl mb-4">{blogPosts[0].title}</h2>
+                            <p className="text-white/70 max-w-xl line-clamp-2">{blogPosts[0].excerpt}</p>
+                        </div>
+                    </>
+                )}
+            </div>
+          );
+          break;
+        case "Video":
+          renderedContent = (
+            <div className="my-8 aspect-video rounded-2xl overflow-hidden bg-slate-100" style={styleString}>
+               <iframe 
+                  className="w-full h-full"
+                  src={content.replace('watch?v=', 'embed/')} 
+                  title="Video"
+                  allowFullScreen
+               ></iframe>
+            </div>
+          );
+          break;
+        case "Newsletter":
+          renderedContent = (
+            <div className="my-8 bg-slate-900 rounded-3xl p-12 text-center text-white" style={styleString}>
+               <h3 className="text-3xl font-bold mb-4">{block.content?.title}</h3>
+               <p className="text-slate-400 mb-8 max-w-md mx-auto">Stay updated with our latest news and articles delivered straight to your inbox.</p>
+               <div className="flex flex-col md:flex-row gap-3 max-w-md mx-auto">
+                  <input type="email" placeholder="Enter your email" className="flex-1 bg-white/10 border border-white/20 rounded-xl px-4 py-3 outline-none focus:border-blue-500" />
+                  <button className="bg-blue-600 hover:bg-blue-700 text-white font-bold px-8 py-3 rounded-xl transition-colors">{block.content?.buttonText}</button>
+               </div>
+            </div>
+          );
+          break;
+        case "Spacer":
+          renderedContent = <div style={{ height: block.content || '40px' }}></div>;
+          break;
+        case "Code Block":
+          renderedContent = (
+            <div className="my-6 bg-slate-900 rounded-xl p-6 overflow-x-auto border border-slate-800" style={styleString}>
+               <pre className="text-blue-300 font-mono text-sm">
+                  <code>{block.content?.code}</code>
+               </pre>
+            </div>
+          );
+          break;
+        case "Social Links":
+          renderedContent = (
+            <div className="my-8 flex justify-center gap-6" style={styleString}>
+               {["Facebook", "Twitter", "Instagram"].map(s => (
+                 <span key={s} className="text-slate-400 hover:text-blue-500 font-medium cursor-pointer transition-colors">{s}</span>
+               ))}
+            </div>
+          );
+          break;
+
         default:
           renderedContent = null;
       }
@@ -154,6 +227,7 @@ export default function BlogPreviewPage() {
       return <div key={block.id}>{renderedContent}</div>;
     });
   };
+
 
   return (
     <div className="min-h-screen bg-white">

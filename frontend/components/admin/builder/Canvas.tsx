@@ -8,6 +8,11 @@ import {
   Square,
   LayoutGrid,
   Search,
+  Video,
+  Mail,
+  Share2,
+  MoveVertical,
+  Code,
 } from "lucide-react";
 import {
   useBuilder,
@@ -65,13 +70,16 @@ export default function Canvas() {
 
           {(block.type === "Container" || block.type === "Columns") && (
             <div
-              className="mt-4 p-4 min-h-[50px] bg-slate-50/50 rounded flex flex-col gap-4"
+              className={`mt-4 p-4 min-h-[50px] bg-slate-50/50 rounded gap-4 ${block.type === "Columns" ? "grid" : "flex flex-col"}`}
+              style={block.type === "Columns" ? { 
+                gridTemplateColumns: `repeat(${block.content || 2}, minmax(0, 1fr))` 
+              } : {}}
               onDragOver={handleDragOver}
               onDrop={(e) => handleDropNested(e, block.id)}
             >
               {renderBlockTree(block.id)}
               {blocks.filter((b) => b.parentId === block.id).length === 0 && (
-                <div className="text-sm text-slate-400 text-center py-4 border-2 border-dashed border-slate-200 rounded">
+                <div className={`text-sm text-slate-400 text-center py-4 border-2 border-dashed border-slate-200 rounded ${block.type === "Columns" ? `col-span-${block.content || 2}` : ""}`}>
                   Drag{" "}
                   {block.type === "Container" ? "blocks" : "columns content"}{" "}
                   here
@@ -205,7 +213,7 @@ function renderBlockContent(block: BuilderBlock, isSelected: boolean) {
       return (
         <div
           style={styleString}
-          className={`flex items-center gap-2 mb-2 text-slate-500 font-medium text-sm grid-cols-${block.content || 2}`}
+          className="flex items-center gap-2 mb-2 text-slate-500 font-medium text-sm"
         >
           <LayoutGrid className="w-4 h-4" /> {block.content || 2} Columns
         </div>
@@ -240,7 +248,51 @@ function renderBlockContent(block: BuilderBlock, isSelected: boolean) {
           </p>
         </div>
       );
+    case "Video":
+      return (
+        <div style={styleString} className="aspect-video bg-slate-100 rounded-xl flex flex-col items-center justify-center border-2 border-dashed border-slate-200">
+           <Video className="w-10 h-10 text-slate-400 mb-2" />
+           <span className="text-sm text-slate-500">Video Player: {block.content}</span>
+        </div>
+      );
+    case "Newsletter":
+      return (
+        <div style={styleString} className="bg-blue-600 rounded-2xl p-8 text-center text-white">
+           <Mail className="w-8 h-8 mx-auto mb-4 opacity-80" />
+           <h4 className="text-xl font-bold mb-2">{block.content?.title || "Subscribe"}</h4>
+           <div className="flex gap-2 max-w-md mx-auto mt-6">
+              <div className="flex-1 bg-white/10 rounded-lg h-10 border border-white/20"></div>
+              <div className="w-24 bg-white text-blue-600 font-bold rounded-lg h-10 flex items-center justify-center text-sm">
+                 {block.content?.buttonText || "Join"}
+              </div>
+           </div>
+        </div>
+      );
+    case "Social Links":
+      return (
+        <div style={styleString} className="flex justify-center gap-4 py-4">
+           {["facebook", "twitter", "instagram", "linkedin"].map(social => (
+             <div key={social} className="w-10 h-10 bg-slate-100 rounded-full flex items-center justify-center text-slate-400">
+                <Share2 size={18} />
+             </div>
+           ))}
+        </div>
+      );
+    case "Spacer":
+      return (
+        <div style={{ ...styleString, height: block.content || "40px" }} className="w-full flex items-center justify-center border-y border-dashed border-slate-100">
+           <MoveVertical size={14} className="text-slate-300" />
+        </div>
+      );
+    case "Code Block":
+      return (
+        <div style={styleString} className="bg-slate-900 rounded-xl p-6 font-mono text-sm text-blue-300 relative overflow-hidden">
+           <div className="absolute top-0 right-0 p-2 text-[10px] text-slate-500 uppercase tracking-widest">{block.content?.language || "javascript"}</div>
+           <pre>{block.content?.code || "print('hello world')"}</pre>
+        </div>
+      );
     default:
       return <div className="text-red-500">Unknown block type</div>;
   }
 }
+

@@ -10,6 +10,11 @@ import {
   List,
   Settings,
   LayoutGrid,
+  Video,
+  Mail,
+  Share2,
+  MoveVertical,
+  Code,
 } from "lucide-react";
 import Link from "next/link";
 
@@ -21,9 +26,14 @@ const tools = [
   { icon: Minus, label: "Divider" },
   { icon: Square, label: "Button" },
   { icon: LayoutGrid, label: "Container" },
-  { icon: LayoutGrid, label: "Columns" }, // Using LayoutGrid for columns as well for simplicity
+  { icon: LayoutGrid, label: "Columns" },
   { icon: List, label: "Collection List" },
   { icon: ImageIcon, label: "Featured Carousel" },
+  { icon: Video, label: "Video" },
+  { icon: Mail, label: "Newsletter" },
+  { icon: Share2, label: "Social Links" },
+  { icon: MoveVertical, label: "Spacer" },
+  { icon: Code, label: "Code Block" },
 ];
 
 const bottomTools = [

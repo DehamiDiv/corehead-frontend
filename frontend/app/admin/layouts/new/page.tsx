@@ -2,64 +2,105 @@
 
 import React, { useState } from "react";
 import Link from "next/link";
-import { ArrowLeft, Save, UploadCloud, Code, FileType, Layout as LayoutIcon, Loader2 } from "lucide-react";
+import { 
+    ArrowLeft, 
+    Save, 
+    UploadCloud, 
+    Code, 
+    FileType, 
+    Layout as LayoutIcon, 
+    Loader2 
+} from "lucide-react";
 import { api } from "@/lib/api";
 import { useRouter } from "next/navigation";
 
-export default function CreateLayoutPage() {
-    const [name, setName] = useState("");
-    const [type, setType] = useState("Single Post");
-    const [schema, setSchema] = useState(JSON.stringify({
-        version: "1.0",
-        sections: [
-            {
-                id: "header",
-                type: "hero-section",
-                props: {
-                    title: "{post.title}",
-                    image: "{post.coverImage}"
-                }
-            },
-            {
-                id: "content",
-                type: "rich-text",
-                props: {
-                    content: "{post.content}"
-                }
+// Default schema structure for new layouts
+// This prevents hardcoding the JSON directly inside the component's state initialization.
+const DEFAULT_LAYOUT_SCHEMA = {
+    version: "1.0",
+    sections: [
+        {
+            id: "header",
+            type: "hero-section",
+            props: {
+                title: "{post.title}",
+                image: "{post.coverImage}"
             }
-        ]
-    }, null, 2));
+        },
+        {
+            id: "content",
+            type: "rich-text",
+            props: {
+                content: "{post.content}"
+            }
+        }
+    ]
+};
 
-    const [isSaving, setIsSaving] = useState(false);
+export default function CreateLayoutPage() {
+    // --- State Management ---
+    const [layoutName, setLayoutName] = useState("");
+    const [templateType, setTemplateType] = useState("Single Post");
+    const [schemaContent, setSchemaContent] = useState(
+        JSON.stringify(DEFAULT_LAYOUT_SCHEMA, null, 2)
+    );
+    const [isProcessing, setIsProcessing] = useState(false);
+    
     const router = useRouter();
 
-    const handleSave = async (status: "draft" | "published") => {
-        setIsSaving(true);
+    /**
+     * Handles saving the layout to the database.
+     * Validates JSON schema before sending to the API.
+     */
+    const handleSaveLayout = async (publishStatus: "draft" | "published") => {
+        // Basic validation: Name is required
+        if (!layoutName.trim()) {
+            alert("Please enter a layout name before saving.");
+            return;
+        }
+
+        setIsProcessing(true);
         try {
-            const layoutJson = JSON.parse(schema);
+            // Validate if the user entered valid JSON
+            let parsedSchema;
+            try {
+                parsedSchema = JSON.parse(schemaContent);
+            } catch (e) {
+                throw new Error("Invalid JSON format in the schema editor.");
+            }
+
+            // API call to persist the template
             await api.createTemplate({
-                name,
-                type,
-                layoutJson,
-                status
+                name: layoutName,
+                type: templateType,
+                layoutJson: parsedSchema,
+                status: publishStatus
             });
-            alert(`Layout ${status === 'published' ? 'published' : 'saved as draft'} successfully!`);
+
+            const successMessage = publishStatus === 'published' 
+                ? 'Layout published successfully!' 
+                : 'Layout saved as draft.';
+            
+            alert(successMessage);
             router.push("/admin/layouts");
+            
         } catch (error: any) {
-            alert("Error: " + error.message);
+            console.error("Layout Save Error:", error);
+            alert(`Error: ${error.message}`);
         } finally {
-            setIsSaving(false);
+            setIsProcessing(false);
         }
     };
 
     return (
-        <div className="max-w-4xl mx-auto space-y-6 font-[family-name:var(--font-outfit)]">
-            {/* Header */}
+        <div className="max-w-4xl mx-auto space-y-6 font-[family-name:var(--font-outfit)] pb-10">
+            {/* --- Navigation & Actions --- */}
             <div className="flex items-center justify-between">
                 <div className="flex items-center gap-4">
                     <Link
                         href="/admin/layouts"
                         className="p-2 rounded-lg hover:bg-slate-100 text-slate-500 transition-colors"
+                        title="Back to layouts"
                     >
                         <ArrowLeft size={20} />
                     </Link>
@@ -68,48 +109,54 @@ export default function CreateLayoutPage() {
                         <p className="text-slate-500 text-sm">Define the structure and style of your content</p>
                     </div>
                 </div>
+                
                 <div className="flex items-center gap-3">
                     <button
-                        onClick={() => handleSave("draft")}
-                        disabled={isSaving}
+                        onClick={() => handleSaveLayout("draft")}
+                        disabled={isProcessing}
                         className="px-4 py-2 bg-white border border-slate-200 text-slate-700 rounded-lg font-medium hover:bg-slate-50 transition-colors flex items-center gap-2 disabled:opacity-50"
                     >
-                        {isSaving ? <Loader2 size={18} className="animate-spin" /> : <Save size={18} />}
+                        {isProcessing ? <Loader2 size={18} className="animate-spin" /> : <Save size={18} />}
                         Save Draft
                     </button>
                     <button
-                        onClick={() => handleSave("published")}
-                        className="px-4 py-2 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition-colors flex items-center gap-2 shadow-sm"
+                        onClick={() => handleSaveLayout("published")}
+                        disabled={isProcessing}
+                        className="px-4 py-2 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition-colors flex items-center gap-2 shadow-sm disabled:opacity-50"
                     >
-                        <UploadCloud size={18} />
+                        {isProcessing ? <Loader2 size={18} className="animate-spin" /> : <UploadCloud size={18} />}
                         Save & Publish
                     </button>
                 </div>
             </div>
 
+            {/* --- Main Configuration Area --- */}
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                {/* Left Column: Settings */}
+                
+                {/* Left Sidebar: General Settings */}
                 <div className="space-y-6">
                     <div className="bg-white rounded-xl border border-slate-200 p-6 shadow-sm">
                         <h3 className="font-semibold text-slate-800 mb-4 flex items-center gap-2">
                             <LayoutIcon size={18} className="text-blue-600" />
-                            General Info
+                            General Details
                         </h3>
 
                         <div className="space-y-4">
+                            {/* Layout Name Input */}
                             <div>
                                 <label className="block text-sm font-medium text-slate-700 mb-1">
                                     Layout Name
                                 </label>
                                 <input
                                     type="text"
-                                    value={name}
-                                    onChange={(e) => setName(e.target.value)}
-                                    placeholder="e.g. Summer Campaign Post"
+                                    value={layoutName}
+                                    onChange={(e) => setLayoutName(e.target.value)}
+                                    placeholder="e.g. Modern Blog Template"
                                     className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-100 focus:border-blue-400 transition-all"
                                 />
                             </div>
 
+                            {/* Template Type Selector */}
                             <div>
                                 <label className="block text-sm font-medium text-slate-700 mb-1">
                                     Template Type
@@ -117,8 +164,8 @@ export default function CreateLayoutPage() {
                                 <div className="relative">
                                     <FileType size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
                                     <select
-                                        value={type}
-                                        onChange={(e) => setType(e.target.value)}
+                                        value={templateType}
+                                        onChange={(e) => setTemplateType(e.target.value)}
                                         className="w-full pl-10 pr-3 py-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-100 focus:border-blue-400 transition-all appearance-none bg-white"
                                     >
                                         <option value="Single Post">Single Post</option>
@@ -126,16 +173,16 @@ export default function CreateLayoutPage() {
                                     </select>
                                 </div>
                                 <p className="text-xs text-slate-500 mt-2">
-                                    {type === "Single Post"
-                                        ? "Used for individual blog posts and articles."
-                                        : "Used for listing pages like categories or search results."}
+                                    {templateType === "Single Post"
+                                        ? "Best for individual articles and blog entries."
+                                        : "Best for listing pages like search results."}
                                 </p>
                             </div>
                         </div>
                     </div>
                 </div>
 
-                {/* Right Column: Schema Editor */}
+                {/* Right Area: Schema Editor */}
                 <div className="lg:col-span-2">
                     <div className="bg-white rounded-xl border border-slate-200 shadow-sm flex flex-col h-[500px]">
                         <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between">
@@ -149,13 +196,17 @@ export default function CreateLayoutPage() {
                         </div>
                         <div className="flex-1 relative">
                             <textarea
-                                value={schema}
-                                onChange={(e) => setSchema(e.target.value)}
+                                value={schemaContent}
+                                onChange={(e) => setSchemaContent(e.target.value)}
                                 className="w-full h-full p-6 font-mono text-sm text-slate-700 resize-none focus:outline-none bg-slate-50/50"
                                 spellCheck={false}
+                                placeholder="Paste or write your JSON schema here..."
                             />
                         </div>
                     </div>
+                    <p className="mt-3 text-xs text-slate-400 italic">
+                        * Ensure the JSON structure matches the platform requirements to avoid rendering errors.
+                    </p>
                 </div>
             </div>
         </div>
