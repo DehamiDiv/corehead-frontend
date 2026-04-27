@@ -198,5 +198,58 @@ export const api = {
     });
     if (!res.ok) throw new Error('Failed to fetch AI history');
     return res.json();
+  },
+
+  // Users
+  async getUsers() {
+    const res = await fetch(`${BASE_URL}/users`, {
+      headers: { ...getAuthHeader() }
+    });
+    if (!res.ok) throw new Error('Failed to fetch users');
+    return res.json();
+  },
+
+  async inviteUser(data: { email: string, role: string }) {
+    const res = await fetch(`${BASE_URL}/users/invite`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        ...getAuthHeader()
+      },
+      body: JSON.stringify(data)
+    });
+    if (!res.ok) {
+      const err = await res.json();
+      throw new Error(err.message || 'Failed to invite user');
+    }
+    return res.json();
+  },
+
+  async updateUser(id: string | number, data: { email?: string, role?: string, password?: string }) {
+    const res = await fetch(`${BASE_URL}/users/${id}`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+        ...getAuthHeader()
+      },
+      body: JSON.stringify(data)
+    });
+    if (!res.ok) {
+      const err = await res.json();
+      throw new Error(err.message || 'Failed to update user');
+    }
+    return res.json();
+  },
+
+  async deleteUser(id: string | number) {
+    const res = await fetch(`${BASE_URL}/users/${id}`, {
+      method: 'DELETE',
+      headers: { ...getAuthHeader() }
+    });
+    if (!res.ok) {
+      const err = await res.json();
+      throw new Error(err.message || 'Failed to delete user');
+    }
+    return res.json();
   }
 };
