@@ -23,7 +23,7 @@ export default function BlogCard({ post, isSelected, onClick, contentMode, setti
       style={cardStyle}
     >
       {contentMode === 'dynamic' && (
-        <div className="card-badge" style={{ background: activeGradient }}>Template</div>
+        <div className="card-badge" style={{ background: activeGradient }}>Dynamic Block</div>
       )}
       
       {/* Image section — hidden via CSS for minimal, shown for all others */}

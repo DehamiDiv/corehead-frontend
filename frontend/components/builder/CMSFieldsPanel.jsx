@@ -17,10 +17,9 @@ export default function CMSFieldsPanel({ cmsFields, selectedCard, contentMode, o
   // ✅ Load card values into fields when card is selected
   useEffect(() => {
     if (selectedCard) {
-      setEditValues({
+      const baseValues = {
         title:        selectedCard.title        || '',
-        content:      typeof selectedCard.content === 'string' ? selectedCard.content : '',
-        backgroundColor: selectedCard.styles?.backgroundColor || '', // Added for styling
+        backgroundColor: selectedCard.styles?.backgroundColor || '',
         excerpt:      selectedCard.excerpt      || '',
         author:       selectedCard.author       || '',
         date:         selectedCard.date         || '',
@@ -33,7 +32,20 @@ export default function CMSFieldsPanel({ cmsFields, selectedCard, contentMode, o
         authorBio:    selectedCard.authorBio    || '',
         authorAvatar: selectedCard.authorAvatar || '',
         socialLinks:  selectedCard.socialLinks  || '',
-      });
+      };
+
+      // Handle specific AI content types
+      if (selectedCard.type === 'Button') {
+        baseValues.buttonText = selectedCard.content?.text || '';
+        baseValues.buttonUrl = selectedCard.content?.url || '';
+      } else if (selectedCard.type === 'Collection List') {
+        baseValues.colCategory = selectedCard.content?.category || '';
+        baseValues.colLimit = selectedCard.content?.limit || 6;
+      } else {
+        baseValues.content = typeof selectedCard.content === 'string' ? selectedCard.content : '';
+      }
+
+      setEditValues(baseValues);
       setSaved(false);
     }
   }, [selectedCard?.id]);
@@ -58,35 +70,43 @@ export default function CMSFieldsPanel({ cmsFields, selectedCard, contentMode, o
         setError('Title cannot be empty.');
         return;
       }
-      if (editValues.title.length < 5) {
-        setError('Title must be at least 5 characters long.');
-        return;
-      }
       if (!editValues.category || editValues.category.trim() === '') {
         setError('Category is required.');
         return;
       }
-    } else {
-      // For AI blocks, check content (except for Divider which has no content)
-      if (selectedCard.type !== 'Divider') {
-        if (!editValues.content || (typeof editValues.content === 'string' && editValues.content.trim() === '')) {
-          setError('Content cannot be empty.');
-          return;
-        }
-      }
     }
 
     const updateData = { ...editValues };
+
     if (isAIBlock) {
-      // Nest styling inside styles object for AI blocks
+      // Re-nest styling
       updateData.styles = {
         ...selectedCard.styles,
         backgroundColor: editValues.backgroundColor
       };
       delete updateData.backgroundColor;
+
+      // Pack object-based content for specific blocks
+      if (selectedCard.type === 'Button') {
+        updateData.content = { 
+          text: editValues.buttonText, 
+          url: editValues.buttonUrl 
+        };
+        delete updateData.buttonText;
+        delete updateData.buttonUrl;
+      } else if (selectedCard.type === 'Collection List') {
+        updateData.content = { 
+          category: editValues.colCategory, 
+          limit: Number(editValues.colLimit) || 6
+        };
+        delete updateData.colCategory;
+        delete updateData.colLimit;
+      }
     }
 
-    onUpdateCard(selectedCard.id, updateData);
+    if (typeof onUpdateCard === 'function') {
+      onUpdateCard(selectedCard.id, updateData);
+    }
     setSaved(true);
     setTimeout(() => setSaved(false), 2000);
   };
@@ -128,7 +148,6 @@ export default function CMSFieldsPanel({ cmsFields, selectedCard, contentMode, o
     }
   ];
 
-  // ── Shared input style ──
   const inputStyle = {
     width: '100%',
     padding: '7px 10px',
@@ -143,23 +162,22 @@ export default function CMSFieldsPanel({ cmsFields, selectedCard, contentMode, o
     transition: 'border-color 0.2s',
   };
 
+  const labelStyle = {
+    display: 'block', fontSize: '11px',
+    fontWeight: '700', color: '#4f46e5',
+    marginBottom: '6px', textTransform: 'uppercase',
+    letterSpacing: '0.5px'
+  };
+
   return (
     <aside style={{
-      width: '260px',
-      minWidth: '260px',
-      borderLeft: '1px solid #e2e8f0',
-      background: '#ffffff',
-      overflowY: 'auto',
-      display: 'flex',
-      flexDirection: 'column',
+      width: '260px', minWidth: '260px',
+      borderLeft: '1px solid #e2e8f0', background: '#ffffff',
+      overflowY: 'auto', display: 'flex', flexDirection: 'column',
     }}>
 
       {/* ── Panel Header ── */}
-      <div style={{
-        padding: '16px',
-        borderBottom: '1px solid #e2e8f0',
-        background: '#f8fafc',
-      }}>
+      <div style={{ padding: '16px', borderBottom: '1px solid #e2e8f0', background: '#f8fafc' }}>
         <h3 style={{
           fontSize: '14px', fontWeight: '700', margin: '0 0 2px',
           background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
@@ -169,9 +187,7 @@ export default function CMSFieldsPanel({ cmsFields, selectedCard, contentMode, o
           🗄️ CMS Fields
         </h3>
         <p style={{ fontSize: '11px', color: '#888', margin: 0 }}>
-          {selectedCard
-            ? `Editing: ${selectedCard.title?.slice(0, 22)}...`
-            : 'Select a card to edit'}
+          {selectedCard ? `Editing: ${selectedCard.type}` : 'Select a card to edit'}
         </p>
       </div>
 
@@ -179,67 +195,75 @@ export default function CMSFieldsPanel({ cmsFields, selectedCard, contentMode, o
         <div style={{ flex: 1, overflowY: 'auto' }}>
 
           {/* Mode Badge */}
-          <div style={{
-            padding: '7px 16px',
-            background: contentMode === 'dynamic'
-              ? 'rgba(102,126,234,0.08)'
-              : 'rgba(16,185,129,0.08)',
-            borderBottom: '1px solid #e0e0e0',
-          }}>
-            <span style={{
-              fontSize: '11px', fontWeight: '600',
-              color: contentMode === 'dynamic' ? '#667eea' : '#10b981',
-            }}>
+          <div style={{ padding: '7px 16px', background: contentMode === 'dynamic' ? 'rgba(102,126,234,0.08)' : 'rgba(16,185,129,0.08)', borderBottom: '1px solid #e0e0e0' }}>
+            <span style={{ fontSize: '11px', fontWeight: '600', color: contentMode === 'dynamic' ? '#667eea' : '#10b981' }}>
               {contentMode === 'dynamic' ? '⚡ Dynamic Mode' : '📌 Static Mode'}
             </span>
           </div>
 
-          {/* AI Block Content Field (Dynamic) — Show only for core AI types */}
-          {selectedCard.type && ['Heading', 'Paragraph', 'Image', 'Quote', 'Divider', 'Button', 'Collection List'].includes(selectedCard.type) && (
+          {/* AI Block Editor */}
+          {isAIBlock && (
              <div style={{ borderBottom: '1px solid #e2e8f0', padding: '12px 16px', background: '#f8fafc' }}>
-                <label style={{
-                  display: 'block', fontSize: '11px',
-                  fontWeight: '700', color: '#4f46e5',
-                  marginBottom: '8px', textTransform: 'uppercase',
-                  letterSpacing: '0.5px'
-                }}>
-                  ✨ {selectedCard.type} Content
-                </label>
-                <textarea
-                  value={editValues.content || ''}
-                  onChange={e => handleChange('content', e.target.value)}
-                  rows={4}
-                  style={{
-                    ...inputStyle,
-                    borderColor: '#cbd5e1',
-                    resize: 'vertical',
-                    lineHeight: '1.5',
-                  }}
-                  onFocus={e => e.target.style.borderColor = '#4f46e5'}
-                  onBlur={e => e.target.style.borderColor = '#cbd5e1'}
-                />
+                
+                {/* Button Specific Fields */}
+                {selectedCard.type === 'Button' ? (
+                  <>
+                    <label style={labelStyle}>Button Text</label>
+                    <input
+                      type="text"
+                      value={editValues.buttonText || ''}
+                      onChange={e => handleChange('buttonText', e.target.value)}
+                      style={{ ...inputStyle, marginBottom: '12px' }}
+                    />
+                    <label style={labelStyle}>Button URL</label>
+                    <input
+                      type="text"
+                      value={editValues.buttonUrl || ''}
+                      onChange={e => handleChange('buttonUrl', e.target.value)}
+                      style={{ ...inputStyle, marginBottom: '12px' }}
+                    />
+                  </>
+                ) : selectedCard.type === 'Collection List' ? (
+                  <>
+                    <label style={labelStyle}>Filter Category</label>
+                    <input
+                      type="text"
+                      placeholder="e.g. Technology"
+                      value={editValues.colCategory || ''}
+                      onChange={e => handleChange('colCategory', e.target.value)}
+                      style={{ ...inputStyle, marginBottom: '12px' }}
+                    />
+                    <label style={labelStyle}>Post Limit</label>
+                    <input
+                      type="number"
+                      value={editValues.colLimit || 6}
+                      onChange={e => handleChange('colLimit', e.target.value)}
+                      style={{ ...inputStyle, marginBottom: '12px' }}
+                    />
+                  </>
+                ) : selectedCard.type !== 'Divider' ? (
+                  <>
+                    <label style={labelStyle}>✨ {selectedCard.type} Content</label>
+                    <textarea
+                      value={editValues.content || ''}
+                      onChange={e => handleChange('content', e.target.value)}
+                      rows={4}
+                      style={{ ...inputStyle, resize: 'vertical', lineHeight: '1.5', marginBottom: '12px' }}
+                    />
+                  </>
+                ) : null}
 
-                <label style={{
-                  display: 'block', fontSize: '11px',
-                  fontWeight: '700', color: '#4f46e5',
-                  marginTop: '12px', marginBottom: '8px', textTransform: 'uppercase',
-                  letterSpacing: '0.5px'
-                }}>
-                  🎨 Background Color
-                </label>
+                <label style={labelStyle}>🎨 Background Color</label>
                 <div style={{ display: 'flex', gap: '8px' }}>
                   <input
                     type="color"
                     value={editValues.backgroundColor || '#4f46e5'}
                     onChange={e => handleChange('backgroundColor', e.target.value)}
-                    style={{
-                      padding: 0, width: '30px', height: '30px', border: 'none', 
-                      borderRadius: '4px', cursor: 'pointer'
-                    }}
+                    style={{ padding: 0, width: '30px', height: '30px', border: 'none', borderRadius: '4px', cursor: 'pointer' }}
                   />
                   <input
                     type="text"
-                    placeholder="#hex color"
+                    placeholder="#hex"
                     value={editValues.backgroundColor || ''}
                     onChange={e => handleChange('backgroundColor', e.target.value)}
                     style={{ ...inputStyle, flex: 1 }}
@@ -248,105 +272,49 @@ export default function CMSFieldsPanel({ cmsFields, selectedCard, contentMode, o
              </div>
           )}
 
-          {/* Sections — Show only for standard cards, not AI blocks */}
+          {/* Standard Blog Card Sections */}
           {!isAIBlock && sections.map(section => {
             const isExpanded = expandedSections[section.id];
             return (
               <div key={section.id} style={{ borderBottom: '1px solid #e0e0e0' }}>
-
-                {/* Section Header */}
                 <button
                   onClick={() => toggleSection(section.id)}
                   style={{
-                    width: '100%', padding: '10px 16px',
-                    display: 'flex', alignItems: 'center',
-                    justifyContent: 'space-between',
-                    background: isExpanded
-                      ? 'linear-gradient(135deg, rgba(102,126,234,0.06) 0%, rgba(118,75,162,0.06) 100%)'
-                      : '#fff',
-                    border: 'none', cursor: 'pointer',
-                    fontSize: '13px', fontWeight: '600',
-                    color: '#333', fontFamily: 'inherit',
-                    transition: 'background 0.2s',
+                    width: '100%', padding: '10px 16px', display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                    background: isExpanded ? 'linear-gradient(135deg, rgba(102,126,234,0.06) 0%, rgba(118,75,162,0.06) 100%)' : '#fff',
+                    border: 'none', cursor: 'pointer', fontSize: '13px', fontWeight: '600', color: '#333', fontFamily: 'inherit'
                   }}
                 >
                   <span>{section.icon} {section.label}</span>
-                  {isExpanded
-                    ? <ChevronDown size={14} color="#667eea" />
-                    : <ChevronRight size={14} color="#aaa" />
-                  }
+                  {isExpanded ? <ChevronDown size={14} color="#667eea" /> : <ChevronRight size={14} color="#aaa" />}
                 </button>
 
-                {/* Fields */}
                 {isExpanded && (
                   <div style={{ padding: '10px 14px 14px', background: '#f9f9f9' }}>
                     {section.fields.map(field => (
                       <div key={field.key} style={{ marginBottom: '12px' }}>
-
-                        <label style={{
-                          display: 'block', fontSize: '11px',
-                          fontWeight: '600', color: '#555',
-                          marginBottom: '5px', textTransform: 'uppercase',
-                          letterSpacing: '0.5px'
-                        }}>
+                        <label style={{ display: 'block', fontSize: '11px', fontWeight: '600', color: '#555', marginBottom: '5px', textTransform: 'uppercase' }}>
                           {field.label}
                         </label>
-
-                        {/* Dynamic mode — show binding tag */}
                         {contentMode === 'dynamic' ? (
-                          <div style={{
-                            padding: '7px 10px',
-                            background: 'linear-gradient(135deg, rgba(102,126,234,0.08) 0%, rgba(118,75,162,0.08) 100%)',
-                            border: '1px solid rgba(102,126,234,0.3)',
-                            borderRadius: '8px',
-                            fontSize: '12px',
-                            color: '#667eea',
-                            fontFamily: 'monospace',
-                            fontWeight: '600',
-                          }}>
+                          <div style={{ padding: '7px 10px', background: 'rgba(102,126,234,0.08)', border: '1px solid rgba(102,126,234,0.3)', borderRadius: '8px', fontSize: '12px', color: '#667eea', fontFamily: 'monospace' }}>
                             {'{{' + field.key + '}}'}
                           </div>
-
                         ) : field.type === 'textarea' ? (
                           <textarea
                             value={editValues[field.key] || ''}
                             onChange={e => handleChange(field.key, e.target.value)}
                             rows={3}
-                            style={{
-                              ...inputStyle,
-                              resize: 'vertical',
-                              lineHeight: '1.5',
-                            }}
-                            onFocus={e => e.target.style.borderColor = '#667eea'}
-                            onBlur={e => e.target.style.borderColor = '#e0e0e0'}
+                            style={{ ...inputStyle, resize: 'vertical' }}
                           />
-
                         ) : (
                           <input
                             type={field.type}
                             value={editValues[field.key] || ''}
                             onChange={e => handleChange(field.key, e.target.value)}
                             style={inputStyle}
-                            onFocus={e => e.target.style.borderColor = '#667eea'}
-                            onBlur={e => e.target.style.borderColor = '#e0e0e0'}
                           />
                         )}
-
-                        {/* Image preview */}
-                        {field.key === 'image' && editValues.image && (
-                          <img
-                            src={editValues.image}
-                            alt="preview"
-                            style={{
-                              width: '100%', height: '80px',
-                              objectFit: 'cover', borderRadius: '8px',
-                              marginTop: '6px',
-                              border: '1px solid #e0e0e0'
-                            }}
-                            onError={e => e.target.style.display = 'none'}
-                          />
-                        )}
-
                       </div>
                     ))}
                   </div>
@@ -355,40 +323,16 @@ export default function CMSFieldsPanel({ cmsFields, selectedCard, contentMode, o
             );
           })}
 
-          {/* ✅ Apply Changes Button */}
+          {/* Apply Changes Button */}
           {contentMode === 'static' && (
             <div style={{ padding: '14px 16px' }}>
-              {error && (
-                <div style={{ 
-                  color: '#ef4444', fontSize: '12px', fontWeight: '600', 
-                  marginBottom: '8px', textAlign: 'center', background: '#fef2f2', 
-                  padding: '6px', borderRadius: '6px', border: '1px solid #fee2e2' 
-                }}>
-                  ⚠️ {error}
-                </div>
-              )}
+              {error && <div style={{ color: '#ef4444', fontSize: '12px', fontWeight: '600', marginBottom: '8px', textAlign: 'center', background: '#fef2f2', padding: '6px', borderRadius: '6px' }}>⚠️ {error}</div>}
               <button
                 onClick={handleSave}
                 style={{
-                  width: '100%', padding: '11px',
-                  background: saved
-                    ? 'linear-gradient(135deg, #10b981 0%, #059669 100%)'
-                    : 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-                  color: '#fff', border: 'none',
-                  borderRadius: '10px', cursor: 'pointer',
-                  fontSize: '13px', fontWeight: '600',
-                  display: 'flex', alignItems: 'center',
-                  justifyContent: 'center', gap: '6px',
-                  transition: 'all 0.3s', fontFamily: 'inherit',
-                  boxShadow: saved
-                    ? '0 4px 12px rgba(16,185,129,0.3)'
-                    : '0 4px 12px rgba(102,126,234,0.3)',
-                }}
-                onMouseEnter={e => {
-                  if (!saved) e.currentTarget.style.transform = 'translateY(-1px)';
-                }}
-                onMouseLeave={e => {
-                  e.currentTarget.style.transform = 'translateY(0)';
+                  width: '100%', padding: '11px', background: saved ? '#10b981' : 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                  color: '#fff', border: 'none', borderRadius: '10px', cursor: 'pointer', fontSize: '13px', fontWeight: '600',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px', transition: 'all 0.3s'
                 }}
               >
                 <Save size={14} />
@@ -396,37 +340,14 @@ export default function CMSFieldsPanel({ cmsFields, selectedCard, contentMode, o
               </button>
             </div>
           )}
-
         </div>
       ) : (
-
-        /* Empty State */
-        <div style={{
-          flex: 1, display: 'flex', flexDirection: 'column',
-          alignItems: 'center', justifyContent: 'center',
-          padding: '32px 20px', textAlign: 'center',
-        }}>
-          <div style={{
-            width: '56px', height: '56px', borderRadius: '16px',
-            background: 'linear-gradient(135deg, rgba(102,126,234,0.1) 0%, rgba(118,75,162,0.1) 100%)',
-            border: '2px solid rgba(102,126,234,0.2)',
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-            fontSize: '24px', marginBottom: '14px',
-          }}>
-            📋
-          </div>
-          <p style={{
-            fontSize: '13px', fontWeight: '700',
-            color: '#333', margin: '0 0 6px',
-          }}>
-            No card selected
-          </p>
-          <p style={{ fontSize: '12px', color: '#888', margin: 0, lineHeight: 1.5 }}>
-            Click any blog card on the canvas to edit its fields here
-          </p>
+        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '32px 20px', textAlign: 'center' }}>
+          <div style={{ fontSize: '24px', marginBottom: '14px' }}>📋</div>
+          <p style={{ fontSize: '13px', fontWeight: '700', color: '#333' }}>No card selected</p>
+          <p style={{ fontSize: '12px', color: '#888' }}>Click any block on the canvas to edit its fields here</p>
         </div>
       )}
-
     </aside>
   );
 }

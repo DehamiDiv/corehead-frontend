@@ -35,8 +35,14 @@ const radiusOptions = [
 ];
 
 export default function SettingsPanel({ settings, onSettingsChange }) {
+  const [applied, setApplied] = useState(false);
   const activePrimary = settings.colors?.primary || '#667eea';
   const activeGradient = settings.colors?.gradient || 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)';
+
+  const handleApply = () => {
+    setApplied(true);
+    setTimeout(() => setApplied(false), 2500);
+  };
 
   return (
     <div style={{ padding: '20px', overflowY: 'auto', maxHeight: '100%', background: '#fff' }}>
@@ -238,29 +244,25 @@ export default function SettingsPanel({ settings, onSettingsChange }) {
 
       {/* Save Button */}
       <button
-        onClick={() => {
-            const saveBtn = document.querySelector('.layout-actions button:first-child');
-            if (saveBtn) saveBtn.click();
-        }}
+        onClick={handleApply}
         style={{
           width: '100%', padding: '14px',
-          background: activeGradient, color: '#fff',
+          background: applied ? '#10b981' : activeGradient, 
+          color: '#fff',
           border: 'none', borderRadius: '12px',
           fontSize: '15px', fontWeight: '700', cursor: 'pointer',
-          boxShadow: `0 8px 20px ${activePrimary}40`,
+          boxShadow: `0 8px 20px ${applied ? '#10b98133' : activePrimary + '40'}`,
           display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px',
           transition: 'all 0.3s',
-          transform: 'translateY(0)'
+          transform: applied ? 'scale(0.98)' : 'translateY(0)'
         }}
-        onMouseEnter={e => e.currentTarget.style.transform = 'translateY(-2px)'}
-        onMouseLeave={e => e.currentTarget.style.transform = 'translateY(0)'}
       >
         <div style={{ background: 'rgba(255,255,255,0.2)', padding: '5px', borderRadius: '8px', display: 'flex' }}>
-          <Save size={18} />
+          {applied ? '✓' : <Save size={18} />}
         </div>
-        Apply & Save All Settings
+        {applied ? 'Settings Applied & Saved Locally' : 'Apply Settings to Session'}
       </button>
 
     </div>
   );
-}
+}

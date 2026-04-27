@@ -4,7 +4,7 @@ import { Layout, Grid, Database, Settings, Eye } from 'lucide-react';
 
 const tabs = [
   { id: 'builder',    icon: Layout,   label: 'Builder' },
-  { id: 'components', icon: Grid,     label: 'Components' },
+  { id: 'components', icon: Grid,     label: 'Blocks' },
   { id: 'cms',        icon: Database, label: 'CMS' },
   { id: 'settings',   icon: Settings, label: 'Settings' },
   { id: 'preview',    icon: Eye,      label: 'Preview' },

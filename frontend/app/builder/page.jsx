@@ -107,6 +107,22 @@ export default function BlogBuilderPage() {
     triggerAIFlow();
   }, []);
 
+  // Persist settings to localStorage
+  useEffect(() => {
+    const saved = localStorage.getItem('corehead_builder_settings');
+    if (saved) {
+      try {
+        setSettings(JSON.parse(saved));
+      } catch (e) {
+        console.error('Failed to load settings:', e);
+      }
+    }
+  }, []);
+
+  useEffect(() => {
+    localStorage.setItem('corehead_builder_settings', JSON.stringify(settings));
+  }, [settings]);
+
   // Open save modal with validation
   const handleSaveClick = () => {
     if (blogPosts.length === 0) {
@@ -173,9 +189,18 @@ export default function BlogBuilderPage() {
     setSavedLayouts(prev => prev.filter(l => l.id !== id));
   };
 
-  // Add component from Components tab
+  // Add or Replace block from Blocks tab
   const handleAddComponent = (template) => {
-    setBlogPosts(prev => [...prev, { ...template, id: Date.now() }]);
+    // If a card is selected, REPLACE it. Otherwise ADD it.
+    if (selectedCard) {
+      const updatedComponent = { ...template, id: selectedCard.id }; // Keep the same ID
+      setBlogPosts(prev => prev.map(p => p.id === selectedCard.id ? updatedComponent : p));
+      setSelectedCard(updatedComponent);
+    } else {
+      const newComponent = { ...template, id: Date.now() };
+      setBlogPosts(prev => [...prev, newComponent]);
+      setSelectedCard(newComponent);
+    }
     setActiveTab('builder');
   };
 
@@ -266,9 +291,17 @@ export default function BlogBuilderPage() {
           {/* Save / Load */}
           <div className="layout-actions">
             <button className="btn-secondary" onClick={handleSaveClick}>
-              {saveStatus === 'saved' ? '✅ Saved!' : null}
-              {saveStatus === 'error' ? '❌ Save Failed' : null}
-              {saveStatus === null ? '💾 Save Layout' : null}
+              {saveStatus === 'saved' && '✅ Saved!'}
+              {saveStatus === 'error' && '❌ Save Failed'}
+              {saveStatus === null && (
+                <>
+                  💾 {
+                    activeTab === 'settings' ? 'Save Settings & Layout' :
+                    activeTab === 'cms' ? 'Save Content & Layout' :
+                    'Save Layout'
+                  }
+                </>
+              )}
             </button>
             <button className="btn-secondary" onClick={handleOpenLayoutPicker}>
               📂 Load Layout
@@ -409,7 +442,10 @@ export default function BlogBuilderPage() {
           )}
 
           {activeTab === 'components' && (
-            <ComponentsPanel onAddComponent={handleAddComponent} />
+            <ComponentsPanel 
+              onAddComponent={handleAddComponent} 
+              selectedCard={selectedCard}
+            />
           )}
 
           {activeTab === 'cms' && (
@@ -447,7 +483,7 @@ export default function BlogBuilderPage() {
           )}
 
           {activeTab === 'settings' && (
-            <SettingsPanel settings={settings} onSettingsChange={setSettings} />
+            <SettingsPanel settings={settings} onSettingsChange={setSettings} onSave={handleSaveClick} />
           )}
 
           {activeTab === 'preview' && (

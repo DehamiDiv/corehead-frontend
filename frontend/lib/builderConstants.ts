@@ -14,7 +14,7 @@ export const defaultSettings = {
   spacingValue: '16px',
   radius: 'medium',
   radiusValue: '12px',
-  columns: 3,
+  columns: 1,
 };
 
 export const initialMockPosts = [
