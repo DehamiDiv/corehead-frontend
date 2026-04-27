@@ -43,17 +43,17 @@ export default function BlogCard({ post, isSelected, onClick, contentMode, setti
         <p className="card-excerpt" style={{ fontFamily: fontStyle }}>{post.excerpt}</p>
         
         <div className="card-meta">
-          <div className="meta-item">
+          <div className="meta-item" style={{ color: '#64748b' }}>
             <User size={14} color={activePrimary} />
-            <span>{post.author}</span>
+            <span style={{ fontWeight: '500' }}>{post.author || 'Anonymous'}</span>
           </div>
-          <div className="meta-item">
+          <div className="meta-item" style={{ color: '#64748b' }}>
             <Clock size={14} color={activePrimary} />
-            <span>{new Date(post.date).toLocaleDateString('en-US', { 
+            <span>{post.date ? new Date(post.date).toLocaleDateString('en-US', { 
               month: 'short', 
               day: 'numeric', 
               year: 'numeric' 
-            })}</span>
+            }) : 'No Date'}</span>
           </div>
         </div>
       </div>

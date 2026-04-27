@@ -43,7 +43,7 @@ export default function SettingsPanel({ settings, onSettingsChange }) {
       <div style={{ marginBottom: '24px' }}>
         <h2 style={{ 
           fontSize: '18px', fontWeight: '800', marginBottom: '6px',
-          background: activeGradient,
+          backgroundImage: activeGradient,
           WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent',
           backgroundClip: 'text',
         }}>

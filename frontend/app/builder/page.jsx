@@ -14,27 +14,7 @@ import LoadLayoutModal from '@/components/builder/LoadLayoutModal';
 import { useRouter } from 'next/navigation';
 import './page.css';
 import { builderApi } from '@/services/builderApi';
-
-const defaultSettings = {
-  font: 'inter',
-  fontStyle: 'Inter, sans-serif',
-  theme: 'premium-indigo',
-  colors: {
-    id: 'premium-indigo',
-    label: 'Indigo Royale',
-    primary: '#4f46e5',
-    bg: '#ffffff',
-    text: '#1e1e2e',
-    gradient: 'linear-gradient(135deg, #4f46e5 0%, #3730a3 100%)'
-  },
-
-  spacing: 'normal',
-  spacingValue: '16px',
-  radius: 'medium',
-  radiusValue: '12px',
-  columns: 3,
-};
-
+import { defaultSettings, initialMockPosts, cmsFieldConfig } from '@/lib/builderConstants';
 
 export default function BlogBuilderPage() {
   const router = useRouter();
@@ -55,41 +35,9 @@ export default function BlogBuilderPage() {
   const [compareMode, setCompareMode]       = useState(false); // show both side by side
   const [error, setError]                   = useState(null);
 
-  const [blogPosts, setBlogPosts] = useState([
-    {
-      id: 1,
-      title: 'Getting Started with React',
-      excerpt: 'Learn the fundamentals of React and start building amazing web applications.',
-      author: 'John Doe',
-      date: '2024-02-10',
-      image: 'https://picsum.photos/400/250?random=1',
-      category: 'Development'
-    },
-    {
-      id: 2,
-      title: 'Advanced CSS Techniques',
-      excerpt: 'Master modern CSS features and create stunning designs with ease.',
-      author: 'Jane Smith',
-      date: '2024-02-12',
-      image: 'https://picsum.photos/400/250?random=2',
-      category: 'Design'
-    },
-    {
-      id: 3,
-      title: 'JavaScript ES2024 Features',
-      excerpt: 'Explore the latest features in JavaScript and how to use them effectively.',
-      author: 'Mike Johnson',
-      date: '2024-02-13',
-      image: 'https://picsum.photos/400/250?random=3',
-      category: 'Development'
-    }
-  ]);
+  const [blogPosts, setBlogPosts] = useState([]);
 
-  const [cmsFields] = useState({
-    post: ['Title', 'Excerpt', 'Content', 'Featured Image', 'Category', 'Tags'],
-    author: ['Name', 'Bio', 'Avatar', 'Social Links'],
-    seo: ['Meta Title', 'Meta Description', 'Keywords', 'OG Image']
-  });
+  const [cmsFields] = useState(cmsFieldConfig);
 
   // Handle AI flows from separate pages
   useEffect(() => {
@@ -119,7 +67,9 @@ export default function BlogBuilderPage() {
             features: options.features || {}
           });
 
-          if (result.layout?.cards) {
+          if (result.blocks) {
+            handleAIGenerated(result.blocks, { theme: options.designStyle || 'modern', columns: 3 });
+          } else if (result.layout?.cards) {
             handleAIGenerated(result.layout.cards, result.layout.settings);
           }
 
@@ -157,8 +107,16 @@ export default function BlogBuilderPage() {
     triggerAIFlow();
   }, []);
 
-  // Open save modal
-  const handleSaveClick = () => setSaveModalOpen(true);
+  // Open save modal with validation
+  const handleSaveClick = () => {
+    if (blogPosts.length === 0) {
+      setError('Cannot save an empty layout. Please add some components first.');
+      // Auto-clear error after 4 seconds
+      setTimeout(() => setError(null), 4000);
+      return;
+    }
+    setSaveModalOpen(true);
+  };
 
   // Save with custom name
   const handleSaveWithName = async (name) => {
@@ -475,9 +433,11 @@ export default function BlogBuilderPage() {
                   }}
                 >
                   <div>
-                    <div style={{ fontSize: '13px', fontWeight: '600' }}>{post.title}</div>
+                    <div style={{ fontSize: '13px', fontWeight: '600' }}>
+                      {post.title || `${post.type}: ${typeof post.content === 'string' ? post.content.slice(0, 30) : 'Custom Block'}...`}
+                    </div>
                     <div style={{ fontSize: '11px', color: '#888' }}>
-                      {post.category} · {post.author}
+                      {post.category || 'AI Block'} {post.author ? `· ${post.author}` : ''}
                     </div>
                   </div>
                   <span style={{ fontSize: '12px', color: '#4f46e5' }}>Edit →</span>

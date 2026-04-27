@@ -9,12 +9,18 @@ export default function CMSFieldsPanel({ cmsFields, selectedCard, contentMode, o
   });
   const [editValues, setEditValues] = useState({});
   const [saved, setSaved] = useState(false);
+  const [error, setError] = useState('');
+
+  const aiBlockTypes = ['Heading', 'Paragraph', 'Image', 'Quote', 'Divider', 'Button', 'Collection List'];
+  const isAIBlock = selectedCard?.type && aiBlockTypes.includes(selectedCard.type);
 
   // ✅ Load card values into fields when card is selected
   useEffect(() => {
     if (selectedCard) {
       setEditValues({
         title:        selectedCard.title        || '',
+        content:      typeof selectedCard.content === 'string' ? selectedCard.content : '',
+        backgroundColor: selectedCard.styles?.backgroundColor || '', // Added for styling
         excerpt:      selectedCard.excerpt      || '',
         author:       selectedCard.author       || '',
         date:         selectedCard.date         || '',
@@ -39,12 +45,48 @@ export default function CMSFieldsPanel({ cmsFields, selectedCard, contentMode, o
   const handleChange = (field, value) => {
     setEditValues(prev => ({ ...prev, [field]: value }));
     setSaved(false);
+    setError('');
   };
 
   // ✅ Apply Changes — updates card in canvas
   const handleSave = () => {
     if (!selectedCard || !onUpdateCard) return;
-    onUpdateCard(selectedCard.id, editValues);
+
+    // Frontend Validation
+    if (!isAIBlock) {
+      if (!editValues.title || editValues.title.trim() === '') {
+        setError('Title cannot be empty.');
+        return;
+      }
+      if (editValues.title.length < 5) {
+        setError('Title must be at least 5 characters long.');
+        return;
+      }
+      if (!editValues.category || editValues.category.trim() === '') {
+        setError('Category is required.');
+        return;
+      }
+    } else {
+      // For AI blocks, check content (except for Divider which has no content)
+      if (selectedCard.type !== 'Divider') {
+        if (!editValues.content || (typeof editValues.content === 'string' && editValues.content.trim() === '')) {
+          setError('Content cannot be empty.');
+          return;
+        }
+      }
+    }
+
+    const updateData = { ...editValues };
+    if (isAIBlock) {
+      // Nest styling inside styles object for AI blocks
+      updateData.styles = {
+        ...selectedCard.styles,
+        backgroundColor: editValues.backgroundColor
+      };
+      delete updateData.backgroundColor;
+    }
+
+    onUpdateCard(selectedCard.id, updateData);
     setSaved(true);
     setTimeout(() => setSaved(false), 2000);
   };
@@ -152,8 +194,62 @@ export default function CMSFieldsPanel({ cmsFields, selectedCard, contentMode, o
             </span>
           </div>
 
-          {/* Sections */}
-          {sections.map(section => {
+          {/* AI Block Content Field (Dynamic) — Show only for core AI types */}
+          {selectedCard.type && ['Heading', 'Paragraph', 'Image', 'Quote', 'Divider', 'Button', 'Collection List'].includes(selectedCard.type) && (
+             <div style={{ borderBottom: '1px solid #e2e8f0', padding: '12px 16px', background: '#f8fafc' }}>
+                <label style={{
+                  display: 'block', fontSize: '11px',
+                  fontWeight: '700', color: '#4f46e5',
+                  marginBottom: '8px', textTransform: 'uppercase',
+                  letterSpacing: '0.5px'
+                }}>
+                  ✨ {selectedCard.type} Content
+                </label>
+                <textarea
+                  value={editValues.content || ''}
+                  onChange={e => handleChange('content', e.target.value)}
+                  rows={4}
+                  style={{
+                    ...inputStyle,
+                    borderColor: '#cbd5e1',
+                    resize: 'vertical',
+                    lineHeight: '1.5',
+                  }}
+                  onFocus={e => e.target.style.borderColor = '#4f46e5'}
+                  onBlur={e => e.target.style.borderColor = '#cbd5e1'}
+                />
+
+                <label style={{
+                  display: 'block', fontSize: '11px',
+                  fontWeight: '700', color: '#4f46e5',
+                  marginTop: '12px', marginBottom: '8px', textTransform: 'uppercase',
+                  letterSpacing: '0.5px'
+                }}>
+                  🎨 Background Color
+                </label>
+                <div style={{ display: 'flex', gap: '8px' }}>
+                  <input
+                    type="color"
+                    value={editValues.backgroundColor || '#4f46e5'}
+                    onChange={e => handleChange('backgroundColor', e.target.value)}
+                    style={{
+                      padding: 0, width: '30px', height: '30px', border: 'none', 
+                      borderRadius: '4px', cursor: 'pointer'
+                    }}
+                  />
+                  <input
+                    type="text"
+                    placeholder="#hex color"
+                    value={editValues.backgroundColor || ''}
+                    onChange={e => handleChange('backgroundColor', e.target.value)}
+                    style={{ ...inputStyle, flex: 1 }}
+                  />
+                </div>
+             </div>
+          )}
+
+          {/* Sections — Show only for standard cards, not AI blocks */}
+          {!isAIBlock && sections.map(section => {
             const isExpanded = expandedSections[section.id];
             return (
               <div key={section.id} style={{ borderBottom: '1px solid #e0e0e0' }}>
@@ -262,6 +358,15 @@ export default function CMSFieldsPanel({ cmsFields, selectedCard, contentMode, o
           {/* ✅ Apply Changes Button */}
           {contentMode === 'static' && (
             <div style={{ padding: '14px 16px' }}>
+              {error && (
+                <div style={{ 
+                  color: '#ef4444', fontSize: '12px', fontWeight: '600', 
+                  marginBottom: '8px', textAlign: 'center', background: '#fef2f2', 
+                  padding: '6px', borderRadius: '6px', border: '1px solid #fee2e2' 
+                }}>
+                  ⚠️ {error}
+                </div>
+              )}
               <button
                 onClick={handleSave}
                 style={{
