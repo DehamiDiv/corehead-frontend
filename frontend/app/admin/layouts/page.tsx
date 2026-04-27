@@ -240,7 +240,7 @@ export default function LayoutsListPage() {
                                                     </button>
                                                     {/* Edit */}
                                                     <Link
-                                                        href={`/admin/layouts/${layout.id}`}
+                                                        href={`/admin/layouts/${layout.id}/edit`}
                                                         className="p-2.5 bg-white border border-gray-100 rounded-xl text-gray-500 hover:text-blue-600 shadow-sm transition-all"
                                                         title="Edit Layout"
                                                     >
