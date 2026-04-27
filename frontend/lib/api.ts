@@ -304,5 +304,58 @@ export const api = {
       throw new Error(err.message || 'Failed to delete page');
     }
     return res.json();
+  },
+
+  // Categories
+  async getCategories() {
+    const res = await fetch(`${BASE_URL}/categories`, {
+      headers: { ...getAuthHeader() }
+    });
+    if (!res.ok) throw new Error('Failed to fetch categories');
+    return res.json();
+  },
+
+  async createCategory(data: { name: string, slug: string, description?: string }) {
+    const res = await fetch(`${BASE_URL}/categories`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        ...getAuthHeader()
+      },
+      body: JSON.stringify(data)
+    });
+    if (!res.ok) {
+      const err = await res.json();
+      throw new Error(err.message || 'Failed to create category');
+    }
+    return res.json();
+  },
+
+  async updateCategory(id: string | number, data: { name?: string, slug?: string, description?: string }) {
+    const res = await fetch(`${BASE_URL}/categories/${id}`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+        ...getAuthHeader()
+      },
+      body: JSON.stringify(data)
+    });
+    if (!res.ok) {
+      const err = await res.json();
+      throw new Error(err.message || 'Failed to update category');
+    }
+    return res.json();
+  },
+
+  async deleteCategory(id: string | number) {
+    const res = await fetch(`${BASE_URL}/categories/${id}`, {
+      method: 'DELETE',
+      headers: { ...getAuthHeader() }
+    });
+    if (!res.ok) {
+      const err = await res.json();
+      throw new Error(err.message || 'Failed to delete category');
+    }
+    return res.json();
   }
 };
