@@ -251,5 +251,58 @@ export const api = {
       throw new Error(err.message || 'Failed to delete user');
     }
     return res.json();
+  },
+
+  // Pages
+  async getPages() {
+    const res = await fetch(`${BASE_URL}/pages`, {
+      headers: { ...getAuthHeader() }
+    });
+    if (!res.ok) throw new Error('Failed to fetch pages');
+    return res.json();
+  },
+
+  async createPage(data: { name: string, slug: string, htmlContent: string, status: string }) {
+    const res = await fetch(`${BASE_URL}/pages`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        ...getAuthHeader()
+      },
+      body: JSON.stringify(data)
+    });
+    if (!res.ok) {
+      const err = await res.json();
+      throw new Error(err.message || 'Failed to create page');
+    }
+    return res.json();
+  },
+
+  async updatePage(id: string | number, data: { name?: string, slug?: string, htmlContent?: string, status?: string }) {
+    const res = await fetch(`${BASE_URL}/pages/${id}`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+        ...getAuthHeader()
+      },
+      body: JSON.stringify(data)
+    });
+    if (!res.ok) {
+      const err = await res.json();
+      throw new Error(err.message || 'Failed to update page');
+    }
+    return res.json();
+  },
+
+  async deletePage(id: string | number) {
+    const res = await fetch(`${BASE_URL}/pages/${id}`, {
+      method: 'DELETE',
+      headers: { ...getAuthHeader() }
+    });
+    if (!res.ok) {
+      const err = await res.json();
+      throw new Error(err.message || 'Failed to delete page');
+    }
+    return res.json();
   }
 };
