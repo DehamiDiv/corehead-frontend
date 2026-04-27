@@ -36,8 +36,15 @@ export default function SignupPage() {
       return;
     }
 
-    if (formData.password.length < 6) {
-      setError("Password must be at least 6 characters.");
+    const strongPasswordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/;
+    if (!strongPasswordRegex.test(formData.password)) {
+      setError("Password must be at least 8 characters long and include an uppercase letter, a lowercase letter, a number, and a special character.");
+      return;
+    }
+
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(formData.email)) {
+      setError("Please enter a valid email address.");
       return;
     }
 
@@ -169,7 +176,7 @@ export default function SignupPage() {
                   id="password"
                   name="password"
                   type={showPassword ? "text" : "password"}
-                  placeholder="Min. 6 characters"
+                  placeholder="Strong Password"
                   value={formData.password}
                   onChange={handleChange}
                   required
@@ -187,6 +194,9 @@ export default function SignupPage() {
                   )}
                 </button>
               </div>
+              <p className="text-[10px] text-slate-500 mt-1 ml-1 leading-tight">
+                Min. 8 characters: Include Uppercase, Lowercase, Number & Symbol (@$!%*?&).
+              </p>
             </div>
 
             {/* Confirm Password */}
