@@ -46,7 +46,10 @@ export default function UsersPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [editingUserId, setEditingUserId] = useState<number | null>(null);
 
+  const [isRefreshing, setIsRefreshing] = useState(false);
+
   const fetchUsers = async () => {
+    setIsRefreshing(true);
     try {
       const response = await api.getUsers();
       if (response && response.users) {
@@ -56,6 +59,8 @@ export default function UsersPage() {
       }
     } catch (error) {
       console.error("Failed to fetch users", error);
+    } finally {
+      setTimeout(() => setIsRefreshing(false), 500); // Add a small delay for visual feedback
     }
   };
 
@@ -145,11 +150,12 @@ export default function UsersPage() {
         <div className="flex items-center gap-3">
           <button 
             onClick={() => fetchUsers()}
-            className="flex items-center gap-2 bg-white hover:bg-gray-50 text-gray-600 border border-gray-200 px-4 py-2.5 rounded-xl text-sm font-semibold transition-all shadow-sm"
+            disabled={isRefreshing}
+            className="flex items-center gap-2 bg-white hover:bg-gray-50 text-gray-600 border border-gray-200 px-4 py-2.5 rounded-xl text-sm font-semibold transition-all shadow-sm disabled:opacity-50"
             title="Refresh Users"
           >
-            <RefreshCw size={16} />
-            Refresh
+            <RefreshCw size={16} className={cn(isRefreshing && "animate-spin text-blue-600")} />
+            {isRefreshing ? "Refreshing..." : "Refresh"}
           </button>
           <button 
             onClick={handleCreateClick}
