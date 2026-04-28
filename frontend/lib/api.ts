@@ -357,5 +357,30 @@ export const api = {
       throw new Error(err.message || 'Failed to delete category');
     }
     return res.json();
+  },
+
+  // =====================
+  // Settings API
+  // =====================
+  getSetting: async (key: string) => {
+    try {
+      const res = await fetch(`${BASE_URL}/settings?key=${key}`);
+      if (!res.ok) throw new Error("Failed to fetch setting");
+      const data = await res.json();
+      return data.setting?.value || null;
+    } catch (error) {
+      console.error(`Error fetching setting ${key}:`, error);
+      return null;
+    }
+  },
+
+  updateSetting: async (key: string, value: any) => {
+    const res = await fetch(`${BASE_URL}/settings/${key}`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ value }),
+    });
+    if (!res.ok) throw new Error("Failed to update setting");
+    return res.json();
   }
 };
