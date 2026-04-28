@@ -11,7 +11,6 @@ import {
   ChevronDown,
   X,
   Filter,
-  MoreHorizontal,
   ExternalLink,
   FileText,
 } from "lucide-react";
@@ -22,6 +21,11 @@ export default function BlogsPage() {
   const [posts, setPosts] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
+  
+  // Filter States
+  const [statusFilter, setStatusFilter] = useState("All Status");
+  const [categoryFilter, setCategoryFilter] = useState("All Categories");
+  const [authorFilter, setAuthorFilter] = useState("All Authors");
 
   const fetchPosts = async () => {
     setLoading(true);
@@ -54,9 +58,32 @@ export default function BlogsPage() {
     }
   };
 
+  // Get unique categories and authors for filter options
+  const allCategories = Array.from(new Set(
+    posts.flatMap(p => p.categories?.split(',').map((c: string) => c.trim()).filter(Boolean) || [])
+  )).sort();
+
+  const allAuthors = Array.from(new Set(
+    posts.map(p => p.author?.name || 'Unknown Author')
+  )).sort();
+
   const filteredPosts = Array.isArray(posts) 
-    ? posts.filter(post => post.title?.toLowerCase().includes(searchQuery.toLowerCase()))
+    ? posts.filter(post => {
+        const matchesSearch = post.title?.toLowerCase().includes(searchQuery.toLowerCase());
+        const matchesStatus = statusFilter === "All Status" || post.status === statusFilter;
+        const matchesCategory = categoryFilter === "All Categories" || post.categories?.includes(categoryFilter);
+        const matchesAuthor = authorFilter === "All Authors" || (post.author?.name || 'Unknown Author') === authorFilter;
+        
+        return matchesSearch && matchesStatus && matchesCategory && matchesAuthor;
+      })
     : [];
+
+  const handleClearFilters = () => {
+    setSearchQuery("");
+    setStatusFilter("All Status");
+    setCategoryFilter("All Categories");
+    setAuthorFilter("All Authors");
+  };
 
   const stats = [
     { label: "Total Posts", value: Array.isArray(posts) ? posts.length : 0, color: "blue" },
@@ -116,10 +143,41 @@ export default function BlogsPage() {
           />
         </div>
         <div className="flex items-center gap-3 w-full lg:w-auto overflow-x-auto pb-2 lg:pb-0">
-          <FilterButton label="Status" />
-          <FilterButton label="Category" />
-          <FilterButton label="Author" />
-          <button className="flex items-center gap-2 px-4 py-2.5 text-sm font-semibold text-gray-400 hover:text-gray-600 transition-colors">
+          {/* Status Filter */}
+          <select 
+            value={statusFilter}
+            onChange={(e) => setStatusFilter(e.target.value)}
+            className="px-4 py-2.5 bg-white border border-gray-100 rounded-xl text-sm font-bold text-gray-600 outline-none focus:border-gray-300 shadow-sm transition-all"
+          >
+            <option>All Status</option>
+            <option>Published</option>
+            <option>Draft</option>
+          </select>
+
+          {/* Category Filter */}
+          <select 
+            value={categoryFilter}
+            onChange={(e) => setCategoryFilter(e.target.value)}
+            className="px-4 py-2.5 bg-white border border-gray-100 rounded-xl text-sm font-bold text-gray-600 outline-none focus:border-gray-300 shadow-sm transition-all"
+          >
+            <option>All Categories</option>
+            {allCategories.map(cat => <option key={cat}>{cat}</option>)}
+          </select>
+
+          {/* Author Filter */}
+          <select 
+            value={authorFilter}
+            onChange={(e) => setAuthorFilter(e.target.value)}
+            className="px-4 py-2.5 bg-white border border-gray-100 rounded-xl text-sm font-bold text-gray-600 outline-none focus:border-gray-300 shadow-sm transition-all"
+          >
+            <option>All Authors</option>
+            {allAuthors.map(auth => <option key={auth}>{auth}</option>)}
+          </select>
+
+          <button 
+            onClick={handleClearFilters}
+            className="flex items-center gap-2 px-4 py-2.5 text-sm font-semibold text-gray-400 hover:text-gray-600 transition-colors"
+          >
             <X className="w-4 h-4" />
             Clear
           </button>
@@ -164,11 +222,15 @@ export default function BlogsPage() {
                         <div className="min-w-0 max-w-[300px]">
                           <p className="text-sm font-bold text-gray-900 truncate" title={post.title}>{post.title}</p>
                           <div className="flex items-center gap-2 mt-1">
-                            {post.categories?.slice(0, 2).map((cat: string, i: number) => (
-                              <span key={i} className="text-[10px] font-bold px-2 py-0.5 bg-gray-100 text-gray-500 rounded-md">
-                                {cat}
-                              </span>
-                            ))}
+                            {post.categories
+                              ?.split(',')
+                              .filter(Boolean)
+                              .slice(0, 2)
+                              .map((cat: string, i: number) => (
+                                <span key={i} className="text-[10px] font-bold px-2 py-0.5 bg-gray-100 text-gray-500 rounded-md">
+                                  {cat.trim()}
+                                </span>
+                              ))}
                             <span className="text-[10px] text-gray-400 font-medium">#{post.id}</span>
                           </div>
                         </div>
@@ -205,27 +267,25 @@ export default function BlogsPage() {
                       </button>
                     </td>
                     <td className="px-8 py-5 text-right">
-                      <div className="flex items-center justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                      <div className="flex items-center justify-end gap-2">
                         <Link 
                           href={`/admin/posts/edit/${post.id}`}
-                          className="p-2.5 bg-white border border-gray-100 rounded-xl text-gray-500 hover:text-blue-600 hover:border-blue-100 hover:bg-blue-50/30 transition-all shadow-sm"
+                          className="p-2.5 bg-white border border-gray-200 rounded-xl text-gray-500 hover:text-blue-600 hover:border-blue-200 hover:bg-blue-50 transition-all shadow-sm"
+                          title="Edit post"
                         >
                           <Edit className="w-4 h-4" />
                         </Link>
                         <button 
                           onClick={() => handleDelete(post.id)}
-                          className="p-2.5 bg-white border border-gray-100 rounded-xl text-gray-500 hover:text-red-600 hover:border-red-100 hover:bg-red-50/30 transition-all shadow-sm"
+                          className="p-2.5 bg-red-50 border border-red-100 rounded-xl text-red-500 hover:bg-red-100 hover:border-red-200 transition-all shadow-sm"
+                          title="Delete post"
                         >
                           <Trash2 className="w-4 h-4" />
-                        </button>
-                        <button className="p-2.5 bg-white border border-gray-100 rounded-xl text-gray-500 hover:text-gray-900 shadow-sm">
-                          <MoreHorizontal className="w-4 h-4" />
                         </button>
                       </div>
                     </td>
                   </tr>
                 ))
-
               ) : (
                 <tr>
                   <td colSpan={5} className="px-8 py-20 text-center">
@@ -246,14 +306,5 @@ export default function BlogsPage() {
         </div>
       </div>
     </div>
-  );
-}
-
-function FilterButton({ label }: { label: string }) {
-  return (
-    <button className="flex items-center gap-8 px-4 py-2.5 bg-white border border-gray-100 rounded-xl text-sm font-bold text-gray-600 hover:border-gray-300 transition-all shadow-sm">
-      <span>{label}</span>
-      <ChevronDown className="w-3.5 h-3.5 text-gray-400" />
-    </button>
   );
 }
