@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { ChevronDown, Star, Search, FileText, ImagePlus, X, Library } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -38,10 +38,33 @@ export default function CreatePostPage() {
   });
 
   const [keywordInput, setKeywordInput] = useState("");
+  const [uploadedFileName, setUploadedFileName] = useState("");
+  const [uploadError, setUploadError] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const [loading, setLoading] = useState(false);
+  const [users, setUsers] = useState<any[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [isMediaModalOpen, setIsMediaModalOpen] = useState(false);
+
+  useEffect(() => {
+    const fetchUsers = async () => {
+      try {
+        const res = await fetch("http://localhost:5000/api/auth/users");
+        if (res.ok) {
+          const data = await res.json();
+          setUsers(data);
+          // Set default author to first user if exists
+          if (data.length > 0 && !formData.authorId) {
+            setFormData(prev => ({ ...prev, authorId: data[0].id.toString() }));
+          }
+        }
+      } catch (err) {
+        console.error("Failed to fetch users:", err);
+      }
+    };
+    fetchUsers();
+  }, []);
 
   const [activeTab, setActiveTab] = useState("Content");
 
@@ -73,14 +96,37 @@ export default function CreatePostPage() {
     }));
   };
 
+  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setUploadError(null);
+
+    // 5MB limit
+    if (file.size > 5 * 1024 * 1024) {
+      setUploadError("File too large. Maximum size is 5MB.");
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = () => {
+      const base64 = reader.result as string;
+      setFormData(prev => ({ ...prev, thumbnailUrl: base64 }));
+      setUploadedFileName(file.name);
+    };
+    reader.readAsDataURL(file);
+  };
+
   const handleCreatePost = async () => {
     setLoading(true);
     setError(null);
     try {
+      const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
       const res = await fetch("http://localhost:5000/api/posts", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
+          ...(token ? { "Authorization": `Bearer ${token}` } : {}),
         },
         body: JSON.stringify(formData),
       });
@@ -90,7 +136,8 @@ export default function CreatePostPage() {
         throw new Error(data.error || "Failed to create post");
       }
 
-      router.push("/admin/posts");
+      // Navigate to the public blog listing page after creation
+      router.push('/blog');
     } catch (err: any) {
       setError(err.message);
     } finally {
@@ -219,7 +266,15 @@ export default function CreatePostPage() {
                       value={formData.authorId}
                       onChange={e => setFormData({...formData, authorId: e.target.value})}
                     >
-                      <option value="1">Admin User</option>
+                      {users.length > 0 ? (
+                        users.map(user => (
+                          <option key={user.id} value={user.id.toString()}>
+                            {user.name || user.email.split('@')[0]} ({user.role})
+                          </option>
+                        ))
+                      ) : (
+                        <option value="1">Admin User</option>
+                      )}
                     </select>
                     <ChevronDown className="w-4 h-4 text-gray-400 absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none" />
                   </div>
@@ -323,13 +378,31 @@ export default function CreatePostPage() {
                   <label className="block text-sm font-medium text-gray-700 mb-1">Thumbnail Image</label>
                   <p className="text-xs text-gray-500 mb-4">This image appears in blog listing pages and previews</p>
                   
+                  {/* Hidden file input */}
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept="image/png,image/jpeg,image/gif,image/webp"
+                    className="hidden"
+                    onChange={handleFileUpload}
+                  />
+
+                  {uploadError && (
+                    <div className="mb-4 p-3 bg-red-50 text-red-600 text-sm rounded-xl border border-red-100">
+                      {uploadError}
+                    </div>
+                  )}
+
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div className="border-2 border-dashed border-gray-200 rounded-2xl p-10 flex flex-col items-center justify-center text-center hover:border-blue-400 hover:bg-blue-50/30 transition-all cursor-pointer group">
+                    <div
+                      onClick={() => fileInputRef.current?.click()}
+                      className="border-2 border-dashed border-gray-200 rounded-2xl p-10 flex flex-col items-center justify-center text-center hover:border-blue-400 hover:bg-blue-50/30 transition-all cursor-pointer group"
+                    >
                       <div className="w-14 h-14 bg-gray-50 rounded-2xl flex items-center justify-center mb-4 group-hover:bg-blue-100 transition-colors">
                         <ImagePlus className="w-7 h-7 text-gray-400 group-hover:text-blue-600" />
                       </div>
                       <span className="text-sm font-bold text-gray-900 mb-1">Upload from Device</span>
-                      <span className="text-[10px] text-gray-500 uppercase tracking-wider font-bold">PNG, JPG, GIF up to 5MB</span>
+                      <span className="text-[10px] text-gray-500 uppercase tracking-wider font-bold">PNG, JPG, GIF, WEBP up to 5MB</span>
                     </div>
 
                     <div 
@@ -351,10 +424,12 @@ export default function CreatePostPage() {
                       </div>
                       <div className="flex-1 min-w-0">
                         <p className="text-xs font-black text-gray-400 uppercase tracking-widest mb-1">Selected Thumbnail</p>
-                        <p className="text-sm font-bold text-gray-900 truncate">{formData.thumbnailUrl}</p>
+                        <p className="text-sm font-bold text-gray-900 truncate">
+                          {uploadedFileName || formData.thumbnailUrl}
+                        </p>
                       </div>
                       <button 
-                        onClick={() => setFormData({...formData, thumbnailUrl: ""})}
+                        onClick={() => { setFormData({...formData, thumbnailUrl: ""}); setUploadedFileName(""); }}
                         className="p-3 bg-white hover:bg-red-50 text-gray-400 hover:text-red-500 rounded-xl transition-all shadow-sm"
                       >
                         <X className="w-5 h-5" />
