@@ -141,18 +141,6 @@ export default function Sidebar() {
         </div>
       </nav>
 
-      {/* Profile/Footer */}
-      <div className="p-6 border-t border-gray-50">
-        <div className="flex items-center gap-3 p-2 rounded-2xl hover:bg-gray-50 transition-colors cursor-pointer">
-          <div className="w-10 h-10 rounded-xl bg-gray-900 text-white flex items-center justify-center font-bold">
-            D
-          </div>
-          <div className="flex-1 min-w-0">
-            <p className="text-sm font-bold text-slate-900 truncate">Dehami Div</p>
-            <p className="text-[11px] text-slate-400 truncate">Admin Account</p>
-          </div>
-        </div>
-      </div>
     </aside>
   );
 }
