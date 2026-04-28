@@ -3,6 +3,7 @@
 import React, { useState, useEffect, useRef } from "react";
 import { Edit2, Save, X, Camera } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { api } from "@/lib/api";
 
 export default function ProfileSettingsPage() {
   const [isEditing, setIsEditing] = useState(false);
@@ -21,20 +22,44 @@ export default function ProfileSettingsPage() {
     avatar: "" // added avatar property
   });
 
-  // Load from local storage if available to persist changes
-  useEffect(() => {
-    const savedUser = localStorage.getItem("corehead_user_profile");
-    if (savedUser) {
-      setUser(JSON.parse(savedUser));
-    }
-  }, []);
-
   const [formData, setFormData] = useState(user);
 
-  // Sync formData with user when user state loads from local storage
+  // Load from backend database
   useEffect(() => {
-    setFormData(user);
-  }, [user]);
+    const fetchUser = async () => {
+      try {
+        const token = localStorage.getItem('token');
+        if (!token) return;
+        const payload = JSON.parse(atob(token.split('.')[1]));
+        const currentUserId = payload.id;
+        if (!currentUserId) return;
+
+        const res = await api.getUsers();
+        if (res.success && res.users) {
+          const dbUser = res.users.find((u: any) => u.id === currentUserId);
+          if (dbUser) {
+             const userState = {
+                name: dbUser.name || "Admin User",
+                email: dbUser.email,
+                role: dbUser.role.toUpperCase(),
+                status: "Active",
+                designation: dbUser.designation || "Developer",
+                bio: dbUser.bio || "No bio added yet.",
+                userId: `#${dbUser.id}`,
+                accountCreated: new Date(dbUser.createdAt).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' }),
+                lastUpdated: new Date().toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' }),
+                avatar: dbUser.avatar || ""
+             };
+             setUser(userState);
+             setFormData(userState);
+          }
+        }
+      } catch (e) {
+        console.error("Failed to load user from backend", e);
+      }
+    };
+    fetchUser();
+  }, []);
 
   const handleEditToggle = () => {
     if (isEditing) {
@@ -44,15 +69,35 @@ export default function ProfileSettingsPage() {
     setIsEditing(!isEditing);
   };
 
-  const handleSave = () => {
-    const updatedUser = {
-      ...formData,
-      lastUpdated: new Date().toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })
-    };
-    setUser(updatedUser);
-    localStorage.setItem("corehead_user_profile", JSON.stringify(updatedUser));
-    setIsEditing(false);
-    alert("Profile updated successfully!");
+  const handleSave = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      if (token) {
+        const payload = JSON.parse(atob(token.split('.')[1]));
+        const currentUserId = payload.id;
+        
+        if (currentUserId) {
+          await api.updateUser(currentUserId, {
+            name: formData.name,
+            email: formData.email,
+            designation: formData.designation,
+            bio: formData.bio,
+            avatar: formData.avatar
+          });
+        }
+      }
+
+      const updatedUser = {
+        ...formData,
+        lastUpdated: new Date().toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })
+      };
+      setUser(updatedUser);
+      setIsEditing(false);
+      alert("Profile successfully saved to the database!");
+    } catch (e: any) {
+      console.error(e);
+      alert("Failed to save profile. Error: " + (e.message || "Unknown error"));
+    }
   };
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {

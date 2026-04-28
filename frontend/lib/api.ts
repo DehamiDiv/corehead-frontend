@@ -225,7 +225,7 @@ export const api = {
     return res.json();
   },
 
-  async updateUser(id: string | number, data: { email?: string, role?: string, password?: string }) {
+  async updateUser(id: string | number, data: { email?: string, role?: string, password?: string, name?: string, designation?: string, bio?: string, avatar?: string }) {
     const res = await fetch(`${BASE_URL}/users/${id}`, {
       method: 'PUT',
       headers: {
