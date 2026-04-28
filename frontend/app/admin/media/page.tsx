@@ -11,6 +11,8 @@ import {
   UploadCloud,
   Loader2,
   CheckCircle2,
+  Copy,
+  Download,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -228,7 +230,7 @@ export default function MediaPage() {
           {filteredItems.map((item) => (
             <div
               key={item.id}
-              className="group rounded-xl overflow-hidden border border-gray-200 hover:shadow-lg hover:border-blue-200 hover:-translate-y-1 transition-all duration-300 cursor-pointer"
+              className="group rounded-xl overflow-hidden border border-gray-200 hover:shadow-lg hover:border-blue-200 hover:-translate-y-1 transition-all duration-300"
             >
               <div className="relative aspect-square bg-gray-50 overflow-hidden border-b border-gray-100">
                 <img
@@ -236,6 +238,40 @@ export default function MediaPage() {
                   alt={item.name}
                   className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
                 />
+                
+                {/* Hover overlay with actions */}
+                <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
+                  <button 
+                    onClick={(e) => { e.stopPropagation(); navigator.clipboard.writeText(item.url); alert("URL Copied!"); }}
+                    className="p-2 bg-white text-gray-700 rounded-lg shadow-sm hover:text-blue-600 hover:scale-105 transition-all"
+                    title="Copy URL"
+                  >
+                    <Copy className="w-4 h-4" />
+                  </button>
+                  <a 
+                    href={item.url} 
+                    download={item.name}
+                    onClick={(e) => e.stopPropagation()}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="p-2 bg-white text-gray-700 rounded-lg shadow-sm hover:text-blue-600 hover:scale-105 transition-all flex items-center justify-center"
+                    title="Download"
+                  >
+                    <Download className="w-4 h-4" />
+                  </a>
+                  <button 
+                    onClick={(e) => { 
+                      e.stopPropagation(); 
+                      if(confirm("Are you sure you want to delete this image?")) {
+                        setMediaItems(prev => prev.filter(m => m.id !== item.id)); 
+                      }
+                    }}
+                    className="p-2 bg-white text-red-500 rounded-lg shadow-sm hover:text-red-600 hover:scale-105 transition-all"
+                    title="Delete"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                  </button>
+                </div>
               </div>
               <div className="p-3 bg-white">
                 <h3 className="text-[13px] font-bold text-gray-900 truncate mb-1" title={item.name}>
