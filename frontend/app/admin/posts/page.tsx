@@ -4,15 +4,11 @@ import { useState, useEffect } from "react";
 import {
   RotateCcw,
   Plus,
-  Search,
   Edit,
   Trash2,
   Star,
   ChevronDown,
   X,
-  Filter,
-  MoreHorizontal,
-  ExternalLink,
   FileText,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -21,7 +17,10 @@ import Link from "next/link";
 export default function BlogsPage() {
   const [posts, setPosts] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
-  const [searchQuery, setSearchQuery] = useState("");
+  const [statusFilter, setStatusFilter] = useState("");
+  const [authorFilter, setAuthorFilter] = useState("");
+  const [categoryFilter, setCategoryFilter] = useState("");
+  const [featuredFilter, setFeaturedFilter] = useState("");
 
   const fetchPosts = async () => {
     setLoading(true);
@@ -54,95 +53,123 @@ export default function BlogsPage() {
     }
   };
 
-  const filteredPosts = Array.isArray(posts) 
-    ? posts.filter(post => post.title?.toLowerCase().includes(searchQuery.toLowerCase()))
-    : [];
-
-  const stats = [
-    { label: "Total Posts", value: Array.isArray(posts) ? posts.length : 0, color: "blue" },
-    { label: "Published", value: Array.isArray(posts) ? posts.filter(p => p.status === 'Published').length : 0, color: "emerald" },
-    { label: "Drafts", value: Array.isArray(posts) ? posts.filter(p => p.status === 'Draft').length : 0, color: "amber" },
-    { label: "Featured", value: Array.isArray(posts) ? posts.filter(p => p.featured).length : 0, color: "purple" },
-  ];
+  const filteredPosts = posts.filter(post => {
+    if (statusFilter) {
+      const postStatus = post.status || "Draft";
+      if (postStatus !== statusFilter) return false;
+    }
+    if (authorFilter) {
+      const postAuthor = post.author?.name || String(post.authorId) || "Unknown Author";
+      if (postAuthor !== authorFilter) return false;
+    }
+    if (categoryFilter) {
+      let cats: string[] = [];
+      const rawCats = post.categories || post.category;
+      if (Array.isArray(rawCats)) cats = rawCats;
+      else if (typeof rawCats === 'string') {
+        try { cats = JSON.parse(rawCats); } catch(e) { cats = [rawCats]; }
+      }
+      const hasCategory = cats.some((c: string) => c.toLowerCase() === categoryFilter.toLowerCase());
+      if (!hasCategory) return false;
+    }
+    if (featuredFilter) {
+      if (featuredFilter === "Featured Only" && !post.featured) return false;
+      if (featuredFilter === "Regular Only" && post.featured) return false;
+    }
+    return true;
+  });
 
   return (
     <div className="space-y-6 max-w-[1600px] mx-auto pb-10">
       {/* Header */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900">Blog Posts</h1>
+          <h1 className="text-3xl font-bold text-gray-900">Posts</h1>
           <p className="text-gray-500 mt-1">
-            Manage your content, edit stories and track performance.
+            Welcome back! Here's your Blog Posts.
           </p>
         </div>
         <div className="flex items-center gap-3">
           <button 
             onClick={fetchPosts}
-            className="flex items-center gap-2 px-4 py-2.5 bg-white border border-gray-200 rounded-xl text-sm font-semibold text-gray-700 hover:bg-gray-50 transition-all shadow-sm"
+            className="flex items-center gap-2 px-4 py-2.5 bg-white border border-gray-200 rounded-xl text-sm font-bold text-gray-700 hover:bg-gray-50 transition-all shadow-sm"
           >
             <RotateCcw className={cn("w-4 h-4", loading && "animate-spin")} />
             Refresh
           </button>
           <Link 
             href="/admin/posts/create"
-            className="flex items-center gap-2 px-5 py-2.5 bg-blue-600 rounded-xl text-sm font-bold text-white hover:bg-blue-700 transition-all shadow-lg shadow-blue-200"
+            className="flex items-center gap-2 px-5 py-2.5 bg-blue-600 rounded-xl text-sm font-bold text-white hover:bg-blue-700 transition-all shadow-sm"
           >
             <Plus className="w-4 h-4" />
-            Create Blogs
+            Create Blog
           </Link>
         </div>
       </div>
 
-      {/* Stats Quick View */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        {stats.map((stat, i) => (
-          <div key={i} className="bg-white p-5 rounded-2xl border border-gray-100 shadow-sm">
-            <p className="text-sm font-medium text-gray-500">{stat.label}</p>
-            <p className="text-2xl font-bold text-gray-900 mt-1">{stat.value}</p>
+      {/* Main Card */}
+      <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+        
+        {/* Filters */}
+        <div className="p-8 pb-6 border-b border-gray-100">
+          <div className="flex flex-wrap items-center gap-4 mb-4">
+            <FilterButton 
+              label="All Statuses" 
+              options={["Published", "Draft", "Unpublished"]} 
+              value={statusFilter}
+              onChange={setStatusFilter}
+            />
+            <FilterButton 
+              label="All Authors" 
+              options={["Pipuni Piyasooriya", "Dehami Divyanjali", "Nimasha Fernando", "Rashmi Shara", "Corehead"]}
+              value={authorFilter}
+              onChange={setAuthorFilter}
+            />
+            <FilterButton 
+              label="All Categories" 
+              options={["Test Cat", "AI", "Travelling"]}
+              value={categoryFilter}
+              onChange={setCategoryFilter}
+            />
+            <FilterButton 
+              label="All Posts" 
+              options={["Featured Only", "Regular Only"]}
+              value={featuredFilter}
+              onChange={setFeaturedFilter}
+            />
           </div>
-        ))}
-      </div>
-
-      {/* Filters & Search */}
-      <div className="bg-white p-4 rounded-2xl shadow-sm border border-gray-100 flex flex-col lg:flex-row items-center gap-4">
-        <div className="relative flex-1 w-full">
-          <Search className="w-4 h-4 text-gray-400 absolute left-4 top-1/2 -translate-y-1/2" />
-          <input
-            type="text"
-            placeholder="Search by title or keyword..."
-            className="w-full pl-11 pr-4 py-3 bg-gray-50/50 border border-gray-100 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/10 transition-all text-sm"
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-          />
-        </div>
-        <div className="flex items-center gap-3 w-full lg:w-auto overflow-x-auto pb-2 lg:pb-0">
-          <FilterButton label="Status" />
-          <FilterButton label="Category" />
-          <FilterButton label="Author" />
-          <button className="flex items-center gap-2 px-4 py-2.5 text-sm font-semibold text-gray-400 hover:text-gray-600 transition-colors">
+          <button 
+            onClick={() => {
+              setStatusFilter("");
+              setAuthorFilter("");
+              setCategoryFilter("");
+              setFeaturedFilter("");
+            }}
+            className="flex items-center gap-2 px-4 py-2 border border-gray-100 rounded-xl text-sm font-bold text-gray-400 hover:bg-gray-50 transition-colors w-fit"
+          >
             <X className="w-4 h-4" />
-            Clear
+            Clear Filters
           </button>
         </div>
-      </div>
 
-      {/* Table Content */}
-      <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+        {/* Table Content */}
         <div className="overflow-x-auto">
-          <table className="w-full text-left">
+          <table className="w-full text-left border-collapse">
             <thead>
-              <tr className="bg-gray-50/50 border-b border-gray-100">
-                <th className="px-8 py-5 text-xs font-bold text-gray-400 uppercase tracking-wider">Post Details</th>
-                <th className="px-6 py-5 text-xs font-bold text-gray-400 uppercase tracking-wider">Author</th>
-                <th className="px-6 py-5 text-xs font-bold text-gray-400 uppercase tracking-wider">Status</th>
-                <th className="px-6 py-5 text-xs font-bold text-gray-400 uppercase tracking-wider">Featured</th>
-                <th className="px-8 py-5 text-xs font-bold text-gray-400 uppercase tracking-wider text-right">Actions</th>
+              <tr className="border-b border-gray-100">
+                <th className="px-8 py-6 text-sm font-bold text-gray-500 w-24">ID</th>
+                <th className="px-4 py-6 text-sm font-bold text-gray-500">Title</th>
+                <th className="px-4 py-6 text-sm font-bold text-gray-500">Author</th>
+                <th className="px-4 py-6 text-sm font-bold text-gray-500">Categories</th>
+                <th className="px-4 py-6 text-sm font-bold text-gray-500">Featured</th>
+                <th className="px-4 py-6 text-sm font-bold text-gray-500">Status</th>
+                <th className="px-8 py-6 text-sm font-bold text-gray-500 text-center">Actions</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-gray-50">
-                {loading ? (
+            <tbody className="divide-y divide-gray-100">
+              {loading ? (
                 <tr>
-                  <td colSpan={5} className="px-8 py-20 text-center">
+                  <td colSpan={7} className="px-8 py-20 text-center">
                     <div className="flex flex-col items-center gap-3">
                       <div className="w-8 h-8 border-4 border-blue-600 border-t-transparent rounded-full animate-spin" />
                       <p className="text-gray-500 font-medium">Fetching your posts...</p>
@@ -150,93 +177,95 @@ export default function BlogsPage() {
                   </td>
                 </tr>
               ) : filteredPosts.length > 0 ? (
-                filteredPosts.map((post) => (
-                  <tr key={post.id} className="hover:bg-gray-50/50 transition-all group">
-                    <td className="px-8 py-5">
-                      <div className="flex items-center gap-4">
-                        <div className="w-12 h-12 rounded-xl bg-gray-100 overflow-hidden shrink-0 border border-gray-200">
-                          <img 
-                            src={post.coverImage || "https://images.unsplash.com/photo-1499750310107-5fef28a66643?w=100&q=80"} 
-                            className="w-full h-full object-cover"
-                            alt=""
-                          />
-                        </div>
-                        <div className="min-w-0 max-w-[300px]">
-                          <p className="text-sm font-bold text-gray-900 truncate" title={post.title}>{post.title}</p>
-                          <div className="flex items-center gap-2 mt-1">
-                            {post.categories?.slice(0, 2).map((cat: string, i: number) => (
-                              <span key={i} className="text-[10px] font-bold px-2 py-0.5 bg-gray-100 text-gray-500 rounded-md">
-                                {cat}
-                              </span>
-                            ))}
-                            <span className="text-[10px] text-gray-400 font-medium">#{post.id}</span>
-                          </div>
-                        </div>
-                      </div>
+                filteredPosts.map((post, index) => (
+                  <tr key={post.id} className="hover:bg-gray-50/50 transition-all">
+                    <td className="px-8 py-6 text-sm font-bold text-gray-900">{post.id}</td>
+                    <td className="px-4 py-6 text-sm font-bold text-gray-900 max-w-[200px] truncate" title={post.title}>
+                      {post.title}
                     </td>
-                    <td className="px-6 py-5">
+                    <td className="px-4 py-6">
                       <div className="flex items-center gap-3">
-                        <div className="w-8 h-8 rounded-full bg-blue-100 border border-white shadow-sm overflow-hidden">
-                          <img 
-                            src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${post.author?.name || 'User'}`} 
-                            alt="" 
-                          />
-                        </div>
-                        <span className="text-sm font-bold text-gray-700">{post.author?.name || 'Unknown Author'}</span>
+                        <img 
+                          src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${post.author?.name || post.authorId || post.author || 'User'}`} 
+                          alt="" 
+                          className="w-8 h-8 rounded-full bg-gray-100"
+                        />
+                        <span className="text-sm font-medium text-gray-600 truncate max-w-[100px]" title={post.author?.name || String(post.authorId)}>
+                          {post.author?.name || String(post.authorId) || 'Unknown Author'}
+                        </span>
                       </div>
                     </td>
-                    <td className="px-6 py-5">
+                    <td className="px-4 py-6">
+                      <div className="flex flex-wrap gap-2 max-w-[200px]">
+                        {(() => {
+                          let cats: any[] = [];
+                          const rawCats = post.categories || post.category;
+                          if (Array.isArray(rawCats)) cats = rawCats;
+                          else if (typeof rawCats === 'string') {
+                            try { cats = JSON.parse(rawCats); } catch(e) { cats = [rawCats]; }
+                          }
+                          return cats.map((cat: string, i: number) => (
+                            <span key={i} className="px-3 py-1 rounded-full text-xs font-bold bg-blue-50 text-blue-500">
+                              {cat}
+                            </span>
+                          ));
+                        })()}
+                      </div>
+                    </td>
+                    <td className="px-4 py-6">
+                      {post.featured ? (
+                        <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-amber-50 text-amber-600">
+                          <Star className="w-3 h-3 fill-amber-500" />
+                          Featured
+                        </span>
+                      ) : (
+                        <span className="inline-flex px-3 py-1 rounded-full text-xs font-bold border border-gray-100 text-gray-400">
+                          Regular
+                        </span>
+                      )}
+                    </td>
+                    <td className="px-4 py-6">
                       <span className={cn(
-                        "inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-bold border",
+                        "inline-flex px-3 py-1 rounded-full text-xs font-bold",
                         post.status === "Published" 
-                          ? "bg-emerald-50 text-emerald-600 border-emerald-100" 
-                          : "bg-amber-50 text-amber-600 border-amber-100"
+                          ? "bg-emerald-50 text-emerald-500" 
+                          : "bg-amber-50 text-amber-500"
                       )}>
-                        <div className={cn("w-1.5 h-1.5 rounded-full", post.status === "Published" ? "bg-emerald-500" : "bg-amber-500")} />
                         {post.status || 'Draft'}
                       </span>
                     </td>
-                    <td className="px-6 py-5">
-                      <button className={cn(
-                        "p-2 rounded-xl transition-all",
-                        post.featured ? "bg-amber-50 text-amber-500 border border-amber-100 shadow-sm" : "text-gray-300 hover:text-gray-400"
-                      )}>
-                        <Star className={cn("w-4 h-4", post.featured && "fill-amber-500")} />
-                      </button>
-                    </td>
-                    <td className="px-8 py-5 text-right">
-                      <div className="flex items-center justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                    <td className="px-8 py-6">
+                      <div className="flex items-center justify-center gap-4">
                         <Link 
                           href={`/admin/posts/edit/${post.id}`}
-                          className="p-2.5 bg-white border border-gray-100 rounded-xl text-gray-500 hover:text-blue-600 hover:border-blue-100 hover:bg-blue-50/30 transition-all shadow-sm"
+                          className="text-gray-600 hover:text-blue-600 transition-colors"
                         >
                           <Edit className="w-4 h-4" />
                         </Link>
                         <button 
                           onClick={() => handleDelete(post.id)}
-                          className="p-2.5 bg-white border border-gray-100 rounded-xl text-gray-500 hover:text-red-600 hover:border-red-100 hover:bg-red-50/30 transition-all shadow-sm"
+                          className="text-red-500 hover:text-red-600 transition-colors"
                         >
                           <Trash2 className="w-4 h-4" />
-                        </button>
-                        <button className="p-2.5 bg-white border border-gray-100 rounded-xl text-gray-500 hover:text-gray-900 shadow-sm">
-                          <MoreHorizontal className="w-4 h-4" />
                         </button>
                       </div>
                     </td>
                   </tr>
                 ))
-
               ) : (
                 <tr>
-                  <td colSpan={5} className="px-8 py-20 text-center">
+                  <td colSpan={7} className="px-8 py-20 text-center">
                     <div className="flex flex-col items-center gap-4 text-gray-400">
                       <div className="p-6 bg-gray-50 rounded-full">
                         <FileText className="w-10 h-10" />
                       </div>
                       <p className="text-lg font-bold">No posts found</p>
-                      <Link href="/admin/posts/create" className="text-blue-600 font-bold hover:underline">
-                        Create your first post
-                      </Link>
+                      <button 
+                        onClick={() => setStatusFilter("")}
+                        className="text-blue-600 font-bold hover:underline"
+                      >
+                        Clear filters
+                      </button>
                     </div>
                   </td>
                 </tr>
@@ -244,16 +273,95 @@ export default function BlogsPage() {
             </tbody>
           </table>
         </div>
+
+        {/* Pagination Footer */}
+        <div className="p-8 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <p className="text-sm text-gray-500">
+            Showing 1 to {Math.min(20, filteredPosts.length)} of {filteredPosts.length} results
+          </p>
+          <div className="flex flex-wrap items-center gap-6">
+            <div className="flex items-center gap-3">
+              <span className="text-sm text-gray-500">Rows per page:</span>
+              <button className="flex items-center gap-3 px-3 py-1.5 border border-gray-200 rounded-lg text-sm font-medium text-gray-700 bg-white shadow-sm">
+                20 <ChevronDown className="w-4 h-4 text-gray-400" />
+              </button>
+            </div>
+            <div className="flex items-center gap-1">
+              <button className="px-3 py-1.5 text-sm font-medium text-gray-400 hover:text-gray-600 transition-colors flex items-center gap-1">
+                &lt; Previous
+              </button>
+              <button className="w-8 h-8 rounded-lg bg-blue-600 text-white text-sm font-bold flex items-center justify-center shadow-sm">
+                1
+              </button>
+              <button className="w-8 h-8 rounded-lg text-gray-600 hover:bg-gray-50 text-sm font-bold flex items-center justify-center transition-colors">
+                2
+              </button>
+              <button className="px-3 py-1.5 text-sm font-medium text-gray-900 hover:text-gray-600 transition-colors flex items-center gap-1">
+                Next &gt;
+              </button>
+            </div>
+          </div>
+        </div>
+
       </div>
     </div>
   );
 }
 
-function FilterButton({ label }: { label: string }) {
+function FilterButton({ label, options, value, onChange }: { label: string, options?: string[], value?: string, onChange?: (val: string) => void }) {
+  const [isOpen, setIsOpen] = useState(false);
+
+  if (!options) {
+    return (
+      <button className="flex items-center gap-6 px-4 py-2 bg-white border border-gray-100 rounded-xl text-sm font-medium text-gray-600 hover:border-gray-300 transition-all shadow-sm">
+        <span>{label}</span>
+        <ChevronDown className="w-3.5 h-3.5 text-gray-400" />
+      </button>
+    );
+  }
+
   return (
-    <button className="flex items-center gap-8 px-4 py-2.5 bg-white border border-gray-100 rounded-xl text-sm font-bold text-gray-600 hover:border-gray-300 transition-all shadow-sm">
-      <span>{label}</span>
-      <ChevronDown className="w-3.5 h-3.5 text-gray-400" />
-    </button>
+    <div className="relative">
+      <button 
+        onClick={() => setIsOpen(!isOpen)}
+        onBlur={() => setTimeout(() => setIsOpen(false), 200)}
+        className="flex items-center gap-6 px-4 py-2 bg-white border border-gray-100 rounded-xl text-sm font-medium text-gray-600 hover:border-gray-300 transition-all shadow-sm"
+      >
+        <span>{value || label}</span>
+        <ChevronDown className={cn("w-3.5 h-3.5 text-gray-400 transition-transform", isOpen && "rotate-180")} />
+      </button>
+      
+      {isOpen && (
+        <div className="absolute top-full left-0 mt-2 w-40 bg-white border border-gray-100 rounded-xl shadow-lg z-10 py-2">
+          <button 
+            onClick={() => {
+              if(onChange) onChange("");
+              setIsOpen(false);
+            }}
+            className={cn(
+              "w-full text-left px-4 py-2 text-sm transition-colors hover:bg-gray-50",
+              !value ? "font-bold text-blue-600" : "font-medium text-gray-600"
+            )}
+          >
+            {label}
+          </button>
+          {options.map(opt => (
+            <button 
+              key={opt}
+              onClick={() => {
+                if(onChange) onChange(opt);
+                setIsOpen(false);
+              }}
+              className={cn(
+                "w-full text-left px-4 py-2 text-sm transition-colors hover:bg-gray-50",
+                value === opt ? "font-bold text-blue-600" : "font-medium text-gray-600"
+              )}
+            >
+              {opt}
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
   );
 }
