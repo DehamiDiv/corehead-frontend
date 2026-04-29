@@ -186,9 +186,15 @@ export default function BlogsPage() {
                     <td className="px-4 py-6">
                       <div className="flex items-center gap-3">
                         <img 
-                          src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${post.author?.name || post.authorId || post.author || 'User'}`} 
+                          src={
+                            post.author?.avatar 
+                              ? (post.author.avatar.startsWith('http') || post.author.avatar.startsWith('data:') 
+                                ? post.author.avatar 
+                                : `http://localhost:5000${post.author.avatar}`)
+                              : `https://api.dicebear.com/7.x/avataaars/svg?seed=${post.author?.name || 'User'}`
+                          } 
                           alt="" 
-                          className="w-8 h-8 rounded-full bg-gray-100"
+                          className="w-8 h-8 rounded-full object-cover bg-gray-100"
                         />
                         <span className="text-sm font-medium text-gray-600 truncate max-w-[100px]" title={post.author?.name || String(post.authorId)}>
                           {post.author?.name || String(post.authorId) || 'Unknown Author'}

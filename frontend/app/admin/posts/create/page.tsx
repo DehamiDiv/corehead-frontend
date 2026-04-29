@@ -269,13 +269,28 @@ export default function CreatePostPage() {
                   </div>
 
                   <div>
-                    <div className="p-4 rounded-xl border border-red-100 bg-white flex flex-col items-start gap-1">
-                      <div className="flex items-center gap-2">
-                        <Star className="w-4 h-4 text-amber-500" />
-                        <span className="text-sm font-bold text-gray-900">Featured Post (10/10)</span>
+                    <div className={cn(
+                      "p-4 rounded-xl border flex flex-col items-start gap-1 transition-all cursor-pointer",
+                      formData.featured ? "border-amber-200 bg-amber-50/30" : "border-gray-100 bg-white hover:border-gray-200"
+                    )}
+                    onClick={() => setFormData({...formData, featured: !formData.featured})}
+                    >
+                      <div className="flex items-center justify-between w-full">
+                        <div className="flex items-center gap-2">
+                          <Star className={cn("w-4 h-4", formData.featured ? "text-amber-500 fill-amber-500" : "text-gray-400")} />
+                          <span className="text-sm font-bold text-gray-900">Featured Post</span>
+                        </div>
+                        <div className={cn(
+                          "w-10 h-5 rounded-full relative transition-colors",
+                          formData.featured ? "bg-amber-500" : "bg-gray-200"
+                        )}>
+                          <div className={cn(
+                            "absolute top-1 w-3 h-3 bg-white rounded-full transition-all",
+                            formData.featured ? "right-1" : "left-1"
+                          )} />
+                        </div>
                       </div>
-                      <p className="text-xs font-medium text-gray-500 pl-6">Highlight this post on your homepage</p>
-                      <p className="text-xs font-medium text-red-500 pl-6 mt-0.5">Featured post limit reached. To make this featured, remove one from existing featured posts.</p>
+                      <p className="text-xs font-medium text-gray-500 pl-6">Highlight this post on your homepage and category listings</p>
                     </div>
                   </div>
                 </div>
