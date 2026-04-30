@@ -59,7 +59,7 @@ export default function Header({ onToggleSidebar }: { onToggleSidebar: () => voi
     : `https://api.dicebear.com/7.x/avataaars/svg?seed=${user?.name || 'Admin'}`;
 
   return (
-    <header className="h-16 bg-white border-b border-gray-100 flex items-center justify-between px-6 sticky top-0 z-40 max-w-[1700px]">
+    <header className="h-[68px] bg-white border-b border-slate-100 flex items-center justify-between px-[24px] sticky top-0 z-40 max-w-[1700px] mx-auto w-full">
       {/* Left Side: Toggle & Search */}
       <div className="flex items-center gap-3">
         <button 
@@ -70,12 +70,12 @@ export default function Header({ onToggleSidebar }: { onToggleSidebar: () => voi
           <PanelLeft className="w-5 h-5" />
         </button>
 
-        <div className="flex items-center bg-gray-50 rounded-full px-5 py-2 w-80 border border-transparent focus-within:border-blue-200 focus-within:bg-white transition-all shadow-sm">
-          <Search className="w-4 h-4 text-gray-400 mr-2.5" />
+        <div className="flex items-center bg-slate-50 rounded-xl px-4 h-[40px] w-[350px] border border-transparent focus-within:border-blue-200 focus-within:bg-white transition-all shadow-sm">
+          <Search className="w-4 h-4 text-slate-400 mr-3" />
           <input
             type="text"
-            placeholder="Search Blogs..."
-            className="bg-transparent border-none outline-none text-sm w-full placeholder:text-gray-400 text-gray-700"
+            placeholder="Search blogs and posts..."
+            className="bg-transparent border-none outline-none text-sm w-full placeholder:text-slate-400 text-slate-700 font-medium"
           />
         </div>
       </div>

@@ -1,11 +1,9 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { Plus, Search, Edit, Trash2, Tags, Hash, ArrowUpRight, X, Loader2 } from "lucide-react";
+import { useState, useEffect, useCallback } from "react";
+import { Plus, Search, Edit, Trash2, Tags, Hash, ArrowUpRight, X, Loader2, RotateCcw, Check } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { api } from "@/lib/api";
-
-const COLORS = ["blue", "emerald", "purple", "rose", "amber", "indigo", "pink", "teal", "orange", "cyan"];
 
 export default function CategoriesPage() {
   const [searchQuery, setSearchQuery] = useState("");
@@ -20,7 +18,7 @@ export default function CategoriesPage() {
   const [description, setDescription] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const fetchCategories = async () => {
+  const fetchCategories = useCallback(async () => {
     setIsLoading(true);
     try {
       const response = await api.getCategories();
@@ -32,11 +30,11 @@ export default function CategoriesPage() {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, []);
 
   useEffect(() => {
     fetchCategories();
-  }, []);
+  }, [fetchCategories]);
 
   const filteredCategories = categories.filter(cat => 
     cat.name.toLowerCase().includes(searchQuery.toLowerCase())
@@ -71,17 +69,15 @@ export default function CategoriesPage() {
 
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!name || !slug) return alert("Please fill in required fields.");
+    if (!name || !slug) return;
     
     setIsSubmitting(true);
     try {
       const data = { name, slug: slug.toLowerCase().replace(/[^a-z0-9-]/g, '-').replace(/-+/g, '-'), description };
       if (editingId) {
         await api.updateCategory(editingId, data);
-        alert("Category updated successfully!");
       } else {
         await api.createCategory(data);
-        alert("Category created successfully!");
       }
       setIsModalOpen(false);
       fetchCategories();
@@ -92,104 +88,123 @@ export default function CategoriesPage() {
     }
   };
 
-  const handleRefresh = () => {
-    fetchCategories();
-  };
-
   return (
-    <div className="space-y-6 max-w-[1600px] mx-auto pb-10">
+    <div className="max-w-[1600px] mx-auto pb-10">
       {/* Header */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900 tracking-tight">Categories</h1>
-          <p className="text-gray-400 mt-0.5 text-sm font-medium">Customize Your Post Categories.</p>
+          <h1 className="text-[28px] font-bold text-slate-900 leading-tight">Categories</h1>
+          <p className="text-slate-500 mt-1 font-medium">Organize your blog posts efficiently</p>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-3">
           <button 
-            onClick={handleRefresh}
+            onClick={fetchCategories}
             disabled={isLoading}
-            className="flex items-center gap-2 bg-white hover:bg-gray-50 text-gray-700 border border-gray-200 px-3.5 py-2 rounded-lg text-[13px] font-bold transition-all shadow-sm disabled:opacity-50"
+            className="flex items-center justify-center gap-2 px-5 py-2.5 bg-white border border-slate-200 rounded-xl text-[14px] font-bold text-slate-600 hover:bg-slate-50 transition-all shadow-sm disabled:opacity-50"
           >
-            <Loader2 className={cn("w-3.5 h-3.5", isLoading && "animate-spin")} />
+            <RotateCcw className={cn("w-4 h-4 text-slate-400", isLoading && "animate-spin")} />
             Refresh
           </button>
           <button 
             onClick={handleOpenCreate}
-            className="flex items-center gap-2 px-4 py-2 bg-blue-600 rounded-lg text-[13px] font-bold text-white hover:bg-blue-700 transition-all shadow-sm"
+            className="flex items-center gap-2 px-6 py-2.5 bg-blue-600 rounded-xl text-[14px] font-bold text-white hover:bg-blue-700 transition-all shadow-md shadow-blue-500/20"
           >
-            <Plus className="w-3.5 h-3.5" />
-            Create Category
+            <Plus className="w-4 h-4" />
+            Add Category
           </button>
         </div>
       </div>
 
-      {/* Table */}
-      <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+      {/* Filter Bar */}
+      <div className="bg-white p-5 rounded-[24px] shadow-sm border border-slate-100 flex flex-col lg:flex-row items-center gap-5 mb-8">
+        <div className="relative flex-1 w-full">
+          <Search className="w-4 h-4 text-slate-400 absolute left-4 top-1/2 -translate-y-1/2" />
+          <input
+            type="text"
+            placeholder="Search categories..."
+            className="w-full pl-11 pr-4 py-3 bg-slate-50/50 border border-slate-100 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/10 transition-all text-[14px] font-medium"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+          />
+        </div>
+        <div className="text-[14px] font-bold text-slate-900 px-4 py-2 bg-slate-50/50 rounded-xl border border-slate-50">
+          {filteredCategories.length} categories total
+        </div>
+      </div>
+
+      {/* Table Container */}
+      <div className="bg-white rounded-[24px] shadow-sm border border-slate-100 overflow-hidden">
         <div className="overflow-x-auto">
-          <table className="w-full text-left text-sm">
+          <table className="w-full text-left border-collapse">
             <thead>
-              <tr className="border-b border-gray-100 text-gray-400">
-                <th className="px-6 py-3 w-16 text-[13px] font-bold">ID</th>
-                <th className="px-3 py-3 w-1/3 text-[13px] font-bold">Category Name</th>
-                <th className="px-3 py-3 w-1/3 text-[13px] font-bold">Category Slug</th>
-                <th className="px-3 py-3 text-[13px] font-bold">Status</th>
-                <th className="px-6 py-3 text-center w-24 text-[13px] font-bold">Actions</th>
+              <tr className="border-b border-slate-50 bg-slate-50/30">
+                <th className="px-6 py-4 text-[13px] font-bold text-slate-400 uppercase tracking-wider w-20 text-center">ID</th>
+                <th className="px-6 py-4 text-[13px] font-bold text-slate-400 uppercase tracking-wider">Category Details</th>
+                <th className="px-6 py-4 text-[13px] font-bold text-slate-400 uppercase tracking-wider">Slug</th>
+                <th className="px-6 py-4 text-[13px] font-bold text-slate-400 uppercase tracking-wider text-center">Status</th>
+                <th className="px-6 py-4 text-[13px] font-bold text-slate-400 uppercase tracking-wider text-right">Actions</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-gray-50">
+            <tbody className="divide-y divide-slate-50">
               {isLoading ? (
                 <tr>
-                  <td colSpan={5} className="px-6 py-10 text-center">
-                    <Loader2 className="w-8 h-8 animate-spin text-blue-500 mx-auto" />
+                  <td colSpan={5} className="py-20 text-center">
+                    <Loader2 className="w-8 h-8 text-blue-500 animate-spin mx-auto mb-4" />
+                    <p className="text-slate-500 font-medium">Loading categories...</p>
                   </td>
                 </tr>
-              ) : categories.length > 0 ? (
-                categories.map((category) => {
-                  // Basic parent-child visual hack using description field for demo
-                  const isChild = category.description && category.description !== "";
-
-                  return (
-                    <tr key={category.id} className="hover:bg-gray-50/50 transition-all group bg-white">
-                      <td className="px-6 py-3 font-bold text-gray-900 text-[13px]">{category.id}</td>
-                      <td className="px-3 py-3">
-                        <div className="flex items-center gap-2 font-bold text-gray-900 text-[13px]">
-                          {isChild && <span className="text-gray-400 font-normal">&gt;</span>}
-                          {category.name}
+              ) : filteredCategories.length > 0 ? (
+                filteredCategories.map((category) => (
+                  <tr key={category.id} className="group hover:bg-slate-50/50 transition-colors">
+                    <td className="px-6 py-5 text-[13px] font-bold text-slate-300 text-center">#{category.id}</td>
+                    <td className="px-6 py-5">
+                      <div className="flex items-center gap-4">
+                        <div className="w-10 h-10 rounded-xl bg-blue-50 flex items-center justify-center text-blue-600 border border-blue-100">
+                          <Tags className="w-5 h-5" />
                         </div>
-                      </td>
-                      <td className="px-3 py-3 text-gray-500 text-[13px]">
-                        {category.slug}
-                      </td>
-                      <td className="px-3 py-3">
-                        <span className="px-3 py-0.5 rounded-full text-[11px] font-bold bg-green-50 text-green-600">
-                          Active
-                        </span>
-                      </td>
-                      <td className="px-6 py-3 text-center">
-                        <div className="flex items-center justify-center gap-3">
-                          <button 
-                            onClick={() => handleOpenEdit(category)}
-                            className="text-gray-400 hover:text-blue-600 transition-colors"
-                            title="Edit Category"
-                          >
-                            <Edit className="w-3.5 h-3.5" />
-                          </button>
-                          <button 
-                            onClick={() => handleDelete(category.id)}
-                            className="text-red-400 hover:text-red-600 transition-colors"
-                            title="Delete Category"
-                          >
-                            <Trash2 className="w-3.5 h-3.5" />
-                          </button>
+                        <div>
+                          <p className="text-[14px] font-bold text-slate-900 leading-tight">{category.name}</p>
+                          <p className="text-[11px] text-slate-400 font-medium mt-1 truncate max-w-[200px]">
+                            {category.description || "No description"}
+                          </p>
                         </div>
-                      </td>
-                    </tr>
-                  );
-                })
+                      </div>
+                    </td>
+                    <td className="px-6 py-5">
+                      <span className="text-[13px] font-bold text-slate-600 bg-slate-50 px-3 py-1 rounded-lg border border-slate-100">
+                        /{category.slug}
+                      </span>
+                    </td>
+                    <td className="px-6 py-5 text-center">
+                      <span className="inline-flex px-3 py-1 rounded-full text-[11px] font-bold bg-emerald-50 text-emerald-500">
+                        Active
+                      </span>
+                    </td>
+                    <td className="px-6 py-5">
+                      <div className="flex items-center justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                        <button 
+                          onClick={() => handleOpenEdit(category)}
+                          className="p-2 bg-white border border-slate-100 rounded-lg text-slate-400 hover:text-blue-600 hover:border-blue-100 hover:bg-blue-50/50 transition-all shadow-sm"
+                        >
+                          <Edit className="w-4 h-4" />
+                        </button>
+                        <button 
+                          onClick={() => handleDelete(category.id)}
+                          className="p-2 bg-white border border-slate-100 rounded-lg text-slate-400 hover:text-red-500 hover:border-red-100 hover:bg-red-50/50 transition-all shadow-sm"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))
               ) : (
                 <tr>
-                  <td colSpan={5} className="px-6 py-8 text-center text-gray-500">
-                    No categories found. Click "Create Category" to add one.
+                  <td colSpan={5} className="py-20 text-center">
+                    <div className="p-6 bg-slate-50 rounded-full inline-block mb-4">
+                      <Tags className="w-10 h-10 text-slate-200" />
+                    </div>
+                    <p className="text-slate-400 font-bold text-lg">No categories found</p>
                   </td>
                 </tr>
               )}
@@ -200,133 +215,81 @@ export default function CategoriesPage() {
 
       {/* Create / Edit Modal */}
       {isModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4 overflow-y-auto">
-          <div className="bg-white rounded-[20px] shadow-2xl w-full max-w-[520px] overflow-hidden animate-in fade-in zoom-in-95 duration-200 my-auto">
-            {/* Header */}
-            <div className="p-6 pb-4 relative">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4">
+          <div className="bg-white rounded-[32px] shadow-2xl w-full max-w-[500px] overflow-hidden animate-in fade-in zoom-in-95 duration-300">
+            <div className="p-8 pb-4 relative">
               <button 
                 onClick={() => setIsModalOpen(false)}
-                className="absolute right-5 top-5 p-1 text-gray-400 hover:text-gray-600 rounded-full hover:bg-gray-100 transition-colors"
+                className="absolute right-6 top-6 p-2 text-slate-400 hover:text-slate-900 rounded-xl hover:bg-slate-50 transition-all"
               >
                 <X className="w-5 h-5" />
               </button>
-              <h2 className="text-[22px] font-bold text-gray-900 mb-1">
-                {editingId ? "Edit Category" : "Create Category"}
+              <h2 className="text-[24px] font-bold text-slate-900 mb-1">
+                {editingId ? "Edit Category" : "New Category"}
               </h2>
-              <p className="text-[15px] text-gray-500">
-                {editingId ? "Update your category details." : "Create a new category to organize your blog posts."}
+              <p className="text-[14px] text-slate-500 font-medium">
+                {editingId ? "Update your category details" : "Create a new category to organize posts"}
               </p>
             </div>
             
-            <form onSubmit={handleSave} className="px-6 pb-6 space-y-5">
-              
-              {/* Category Image */}
-              <div>
-                <label className="block text-[15px] font-semibold text-gray-900 mb-3">Category Image</label>
-                <div className="flex items-center gap-4">
-                  <div className="w-[100px] h-[100px] rounded-2xl border-2 border-dashed border-gray-200 bg-gray-50 flex items-center justify-center">
-                    <svg className="w-8 h-8 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                    </svg>
-                  </div>
-                  <div className="flex flex-col gap-2">
-                    <div className="flex gap-2">
-                      <button type="button" className="flex items-center gap-2 px-4 py-2 border border-gray-200 rounded-lg text-sm font-semibold text-gray-700 hover:bg-gray-50 transition-colors">
-                        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
-                        </svg>
-                        Upload
-                      </button>
-                      <button type="button" className="flex items-center gap-2 px-4 py-2 border border-gray-200 rounded-lg text-sm font-semibold text-gray-700 hover:bg-gray-50 transition-colors">
-                        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z" />
-                        </svg>
-                        Library
-                      </button>
-                    </div>
-                    <span className="text-[13px] text-gray-500">Upload a category image (max 5MB)</span>
-                  </div>
+            <form onSubmit={handleSave} className="p-8 pt-4 space-y-6">
+              <div className="space-y-5">
+                <div>
+                  <label className="block text-[13px] font-bold text-slate-400 uppercase tracking-wider mb-2.5">Category Name</label>
+                  <input 
+                    type="text"
+                    required
+                    placeholder="e.g. Technology"
+                    className="w-full px-5 py-3.5 bg-slate-50/50 border border-slate-100 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/10 focus:bg-white transition-all text-[15px] font-bold text-slate-900"
+                    value={name}
+                    onChange={(e) => {
+                      setName(e.target.value);
+                      if (!editingId) {
+                        setSlug(e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, '-').replace(/-+/g, '-'));
+                      }
+                    }}
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-[13px] font-bold text-slate-400 uppercase tracking-wider mb-2.5">URL Slug</label>
+                  <input 
+                    type="text"
+                    required
+                    placeholder="category-slug"
+                    className="w-full px-5 py-3.5 bg-slate-50/50 border border-slate-100 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/10 focus:bg-white transition-all text-[14px] font-medium text-slate-600"
+                    value={slug}
+                    onChange={(e) => setSlug(e.target.value)}
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-[13px] font-bold text-slate-400 uppercase tracking-wider mb-2.5">Description</label>
+                  <textarea 
+                    rows={3}
+                    placeholder="What is this category about?"
+                    className="w-full px-5 py-3.5 bg-slate-50/50 border border-slate-100 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/10 focus:bg-white transition-all text-[14px] font-medium text-slate-600 resize-none leading-relaxed"
+                    value={description}
+                    onChange={(e) => setDescription(e.target.value)}
+                  />
                 </div>
               </div>
 
-              {/* Category Name */}
-              <div>
-                <label className="block text-[15px] font-semibold text-gray-900 mb-1.5">Category Name <span className="text-gray-900">*</span></label>
-                <input 
-                  type="text"
-                  required
-                  placeholder="Enter category name"
-                  className="w-full px-3.5 py-2.5 bg-white border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all text-[15px] placeholder:text-gray-400"
-                  value={name}
-                  onChange={(e) => {
-                    setName(e.target.value);
-                    if (!editingId) {
-                      setSlug(e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, '-').replace(/-+/g, '-'));
-                    }
-                  }}
-                />
-              </div>
-
-              {/* Slug */}
-              <div>
-                <label className="block text-[15px] font-semibold text-gray-900 mb-1.5">Slug <span className="text-gray-900">*</span></label>
-                <input 
-                  type="text"
-                  required
-                  placeholder="category-slug"
-                  className="w-full px-3.5 py-2.5 bg-white border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all text-[15px] placeholder:text-gray-400"
-                  value={slug}
-                  onChange={(e) => setSlug(e.target.value)}
-                />
-                <p className="text-[13px] text-gray-500 mt-1.5">URL-friendly identifier. Auto-generated from name but can be customized.</p>
-              </div>
-
-              {/* Description */}
-              <div>
-                <label className="block text-[15px] font-semibold text-gray-900 mb-1.5">Description</label>
-                <textarea 
-                  rows={3}
-                  placeholder="Enter category description"
-                  className="w-full px-3.5 py-2.5 bg-white border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all text-[15px] placeholder:text-gray-400 resize-none"
-                  value={description}
-                  onChange={(e) => setDescription(e.target.value)}
-                />
-              </div>
-
-              {/* Parent Category */}
-              <div>
-                <label className="block text-[15px] font-semibold text-gray-900 mb-1.5">Parent Category (Optional)</label>
-                <select 
-                  className="w-full px-3.5 py-2.5 bg-white border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all text-[15px] appearance-none"
-                >
-                  <option value="">None (Parent Category)</option>
-                  <option value="test-cat">Test Cat</option>
-                  <option value="remote-work">Remote Work</option>
-                  <option value="ai">AI</option>
-                  <option value="travelling">Travelling</option>
-                  <option value="business">Business</option>
-                  <option value="education">Education</option>
-                  <option value="home-living">Home & Living</option>
-                  <option value="marketing">Marketing</option>
-                </select>
-                <p className="text-[13px] text-gray-500 mt-1.5">Leave as "None" to create a parent category.</p>
-              </div>
-
-              {/* Actions */}
-              <div className="pt-4 flex justify-end gap-3 border-t border-gray-50">
+              <div className="pt-4 flex gap-3">
                 <button 
                   type="button"
                   onClick={() => setIsModalOpen(false)}
-                  className="px-6 py-2.5 bg-white border border-gray-200 text-gray-700 font-semibold rounded-lg hover:bg-gray-50 transition-all text-[15px]"
+                  className="flex-1 py-3.5 bg-white border border-slate-200 text-slate-600 font-bold rounded-xl hover:bg-slate-50 transition-all text-[14px]"
                 >
                   Cancel
                 </button>
                 <button 
                   type="submit"
                   disabled={isSubmitting}
-                  className="px-6 py-2.5 bg-blue-600 text-white font-semibold rounded-lg hover:bg-blue-700 transition-all shadow-sm disabled:opacity-50 text-[15px]"
+                  className="flex-1 py-3.5 bg-blue-600 text-white font-bold rounded-xl hover:bg-blue-700 transition-all shadow-md shadow-blue-500/20 disabled:opacity-50 text-[14px] flex items-center justify-center gap-2"
                 >
-                  {isSubmitting ? (editingId ? "Saving..." : "Creating...") : (editingId ? "Update" : "Create")}
+                  {isSubmitting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Check className="w-4 h-4" />}
+                  {editingId ? "Update Category" : "Create Category"}
                 </button>
               </div>
             </form>

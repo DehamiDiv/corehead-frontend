@@ -2,14 +2,14 @@
 
 import Link from "next/link";
 import { motion } from "framer-motion";
-import { Sparkles, ArrowRight, Zap, Layout, Rocket } from "lucide-react";
+import { Sparkles, ArrowRight, Zap, Layout, Rocket, ChevronRight } from "lucide-react";
 
 export default function DashboardHero() {
   return (
     <section className="relative py-24 px-8 text-center overflow-hidden">
       {/* Decorative Orbs */}
-      <div className="absolute top-0 left-1/4 w-96 h-96 bg-blue-400/20 rounded-full blur-[120px] -z-10" />
-      <div className="absolute bottom-0 right-1/4 w-96 h-96 bg-indigo-400/20 rounded-full blur-[120px] -z-10" />
+      <div className="absolute top-0 left-1/4 w-96 h-96 bg-blue-400/10 rounded-full blur-[120px] -z-10" />
+      <div className="absolute bottom-0 right-1/4 w-96 h-96 bg-indigo-400/10 rounded-full blur-[120px] -z-10" />
 
       <motion.div
         initial={{ opacity: 0, y: 30 }}
@@ -17,55 +17,63 @@ export default function DashboardHero() {
         transition={{ duration: 0.8, ease: "easeOut" }}
         className="max-w-4xl mx-auto"
       >
-        <div className="inline-flex items-center gap-2 px-4 py-2 bg-blue-50 text-blue-600 rounded-full text-xs font-bold uppercase tracking-widest mb-8 border border-blue-100 shadow-sm">
-          <Sparkles className="w-3.5 h-3.5" />
-          Powered by Advanced AI
+        <div className="inline-flex items-center gap-2 px-4 py-2 bg-white text-blue-600 rounded-full text-xs font-black uppercase tracking-[0.15em] mb-8 border border-slate-100 shadow-xl shadow-blue-900/5">
+          <Sparkles className="w-3.5 h-3.5 fill-blue-600" />
+          The Next Generation CMS
         </div>
 
-        <h1 className="text-5xl md:text-7xl font-black text-gray-900 mb-6 tracking-tight leading-[1.1]">
-          Build Your <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-indigo-600">Dream Blog</span> <br/> 
-          in Record Time
+        <h1 className="text-5xl md:text-7xl font-black text-slate-900 mb-6 tracking-tight leading-[1.05]">
+          Manage Your <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-indigo-600">Core Content</span> <br/> 
+          with Ease.
         </h1>
         
-        <p className="text-lg md:text-xl text-gray-500 mb-12 max-w-2xl mx-auto leading-relaxed font-medium">
-          The world's most intuitive drag-and-drop builder with real-time AI assistance. 
-          Create premium experiences without touching code.
+        <p className="text-lg md:text-xl text-slate-500 mb-12 max-w-2xl mx-auto leading-relaxed font-medium">
+          A premium admin dashboard built for speed, performance, and unmatched user experience. 
+          Monitor interactions, manage media, and publish blogs in seconds.
         </p>
 
-        {/* AI Input Field */}
-        <div className="max-w-2xl mx-auto relative group">
-          <div className="relative flex items-center bg-white rounded-3xl border border-gray-100 p-2 shadow-2xl shadow-blue-900/5 hover:border-blue-200 transition-all duration-300">
-            <div className="flex-1 flex items-center pl-6">
-              <Zap className="w-5 h-5 text-amber-500 mr-3" />
-              <input
-                type="text"
-                placeholder="Ex: A minimalist travel blog with a dark theme..."
-                className="w-full bg-transparent border-none outline-none text-gray-700 placeholder-gray-400 text-[15px] font-semibold"
-              />
-            </div>
-            <Link href="/admin/builder" className="bg-blue-600 hover:bg-blue-700 text-white font-bold px-8 py-4 rounded-2xl transition-all shadow-lg shadow-blue-200 flex items-center gap-2 group">
-              Start with AI
-              <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
-            </Link>
-          </div>
+        {/* Action Buttons */}
+        <div className="flex flex-col sm:flex-row items-center justify-center gap-4 max-w-2xl mx-auto">
+          <Link href="/admin/posts/create" className="w-full sm:w-auto bg-blue-600 hover:bg-blue-700 text-white font-bold px-10 py-4.5 rounded-[20px] transition-all shadow-xl shadow-blue-500/20 flex items-center justify-center gap-3 group">
+            Create New Blog
+            <Plus className="w-5 h-5 group-hover:scale-110 transition-transform" />
+          </Link>
+          <Link href="/admin/posts" className="w-full sm:w-auto bg-white hover:bg-slate-50 text-slate-900 font-bold px-10 py-4.5 rounded-[20px] border border-slate-200 transition-all shadow-lg shadow-slate-900/5 flex items-center justify-center gap-3">
+            Manage Content
+            <ChevronRight className="w-5 h-5 text-slate-400" />
+          </Link>
         </div>
 
         {/* Quick Stats/Features */}
-        <div className="mt-16 flex flex-wrap items-center justify-center gap-8 text-gray-400 font-bold text-sm">
-           <div className="flex items-center gap-2">
-             <Layout className="w-4 h-4 text-blue-500" />
-             50+ Templates
+        <div className="mt-20 flex flex-wrap items-center justify-center gap-12 text-slate-400 font-bold text-[13px] uppercase tracking-wider">
+           <div className="flex items-center gap-2.5">
+             <div className="w-2 h-2 rounded-full bg-blue-500 shadow-lg shadow-blue-500/50" />
+             Active Dashboard
            </div>
-           <div className="flex items-center gap-2">
-             <Rocket className="w-4 h-4 text-emerald-500" />
-             Fast Deployment
+           <div className="flex items-center gap-2.5">
+             <div className="w-2 h-2 rounded-full bg-emerald-500 shadow-lg shadow-emerald-500/50" />
+             Real-time API
            </div>
-           <div className="flex items-center gap-2">
-             <Zap className="w-4 h-4 text-amber-500" />
-             AI Assisted
+           <div className="flex items-center gap-2.5">
+             <div className="w-2 h-2 rounded-full bg-amber-500 shadow-lg shadow-amber-500/50" />
+             Cloud Media
            </div>
         </div>
       </motion.div>
     </section>
+  );
+}
+
+function Plus({ className }: { className?: string }) {
+  return (
+    <svg 
+      className={className} 
+      fill="none" 
+      viewBox="0 0 24 24" 
+      stroke="currentColor" 
+      strokeWidth={3}
+    >
+      <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
+    </svg>
   );
 }

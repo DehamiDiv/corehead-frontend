@@ -132,7 +132,7 @@ export default function SaveDraftPage() {
             Back to Editor
           </Link>
           <div className="flex gap-3">
-            <Link href="/admin/blogs">
+            <Link href="/admin/posts">
               <button className="px-5 py-2.5 bg-white border border-slate-300 text-slate-700 rounded-lg font-medium hover:bg-slate-50 transition-colors shadow-sm">
                 View All Posts
               </button>

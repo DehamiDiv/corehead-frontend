@@ -1,98 +1,125 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { UserPlus, Search, MoreHorizontal, Shield, Mail, Edit, Trash2, CheckCircle2, XCircle, RefreshCw, Upload, FolderOpen, Eye, EyeOff } from "lucide-react";
+import { useState, useEffect, useCallback } from "react";
+import { 
+  UserPlus, Search, MoreHorizontal, Shield, Mail, Edit, Trash2, 
+  CheckCircle2, XCircle, RefreshCw, Upload, FolderOpen, Eye, EyeOff,
+  User, RotateCcw, X, Check, Loader2, UserCircle
+} from "lucide-react";
 import { cn } from "@/lib/utils";
 import { api } from "@/lib/api";
 
-const INITIAL_USERS = [
-  {
-    id: 1,
-    name: "Dehami Div",
-    email: "dehamidivyanjali166@gmail.com",
-    role: "Administrator",
-    status: "Active",
-    lastActive: "Now",
-  },
-  {
-    id: 2,
-    name: "Nimasha D",
-    email: "disanayakanimasha548@gmail.com",
-    role: "Editor",
-    status: "Active",
-    lastActive: "2h ago",
-  },
-  {
-    id: 3,
-    name: "Guest User",
-    email: "guest@corehead.app",
-    role: "Viewer",
-    status: "Inactive",
-    lastActive: "3 days ago",
-  },
-];
-
 export default function UsersPage() {
   const [users, setUsers] = useState<any[]>([]);
-  const [isInviteModalOpen, setIsInviteModalOpen] = useState(false);
-  const [inviteName, setInviteName] = useState("");
-  const [inviteNicename, setInviteNicename] = useState("");
-  const [inviteEmail, setInviteEmail] = useState("");
-  const [inviteDesignation, setInviteDesignation] = useState("");
-  const [inviteDescription, setInviteDescription] = useState("");
-  const [invitePassword, setInvitePassword] = useState("");
-  const [showPassword, setShowPassword] = useState(false);
-  const [inviteRole, setInviteRole] = useState("Author");
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [editingUserId, setEditingUserId] = useState<number | null>(null);
-
+  const [isLoading, setIsLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
 
-  const fetchUsers = async () => {
-    setIsRefreshing(true);
+  // Modal State
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [editingUserId, setEditingUserId] = useState<number | null>(null);
+  const [formData, setFormData] = useState({
+    name: "",
+    nicename: "",
+    email: "",
+    designation: "",
+    description: "",
+    password: "",
+    role: "Author",
+  });
+  const [showPassword, setShowPassword] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const fetchUsers = useCallback(async (quiet = false) => {
+    if (!quiet) setIsLoading(true);
+    else setIsRefreshing(true);
+    
     try {
       const response = await api.getUsers();
-      if (response && response.users) {
-        setUsers(response.users);
-      } else if (Array.isArray(response)) {
+      if (Array.isArray(response)) {
         setUsers(response);
+      } else if (response && response.users) {
+        setUsers(response.users);
       }
     } catch (error) {
       console.error("Failed to fetch users", error);
     } finally {
-      setTimeout(() => setIsRefreshing(false), 500); // Add a small delay for visual feedback
+      setIsLoading(false);
+      setIsRefreshing(false);
     }
-  };
+  }, []);
 
   useEffect(() => {
     fetchUsers();
-  }, []);
+  }, [fetchUsers]);
 
-  const handleSubmit = async () => {
-    if (!inviteName || !inviteNicename || !inviteEmail || !inviteRole || (!editingUserId && !invitePassword)) {
-      return alert("Please fill in all required fields marked with *");
+  const filteredUsers = users.filter(user => 
+    (user.name?.toLowerCase().includes(searchQuery.toLowerCase())) ||
+    (user.email?.toLowerCase().includes(searchQuery.toLowerCase()))
+  );
+
+  const handleOpenCreate = () => {
+    setEditingUserId(null);
+    setFormData({
+      name: "",
+      nicename: "",
+      email: "",
+      designation: "",
+      description: "",
+      password: "",
+      role: "Author",
+    });
+    setIsModalOpen(true);
+  };
+
+  const handleOpenEdit = (user: any) => {
+    setEditingUserId(user.id);
+    const generatedName = user.email ? user.email.split('@')[0].replace(/[^a-zA-Z0-9]/g, ' ') : "";
+    const displayName = user.name || generatedName.charAt(0).toUpperCase() + generatedName.slice(1);
+    
+    setFormData({
+      name: displayName,
+      nicename: user.nicename || displayName.toLowerCase().replace(/\s+/g, '-'),
+      email: user.email || "",
+      designation: user.designation || "",
+      description: user.description || "",
+      password: "",
+      role: user.role || "Author",
+    });
+    setIsModalOpen(true);
+  };
+
+  const handleDelete = async (id: number) => {
+    if (window.confirm("Are you sure you want to delete this user?")) {
+      try {
+        await api.deleteUser(id);
+        fetchUsers(true);
+      } catch (e: any) {
+        alert(e.message || "Failed to delete user");
+      }
     }
+  };
+
+  const handleSave = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!formData.name || !formData.email || (!editingUserId && !formData.password)) return;
+    
     setIsSubmitting(true);
     try {
       if (editingUserId) {
-        await api.updateUser(editingUserId, { email: inviteEmail, role: inviteRole, password: invitePassword || undefined });
-        alert(`User ${inviteName} updated successfully!`);
+        await api.updateUser(editingUserId, { 
+          email: formData.email, 
+          role: formData.role, 
+          password: formData.password || undefined 
+        });
       } else {
-        await api.inviteUser({ email: inviteEmail, role: inviteRole });
-        alert(`User ${inviteName} created successfully!`);
+        await api.inviteUser({ 
+          email: formData.email, 
+          role: formData.role 
+        });
       }
-      setIsInviteModalOpen(false);
-      // Refresh the table
-      fetchUsers();
-      // Reset form
-      setEditingUserId(null);
-      setInviteName("");
-      setInviteNicename("");
-      setInviteEmail("");
-      setInviteDesignation("");
-      setInviteDescription("");
-      setInvitePassword("");
-      setInviteRole("Author");
+      setIsModalOpen(false);
+      fetchUsers(true);
     } catch (error: any) {
       alert(error.message || `Failed to ${editingUserId ? "update" : "create"} user`);
     } finally {
@@ -100,150 +127,143 @@ export default function UsersPage() {
     }
   };
 
-  const handleEditClick = (user: any) => {
-    setEditingUserId(user.id);
-    const generatedName = user.email ? user.email.split('@')[0].replace(/[^a-zA-Z0-9]/g, ' ') : "Unknown User";
-    const displayName = user.name || generatedName.charAt(0).toUpperCase() + generatedName.slice(1);
-    const displayNicename = user.nicename || displayName.toLowerCase().replace(/\s+/g, '-');
-    
-    setInviteName(displayName);
-    setInviteNicename(displayNicename);
-    setInviteEmail(user.email);
-    setInviteRole(user.role || "Author");
-    setInvitePassword(""); // Reset password field
-    setInviteDesignation("");
-    setInviteDescription("");
-    setIsInviteModalOpen(true);
-  };
-
-  const handleCreateClick = () => {
-    setEditingUserId(null);
-    setInviteName("");
-    setInviteNicename("");
-    setInviteEmail("");
-    setInviteDesignation("");
-    setInviteDescription("");
-    setInvitePassword("");
-    setInviteRole("Author");
-    setIsInviteModalOpen(true);
-  };
-
-  const handleDeleteClick = async (id: number) => {
-    if (window.confirm("Are you sure you want to delete this user?")) {
-      try {
-        await api.deleteUser(id);
-        fetchUsers();
-      } catch (e: any) {
-        alert(e.message || "Failed to delete user");
-      }
-    }
-  };
-
   return (
-    <div className="space-y-6 max-w-[1600px] mx-auto pb-10">
+    <div className="max-w-[1600px] mx-auto pb-10">
       {/* Header */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900">Users</h1>
-          <p className="text-gray-500 mt-1">Manage your application users and their roles.</p>
+          <h1 className="text-[28px] font-bold text-slate-900 leading-tight">Users</h1>
+          <p className="text-slate-500 mt-1 font-medium">Manage your team and permissions</p>
         </div>
         <div className="flex items-center gap-3">
           <button 
-            onClick={() => fetchUsers()}
-            disabled={isRefreshing}
-            className="flex items-center gap-2 bg-white hover:bg-gray-50 text-gray-600 border border-gray-200 px-4 py-2.5 rounded-xl text-sm font-semibold transition-all shadow-sm disabled:opacity-50"
-            title="Refresh Users"
+            onClick={() => fetchUsers(true)}
+            disabled={isRefreshing || isLoading}
+            className="flex items-center justify-center gap-2 px-5 py-2.5 bg-white border border-slate-200 rounded-xl text-[14px] font-bold text-slate-600 hover:bg-slate-50 transition-all shadow-sm disabled:opacity-50"
           >
-            <RefreshCw size={16} className={cn(isRefreshing && "animate-spin text-blue-600")} />
-            {isRefreshing ? "Refreshing..." : "Refresh"}
+            <RotateCcw className={cn("w-4 h-4 text-slate-400", isRefreshing && "animate-spin")} />
+            Refresh
           </button>
           <button 
-            onClick={handleCreateClick}
-            className="flex items-center gap-2 px-5 py-2.5 bg-blue-600 rounded-xl text-sm font-bold text-white hover:bg-blue-700 transition-all shadow-lg shadow-blue-200"
+            onClick={handleOpenCreate}
+            className="flex items-center gap-2 px-6 py-2.5 bg-blue-600 rounded-xl text-[14px] font-bold text-white hover:bg-blue-700 transition-all shadow-md shadow-blue-500/20"
           >
             <UserPlus className="w-4 h-4" />
-            Create User
+            Add User
           </button>
         </div>
       </div>
 
-      {/* Table */}
-      <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+      {/* Filter Bar */}
+      <div className="bg-white p-5 rounded-[24px] shadow-sm border border-slate-100 flex flex-col lg:flex-row items-center gap-5 mb-8">
+        <div className="relative flex-1 w-full">
+          <Search className="w-4 h-4 text-slate-400 absolute left-4 top-1/2 -translate-y-1/2" />
+          <input
+            type="text"
+            placeholder="Search users by name or email..."
+            className="w-full pl-11 pr-4 py-3 bg-slate-50/50 border border-slate-100 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/10 transition-all text-[14px] font-medium"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+          />
+        </div>
+        <div className="text-[14px] font-bold text-slate-900 px-4 py-2 bg-slate-50/50 rounded-xl border border-slate-50">
+          {filteredUsers.length} users total
+        </div>
+      </div>
+
+      {/* Table Container */}
+      <div className="bg-white rounded-[24px] shadow-sm border border-slate-100 overflow-hidden">
         <div className="overflow-x-auto">
-          <table className="w-full text-left text-sm">
+          <table className="w-full text-left border-collapse">
             <thead>
-              <tr className="border-b border-gray-100 text-gray-500 font-medium">
-                <th className="px-6 py-4">ID</th>
-                <th className="px-6 py-4">Name</th>
-                <th className="px-6 py-4">Nicename</th>
-                <th className="px-6 py-4">Email</th>
-                <th className="px-6 py-4">Role</th>
-                <th className="px-6 py-4">Status</th>
-                <th className="px-6 py-4">Actions</th>
+              <tr className="border-b border-slate-50 bg-slate-50/30">
+                <th className="px-6 py-4 text-[13px] font-bold text-slate-400 uppercase tracking-wider w-20 text-center">ID</th>
+                <th className="px-6 py-4 text-[13px] font-bold text-slate-400 uppercase tracking-wider">User</th>
+                <th className="px-6 py-4 text-[13px] font-bold text-slate-400 uppercase tracking-wider">Email Address</th>
+                <th className="px-6 py-4 text-[13px] font-bold text-slate-400 uppercase tracking-wider">Role</th>
+                <th className="px-6 py-4 text-[13px] font-bold text-slate-400 uppercase tracking-wider text-center">Status</th>
+                <th className="px-6 py-4 text-[13px] font-bold text-slate-400 uppercase tracking-wider text-right">Actions</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-gray-50">
-              {users.map((user) => {
-                // Generate dummy names if missing from DB
-                const generatedName = user.email ? user.email.split('@')[0].replace(/[^a-zA-Z0-9]/g, ' ') : "Unknown User";
-                const displayName = user.name || generatedName.charAt(0).toUpperCase() + generatedName.slice(1);
-                const displayNicename = user.nicename || displayName.toLowerCase().replace(/\s+/g, '-');
-                
-                return (
-                  <tr key={user.id} className="hover:bg-gray-50/50 transition-all group">
-                    <td className="px-6 py-4 font-medium text-gray-900">{user.id}</td>
-                    <td className="px-6 py-4">
-                      <div className="flex items-center gap-2 text-gray-700 font-medium">
-                        <UserPlus className="w-4 h-4 text-gray-400" />
-                        {displayName}
+            <tbody className="divide-y divide-slate-50">
+              {isLoading ? (
+                <tr>
+                  <td colSpan={6} className="py-20 text-center">
+                    <Loader2 className="w-8 h-8 text-blue-500 animate-spin mx-auto mb-4" />
+                    <p className="text-slate-500 font-medium">Fetching users list...</p>
+                  </td>
+                </tr>
+              ) : filteredUsers.length > 0 ? (
+                filteredUsers.map((user) => (
+                  <tr key={user.id} className="group hover:bg-slate-50/50 transition-colors">
+                    <td className="px-6 py-5 text-[13px] font-bold text-slate-300 text-center">#{user.id}</td>
+                    <td className="px-6 py-5">
+                      <div className="flex items-center gap-4">
+                        <div className="w-10 h-10 rounded-full bg-slate-100 flex items-center justify-center text-slate-400 border border-slate-200 overflow-hidden">
+                          <img 
+                            src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${user.email || user.id}`} 
+                            alt="" 
+                            className="w-full h-full object-cover"
+                          />
+                        </div>
+                        <div>
+                          <p className="text-[14px] font-bold text-slate-900 leading-tight">
+                            {user.name || (user.email ? user.email.split('@')[0] : 'User')}
+                          </p>
+                          <p className="text-[11px] text-slate-400 font-bold uppercase tracking-widest mt-1">
+                            @{user.nicename || 'user'}
+                          </p>
+                        </div>
                       </div>
                     </td>
-                    <td className="px-6 py-4">
-                      <div className="flex items-center gap-2 text-gray-500">
-                        <svg className="w-4 h-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
-                        </svg>
-                        {displayNicename}
-                      </div>
-                    </td>
-                    <td className="px-6 py-4">
-                      <div className="flex items-center gap-2 text-gray-500">
-                        <Mail className="w-4 h-4 text-gray-400" />
+                    <td className="px-6 py-5">
+                      <div className="flex items-center gap-2 text-[13px] text-slate-600 font-medium">
+                        <Mail className="w-4 h-4 text-slate-300" />
                         {user.email}
                       </div>
                     </td>
-                    <td className="px-6 py-4">
+                    <td className="px-6 py-5">
                       <span className={cn(
-                        "px-3 py-1 rounded-full text-xs font-semibold",
-                        user.role === 'Admin' || user.role === 'Administrator' ? "bg-purple-50 text-purple-600" :
-                        user.role === 'Editor' ? "bg-orange-50 text-orange-600" :
-                        "bg-blue-50 text-blue-600"
+                        "inline-flex px-3 py-1 rounded-lg text-[11px] font-bold border",
+                        user.role === 'Administrator' || user.role === 'Admin' 
+                          ? "bg-purple-50 text-purple-600 border-purple-100" 
+                          : user.role === 'Editor'
+                          ? "bg-blue-50 text-blue-600 border-blue-100"
+                          : "bg-slate-50 text-slate-600 border-slate-100"
                       )}>
                         {user.role}
                       </span>
                     </td>
-                    <td className="px-6 py-4">
-                      <span className="px-3 py-1 rounded-full text-xs font-semibold bg-green-50 text-green-600">
+                    <td className="px-6 py-5 text-center">
+                      <span className="inline-flex px-3 py-1 rounded-full text-[11px] font-bold bg-emerald-50 text-emerald-500">
                         Active
                       </span>
                     </td>
-                    <td className="px-6 py-4">
-                      <div className="flex items-center gap-3">
-                        <button onClick={() => handleEditClick(user)} className="text-gray-400 hover:text-gray-600 transition-colors">
+                    <td className="px-6 py-5">
+                      <div className="flex items-center justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                        <button 
+                          onClick={() => handleOpenEdit(user)}
+                          className="p-2 bg-white border border-slate-100 rounded-lg text-slate-400 hover:text-blue-600 hover:border-blue-100 hover:bg-blue-50/50 transition-all shadow-sm"
+                        >
                           <Edit className="w-4 h-4" />
                         </button>
-                        <button onClick={() => handleDeleteClick(user.id)} className="text-red-400 hover:text-red-600 transition-colors">
+                        <button 
+                          onClick={() => handleDelete(user.id)}
+                          className="p-2 bg-white border border-slate-100 rounded-lg text-slate-400 hover:text-red-500 hover:border-red-100 hover:bg-red-50/50 transition-all shadow-sm"
+                        >
                           <Trash2 className="w-4 h-4" />
                         </button>
                       </div>
                     </td>
                   </tr>
-                );
-              })}
-              {users.length === 0 && (
+                ))
+              ) : (
                 <tr>
-                  <td colSpan={7} className="px-6 py-8 text-center text-gray-500">
-                    No users found. Click "Create User" to add one.
+                  <td colSpan={6} className="py-20 text-center">
+                    <div className="p-6 bg-slate-50 rounded-full inline-block mb-4">
+                      <UserCircle className="w-10 h-10 text-slate-200" />
+                    </div>
+                    <p className="text-slate-400 font-bold text-lg">No users found</p>
                   </td>
                 </tr>
               )}
@@ -252,167 +272,110 @@ export default function UsersPage() {
         </div>
       </div>
 
-      {/* Centered Modal for Create User */}
-      {isInviteModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm transition-all p-4">
-          <div className="bg-white w-full max-w-[600px] max-h-[90vh] shadow-2xl flex flex-col rounded-2xl overflow-hidden animate-in zoom-in-95 duration-200 border border-gray-100">
-            {/* Header */}
-            <div className="flex items-center justify-between px-8 py-6 border-b border-gray-100">
-              <div>
-                <h2 className="text-xl font-bold text-gray-900">{editingUserId ? "Edit User" : "Create User"}</h2>
-                <p className="text-sm text-gray-500 mt-1">{editingUserId ? "Update user details and access permissions." : "Add a new user to your application."}</p>
-              </div>
+      {/* Create / Edit Modal */}
+      {isModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4">
+          <div className="bg-white rounded-[32px] shadow-2xl w-full max-w-[550px] overflow-hidden animate-in fade-in zoom-in-95 duration-300">
+            <div className="p-8 pb-4 relative">
               <button 
-                onClick={() => setIsInviteModalOpen(false)}
-                className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
+                onClick={() => setIsModalOpen(false)}
+                className="absolute right-6 top-6 p-2 text-slate-400 hover:text-slate-900 rounded-xl hover:bg-slate-50 transition-all"
               >
-                <XCircle size={20} />
+                <X className="w-5 h-5" />
               </button>
+              <h2 className="text-[24px] font-bold text-slate-900 mb-1">
+                {editingUserId ? "Edit User" : "Invite User"}
+              </h2>
+              <p className="text-[14px] text-slate-500 font-medium">
+                {editingUserId ? "Update account settings" : "Add a new member to the team"}
+              </p>
             </div>
-
-            {/* Body */}
-            <div className="flex-1 overflow-y-auto px-8 py-6 space-y-6">
-              
-              {/* Profile Image */}
-              <div>
-                <label className="block text-[13px] font-bold text-gray-900 mb-3">Profile Image</label>
-                <div className="flex items-center gap-5">
-                  <div className="w-[84px] h-[84px] rounded-full border-2 border-dashed border-gray-200 flex items-center justify-center bg-gray-50/50 text-gray-400">
-                    <Upload size={24} className="opacity-50" />
-                  </div>
-                  <div>
-                    <div className="flex gap-2.5 mb-2">
-                      <button className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-200 rounded-lg text-sm font-semibold text-gray-700 hover:bg-gray-50 shadow-sm transition-all">
-                        <Upload size={16} className="text-gray-500" />
-                        Upload
-                      </button>
-                      <button className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-200 rounded-lg text-sm font-semibold text-gray-700 hover:bg-gray-50 shadow-sm transition-all">
-                        <FolderOpen size={16} className="text-gray-500" />
-                        Library
-                      </button>
-                    </div>
-                    <p className="text-[13px] text-gray-500">Upload a profile image (max 1MB)</p>
-                  </div>
-                </div>
-              </div>
-
-              {/* Name */}
-              <div>
-                <label className="block text-[13px] font-bold text-gray-900 mb-2">Name <span className="text-red-500">*</span></label>
-                <input 
-                  type="text" 
-                  className="w-full px-4 py-2.5 bg-white border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all text-sm placeholder:text-gray-400"
-                  placeholder="Enter user name"
-                  value={inviteName}
-                  onChange={e => setInviteName(e.target.value)}
-                />
-              </div>
-
-              {/* Nicename */}
-              <div>
-                <label className="block text-[13px] font-bold text-gray-900 mb-2">Nicename (URL Slug) <span className="text-red-500">*</span></label>
-                <input 
-                  type="text" 
-                  className="w-full px-4 py-2.5 bg-white border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all text-sm placeholder:text-gray-400"
-                  placeholder="user-nicename"
-                  value={inviteNicename}
-                  onChange={e => setInviteNicename(e.target.value)}
-                />
-                <p className="text-[13px] text-gray-500 mt-2">URL-friendly identifier. Auto-generated from name but can be customized.</p>
-              </div>
-
-              {/* Email */}
-              <div>
-                <label className="block text-[13px] font-bold text-gray-900 mb-2">Email <span className="text-red-500">*</span></label>
-                <input 
-                  type="email" 
-                  className="w-full px-4 py-2.5 bg-white border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all text-sm placeholder:text-gray-400"
-                  placeholder="user@example.com"
-                  value={inviteEmail}
-                  onChange={e => setInviteEmail(e.target.value)}
-                />
-              </div>
-
-              {/* Designation */}
-              <div>
-                <label className="block text-[13px] font-bold text-gray-900 mb-2">Designation</label>
-                <input 
-                  type="text" 
-                  className="w-full px-4 py-2.5 bg-white border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all text-sm placeholder:text-gray-400"
-                  placeholder="e.g., Senior Developer, Content Writer"
-                  value={inviteDesignation}
-                  onChange={e => setInviteDesignation(e.target.value)}
-                />
-              </div>
-
-              {/* Description */}
-              <div>
-                <label className="block text-[13px] font-bold text-gray-900 mb-2">Description</label>
-                <textarea 
-                  className="w-full px-4 py-2.5 bg-white border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all text-sm placeholder:text-gray-400 min-h-[100px] resize-y"
-                  placeholder="Brief description about the user..."
-                  value={inviteDescription}
-                  onChange={e => setInviteDescription(e.target.value)}
-                />
-              </div>
-
-              {/* Password */}
-              <div>
-                <label className="block text-[13px] font-bold text-gray-900 mb-2">Password {!editingUserId && <span className="text-red-500">*</span>}</label>
-                <div className="relative">
+            
+            <form onSubmit={handleSave} className="p-8 pt-4 space-y-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                <div className="md:col-span-2">
+                  <label className="block text-[13px] font-bold text-slate-400 uppercase tracking-wider mb-2.5">Full Name</label>
                   <input 
-                    type={showPassword ? "text" : "password"} 
-                    className="w-full pl-4 pr-10 py-2.5 bg-white border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all text-sm placeholder:text-gray-400"
-                    placeholder={editingUserId ? "Leave blank to keep unchanged" : "Enter password (min 8 characters)"}
-                    value={invitePassword}
-                    onChange={e => setInvitePassword(e.target.value)}
+                    type="text"
+                    required
+                    placeholder="e.g. John Doe"
+                    className="w-full px-5 py-3.5 bg-slate-50/50 border border-slate-100 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/10 focus:bg-white transition-all text-[15px] font-bold text-slate-900"
+                    value={formData.name}
+                    onChange={(e) => setFormData({...formData, name: e.target.value})}
                   />
-                  <button 
-                    type="button"
-                    onClick={() => setShowPassword(!showPassword)}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
-                  >
-                    {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
-                  </button>
+                </div>
+
+                <div className="md:col-span-2">
+                  <label className="block text-[13px] font-bold text-slate-400 uppercase tracking-wider mb-2.5">Email Address</label>
+                  <input 
+                    type="email"
+                    required
+                    placeholder="email@example.com"
+                    className="w-full px-5 py-3.5 bg-slate-50/50 border border-slate-100 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/10 focus:bg-white transition-all text-[14px] font-medium text-slate-600"
+                    value={formData.email}
+                    onChange={(e) => setFormData({...formData, email: e.target.value})}
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-[13px] font-bold text-slate-400 uppercase tracking-wider mb-2.5">User Role</label>
+                  <div className="relative">
+                    <select 
+                      className="w-full px-5 py-3.5 bg-slate-50/50 border border-slate-100 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/10 focus:bg-white transition-all appearance-none text-[14px] font-bold text-slate-900"
+                      value={formData.role}
+                      onChange={(e) => setFormData({...formData, role: e.target.value})}
+                    >
+                      <option value="Author">Author</option>
+                      <option value="Editor">Editor</option>
+                      <option value="Administrator">Administrator</option>
+                      <option value="Viewer">Viewer</option>
+                    </select>
+                    <ChevronDown className="w-4 h-4 text-slate-400 absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none" />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-[13px] font-bold text-slate-400 uppercase tracking-wider mb-2.5">
+                    Password {editingUserId && "(Optional)"}
+                  </label>
+                  <div className="relative">
+                    <input 
+                      type={showPassword ? "text" : "password"}
+                      required={!editingUserId}
+                      placeholder="••••••••"
+                      className="w-full px-5 py-3.5 bg-slate-50/50 border border-slate-100 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/10 focus:bg-white transition-all text-[14px] font-medium text-slate-600"
+                      value={formData.password}
+                      onChange={(e) => setFormData({...formData, password: e.target.value})}
+                    />
+                    <button 
+                      type="button"
+                      onClick={() => setShowPassword(!showPassword)}
+                      className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-900"
+                    >
+                      {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                    </button>
+                  </div>
                 </div>
               </div>
 
-              {/* Role */}
-              <div>
-                <label className="block text-[13px] font-bold text-gray-900 mb-2">Role <span className="text-red-500">*</span></label>
-                <div className="relative">
-                  <select 
-                    className="w-32 px-4 py-2.5 bg-white border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all text-sm font-medium text-gray-900 appearance-none"
-                    value={inviteRole}
-                    onChange={e => setInviteRole(e.target.value)}
-                    style={{ backgroundImage: `url('data:image/svg+xml;charset=US-ASCII,<svg width="20" height="20" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="%239ca3af"><path fill-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clip-rule="evenodd"/></svg>')`, backgroundRepeat: 'no-repeat', backgroundPosition: 'right 0.5rem center', backgroundSize: '1.25em 1.25em' }}
-                  >
-                    <option value="Author">Author</option>
-                    <option value="Editor">Editor</option>
-                    <option value="Administrator">Administrator</option>
-                    <option value="Viewer">Viewer</option>
-                  </select>
-                </div>
+              <div className="pt-4 flex gap-3">
+                <button 
+                  type="button"
+                  onClick={() => setIsModalOpen(false)}
+                  className="flex-1 py-3.5 bg-white border border-slate-200 text-slate-600 font-bold rounded-xl hover:bg-slate-50 transition-all text-[14px]"
+                >
+                  Cancel
+                </button>
+                <button 
+                  type="submit"
+                  disabled={isSubmitting}
+                  className="flex-1 py-3.5 bg-blue-600 text-white font-bold rounded-xl hover:bg-blue-700 transition-all shadow-md shadow-blue-500/20 disabled:opacity-50 text-[14px] flex items-center justify-center gap-2"
+                >
+                  {isSubmitting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Check className="w-4 h-4" />}
+                  {editingUserId ? "Save Changes" : "Invite User"}
+                </button>
               </div>
-
-            </div>
-
-            {/* Footer */}
-            <div className="px-8 py-5 border-t border-gray-100 flex items-center justify-end gap-3 bg-white">
-              <button 
-                onClick={() => setIsInviteModalOpen(false)}
-                className="px-6 py-2.5 bg-white border border-gray-200 text-sm font-semibold text-gray-700 hover:bg-gray-50 rounded-lg transition-all shadow-sm"
-              >
-                Cancel
-              </button>
-              <button 
-                onClick={handleSubmit}
-                disabled={isSubmitting}
-                className="px-6 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-semibold shadow-sm transition-all disabled:opacity-50"
-              >
-                {isSubmitting ? (editingUserId ? "Updating..." : "Creating...") : (editingUserId ? "Update User" : "Create")}
-              </button>
-            </div>
+            </form>
           </div>
         </div>
       )}

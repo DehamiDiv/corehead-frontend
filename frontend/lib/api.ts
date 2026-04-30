@@ -113,6 +113,58 @@ export const api = {
     return res.json();
   },
 
+  // Posts Management
+  async getPosts() {
+    const res = await fetch(`${BASE_URL}/posts`, {
+      headers: { ...getAuthHeader() }
+    });
+    if (!res.ok) throw new Error('Failed to fetch posts');
+    return res.json();
+  },
+
+  async getPostById(id: string | number) {
+    const res = await fetch(`${BASE_URL}/posts/${id}`, {
+      headers: { ...getAuthHeader() }
+    });
+    if (!res.ok) throw new Error('Failed to fetch post');
+    return res.json();
+  },
+
+  async updatePost(id: string | number, data: any) {
+    const res = await fetch(`${BASE_URL}/posts/${id}`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+        ...getAuthHeader()
+      },
+      body: JSON.stringify(data)
+    });
+    if (!res.ok) throw new Error('Failed to update post');
+    return res.json();
+  },
+
+  async createPost(data: any) {
+    const res = await fetch(`${BASE_URL}/posts`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        ...getAuthHeader()
+      },
+      body: JSON.stringify(data)
+    });
+    if (!res.ok) throw new Error('Failed to create post');
+    return res.json();
+  },
+
+  async deletePost(id: string | number) {
+    const res = await fetch(`${BASE_URL}/posts/${id}`, {
+      method: 'DELETE',
+      headers: { ...getAuthHeader() }
+    });
+    if (!res.ok) throw new Error('Failed to delete post');
+    return res.json();
+  },
+
   // Public Facing / Receiver Mock Endpoints
   async getPostBySlug(slug: string) {
     return {
