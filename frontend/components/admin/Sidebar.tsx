@@ -23,7 +23,7 @@ type NavItem = {
   Icon: any;
 };
 
-export default function Sidebar() {
+export default function Sidebar({ isOpen = true }: { isOpen?: boolean }) {
   const pathname = usePathname();
   const [settingsOpen, setSettingsOpen] = useState(true);
 
@@ -43,7 +43,10 @@ export default function Sidebar() {
   const isActive = (href: string) => pathname === href || pathname.startsWith(href + "/");
 
   return (
-    <aside className="fixed top-0 left-0 h-screen w-[280px] bg-white border-r border-gray-100 flex flex-col z-50">
+    <aside className={cn(
+      "fixed top-0 left-0 h-screen w-[280px] bg-white border-r border-gray-100 flex flex-col z-50 transition-transform duration-300 ease-in-out",
+      !isOpen && "-translate-x-full"
+    )}>
       {/* Logo */}
       <div className="h-24 px-8 flex items-center">
         <Link href="/" className="flex items-center">

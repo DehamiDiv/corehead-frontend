@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import { usePathname } from "next/navigation";
 import Sidebar from "@/components/admin/Sidebar";
 import Header from "@/components/admin/Header";
@@ -10,6 +11,8 @@ export default function AdminLayout({
   children: React.ReactNode;
 }) {
   const pathname = usePathname();
+  const [isSidebarOpen, setIsSidebarOpen] = useState(true);
+
   const isDashboard = pathname === "/admin";
   const isBuilder = pathname?.startsWith("/admin/builder");
 
@@ -19,9 +22,9 @@ export default function AdminLayout({
 
   return (
     <div className="flex min-h-screen bg-slate-50">
-      <Sidebar />
-      <div className="flex-1 ml-[280px] flex flex-col min-h-screen">
-        <Header />
+      <Sidebar isOpen={isSidebarOpen} />
+      <div className={`flex-1 flex flex-col min-h-screen transition-all duration-300 ${isSidebarOpen ? 'ml-[280px]' : 'ml-0'}`}>
+        <Header onToggleSidebar={() => setIsSidebarOpen(!isSidebarOpen)} />
         <main className="flex-1 p-8 overflow-y-auto">{children}</main>
       </div>
     </div>
