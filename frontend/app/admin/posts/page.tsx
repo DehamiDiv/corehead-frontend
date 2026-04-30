@@ -4,13 +4,13 @@ import { useState, useEffect } from "react";
 import {
   RotateCcw,
   Plus,
-  Search,
   Edit,
   Trash2,
   Star,
   ChevronDown,
   X,
   Filter,
+  MoreHorizontal,
   ExternalLink,
   FileText,
 } from "lucide-react";
@@ -21,11 +21,6 @@ export default function BlogsPage() {
   const [posts, setPosts] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
-  
-  // Filter States
-  const [statusFilter, setStatusFilter] = useState("All Status");
-  const [categoryFilter, setCategoryFilter] = useState("All Categories");
-  const [authorFilter, setAuthorFilter] = useState("All Authors");
 
   const fetchPosts = async () => {
     setLoading(true);
@@ -68,22 +63,8 @@ export default function BlogsPage() {
   )).sort();
 
   const filteredPosts = Array.isArray(posts) 
-    ? posts.filter(post => {
-        const matchesSearch = post.title?.toLowerCase().includes(searchQuery.toLowerCase());
-        const matchesStatus = statusFilter === "All Status" || post.status === statusFilter;
-        const matchesCategory = categoryFilter === "All Categories" || post.categories?.includes(categoryFilter);
-        const matchesAuthor = authorFilter === "All Authors" || (post.author?.name || 'Unknown Author') === authorFilter;
-        
-        return matchesSearch && matchesStatus && matchesCategory && matchesAuthor;
-      })
+    ? posts.filter(post => post.title?.toLowerCase().includes(searchQuery.toLowerCase()))
     : [];
-
-  const handleClearFilters = () => {
-    setSearchQuery("");
-    setStatusFilter("All Status");
-    setCategoryFilter("All Categories");
-    setAuthorFilter("All Authors");
-  };
 
   const stats = [
     { label: "Total Posts", value: Array.isArray(posts) ? posts.length : 0, color: "blue" },
@@ -97,25 +78,25 @@ export default function BlogsPage() {
       {/* Header */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900">Blog Posts</h1>
-          <p className="text-gray-500 mt-1">
-            Manage your content, edit stories and track performance.
+          <h1 className="text-2xl font-bold text-gray-900 tracking-tight">Posts</h1>
+          <p className="text-gray-400 mt-0.5 text-sm font-medium">
+            Welcome back! Here's your Blog Posts.
           </p>
         </div>
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2">
           <button 
             onClick={fetchPosts}
-            className="flex items-center gap-2 px-4 py-2.5 bg-white border border-gray-200 rounded-xl text-sm font-semibold text-gray-700 hover:bg-gray-50 transition-all shadow-sm"
+            className="flex items-center gap-2 px-3.5 py-2 bg-white border border-gray-200 rounded-xl text-[13px] font-bold text-gray-700 hover:bg-gray-50 transition-all shadow-sm"
           >
-            <RotateCcw className={cn("w-4 h-4", loading && "animate-spin")} />
+            <RotateCcw className={cn("w-3.5 h-3.5", loading && "animate-spin")} />
             Refresh
           </button>
           <Link 
             href="/admin/posts/create"
-            className="flex items-center gap-2 px-5 py-2.5 bg-blue-600 rounded-xl text-sm font-bold text-white hover:bg-blue-700 transition-all shadow-lg shadow-blue-200"
+            className="flex items-center gap-2 px-4 py-2 bg-blue-600 rounded-xl text-[13px] font-bold text-white hover:bg-blue-700 transition-all shadow-sm"
           >
-            <Plus className="w-4 h-4" />
-            Create Blogs
+            <Plus className="w-3.5 h-3.5" />
+            Create Blog
           </Link>
         </div>
       </div>
@@ -143,64 +124,33 @@ export default function BlogsPage() {
           />
         </div>
         <div className="flex items-center gap-3 w-full lg:w-auto overflow-x-auto pb-2 lg:pb-0">
-          {/* Status Filter */}
-          <select 
-            value={statusFilter}
-            onChange={(e) => setStatusFilter(e.target.value)}
-            className="px-4 py-2.5 bg-white border border-gray-100 rounded-xl text-sm font-bold text-gray-600 outline-none focus:border-gray-300 shadow-sm transition-all"
-          >
-            <option>All Status</option>
-            <option>Published</option>
-            <option>Draft</option>
-          </select>
-
-          {/* Category Filter */}
-          <select 
-            value={categoryFilter}
-            onChange={(e) => setCategoryFilter(e.target.value)}
-            className="px-4 py-2.5 bg-white border border-gray-100 rounded-xl text-sm font-bold text-gray-600 outline-none focus:border-gray-300 shadow-sm transition-all"
-          >
-            <option>All Categories</option>
-            {allCategories.map(cat => <option key={cat}>{cat}</option>)}
-          </select>
-
-          {/* Author Filter */}
-          <select 
-            value={authorFilter}
-            onChange={(e) => setAuthorFilter(e.target.value)}
-            className="px-4 py-2.5 bg-white border border-gray-100 rounded-xl text-sm font-bold text-gray-600 outline-none focus:border-gray-300 shadow-sm transition-all"
-          >
-            <option>All Authors</option>
-            {allAuthors.map(auth => <option key={auth}>{auth}</option>)}
-          </select>
-
-          <button 
-            onClick={handleClearFilters}
-            className="flex items-center gap-2 px-4 py-2.5 text-sm font-semibold text-gray-400 hover:text-gray-600 transition-colors"
-          >
+          <FilterButton label="Status" />
+          <FilterButton label="Category" />
+          <FilterButton label="Author" />
+          <button className="flex items-center gap-2 px-4 py-2.5 text-sm font-semibold text-gray-400 hover:text-gray-600 transition-colors">
             <X className="w-4 h-4" />
-            Clear
+            Clear Filters
           </button>
         </div>
-      </div>
 
-      {/* Table Content */}
-      <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+        {/* Table Content */}
         <div className="overflow-x-auto">
-          <table className="w-full text-left">
+          <table className="w-full text-left border-collapse">
             <thead>
-              <tr className="bg-gray-50/50 border-b border-gray-100">
-                <th className="px-8 py-5 text-xs font-bold text-gray-400 uppercase tracking-wider">Post Details</th>
-                <th className="px-6 py-5 text-xs font-bold text-gray-400 uppercase tracking-wider">Author</th>
-                <th className="px-6 py-5 text-xs font-bold text-gray-400 uppercase tracking-wider">Status</th>
-                <th className="px-6 py-5 text-xs font-bold text-gray-400 uppercase tracking-wider">Featured</th>
-                <th className="px-8 py-5 text-xs font-bold text-gray-400 uppercase tracking-wider text-right">Actions</th>
+              <tr className="border-b border-gray-100">
+                <th className="px-6 py-4 text-[13px] font-bold text-gray-400 w-16">ID</th>
+                <th className="px-3 py-4 text-[13px] font-bold text-gray-400">Title</th>
+                <th className="px-3 py-4 text-[13px] font-bold text-gray-400">Author</th>
+                <th className="px-3 py-4 text-[13px] font-bold text-gray-400">Categories</th>
+                <th className="px-3 py-4 text-[13px] font-bold text-gray-400">Featured</th>
+                <th className="px-3 py-4 text-[13px] font-bold text-gray-400">Status</th>
+                <th className="px-6 py-4 text-[13px] font-bold text-gray-400 text-center">Actions</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-gray-50">
-                {loading ? (
+            <tbody className="divide-y divide-gray-100">
+              {loading ? (
                 <tr>
-                  <td colSpan={5} className="px-8 py-20 text-center">
+                  <td colSpan={7} className="px-8 py-20 text-center">
                     <div className="flex flex-col items-center gap-3">
                       <div className="w-8 h-8 border-4 border-blue-600 border-t-transparent rounded-full animate-spin" />
                       <p className="text-gray-500 font-medium">Fetching your posts...</p>
@@ -222,39 +172,52 @@ export default function BlogsPage() {
                         <div className="min-w-0 max-w-[300px]">
                           <p className="text-sm font-bold text-gray-900 truncate" title={post.title}>{post.title}</p>
                           <div className="flex items-center gap-2 mt-1">
-                            {post.categories
-                              ?.split(',')
-                              .filter(Boolean)
-                              .slice(0, 2)
-                              .map((cat: string, i: number) => (
-                                <span key={i} className="text-[10px] font-bold px-2 py-0.5 bg-gray-100 text-gray-500 rounded-md">
-                                  {cat.trim()}
-                                </span>
-                              ))}
+                            {post.categories?.slice(0, 2).map((cat: string, i: number) => (
+                              <span key={i} className="text-[10px] font-bold px-2 py-0.5 bg-gray-100 text-gray-500 rounded-md">
+                                {cat}
+                              </span>
+                            ))}
                             <span className="text-[10px] text-gray-400 font-medium">#{post.id}</span>
                           </div>
                         </div>
                       </div>
                     </td>
-                    <td className="px-6 py-5">
-                      <div className="flex items-center gap-3">
-                        <div className="w-8 h-8 rounded-full bg-blue-100 border border-white shadow-sm overflow-hidden">
-                          <img 
-                            src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${post.author?.name || 'User'}`} 
-                            alt="" 
-                          />
-                        </div>
-                        <span className="text-sm font-bold text-gray-700">{post.author?.name || 'Unknown Author'}</span>
+                    <td className="px-3 py-4">
+                      <div className="flex flex-wrap gap-1.5 max-w-[200px]">
+                        {(() => {
+                          let cats: any[] = [];
+                          const rawCats = post.categories || post.category;
+                          if (Array.isArray(rawCats)) cats = rawCats;
+                          else if (typeof rawCats === 'string') {
+                            try { cats = JSON.parse(rawCats); } catch(e) { cats = [rawCats]; }
+                          }
+                          return cats.map((cat: string, i: number) => (
+                            <span key={i} className="px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-blue-50 text-blue-500">
+                              {cat}
+                            </span>
+                          ));
+                        })()}
                       </div>
                     </td>
-                    <td className="px-6 py-5">
+                    <td className="px-3 py-4">
+                      {post.featured ? (
+                        <span className="inline-flex items-center gap-1 px-3 py-0.5 rounded-full text-[11px] font-bold bg-amber-50 text-amber-600">
+                          <Star className="w-2.5 h-2.5 fill-amber-500" />
+                          Featured
+                        </span>
+                      ) : (
+                        <span className="inline-flex px-3 py-0.5 rounded-full text-[11px] font-bold border border-gray-100 text-gray-400">
+                          Regular
+                        </span>
+                      )}
+                    </td>
+                    <td className="px-3 py-4">
                       <span className={cn(
-                        "inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-bold border",
+                        "inline-flex px-3 py-0.5 rounded-full text-[11px] font-bold",
                         post.status === "Published" 
-                          ? "bg-emerald-50 text-emerald-600 border-emerald-100" 
-                          : "bg-amber-50 text-amber-600 border-amber-100"
+                          ? "bg-emerald-50 text-emerald-500" 
+                          : "bg-amber-50 text-amber-500"
                       )}>
-                        <div className={cn("w-1.5 h-1.5 rounded-full", post.status === "Published" ? "bg-emerald-500" : "bg-amber-500")} />
                         {post.status || 'Draft'}
                       </span>
                     </td>
@@ -267,20 +230,21 @@ export default function BlogsPage() {
                       </button>
                     </td>
                     <td className="px-8 py-5 text-right">
-                      <div className="flex items-center justify-end gap-2">
+                      <div className="flex items-center justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
                         <Link 
                           href={`/admin/posts/edit/${post.id}`}
-                          className="p-2.5 bg-white border border-gray-200 rounded-xl text-gray-500 hover:text-blue-600 hover:border-blue-200 hover:bg-blue-50 transition-all shadow-sm"
-                          title="Edit post"
+                          className="p-2.5 bg-white border border-gray-100 rounded-xl text-gray-500 hover:text-blue-600 hover:border-blue-100 hover:bg-blue-50/30 transition-all shadow-sm"
                         >
-                          <Edit className="w-4 h-4" />
+                          <Edit className="w-3.5 h-3.5" />
                         </Link>
                         <button 
                           onClick={() => handleDelete(post.id)}
-                          className="p-2.5 bg-red-50 border border-red-100 rounded-xl text-red-500 hover:bg-red-100 hover:border-red-200 transition-all shadow-sm"
-                          title="Delete post"
+                          className="p-2.5 bg-white border border-gray-100 rounded-xl text-gray-500 hover:text-red-600 hover:border-red-100 hover:bg-red-50/30 transition-all shadow-sm"
                         >
                           <Trash2 className="w-4 h-4" />
+                        </button>
+                        <button className="p-2.5 bg-white border border-gray-100 rounded-xl text-gray-500 hover:text-gray-900 shadow-sm">
+                          <MoreHorizontal className="w-4 h-4" />
                         </button>
                       </div>
                     </td>
@@ -288,15 +252,18 @@ export default function BlogsPage() {
                 ))
               ) : (
                 <tr>
-                  <td colSpan={5} className="px-8 py-20 text-center">
+                  <td colSpan={7} className="px-8 py-20 text-center">
                     <div className="flex flex-col items-center gap-4 text-gray-400">
                       <div className="p-6 bg-gray-50 rounded-full">
                         <FileText className="w-10 h-10" />
                       </div>
                       <p className="text-lg font-bold">No posts found</p>
-                      <Link href="/admin/posts/create" className="text-blue-600 font-bold hover:underline">
-                        Create your first post
-                      </Link>
+                      <button 
+                        onClick={() => setStatusFilter("")}
+                        className="text-blue-600 font-bold hover:underline"
+                      >
+                        Clear filters
+                      </button>
                     </div>
                   </td>
                 </tr>
@@ -304,7 +271,46 @@ export default function BlogsPage() {
             </tbody>
           </table>
         </div>
+
+        {/* Pagination Footer */}
+        <div className="p-8 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <p className="text-sm text-gray-500">
+            Showing 1 to {Math.min(20, filteredPosts.length)} of {filteredPosts.length} results
+          </p>
+          <div className="flex flex-wrap items-center gap-6">
+            <div className="flex items-center gap-3">
+              <span className="text-sm text-gray-500">Rows per page:</span>
+              <button className="flex items-center gap-3 px-3 py-1.5 border border-gray-200 rounded-lg text-sm font-medium text-gray-700 bg-white shadow-sm">
+                20 <ChevronDown className="w-4 h-4 text-gray-400" />
+              </button>
+            </div>
+            <div className="flex items-center gap-1">
+              <button className="px-3 py-1.5 text-sm font-medium text-gray-400 hover:text-gray-600 transition-colors flex items-center gap-1">
+                &lt; Previous
+              </button>
+              <button className="w-8 h-8 rounded-lg bg-blue-600 text-white text-sm font-bold flex items-center justify-center shadow-sm">
+                1
+              </button>
+              <button className="w-8 h-8 rounded-lg text-gray-600 hover:bg-gray-50 text-sm font-bold flex items-center justify-center transition-colors">
+                2
+              </button>
+              <button className="px-3 py-1.5 text-sm font-medium text-gray-900 hover:text-gray-600 transition-colors flex items-center gap-1">
+                Next &gt;
+              </button>
+            </div>
+          </div>
+        </div>
+
       </div>
     </div>
+  );
+}
+
+function FilterButton({ label }: { label: string }) {
+  return (
+    <button className="flex items-center gap-8 px-4 py-2.5 bg-white border border-gray-100 rounded-xl text-sm font-bold text-gray-600 hover:border-gray-300 transition-all shadow-sm">
+      <span>{label}</span>
+      <ChevronDown className="w-3.5 h-3.5 text-gray-400" />
+    </button>
   );
 }

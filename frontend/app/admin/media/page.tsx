@@ -11,6 +11,8 @@ import {
   UploadCloud,
   Loader2,
   CheckCircle2,
+  Copy,
+  Download,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -124,9 +126,9 @@ export default function MediaPage() {
   );
 
   return (
-    <div className="space-y-6 max-w-[1600px] mx-auto pb-10 px-4 sm:px-6">
+    <div className="max-w-[1600px] mx-auto pb-10">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
         <div>
           <h1 className="text-3xl font-bold text-gray-900">Media Library</h1>
           <p className="text-gray-500 mt-1">
@@ -135,51 +137,43 @@ export default function MediaPage() {
         </div>
         <button 
           onClick={() => setMediaItems(INITIAL_MEDIA)}
-          className="flex items-center justify-center gap-2 px-4 py-2 bg-white border border-gray-200 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors shadow-sm"
+          className="flex items-center justify-center gap-2 px-5 py-2 bg-white border border-gray-200 rounded-lg text-sm font-bold text-gray-700 hover:bg-gray-50 transition-colors shadow-sm"
         >
           <RotateCcw className="w-4 h-4 text-gray-500" />
-          Reset Library
+          Refresh
         </button>
       </div>
 
       {/* Tabs */}
-      <div className="flex items-center gap-2">
+      <div className="flex items-center gap-2 mb-6">
         <button
           onClick={() => setActiveTab("Library")}
           className={cn(
-            "flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors",
+            "flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-bold transition-colors",
             activeTab === "Library"
-              ? "bg-white text-gray-900 shadow-sm border border-gray-100"
-              : "text-gray-500 hover:text-gray-700"
+              ? "bg-white text-gray-900 shadow-sm border border-gray-200"
+              : "text-gray-500 hover:text-gray-700 hover:bg-white/50 border border-transparent"
           )}
         >
-          <ImageIcon className="w-4 h-4" />
+          <ImageIcon className="w-[18px] h-[18px]" />
           Library
         </button>
         <button
           onClick={() => setActiveTab("Trash")}
           className={cn(
-            "flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors",
+            "flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-bold transition-colors",
             activeTab === "Trash"
-              ? "bg-white text-gray-900 shadow-sm border border-gray-100"
-              : "text-gray-500 hover:text-gray-700"
+              ? "bg-white text-gray-900 shadow-sm border border-gray-200"
+              : "text-gray-600 hover:text-gray-900 hover:bg-white/50 border border-transparent"
           )}
         >
-          <Trash2 className="w-4 h-4" />
+          <Trash2 className="w-[18px] h-[18px]" />
           Trash
         </button>
       </div>
 
       {/* Upload Box */}
-      <div 
-        className={cn(
-          "bg-white p-8 rounded-2xl shadow-sm border transition-all duration-300",
-          isDragging ? "border-blue-400 bg-blue-50/20 scale-[1.01]" : "border-gray-100"
-        )}
-        onDragOver={onDragOver}
-        onDragLeave={onDragLeave}
-        onDrop={onDrop}
-      >
+      <div className="bg-white p-6 rounded-[20px] shadow-sm border border-gray-100 flex items-center gap-4 mb-6">
         <input 
           type="file" 
           ref={fileInputRef} 
@@ -188,114 +182,120 @@ export default function MediaPage() {
           accept="image/*"
           onChange={(e) => handleFiles(e.target.files)}
         />
-        
-        <div 
+        <button 
           onClick={() => fileInputRef.current?.click()}
-          className={cn(
-            "border-2 border-dashed rounded-xl p-10 flex flex-col items-center justify-center text-center group cursor-pointer transition-all",
-            isDragging ? "border-blue-400 bg-blue-50/50" : "border-gray-100 hover:border-blue-200 hover:bg-blue-50/10"
-          )}
+          className="w-[52px] h-[52px] flex-shrink-0 bg-[#eef2ff] hover:bg-[#e0e7ff] text-blue-600 rounded-xl flex items-center justify-center transition-colors"
         >
           {isUploading ? (
-            <div className="flex flex-col items-center gap-4 animate-in fade-in zoom-in">
-              <div className="p-4 bg-blue-50 rounded-full">
-                <Loader2 className="w-10 h-10 text-blue-600 animate-spin" />
-              </div>
-              <div>
-                <span className="block text-lg font-semibold text-gray-900">Uploading your files...</span>
-                <span className="text-sm text-gray-400">Please wait a moment</span>
-              </div>
-            </div>
+            <Loader2 className="w-5 h-5 animate-spin" />
           ) : (
-            <div className="flex flex-col md:flex-row items-center gap-8">
-               <div className={cn(
-                 "p-5 rounded-2xl transition-colors",
-                 isDragging ? "bg-blue-600 text-white" : "bg-blue-50 text-blue-600 group-hover:bg-blue-600 group-hover:text-white"
-               )}>
-                 <UploadCloud className="w-10 h-10" />
-               </div>
-               <div className="text-center md:text-left">
-                 <span className="block text-xl font-bold text-gray-900 mb-1">
-                   {isDragging ? "Drop to upload" : "Drop image here or click to upload"}
-                 </span>
-                 <span className="text-sm text-gray-400">
-                   Support PNG, JPG, JPEG, WEBP up to 10MB
-                 </span>
-               </div>
-            </div>
+            <Upload className="w-5 h-5" />
           )}
+        </button>
+        <div 
+          onClick={() => fileInputRef.current?.click()}
+          onDragOver={onDragOver}
+          onDragLeave={onDragLeave}
+          onDrop={onDrop}
+          className={cn(
+            "flex-1 border-2 border-dashed rounded-xl h-[52px] flex items-center justify-center text-gray-500 text-sm font-medium hover:bg-gray-50 cursor-pointer transition-all",
+            isDragging ? "border-blue-400 bg-blue-50/50" : "border-gray-200"
+          )}
+        >
+          <Upload className="w-4 h-4 mr-2" />
+          {isUploading ? "Uploading..." : isDragging ? "Drop image to upload" : "Drop image here or click to upload"}
         </div>
       </div>
 
       {/* Search and Count */}
-      <div className="bg-white p-4 rounded-2xl shadow-sm border border-gray-100 flex flex-col sm:flex-row items-center justify-between gap-4">
-        <div className="relative w-full max-w-md">
+      <div className="flex items-center justify-between mb-6">
+        <div className="relative w-full max-w-[320px]">
           <Search className="w-4 h-4 text-gray-400 absolute left-4 top-1/2 -translate-y-1/2" />
           <input
             type="text"
             placeholder="Search images by name..."
-            className="w-full pl-11 pr-4 py-3 bg-gray-50/50 border border-gray-100 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500/20 transition-all text-sm"
+            className="w-full pl-11 pr-4 py-2.5 bg-white border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all text-[15px]"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
           />
         </div>
-        <div className="text-sm font-semibold text-gray-500 bg-gray-50 px-4 py-2 rounded-lg border border-gray-100">
+        <div className="text-[15px] font-semibold text-gray-900">
           {filteredItems.length} images total
         </div>
       </div>
 
-      {/* Image Grid */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 xl:grid-cols-6 gap-6">
-        {filteredItems.map((item) => (
-          <div
-            key={item.id}
-            className="group bg-white rounded-2xl overflow-hidden border border-gray-100 shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all duration-300 cursor-pointer animate-in fade-in zoom-in duration-500"
-          >
-            <div className="relative aspect-square bg-gray-50 overflow-hidden">
-              <img
-                src={item.url}
-                alt={item.name}
-                className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
-              />
-              <div className="absolute inset-0 bg-black/20 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
-                <button className="p-2 bg-white rounded-xl text-gray-700 hover:bg-gray-100 transition-colors shadow-lg">
-                  <ImageIcon className="w-4 h-4" />
-                </button>
-                <button className="p-2 bg-white rounded-xl text-red-500 hover:bg-red-50 transition-colors shadow-lg">
-                  <Trash2 className="w-4 h-4" />
-                </button>
+      {/* Image Grid Wrapper */}
+      <div className="bg-white p-6 rounded-[20px] shadow-sm border border-gray-100 min-h-[500px]">
+        <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-6">
+          {filteredItems.map((item) => (
+            <div
+              key={item.id}
+              className="group rounded-xl overflow-hidden border border-gray-200 hover:shadow-lg hover:border-blue-200 hover:-translate-y-1 transition-all duration-300"
+            >
+              <div className="relative aspect-square bg-gray-50 overflow-hidden border-b border-gray-100">
+                <img
+                  src={item.url}
+                  alt={item.name}
+                  className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
+                />
+                
+                {/* Hover overlay with actions */}
+                <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
+                  <button 
+                    onClick={(e) => { e.stopPropagation(); navigator.clipboard.writeText(item.url); alert("URL Copied!"); }}
+                    className="p-2 bg-white text-gray-700 rounded-lg shadow-sm hover:text-blue-600 hover:scale-105 transition-all"
+                    title="Copy URL"
+                  >
+                    <Copy className="w-4 h-4" />
+                  </button>
+                  <a 
+                    href={item.url} 
+                    download={item.name}
+                    onClick={(e) => e.stopPropagation()}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="p-2 bg-white text-gray-700 rounded-lg shadow-sm hover:text-blue-600 hover:scale-105 transition-all flex items-center justify-center"
+                    title="Download"
+                  >
+                    <Download className="w-4 h-4" />
+                  </a>
+                  <button 
+                    onClick={(e) => { 
+                      e.stopPropagation(); 
+                      if(confirm("Are you sure you want to delete this image?")) {
+                        setMediaItems(prev => prev.filter(m => m.id !== item.id)); 
+                      }
+                    }}
+                    className="p-2 bg-white text-red-500 rounded-lg shadow-sm hover:text-red-600 hover:scale-105 transition-all"
+                    title="Delete"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                  </button>
+                </div>
               </div>
-              <div className="absolute top-2 right-2">
-                <button className="p-1.5 bg-white/90 backdrop-blur-sm rounded-lg shadow-sm text-gray-600 hover:text-gray-900 opacity-0 group-hover:opacity-100 transition-opacity">
-                  <MoreVertical className="w-4 h-4" />
-                </button>
+              <div className="p-3 bg-white">
+                <h3 className="text-[13px] font-bold text-gray-900 truncate mb-1" title={item.name}>
+                  {item.name}
+                </h3>
+                <div className="flex flex-col text-[11px] text-gray-500 font-medium">
+                  <span>{item.size}</span>
+                  <span className="mt-0.5">{item.date}</span>
+                </div>
               </div>
             </div>
-            <div className="p-4 space-y-1 bg-white">
-              <h3 className="text-sm font-bold text-gray-900 truncate" title={item.name}>
-                {item.name}
-              </h3>
-              <div className="flex items-center justify-between text-[11px] font-bold text-gray-400">
-                <span className="flex items-center gap-1">
-                  <CheckCircle2 className="w-3 h-3 text-emerald-500" />
-                  {item.size}
-                </span>
-                <span>{item.date}</span>
-              </div>
-            </div>
-          </div>
-        ))}
-      </div>
-
-      {filteredItems.length === 0 && (
-        <div className="py-20 text-center">
-          <div className="inline-flex p-6 bg-gray-50 rounded-full mb-4">
-            <Search className="w-10 h-10 text-gray-300" />
-          </div>
-          <h3 className="text-lg font-bold text-gray-900">No images found</h3>
-          <p className="text-gray-500">Try adjusting your search query</p>
+          ))}
         </div>
-      )}
+
+        {filteredItems.length === 0 && (
+          <div className="py-20 text-center">
+            <div className="inline-flex p-6 bg-gray-50 rounded-full mb-4">
+              <Search className="w-10 h-10 text-gray-300" />
+            </div>
+            <h3 className="text-lg font-bold text-gray-900">No images found</h3>
+            <p className="text-gray-500">Try adjusting your search query</p>
+          </div>
+        )}
+      </div>
     </div>
   );
 }
