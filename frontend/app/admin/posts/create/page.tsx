@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { 
   ChevronDown, Star, Search, FileText, ImagePlus, X, Library, 
@@ -36,27 +36,96 @@ export default function CreatePostPage() {
   });
 
   const [keywordInput, setKeywordInput] = useState("");
+
   const [loading, setLoading] = useState(false);
+  const [users, setUsers] = useState<any[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [isMediaModalOpen, setIsMediaModalOpen] = useState(false);
   const [isPreviewModalOpen, setIsPreviewModalOpen] = useState(false);
+
   const [activeTab, setActiveTab] = useState("Content");
+
+  // Fetch users/authors on mount
+  useEffect(() => {
+    const fetchUsers = async () => {
+      try {
+        // Since there might not be a dedicated users list endpoint, 
+        // we'll try to get the current user or use a default list if it fails
+        const res = await fetch("http://localhost:5000/api/users");
+        if (res.ok) {
+          const data = await res.json();
+          setUsers(data);
+          if (data.length > 0) {
+            setFormData(prev => ({ ...prev, authorId: String(data[0].id) }));
+          }
+        } else {
+          // Default fallback if API fails
+          setUsers([{ id: 1, name: "Admin User" }]);
+          setFormData(prev => ({ ...prev, authorId: "1" }));
+        }
+      } catch (err) {
+        console.error("Failed to fetch users:", err);
+        setUsers([{ id: 1, name: "Admin User" }]);
+        setFormData(prev => ({ ...prev, authorId: "1" }));
+      }
+    };
+    fetchUsers();
+  }, []);
 
   const availableCategories = ["Test Cat", "AI", "Travelling"];
 
-  const handleCreatePost = async (statusOverride?: string) => {
+  const handleCategoryToggle = (cat: string) => {
+    setFormData(prev => ({
+      ...prev,
+      categories: prev.categories.includes(cat)
+        ? prev.categories.filter(c => c !== cat)
+        : [...prev.categories, cat]
+    }));
+  };
+
+  const handleAddKeyword = () => {
+    if (keywordInput.trim() && !formData.keywords.includes(keywordInput.trim())) {
+      setFormData(prev => ({
+        ...prev,
+        keywords: [...prev.keywords, keywordInput.trim()]
+      }));
+      setKeywordInput("");
+    }
+  };
+
+  const removeKeyword = (kw: string) => {
+    setFormData(prev => ({
+      ...prev,
+      keywords: prev.keywords.filter(k => k !== kw)
+    }));
+  };
+
+  const handleCreatePost = async (overrideStatus?: string) => {
     setLoading(true);
     setError(null);
-    try {
-      const finalData = {
-        ...formData,
-        status: statusOverride || formData.status
-      };
 
+    const token = typeof window !== "undefined" ? localStorage.getItem("token") : null;
+    
+    // Construct the payload as expected by the backend
+    const finalData = {
+      title: formData.title,
+      slug: formData.slug,
+      excerpt: formData.excerpt,
+      content: formData.content,
+      status: overrideStatus || formData.status,
+      category: formData.categories[0] || "General", // Backend expects a single category string currently
+      tags: formData.keywords,
+      authorId: formData.authorId,
+      thumbnailUrl: formData.thumbnailUrl,
+      published_date: new Date().toISOString()
+    };
+
+    try {
       const res = await fetch("http://localhost:5000/api/posts", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
+          ...(token ? { "Authorization": `Bearer ${token}` } : {}),
         },
         body: JSON.stringify(finalData),
       });
@@ -66,7 +135,8 @@ export default function CreatePostPage() {
         throw new Error(data.error || "Failed to create post");
       }
 
-      router.push("/admin/posts");
+      // Navigate to the posts management page after creation
+      router.push('/admin/posts');
     } catch (err: any) {
       setError(err.message);
     } finally {
@@ -110,7 +180,7 @@ export default function CreatePostPage() {
         </div>
         <div className="h-3 w-full bg-gray-50 rounded-full overflow-hidden">
           <div 
-            className="h-full bg-gray-100 transition-all duration-300" 
+            className="h-full bg-blue-600 transition-all duration-300" 
             style={{ width: `${(completedFields / 6) * 100}%` }}
           />
         </div>
@@ -195,16 +265,17 @@ export default function CreatePostPage() {
                   <label className="block text-sm font-bold text-gray-900 mb-2">Author <span className="text-red-500">*</span></label>
                   <div className="relative">
                     <select 
-                      className="w-full px-4 py-3 bg-white border border-gray-100 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all appearance-none text-sm font-medium text-gray-500"
+                      className="w-full px-4 py-3 bg-white border border-gray-100 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all appearance-none text-sm font-medium text-gray-900"
                       value={formData.authorId}
                       onChange={e => setFormData({...formData, authorId: e.target.value})}
                     >
-                      <option value="" disabled hidden>Select post author</option>
-                      <option value="1">Pipuni Piyasooriya</option>
-                      <option value="2">Dehami Divyanjali</option>
-                      <option value="3">Nimasha Fernando</option>
-                      <option value="4">Rashmi Shara</option>
-                      <option value="5">Corehead</option>
+                      {users.length > 0 ? (
+                        users.map(user => (
+                          <option key={user.id} value={user.id}>{user.name || user.email}</option>
+                        ))
+                      ) : (
+                        <option value="1">Admin User</option>
+                      )}
                     </select>
                     <ChevronDown className="w-4 h-4 text-gray-400 absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none" />
                   </div>
@@ -395,8 +466,63 @@ export default function CreatePostPage() {
         )}
 
         {activeTab === "Images" && (
-          <div className="space-y-8 min-h-[400px] flex items-center justify-center">
-            <p className="text-gray-400 font-bold">Image Settings (To be implemented)</p>
+          <div className="space-y-8 animate-in fade-in duration-300">
+            <div>
+              <h2 className="text-lg font-semibold text-gray-900">Post Images</h2>
+              <p className="text-sm text-gray-500 mb-6">Upload thumbnail and featured images for your blog post</p>
+
+              <div className="space-y-6">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Thumbnail Image</label>
+                  <p className="text-xs text-gray-500 mb-4">This image appears in blog listing pages and previews</p>
+                  
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div className="border-2 border-dashed border-gray-200 rounded-2xl p-10 flex flex-col items-center justify-center text-center hover:border-blue-400 hover:bg-blue-50/30 transition-all cursor-pointer group">
+                      <div className="w-14 h-14 bg-gray-50 rounded-2xl flex items-center justify-center mb-4 group-hover:bg-blue-100 transition-colors">
+                        <ImagePlus className="w-7 h-7 text-gray-400 group-hover:text-blue-600" />
+                      </div>
+                      <span className="text-sm font-bold text-gray-900 mb-1">Upload from Device</span>
+                      <span className="text-[10px] text-gray-500 uppercase tracking-wider font-bold">PNG, JPG, GIF up to 5MB</span>
+                    </div>
+
+                    <div 
+                      onClick={() => setIsMediaModalOpen(true)}
+                      className="border-2 border-dashed border-gray-200 rounded-2xl p-10 flex flex-col items-center justify-center text-center hover:border-blue-400 hover:bg-blue-50/30 transition-all cursor-pointer group"
+                    >
+                      <div className="w-14 h-14 bg-gray-50 rounded-2xl flex items-center justify-center mb-4 group-hover:bg-blue-100 transition-colors">
+                        <Library className="w-7 h-7 text-gray-400 group-hover:text-blue-600" />
+                      </div>
+                      <span className="text-sm font-bold text-gray-900 mb-1">Choose from Library</span>
+                      <span className="text-[10px] text-gray-500 uppercase tracking-wider font-bold">Select existing media</span>
+                    </div>
+                  </div>
+
+                  {formData.thumbnailUrl && (
+                    <div className="mt-8 p-4 bg-gray-50 rounded-3xl border border-gray-100 flex items-center gap-6 animate-in slide-in-from-bottom-4 duration-500">
+                      <div className="w-24 h-24 rounded-2xl overflow-hidden border-2 border-white shadow-md shrink-0">
+                        <img src={formData.thumbnailUrl} className="w-full h-full object-cover" alt="Preview" />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-xs font-black text-gray-400 uppercase tracking-widest mb-1">Selected Thumbnail</p>
+                        <p className="text-sm font-bold text-gray-900 truncate">{formData.thumbnailUrl}</p>
+                      </div>
+                      <button 
+                        onClick={() => setFormData({...formData, thumbnailUrl: ""})}
+                        className="p-3 bg-white hover:bg-red-50 text-gray-400 hover:text-red-500 rounded-xl transition-all shadow-sm"
+                      >
+                        <X className="w-5 h-5" />
+                      </button>
+                    </div>
+                  )}
+
+                  <MediaLibraryModal 
+                    isOpen={isMediaModalOpen}
+                    onClose={() => setIsMediaModalOpen(false)}
+                    onSelect={(url) => setFormData({...formData, thumbnailUrl: url})}
+                  />
+                </div>
+              </div>
+            </div>
           </div>
         )}
 

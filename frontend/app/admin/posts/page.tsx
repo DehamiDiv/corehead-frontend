@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import {
+  Search,
   RotateCcw,
   Plus,
   Edit,
@@ -9,6 +10,9 @@ import {
   Star,
   ChevronDown,
   X,
+  Filter,
+  MoreHorizontal,
+  ExternalLink,
   FileText,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -17,10 +21,12 @@ import Link from "next/link";
 export default function BlogsPage() {
   const [posts, setPosts] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
-  const [statusFilter, setStatusFilter] = useState("");
-  const [authorFilter, setAuthorFilter] = useState("");
-  const [categoryFilter, setCategoryFilter] = useState("");
-  const [featuredFilter, setFeaturedFilter] = useState("");
+  const [searchQuery, setSearchQuery] = useState("");
+  
+  // Filter States
+  const [statusFilter, setStatusFilter] = useState("All Status");
+  const [categoryFilter, setCategoryFilter] = useState("All Categories");
+  const [authorFilter, setAuthorFilter] = useState("All Authors");
 
   const fetchPosts = async () => {
     setLoading(true);
@@ -53,31 +59,40 @@ export default function BlogsPage() {
     }
   };
 
-  const filteredPosts = posts.filter(post => {
-    if (statusFilter) {
-      const postStatus = post.status || "Draft";
-      if (postStatus !== statusFilter) return false;
-    }
-    if (authorFilter) {
-      const postAuthor = post.author?.name || String(post.authorId) || "Unknown Author";
-      if (postAuthor !== authorFilter) return false;
-    }
-    if (categoryFilter) {
-      let cats: string[] = [];
-      const rawCats = post.categories || post.category;
-      if (Array.isArray(rawCats)) cats = rawCats;
-      else if (typeof rawCats === 'string') {
-        try { cats = JSON.parse(rawCats); } catch(e) { cats = [rawCats]; }
-      }
-      const hasCategory = cats.some((c: string) => c.toLowerCase() === categoryFilter.toLowerCase());
-      if (!hasCategory) return false;
-    }
-    if (featuredFilter) {
-      if (featuredFilter === "Featured Only" && !post.featured) return false;
-      if (featuredFilter === "Regular Only" && post.featured) return false;
-    }
-    return true;
-  });
+  // Get unique categories and authors for filter options
+  const allCategories = Array.from(new Set(
+    posts.flatMap(p => p.categories?.split(',').map((c: string) => c.trim()).filter(Boolean) || [])
+  )).sort();
+
+  const allAuthors = Array.from(new Set(
+    posts.map(p => p.author?.name || 'Unknown Author')
+  )).sort();
+
+  const filteredPosts = Array.isArray(posts) 
+    ? posts.filter(post => {
+        const matchesSearch = post.title?.toLowerCase().includes(searchQuery.toLowerCase());
+        const matchesStatus = statusFilter === "All Status" || post.status === statusFilter;
+        const matchesCategory = categoryFilter === "All Categories" || (post.categories && post.categories.includes(categoryFilter));
+        const authorName = post.author?.name || post.author_name || 'Unknown Author';
+        const matchesAuthor = authorFilter === "All Authors" || authorName === authorFilter;
+        
+        return matchesSearch && matchesStatus && matchesCategory && matchesAuthor;
+      })
+    : [];
+
+  const handleClearFilters = () => {
+    setSearchQuery("");
+    setStatusFilter("All Status");
+    setCategoryFilter("All Categories");
+    setAuthorFilter("All Authors");
+  };
+
+  const stats = [
+    { label: "Total Posts", value: Array.isArray(posts) ? posts.length : 0, color: "blue" },
+    { label: "Published", value: Array.isArray(posts) ? posts.filter(p => p.status === 'Published').length : 0, color: "emerald" },
+    { label: "Drafts", value: Array.isArray(posts) ? posts.filter(p => p.status === 'Draft').length : 0, color: "amber" },
+    { label: "Featured", value: Array.isArray(posts) ? posts.filter(p => p.featured).length : 0, color: "purple" },
+  ];
 
   return (
     <div className="space-y-6 max-w-[1600px] mx-auto pb-10">
@@ -107,45 +122,50 @@ export default function BlogsPage() {
         </div>
       </div>
 
-      {/* Main Card */}
-      <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
-        
-        {/* Filters */}
-        <div className="p-8 pb-6 border-b border-gray-100">
-          <div className="flex flex-wrap items-center gap-4 mb-4">
-            <FilterButton 
-              label="All Statuses" 
-              options={["Published", "Draft", "Unpublished"]} 
-              value={statusFilter}
-              onChange={setStatusFilter}
-            />
-            <FilterButton 
-              label="All Authors" 
-              options={["Pipuni Piyasooriya", "Dehami Divyanjali", "Nimasha Fernando", "Rashmi Shara", "Corehead"]}
-              value={authorFilter}
-              onChange={setAuthorFilter}
-            />
-            <FilterButton 
-              label="All Categories" 
-              options={["Test Cat", "AI", "Travelling"]}
-              value={categoryFilter}
-              onChange={setCategoryFilter}
-            />
-            <FilterButton 
-              label="All Posts" 
-              options={["Featured Only", "Regular Only"]}
-              value={featuredFilter}
-              onChange={setFeaturedFilter}
-            />
+      {/* Stats Quick View */}
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+        {stats.map((stat, i) => (
+          <div key={i} className="bg-white p-5 rounded-2xl border border-gray-100 shadow-sm">
+            <p className="text-sm font-medium text-gray-500">{stat.label}</p>
+            <p className="text-2xl font-bold text-gray-900 mt-1">{stat.value}</p>
           </div>
+        ))}
+      </div>
+
+      {/* Filters & Search */}
+      <div className="bg-white p-4 rounded-2xl shadow-sm border border-gray-100 flex flex-col lg:flex-row items-center gap-4">
+        <div className="relative flex-1 w-full">
+          <Search className="w-4 h-4 text-gray-400 absolute left-4 top-1/2 -translate-y-1/2" />
+          <input
+            type="text"
+            placeholder="Search by title or keyword..."
+            className="w-full pl-11 pr-4 py-3 bg-gray-50/50 border border-gray-100 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/10 transition-all text-sm"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+          />
+        </div>
+        <div className="flex items-center gap-3 w-full lg:w-auto overflow-x-auto pb-2 lg:pb-0">
+          <FilterButton 
+            label="Status" 
+            options={["All Status", "Published", "Draft", "Unpublished"]} 
+            value={statusFilter} 
+            onChange={setStatusFilter} 
+          />
+          <FilterButton 
+            label="Category" 
+            options={["All Categories", ...allCategories]} 
+            value={categoryFilter} 
+            onChange={setCategoryFilter} 
+          />
+          <FilterButton 
+            label="Author" 
+            options={["All Authors", ...allAuthors]} 
+            value={authorFilter} 
+            onChange={setAuthorFilter} 
+          />
           <button 
-            onClick={() => {
-              setStatusFilter("");
-              setAuthorFilter("");
-              setCategoryFilter("");
-              setFeaturedFilter("");
-            }}
-            className="flex items-center gap-2 px-4 py-2 border border-gray-100 rounded-xl text-sm font-bold text-gray-400 hover:bg-gray-50 transition-colors w-fit"
+            onClick={handleClearFilters}
+            className="flex items-center gap-2 px-4 py-2.5 text-sm font-semibold text-gray-400 hover:text-gray-600 transition-colors"
           >
             <X className="w-4 h-4" />
             Clear Filters
@@ -177,62 +197,62 @@ export default function BlogsPage() {
                   </td>
                 </tr>
               ) : filteredPosts.length > 0 ? (
-                filteredPosts.map((post, index) => (
-                  <tr key={post.id} className="hover:bg-gray-50/50 transition-all">
-                    <td className="px-6 py-4 text-[13px] font-bold text-gray-900">{post.id}</td>
-                    <td className="px-3 py-4 text-[13px] font-bold text-gray-900 max-w-[200px] truncate" title={post.title}>
-                      {post.title}
+                filteredPosts.map((post) => (
+                  <tr key={post.id} className="hover:bg-gray-50/50 transition-all group">
+                    <td className="px-6 py-5 text-sm font-bold text-gray-400">#{post.id}</td>
+                    <td className="px-3 py-5">
+                      <div className="flex items-center gap-4">
+                        <div className="w-12 h-12 rounded-xl bg-gray-100 overflow-hidden shrink-0 border border-gray-200">
+                          <img 
+                            src={post.featured_image || post.imageUrl || "https://images.unsplash.com/photo-1499750310107-5fef28a66643?w=100&q=80"} 
+                            className="w-full h-full object-cover"
+                            alt=""
+                          />
+                        </div>
+                        <div className="min-w-0 max-w-[300px]">
+                          <p className="text-sm font-bold text-gray-900 truncate" title={post.title}>{post.title}</p>
+                          <p className="text-[11px] text-gray-400 font-medium mt-1 truncate">{post.slug}</p>
+                        </div>
+                      </div>
                     </td>
-                    <td className="px-3 py-4">
+                    <td className="px-3 py-5">
                       <div className="flex items-center gap-2">
-                        <img 
-                          src={
-                            post.author?.avatar 
-                              ? (post.author.avatar.startsWith('http') || post.author.avatar.startsWith('data:') 
-                                ? post.author.avatar 
-                                : `http://localhost:5000${post.author.avatar}`)
-                              : `https://api.dicebear.com/7.x/avataaars/svg?seed=${post.author?.name || 'User'}`
-                          } 
-                          alt="" 
-                          className="w-7 h-7 rounded-full object-cover bg-gray-100"
-                        />
-                        <span className="text-[13px] font-semibold text-gray-600 truncate max-w-[100px]" title={post.author?.name || String(post.authorId)}>
-                          {post.author?.name || String(post.authorId) || 'Unknown Author'}
+                        <div className="w-7 h-7 rounded-full bg-blue-50 flex items-center justify-center text-[10px] font-bold text-blue-600 border border-blue-100">
+                          {(post.author?.name || post.author_name || 'A').charAt(0)}
+                        </div>
+                        <span className="text-sm font-bold text-gray-600">
+                          {post.author?.name || post.author_name || 'Unknown Author'}
                         </span>
                       </div>
                     </td>
-                    <td className="px-3 py-4">
+                    <td className="px-3 py-5">
                       <div className="flex flex-wrap gap-1.5 max-w-[200px]">
                         {(() => {
                           let cats: any[] = [];
                           const rawCats = post.categories || post.category;
                           if (Array.isArray(rawCats)) cats = rawCats;
                           else if (typeof rawCats === 'string') {
-                            try { cats = JSON.parse(rawCats); } catch(e) { cats = [rawCats]; }
+                            try { cats = JSON.parse(rawCats); } catch(e) { cats = rawCats.split(',').map((c: string) => c.trim()); }
                           }
-                          return cats.map((cat: string, i: number) => (
-                            <span key={i} className="px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-blue-50 text-blue-500">
+                          return cats.slice(0, 2).map((cat: string, i: number) => (
+                            <span key={i} className="px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-gray-100 text-gray-500">
                               {cat}
                             </span>
                           ));
                         })()}
                       </div>
                     </td>
-                    <td className="px-3 py-4">
-                      {post.featured ? (
-                        <span className="inline-flex items-center gap-1 px-3 py-0.5 rounded-full text-[11px] font-bold bg-amber-50 text-amber-600">
-                          <Star className="w-2.5 h-2.5 fill-amber-500" />
-                          Featured
-                        </span>
-                      ) : (
-                        <span className="inline-flex px-3 py-0.5 rounded-full text-[11px] font-bold border border-gray-100 text-gray-400">
-                          Regular
-                        </span>
-                      )}
+                    <td className="px-3 py-5">
+                      <button className={cn(
+                        "p-2 rounded-xl transition-all",
+                        post.featured ? "bg-amber-50 text-amber-500 border border-amber-100 shadow-sm" : "text-gray-300 hover:text-gray-400"
+                      )}>
+                        <Star className={cn("w-4 h-4", post.featured && "fill-amber-500")} />
+                      </button>
                     </td>
-                    <td className="px-3 py-4">
+                    <td className="px-3 py-5">
                       <span className={cn(
-                        "inline-flex px-3 py-0.5 rounded-full text-[11px] font-bold",
+                        "inline-flex px-3 py-1 rounded-full text-[11px] font-bold",
                         post.status === "Published" 
                           ? "bg-emerald-50 text-emerald-500" 
                           : "bg-amber-50 text-amber-500"
@@ -240,19 +260,22 @@ export default function BlogsPage() {
                         {post.status || 'Draft'}
                       </span>
                     </td>
-                    <td className="px-6 py-4">
-                      <div className="flex items-center justify-center gap-3">
+                    <td className="px-8 py-5 text-right">
+                      <div className="flex items-center justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
                         <Link 
                           href={`/admin/posts/edit/${post.id}`}
-                          className="text-gray-400 hover:text-blue-600 transition-colors"
+                          className="p-2.5 bg-white border border-gray-100 rounded-xl text-gray-500 hover:text-blue-600 hover:border-blue-100 hover:bg-blue-50/30 transition-all shadow-sm"
                         >
                           <Edit className="w-3.5 h-3.5" />
                         </Link>
                         <button 
                           onClick={() => handleDelete(post.id)}
-                          className="text-red-400 hover:text-red-600 transition-colors"
+                          className="p-2.5 bg-white border border-gray-100 rounded-xl text-gray-500 hover:text-red-600 hover:border-red-100 hover:bg-red-50/30 transition-all shadow-sm"
                         >
-                          <Trash2 className="text-red-400 w-3.5 h-3.5" />
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                        <button className="p-2.5 bg-white border border-gray-100 rounded-xl text-gray-500 hover:text-gray-900 shadow-sm">
+                          <MoreHorizontal className="w-4 h-4" />
                         </button>
                       </div>
                     </td>
@@ -267,7 +290,7 @@ export default function BlogsPage() {
                       </div>
                       <p className="text-lg font-bold">No posts found</p>
                       <button 
-                        onClick={() => setStatusFilter("")}
+                        onClick={handleClearFilters}
                         className="text-blue-600 font-bold hover:underline"
                       >
                         Clear filters
@@ -314,53 +337,42 @@ export default function BlogsPage() {
   );
 }
 
-function FilterButton({ label, options, value, onChange }: { label: string, options?: string[], value?: string, onChange?: (val: string) => void }) {
+function FilterButton({ 
+  label, 
+  options, 
+  value, 
+  onChange 
+}: { 
+  label: string, 
+  options: string[], 
+  value: string, 
+  onChange: (val: string) => void 
+}) {
   const [isOpen, setIsOpen] = useState(false);
-
-  if (!options) {
-    return (
-      <button className="flex items-center gap-6 px-4 py-2 bg-white border border-gray-100 rounded-xl text-sm font-medium text-gray-600 hover:border-gray-300 transition-all shadow-sm">
-        <span>{label}</span>
-        <ChevronDown className="w-3.5 h-3.5 text-gray-400" />
-      </button>
-    );
-  }
 
   return (
     <div className="relative">
       <button 
         onClick={() => setIsOpen(!isOpen)}
         onBlur={() => setTimeout(() => setIsOpen(false), 200)}
-        className="flex items-center gap-6 px-4 py-2 bg-white border border-gray-100 rounded-xl text-sm font-medium text-gray-600 hover:border-gray-300 transition-all shadow-sm"
+        className="flex items-center gap-6 px-4 py-2 bg-white border border-gray-100 rounded-xl text-sm font-bold text-gray-600 hover:border-gray-300 transition-all shadow-sm"
       >
-        <span>{value || label}</span>
+        <span>{value.includes("All") ? label : value}</span>
         <ChevronDown className={cn("w-3.5 h-3.5 text-gray-400 transition-transform", isOpen && "rotate-180")} />
       </button>
       
       {isOpen && (
-        <div className="absolute top-full left-0 mt-2 w-40 bg-white border border-gray-100 rounded-xl shadow-lg z-10 py-2">
-          <button 
-            onClick={() => {
-              if(onChange) onChange("");
-              setIsOpen(false);
-            }}
-            className={cn(
-              "w-full text-left px-4 py-2 text-sm transition-colors hover:bg-gray-50",
-              !value ? "font-bold text-blue-600" : "font-medium text-gray-600"
-            )}
-          >
-            {label}
-          </button>
+        <div className="absolute top-full left-0 mt-2 w-48 bg-white border border-gray-100 rounded-2xl shadow-xl z-50 py-2 animate-in fade-in zoom-in duration-200">
           {options.map(opt => (
             <button 
               key={opt}
               onClick={() => {
-                if(onChange) onChange(opt);
+                onChange(opt);
                 setIsOpen(false);
               }}
               className={cn(
-                "w-full text-left px-4 py-2 text-sm transition-colors hover:bg-gray-50",
-                value === opt ? "font-bold text-blue-600" : "font-medium text-gray-600"
+                "w-full text-left px-4 py-2.5 text-sm transition-colors hover:bg-gray-50",
+                value === opt ? "font-bold text-blue-600 bg-blue-50/50" : "font-medium text-gray-600"
               )}
             >
               {opt}
