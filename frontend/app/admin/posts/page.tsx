@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import {
+  Search,
   RotateCcw,
   Plus,
   Edit,
@@ -21,6 +22,11 @@ export default function BlogsPage() {
   const [posts, setPosts] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
+  
+  // Filter States
+  const [statusFilter, setStatusFilter] = useState("All Status");
+  const [categoryFilter, setCategoryFilter] = useState("All Categories");
+  const [authorFilter, setAuthorFilter] = useState("All Authors");
 
   const fetchPosts = async () => {
     setLoading(true);
@@ -63,8 +69,23 @@ export default function BlogsPage() {
   )).sort();
 
   const filteredPosts = Array.isArray(posts) 
-    ? posts.filter(post => post.title?.toLowerCase().includes(searchQuery.toLowerCase()))
+    ? posts.filter(post => {
+        const matchesSearch = post.title?.toLowerCase().includes(searchQuery.toLowerCase());
+        const matchesStatus = statusFilter === "All Status" || post.status === statusFilter;
+        const matchesCategory = categoryFilter === "All Categories" || (post.categories && post.categories.includes(categoryFilter));
+        const authorName = post.author?.name || post.author_name || 'Unknown Author';
+        const matchesAuthor = authorFilter === "All Authors" || authorName === authorFilter;
+        
+        return matchesSearch && matchesStatus && matchesCategory && matchesAuthor;
+      })
     : [];
+
+  const handleClearFilters = () => {
+    setSearchQuery("");
+    setStatusFilter("All Status");
+    setCategoryFilter("All Categories");
+    setAuthorFilter("All Authors");
+  };
 
   const stats = [
     { label: "Total Posts", value: Array.isArray(posts) ? posts.length : 0, color: "blue" },
@@ -124,10 +145,28 @@ export default function BlogsPage() {
           />
         </div>
         <div className="flex items-center gap-3 w-full lg:w-auto overflow-x-auto pb-2 lg:pb-0">
-          <FilterButton label="Status" />
-          <FilterButton label="Category" />
-          <FilterButton label="Author" />
-          <button className="flex items-center gap-2 px-4 py-2.5 text-sm font-semibold text-gray-400 hover:text-gray-600 transition-colors">
+          <FilterButton 
+            label="Status" 
+            options={["All Status", "Published", "Draft", "Unpublished"]} 
+            value={statusFilter} 
+            onChange={setStatusFilter} 
+          />
+          <FilterButton 
+            label="Category" 
+            options={["All Categories", ...allCategories]} 
+            value={categoryFilter} 
+            onChange={setCategoryFilter} 
+          />
+          <FilterButton 
+            label="Author" 
+            options={["All Authors", ...allAuthors]} 
+            value={authorFilter} 
+            onChange={setAuthorFilter} 
+          />
+          <button 
+            onClick={handleClearFilters}
+            className="flex items-center gap-2 px-4 py-2.5 text-sm font-semibold text-gray-400 hover:text-gray-600 transition-colors"
+          >
             <X className="w-4 h-4" />
             Clear Filters
           </button>
@@ -160,74 +199,66 @@ export default function BlogsPage() {
               ) : filteredPosts.length > 0 ? (
                 filteredPosts.map((post) => (
                   <tr key={post.id} className="hover:bg-gray-50/50 transition-all group">
-                    <td className="px-8 py-5">
+                    <td className="px-6 py-5 text-sm font-bold text-gray-400">#{post.id}</td>
+                    <td className="px-3 py-5">
                       <div className="flex items-center gap-4">
                         <div className="w-12 h-12 rounded-xl bg-gray-100 overflow-hidden shrink-0 border border-gray-200">
                           <img 
-                            src={post.coverImage || "https://images.unsplash.com/photo-1499750310107-5fef28a66643?w=100&q=80"} 
+                            src={post.featured_image || post.imageUrl || "https://images.unsplash.com/photo-1499750310107-5fef28a66643?w=100&q=80"} 
                             className="w-full h-full object-cover"
                             alt=""
                           />
                         </div>
                         <div className="min-w-0 max-w-[300px]">
                           <p className="text-sm font-bold text-gray-900 truncate" title={post.title}>{post.title}</p>
-                          <div className="flex items-center gap-2 mt-1">
-                            {post.categories?.slice(0, 2).map((cat: string, i: number) => (
-                              <span key={i} className="text-[10px] font-bold px-2 py-0.5 bg-gray-100 text-gray-500 rounded-md">
-                                {cat}
-                              </span>
-                            ))}
-                            <span className="text-[10px] text-gray-400 font-medium">#{post.id}</span>
-                          </div>
+                          <p className="text-[11px] text-gray-400 font-medium mt-1 truncate">{post.slug}</p>
                         </div>
                       </div>
                     </td>
-                    <td className="px-3 py-4">
+                    <td className="px-3 py-5">
+                      <div className="flex items-center gap-2">
+                        <div className="w-7 h-7 rounded-full bg-blue-50 flex items-center justify-center text-[10px] font-bold text-blue-600 border border-blue-100">
+                          {(post.author?.name || post.author_name || 'A').charAt(0)}
+                        </div>
+                        <span className="text-sm font-bold text-gray-600">
+                          {post.author?.name || post.author_name || 'Unknown Author'}
+                        </span>
+                      </div>
+                    </td>
+                    <td className="px-3 py-5">
                       <div className="flex flex-wrap gap-1.5 max-w-[200px]">
                         {(() => {
                           let cats: any[] = [];
                           const rawCats = post.categories || post.category;
                           if (Array.isArray(rawCats)) cats = rawCats;
                           else if (typeof rawCats === 'string') {
-                            try { cats = JSON.parse(rawCats); } catch(e) { cats = [rawCats]; }
+                            try { cats = JSON.parse(rawCats); } catch(e) { cats = rawCats.split(',').map((c: string) => c.trim()); }
                           }
-                          return cats.map((cat: string, i: number) => (
-                            <span key={i} className="px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-blue-50 text-blue-500">
+                          return cats.slice(0, 2).map((cat: string, i: number) => (
+                            <span key={i} className="px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-gray-100 text-gray-500">
                               {cat}
                             </span>
                           ));
                         })()}
                       </div>
                     </td>
-                    <td className="px-3 py-4">
-                      {post.featured ? (
-                        <span className="inline-flex items-center gap-1 px-3 py-0.5 rounded-full text-[11px] font-bold bg-amber-50 text-amber-600">
-                          <Star className="w-2.5 h-2.5 fill-amber-500" />
-                          Featured
-                        </span>
-                      ) : (
-                        <span className="inline-flex px-3 py-0.5 rounded-full text-[11px] font-bold border border-gray-100 text-gray-400">
-                          Regular
-                        </span>
-                      )}
-                    </td>
-                    <td className="px-3 py-4">
-                      <span className={cn(
-                        "inline-flex px-3 py-0.5 rounded-full text-[11px] font-bold",
-                        post.status === "Published" 
-                          ? "bg-emerald-50 text-emerald-500" 
-                          : "bg-amber-50 text-amber-500"
-                      )}>
-                        {post.status || 'Draft'}
-                      </span>
-                    </td>
-                    <td className="px-6 py-5">
+                    <td className="px-3 py-5">
                       <button className={cn(
                         "p-2 rounded-xl transition-all",
                         post.featured ? "bg-amber-50 text-amber-500 border border-amber-100 shadow-sm" : "text-gray-300 hover:text-gray-400"
                       )}>
                         <Star className={cn("w-4 h-4", post.featured && "fill-amber-500")} />
                       </button>
+                    </td>
+                    <td className="px-3 py-5">
+                      <span className={cn(
+                        "inline-flex px-3 py-1 rounded-full text-[11px] font-bold",
+                        post.status === "Published" 
+                          ? "bg-emerald-50 text-emerald-500" 
+                          : "bg-amber-50 text-amber-500"
+                      )}>
+                        {post.status || 'Draft'}
+                      </span>
                     </td>
                     <td className="px-8 py-5 text-right">
                       <div className="flex items-center justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
@@ -259,7 +290,7 @@ export default function BlogsPage() {
                       </div>
                       <p className="text-lg font-bold">No posts found</p>
                       <button 
-                        onClick={() => setStatusFilter("")}
+                        onClick={handleClearFilters}
                         className="text-blue-600 font-bold hover:underline"
                       >
                         Clear filters
@@ -306,11 +337,49 @@ export default function BlogsPage() {
   );
 }
 
-function FilterButton({ label }: { label: string }) {
+function FilterButton({ 
+  label, 
+  options, 
+  value, 
+  onChange 
+}: { 
+  label: string, 
+  options: string[], 
+  value: string, 
+  onChange: (val: string) => void 
+}) {
+  const [isOpen, setIsOpen] = useState(false);
+
   return (
-    <button className="flex items-center gap-8 px-4 py-2.5 bg-white border border-gray-100 rounded-xl text-sm font-bold text-gray-600 hover:border-gray-300 transition-all shadow-sm">
-      <span>{label}</span>
-      <ChevronDown className="w-3.5 h-3.5 text-gray-400" />
-    </button>
+    <div className="relative">
+      <button 
+        onClick={() => setIsOpen(!isOpen)}
+        onBlur={() => setTimeout(() => setIsOpen(false), 200)}
+        className="flex items-center gap-6 px-4 py-2 bg-white border border-gray-100 rounded-xl text-sm font-bold text-gray-600 hover:border-gray-300 transition-all shadow-sm"
+      >
+        <span>{value.includes("All") ? label : value}</span>
+        <ChevronDown className={cn("w-3.5 h-3.5 text-gray-400 transition-transform", isOpen && "rotate-180")} />
+      </button>
+      
+      {isOpen && (
+        <div className="absolute top-full left-0 mt-2 w-48 bg-white border border-gray-100 rounded-2xl shadow-xl z-50 py-2 animate-in fade-in zoom-in duration-200">
+          {options.map(opt => (
+            <button 
+              key={opt}
+              onClick={() => {
+                onChange(opt);
+                setIsOpen(false);
+              }}
+              className={cn(
+                "w-full text-left px-4 py-2.5 text-sm transition-colors hover:bg-gray-50",
+                value === opt ? "font-bold text-blue-600 bg-blue-50/50" : "font-medium text-gray-600"
+              )}
+            >
+              {opt}
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
   );
 }
