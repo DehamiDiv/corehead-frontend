@@ -101,23 +101,23 @@ export default function CategoriesPage() {
       {/* Header */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900">Categories</h1>
-          <p className="text-gray-500 mt-1">Customize Your Post Categories.</p>
+          <h1 className="text-2xl font-bold text-gray-900 tracking-tight">Categories</h1>
+          <p className="text-gray-400 mt-0.5 text-sm font-medium">Customize Your Post Categories.</p>
         </div>
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2">
           <button 
             onClick={handleRefresh}
             disabled={isLoading}
-            className="flex items-center gap-2 bg-white hover:bg-gray-50 text-gray-700 border border-gray-200 px-4 py-2.5 rounded-lg text-sm font-bold transition-all shadow-sm disabled:opacity-50"
+            className="flex items-center gap-2 bg-white hover:bg-gray-50 text-gray-700 border border-gray-200 px-3.5 py-2 rounded-lg text-[13px] font-bold transition-all shadow-sm disabled:opacity-50"
           >
-            <Loader2 className={cn("w-4 h-4", isLoading && "animate-spin")} />
+            <Loader2 className={cn("w-3.5 h-3.5", isLoading && "animate-spin")} />
             Refresh
           </button>
           <button 
             onClick={handleOpenCreate}
-            className="flex items-center gap-2 px-5 py-2.5 bg-blue-600 rounded-lg text-sm font-bold text-white hover:bg-blue-700 transition-all shadow-sm"
+            className="flex items-center gap-2 px-4 py-2 bg-blue-600 rounded-lg text-[13px] font-bold text-white hover:bg-blue-700 transition-all shadow-sm"
           >
-            <Plus className="w-4 h-4" />
+            <Plus className="w-3.5 h-3.5" />
             Create Category
           </button>
         </div>
@@ -128,12 +128,12 @@ export default function CategoriesPage() {
         <div className="overflow-x-auto">
           <table className="w-full text-left text-sm">
             <thead>
-              <tr className="border-b border-gray-100 text-gray-500 font-medium">
-                <th className="px-6 py-4 w-20">ID</th>
-                <th className="px-6 py-4 w-1/3">Category Name</th>
-                <th className="px-6 py-4 w-1/3">Category Slug</th>
-                <th className="px-6 py-4">Status</th>
-                <th className="px-6 py-4 text-center w-24">Actions</th>
+              <tr className="border-b border-gray-100 text-gray-400">
+                <th className="px-6 py-3 w-16 text-[13px] font-bold">ID</th>
+                <th className="px-3 py-3 w-1/3 text-[13px] font-bold">Category Name</th>
+                <th className="px-3 py-3 w-1/3 text-[13px] font-bold">Category Slug</th>
+                <th className="px-3 py-3 text-[13px] font-bold">Status</th>
+                <th className="px-6 py-3 text-center w-24 text-[13px] font-bold">Actions</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-50">
@@ -150,36 +150,36 @@ export default function CategoriesPage() {
 
                   return (
                     <tr key={category.id} className="hover:bg-gray-50/50 transition-all group bg-white">
-                      <td className="px-6 py-4 font-bold text-gray-900">{category.id}</td>
-                      <td className="px-6 py-4">
-                        <div className="flex items-center gap-2 font-bold text-gray-900">
+                      <td className="px-6 py-3 font-bold text-gray-900 text-[13px]">{category.id}</td>
+                      <td className="px-3 py-3">
+                        <div className="flex items-center gap-2 font-bold text-gray-900 text-[13px]">
                           {isChild && <span className="text-gray-400 font-normal">&gt;</span>}
                           {category.name}
                         </div>
                       </td>
-                      <td className="px-6 py-4 text-gray-500">
+                      <td className="px-3 py-3 text-gray-500 text-[13px]">
                         {category.slug}
                       </td>
-                      <td className="px-6 py-4">
-                        <span className="px-3 py-1 rounded-full text-xs font-bold bg-green-50 text-green-600">
+                      <td className="px-3 py-3">
+                        <span className="px-3 py-0.5 rounded-full text-[11px] font-bold bg-green-50 text-green-600">
                           Active
                         </span>
                       </td>
-                      <td className="px-6 py-4 text-center">
+                      <td className="px-6 py-3 text-center">
                         <div className="flex items-center justify-center gap-3">
                           <button 
                             onClick={() => handleOpenEdit(category)}
-                            className="text-gray-600 hover:text-blue-600 transition-colors"
+                            className="text-gray-400 hover:text-blue-600 transition-colors"
                             title="Edit Category"
                           >
-                            <Edit className="w-[18px] h-[18px]" />
+                            <Edit className="w-3.5 h-3.5" />
                           </button>
                           <button 
                             onClick={() => handleDelete(category.id)}
-                            className="text-red-500 hover:text-red-600 transition-colors"
+                            className="text-red-400 hover:text-red-600 transition-colors"
                             title="Delete Category"
                           >
-                            <Trash2 className="w-[18px] h-[18px]" />
+                            <Trash2 className="w-3.5 h-3.5" />
                           </button>
                         </div>
                       </td>
