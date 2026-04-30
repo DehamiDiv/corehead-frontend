@@ -357,5 +357,88 @@ export const api = {
       throw new Error(err.message || 'Failed to delete category');
     }
     return res.json();
+  },
+
+  // Settings
+  async getSetting(key: string) {
+    const res = await fetch(`${BASE_URL}/settings?key=${key}`, {
+      headers: { ...getAuthHeader() }
+    });
+    if (!res.ok) throw new Error('Failed to fetch setting');
+    const data = await res.json();
+    return data.setting?.value || null;
+  },
+
+  async updateSetting(key: string, value: any) {
+    const res = await fetch(`${BASE_URL}/settings/${key}`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+        ...getAuthHeader()
+      },
+      body: JSON.stringify({ value })
+    });
+    if (!res.ok) throw new Error('Failed to update setting');
+    return res.json();
+  },
+
+  // Media Library
+  async getMedia() {
+    const res = await fetch(`${BASE_URL}/media`, {
+      headers: { ...getAuthHeader() }
+    });
+    if (!res.ok) throw new Error('Failed to fetch media');
+    return res.json();
+  },
+
+  async getTrash() {
+    const res = await fetch(`${BASE_URL}/media/trash`, {
+      headers: { ...getAuthHeader() }
+    });
+    if (!res.ok) throw new Error('Failed to fetch trash');
+    return res.json();
+  },
+
+  async uploadMedia(data: { name: string, type: string, size: string, base64Data: string }) {
+    const res = await fetch(`${BASE_URL}/media/upload`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        ...getAuthHeader()
+      },
+      body: JSON.stringify(data)
+    });
+    if (!res.ok) {
+      const err = await res.json();
+      throw new Error(err.error || 'Upload failed');
+    }
+    return res.json();
+  },
+
+  async moveToTrash(id: number | string) {
+    const res = await fetch(`${BASE_URL}/media/${id}/trash`, {
+      method: 'PATCH',
+      headers: { ...getAuthHeader() }
+    });
+    if (!res.ok) throw new Error('Failed to move to trash');
+    return res.json();
+  },
+
+  async restoreFromTrash(id: number | string) {
+    const res = await fetch(`${BASE_URL}/media/${id}/restore`, {
+      method: 'PATCH',
+      headers: { ...getAuthHeader() }
+    });
+    if (!res.ok) throw new Error('Failed to restore media');
+    return res.json();
+  },
+
+  async deleteMediaPermanently(id: number | string) {
+    const res = await fetch(`${BASE_URL}/media/${id}`, {
+      method: 'DELETE',
+      headers: { ...getAuthHeader() }
+    });
+    if (!res.ok) throw new Error('Failed to delete media permanently');
+    return res.json();
   }
 };
