@@ -41,8 +41,36 @@ export default function CreatePostPage() {
   const [users, setUsers] = useState<any[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [isMediaModalOpen, setIsMediaModalOpen] = useState(false);
+  const [isPreviewModalOpen, setIsPreviewModalOpen] = useState(false);
 
   const [activeTab, setActiveTab] = useState("Content");
+
+  // Fetch users/authors on mount
+  useEffect(() => {
+    const fetchUsers = async () => {
+      try {
+        // Since there might not be a dedicated users list endpoint, 
+        // we'll try to get the current user or use a default list if it fails
+        const res = await fetch("http://localhost:5000/api/users");
+        if (res.ok) {
+          const data = await res.json();
+          setUsers(data);
+          if (data.length > 0) {
+            setFormData(prev => ({ ...prev, authorId: String(data[0].id) }));
+          }
+        } else {
+          // Default fallback if API fails
+          setUsers([{ id: 1, name: "Admin User" }]);
+          setFormData(prev => ({ ...prev, authorId: "1" }));
+        }
+      } catch (err) {
+        console.error("Failed to fetch users:", err);
+        setUsers([{ id: 1, name: "Admin User" }]);
+        setFormData(prev => ({ ...prev, authorId: "1" }));
+      }
+    };
+    fetchUsers();
+  }, []);
 
   const availableCategories = ["Test Cat", "AI", "Travelling"];
 
@@ -72,9 +100,26 @@ export default function CreatePostPage() {
     }));
   };
 
-  const handleCreatePost = async () => {
+  const handleCreatePost = async (overrideStatus?: string) => {
     setLoading(true);
     setError(null);
+
+    const token = typeof window !== "undefined" ? localStorage.getItem("token") : null;
+    
+    // Construct the payload as expected by the backend
+    const finalData = {
+      title: formData.title,
+      slug: formData.slug,
+      excerpt: formData.excerpt,
+      content: formData.content,
+      status: overrideStatus || formData.status,
+      category: formData.categories[0] || "General", // Backend expects a single category string currently
+      tags: formData.keywords,
+      authorId: formData.authorId,
+      thumbnailUrl: formData.thumbnailUrl,
+      published_date: new Date().toISOString()
+    };
+
     try {
       const res = await fetch("http://localhost:5000/api/posts", {
         method: "POST",
@@ -90,8 +135,8 @@ export default function CreatePostPage() {
         throw new Error(data.error || "Failed to create post");
       }
 
-      // Navigate to the public blog listing page after creation
-      router.push('/blog');
+      // Navigate to the posts management page after creation
+      router.push('/admin/posts');
     } catch (err: any) {
       setError(err.message);
     } finally {
@@ -135,7 +180,7 @@ export default function CreatePostPage() {
         </div>
         <div className="h-3 w-full bg-gray-50 rounded-full overflow-hidden">
           <div 
-            className="h-full bg-gray-100 transition-all duration-300" 
+            className="h-full bg-blue-600 transition-all duration-300" 
             style={{ width: `${(completedFields / 6) * 100}%` }}
           />
         </div>
@@ -220,11 +265,17 @@ export default function CreatePostPage() {
                   <label className="block text-sm font-bold text-gray-900 mb-2">Author <span className="text-red-500">*</span></label>
                   <div className="relative">
                     <select 
-                      className="w-full px-4 py-3 bg-white border border-gray-100 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all appearance-none text-sm font-medium text-gray-500"
+                      className="w-full px-4 py-3 bg-white border border-gray-100 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all appearance-none text-sm font-medium text-gray-900"
                       value={formData.authorId}
                       onChange={e => setFormData({...formData, authorId: e.target.value})}
                     >
-                      <option value="1">Admin User</option>
+                      {users.length > 0 ? (
+                        users.map(user => (
+                          <option key={user.id} value={user.id}>{user.name || user.email}</option>
+                        ))
+                      ) : (
+                        <option value="1">Admin User</option>
+                      )}
                     </select>
                     <ChevronDown className="w-4 h-4 text-gray-400 absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none" />
                   </div>
