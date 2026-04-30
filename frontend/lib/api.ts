@@ -440,5 +440,36 @@ export const api = {
     });
     if (!res.ok) throw new Error('Failed to delete media permanently');
     return res.json();
+  },
+
+  // Interactions / Comments
+  async getComments() {
+    const res = await fetch(`${BASE_URL}/comments`, {
+      headers: { ...getAuthHeader() }
+    });
+    if (!res.ok) throw new Error('Failed to fetch comments');
+    return res.json();
+  },
+
+  async updateComment(id: number | string, data: { status?: string, content?: string }) {
+    const res = await fetch(`${BASE_URL}/comments/${id}`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+        ...getAuthHeader()
+      },
+      body: JSON.stringify(data)
+    });
+    if (!res.ok) throw new Error('Failed to update comment');
+    return res.json();
+  },
+
+  async deleteComment(id: number | string) {
+    const res = await fetch(`${BASE_URL}/comments/${id}`, {
+      method: 'DELETE',
+      headers: { ...getAuthHeader() }
+    });
+    if (!res.ok) throw new Error('Failed to delete comment');
+    return res.json();
   }
 };
