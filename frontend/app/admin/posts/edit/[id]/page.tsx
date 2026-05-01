@@ -463,42 +463,50 @@ export default function EditPostPage() {
                     </div>
                   </div>
                 ) : (
-                  <div className="w-full lg:w-[400px] aspect-video rounded-2xl border-2 border-dashed border-gray-200 flex flex-col items-center justify-center bg-gray-50 text-gray-400 hover:bg-gray-100 hover:border-blue-300 hover:text-blue-500 transition-all cursor-pointer relative group shrink-0">
-                    <ImagePlus className="w-10 h-10 mb-3 text-gray-300 group-hover:text-blue-400 transition-colors" />
-                    <span className="text-sm font-bold text-gray-600 group-hover:text-blue-600 transition-colors">Click to upload image</span>
-                    <span className="text-xs font-medium text-gray-400 mt-1">PNG, JPG, WEBP up to 5MB</span>
-                    
-                    <input 
-                      type="file" 
-                      accept="image/*"
-                      className="absolute inset-0 opacity-0 cursor-pointer"
-                      onChange={async (e) => {
-                        const file = e.target.files?.[0];
-                        if (!file) return;
-                        
-                        const uploadData = new FormData();
-                        uploadData.append('file', file);
-                        
-                        try {
-                          const res = await fetch('/api/upload', {
-                            method: 'POST',
-                            body: uploadData,
-                          });
+                  <div className="flex flex-col gap-3">
+                    <div className="w-full lg:w-[400px] aspect-video rounded-2xl border-2 border-dashed border-gray-200 flex flex-col items-center justify-center bg-gray-50 text-gray-400 hover:bg-gray-100 hover:border-blue-300 hover:text-blue-500 transition-all cursor-pointer relative group shrink-0">
+                      <ImagePlus className="w-10 h-10 mb-3 text-gray-300 group-hover:text-blue-400 transition-colors" />
+                      <span className="text-sm font-bold text-gray-600 group-hover:text-blue-600 transition-colors">Click to upload image</span>
+                      <span className="text-xs font-medium text-gray-400 mt-1">PNG, JPG, WEBP up to 5MB</span>
+                      
+                      <input 
+                        type="file" 
+                        accept="image/*"
+                        className="absolute inset-0 opacity-0 cursor-pointer"
+                        onChange={async (e) => {
+                          const file = e.target.files?.[0];
+                          if (!file) return;
                           
-                          if (res.ok) {
-                            const data = await res.json();
-                            if (data.url) {
-                              setFormData({...formData, thumbnailUrl: data.url});
+                          const uploadData = new FormData();
+                          uploadData.append('file', file);
+                          
+                          try {
+                            const res = await fetch('/api/upload', {
+                              method: 'POST',
+                              body: uploadData,
+                            });
+                            
+                            if (res.ok) {
+                              const data = await res.json();
+                              if (data.url) {
+                                setFormData({...formData, thumbnailUrl: data.url});
+                              }
+                            } else {
+                              alert("Failed to upload image");
                             }
-                          } else {
-                            alert("Failed to upload image");
+                          } catch (error) {
+                            console.error('Upload failed:', error);
+                            alert("Upload error occurred");
                           }
-                        } catch (error) {
-                          console.error('Upload failed:', error);
-                          alert("Upload error occurred");
-                        }
-                      }}
-                    />
+                        }}
+                      />
+                    </div>
+                    <button 
+                      onClick={() => setIsMediaModalOpen(true)}
+                      className="w-full lg:w-[400px] py-3 px-4 border-2 border-gray-200 rounded-2xl flex items-center justify-center gap-2 text-sm font-bold text-gray-600 hover:bg-gray-50 hover:border-blue-200 hover:text-blue-600 transition-all shadow-sm"
+                    >
+                      <Library className="w-5 h-5" /> Choose from Library
+                    </button>
                   </div>
                 )}
                 
@@ -728,6 +736,12 @@ export default function EditPostPage() {
           </div>
         </div>
       )}
+
+      <MediaLibraryModal 
+        isOpen={isMediaModalOpen}
+        onClose={() => setIsMediaModalOpen(false)}
+        onSelect={(url) => setFormData({...formData, thumbnailUrl: url})}
+      />
     </div>
   );
 }
