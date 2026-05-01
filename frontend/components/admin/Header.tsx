@@ -54,9 +54,11 @@ export default function Header({ onToggleSidebar }: { onToggleSidebar: () => voi
     }
   }, []);
 
-  const avatarSrc = user?.avatar 
-    ? (user.avatar.startsWith('http') || user.avatar.startsWith('data:') ? user.avatar : `http://localhost:5000${user.avatar}`)
-    : `https://api.dicebear.com/7.x/avataaars/svg?seed=${user?.name || 'Admin'}`;
+  const avatarSrc = user?.avatar || user?.image
+    ? (String(user.avatar || user.image).startsWith('http') || String(user.avatar || user.image).startsWith('data:') 
+        ? String(user.avatar || user.image) 
+        : `http://localhost:5000${String(user.avatar || user.image).startsWith('/') ? '' : '/'}${user.avatar || user.image}`)
+    : `https://ui-avatars.com/api/?name=${encodeURIComponent(user?.username || user?.name || 'Admin')}&background=random&color=fff`;
 
   return (
     <header className="h-16 bg-white border-b border-gray-100 flex items-center justify-between px-6 sticky top-0 z-40 max-w-[1700px]">

@@ -42,16 +42,30 @@ export default async function BlogArchivePage() {
             <Link href={`/blog/${post.slug}`} key={post.id} className="post-card-link">
               <article className="post-card">
                 <div className="post-card-image">
-                  {post.coverImage ? (
-                    <img src={post.coverImage} alt={post.title} />
+                  {post.coverImage || post.imageUrl || post.thumbnailUrl ? (
+                    <img src={post.coverImage || post.imageUrl || post.thumbnailUrl} alt={post.title} />
                   ) : (
                     <div className="post-card-placeholder">
                       <span>📄</span>
                     </div>
                   )}
-                  {post.categories && (
-                    <span className="post-card-category">{post.categories.split(",")[0]}</span>
-                  )}
+                  {(() => {
+                    const rawCats = post.categories || post.category;
+                    if (!rawCats) return null;
+                    let catName = "General";
+                    if (Array.isArray(rawCats) && rawCats.length > 0) {
+                      catName = rawCats[0];
+                    } else if (typeof rawCats === 'string') {
+                      try {
+                        const parsed = JSON.parse(rawCats);
+                        if (Array.isArray(parsed) && parsed.length > 0) catName = parsed[0];
+                        else catName = rawCats.split(",")[0].replace(/[\[\]"']/g, '').trim();
+                      } catch {
+                        catName = rawCats.split(",")[0].replace(/[\[\]"']/g, '').trim();
+                      }
+                    }
+                    return catName ? <span className="post-card-category">{catName}</span> : null;
+                  })()}
                 </div>
                 <div className="post-card-body">
                   <h2>{post.title}</h2>

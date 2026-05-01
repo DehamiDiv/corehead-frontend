@@ -35,9 +35,19 @@ export default async function SinglePostPage({ params }: SinglePostPageProps) {
 
   if (!post) notFound();
 
-  const categories = post.categories
-    ? post.categories.split(",").map((c: string) => c.trim()).filter(Boolean)
-    : [];
+  let categories: string[] = [];
+  const rawCats = post.categories || post.category;
+  if (Array.isArray(rawCats)) {
+    categories = rawCats;
+  } else if (typeof rawCats === 'string') {
+    try {
+      const parsed = JSON.parse(rawCats);
+      if (Array.isArray(parsed)) categories = parsed;
+      else categories = rawCats.split(",").map((c: string) => c.replace(/[\[\]"']/g, '').trim()).filter(Boolean);
+    } catch {
+      categories = rawCats.split(",").map((c: string) => c.replace(/[\[\]"']/g, '').trim()).filter(Boolean);
+    }
+  }
 
   return (
     <article className="single-post-page">
@@ -45,9 +55,9 @@ export default async function SinglePostPage({ params }: SinglePostPageProps) {
       <Link href="/blog" className="post-back-link">← Back to Blog</Link>
 
       {/* Hero image */}
-      {post.coverImage && (
+      {(post.coverImage || post.imageUrl || post.thumbnailUrl) && (
         <div className="post-hero-image">
-          <img src={post.coverImage} alt={post.title} />
+          <img src={post.coverImage || post.imageUrl || post.thumbnailUrl} alt={post.title} />
         </div>
       )}
 
