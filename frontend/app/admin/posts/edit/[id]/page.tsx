@@ -10,6 +10,22 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import MediaLibraryModal from "@/components/admin/MediaLibraryModal";
+import dynamic from 'next/dynamic';
+import 'react-quill-new/dist/quill.snow.css';
+
+const ReactQuill = dynamic(() => import('react-quill-new'), { ssr: false });
+
+const quillModules = {
+  toolbar: [
+    [{ 'header': [1, 2, 3, 4, 5, 6, false] }, { 'font': [] }],
+    ['bold', 'italic', 'underline', 'strike'],
+    [{ 'color': [] }, { 'background': [] }],
+    [{ 'script': 'sub'}, { 'script': 'super' }],
+    [{ 'list': 'ordered'}, { 'list': 'bullet' }, { 'align': [] }],
+    ['blockquote', 'code-block', 'link', 'image'],
+    ['clean']
+  ],
+};
 
 export default function EditPostPage() {
   const router = useRouter();
@@ -45,7 +61,7 @@ export default function EditPostPage() {
   const [isPreviewModalOpen, setIsPreviewModalOpen] = useState(false);
   const [activeTab, setActiveTab] = useState("Content");
 
-  const availableCategories = ["Test Cat", "AI", "Travelling"];
+  const availableCategories = ["Tech", "Education", "Lifestyle", "Business", "Marketing", "Travelling"];
 
   useEffect(() => {
     const fetchPost = async () => {
@@ -114,6 +130,32 @@ export default function EditPostPage() {
 
   const handlePreview = () => {
     setIsPreviewModalOpen(true);
+  };
+
+  const handleAddKeyword = () => {
+    if (keywordInput.trim() && !formData.keywords.includes(keywordInput.trim())) {
+      setFormData(prev => ({
+        ...prev,
+        keywords: [...prev.keywords, keywordInput.trim()]
+      }));
+      setKeywordInput("");
+    }
+  };
+
+  const removeKeyword = (kw: string) => {
+    setFormData(prev => ({
+      ...prev,
+      keywords: prev.keywords.filter(k => k !== kw)
+    }));
+  };
+
+  const handleCategoryToggle = (cat: string) => {
+    setFormData(prev => ({
+      ...prev,
+      categories: prev.categories.includes(cat)
+        ? prev.categories.filter(c => c !== cat)
+        : [...prev.categories, cat]
+    }));
   };
 
   const completedFields = [
@@ -377,60 +419,20 @@ export default function EditPostPage() {
                   <p className="text-sm text-gray-500 mb-4 font-medium">Write your blog post content with rich formatting</p>
                   
                   <div className="border border-gray-100 rounded-xl overflow-hidden bg-white shadow-sm">
-                    {/* Fake Toolbar */}
-                    <div className="flex flex-wrap items-center gap-1.5 p-2 border-b border-gray-100 bg-[#fafafa]">
-                      <button className="p-1.5 text-gray-600 hover:bg-gray-200 rounded"><Type className="w-4 h-4" /></button>
-                      <div className="h-4 w-px bg-gray-300 mx-1" />
-                      <button className="flex items-center gap-2 px-2 py-1.5 text-sm font-medium text-gray-600 hover:bg-gray-200 rounded">
-                        Paragraph <ChevronDown className="w-3 h-3" />
-                      </button>
-                      <button className="flex items-center gap-2 px-2 py-1.5 text-sm font-medium text-gray-600 hover:bg-gray-200 rounded">
-                        Sans Serif <ChevronDown className="w-3 h-3" />
-                      </button>
-                      <button className="flex items-center gap-2 px-2 py-1.5 text-sm font-medium text-gray-600 hover:bg-gray-200 rounded">
-                        Default <ChevronDown className="w-3 h-3" />
-                      </button>
-                      <div className="h-4 w-px bg-gray-300 mx-1" />
-                      <button className="p-1.5 text-gray-900 font-bold hover:bg-gray-200 rounded"><Bold className="w-4 h-4" /></button>
-                      <button className="p-1.5 text-gray-900 italic hover:bg-gray-200 rounded"><Italic className="w-4 h-4" /></button>
-                      <button className="p-1.5 text-gray-900 underline hover:bg-gray-200 rounded"><Underline className="w-4 h-4" /></button>
-                      <button className="p-1.5 text-gray-900 line-through hover:bg-gray-200 rounded"><Strikethrough className="w-4 h-4" /></button>
-                      <button className="p-1.5 text-gray-900 hover:bg-gray-200 rounded"><Superscript className="w-4 h-4" /></button>
-                      <button className="p-1.5 text-gray-900 hover:bg-gray-200 rounded"><span className="text-xs font-bold px-1">A</span></button>
-                      <button className="p-1.5 text-gray-900 hover:bg-gray-200 rounded"><span className="text-xs font-bold px-1 bg-gray-200">A</span></button>
-                      <div className="h-4 w-px bg-gray-300 mx-1" />
-                      <button className="p-1.5 text-gray-900 hover:bg-gray-200 rounded"><List className="w-4 h-4" /></button>
-                      <button className="p-1.5 text-gray-900 hover:bg-gray-200 rounded"><ListOrdered className="w-4 h-4" /></button>
-                      <button className="p-1.5 text-gray-900 hover:bg-gray-200 rounded"><AlignLeft className="w-4 h-4" /></button>
-                      <button className="p-1.5 text-gray-900 hover:bg-gray-200 rounded"><AlignCenter className="w-4 h-4" /></button>
-                      <button className="p-1.5 text-gray-900 hover:bg-gray-200 rounded"><AlignRight className="w-4 h-4" /></button>
-                      <button className="p-1.5 text-gray-900 hover:bg-gray-200 rounded"><AlignJustify className="w-4 h-4" /></button>
-                      <div className="h-4 w-px bg-gray-300 mx-1" />
-                      <button className="p-1.5 text-gray-900 hover:bg-gray-200 rounded"><Quote className="w-4 h-4" /></button>
-                      <button className="p-1.5 text-gray-900 hover:bg-gray-200 rounded"><Code className="w-4 h-4" /></button>
-                      <button className="p-1.5 text-gray-900 hover:bg-gray-200 rounded"><LinkIcon className="w-4 h-4" /></button>
-                      <button className="p-1.5 text-gray-900 hover:bg-gray-200 rounded"><ImageIcon className="w-4 h-4" /></button>
-                      <button className="p-1.5 text-gray-900 hover:bg-gray-200 rounded"><LayoutGrid className="w-4 h-4" /></button>
-                      <button className="p-1.5 text-gray-900 hover:bg-gray-200 rounded"><Minus className="w-4 h-4" /></button>
-                      <button className="p-1.5 text-gray-900 hover:bg-gray-200 rounded"><RemoveFormatting className="w-4 h-4" /></button>
-                    </div>
-                    
-                    <textarea 
-                      rows={15}
-                      placeholder="Write your blog post content here..."
-                      className="w-full px-6 py-6 border-none focus:outline-none resize-y text-sm text-gray-700 min-h-[400px]"
+                    <ReactQuill 
+                      theme="snow"
                       value={formData.content}
-                      onChange={e => setFormData({...formData, content: e.target.value})}
+                      onChange={(val) => setFormData({...formData, content: val})}
+                      modules={quillModules}
+                      className="min-h-[400px] [&_.ql-editor]:min-h-[400px] [&_.ql-editor]:text-base [&_.ql-editor]:font-medium [&_.ql-container]:border-none [&_.ql-toolbar]:border-none [&_.ql-toolbar]:bg-[#fafafa] [&_.ql-toolbar]:border-b [&_.ql-toolbar]:border-gray-100"
+                      placeholder="Write your blog post content here..."
                     />
                     
                     <div className="flex justify-between items-center px-4 py-3 border-t border-gray-100 bg-[#fafafa]">
                       <div />
                       <div className="flex items-center gap-2">
-                        <button className="p-1.5 hover:bg-gray-200 rounded text-gray-500">
-                          <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M4 14v-4m16 4v-4M4 4h16m-16 16h16"/></svg>
-                        </button>
                         <span className="text-xs font-bold text-gray-500">
-                          {formData.content.trim() ? formData.content.trim().split(/\s+/).length : 0} words | {formData.content.length} characters
+                          {formData.content.replace(/<[^>]*>?/gm, '').trim() ? formData.content.replace(/<[^>]*>?/gm, '').trim().split(/\s+/).length : 0} words | {formData.content.replace(/<[^>]*>?/gm, '').length} characters
                         </span>
                       </div>
                     </div>
@@ -442,14 +444,183 @@ export default function EditPostPage() {
         )}
 
         {activeTab === "Images" && (
-          <div className="space-y-8 min-h-[400px] flex items-center justify-center">
-            <p className="text-gray-400 font-bold">Image Settings (To be implemented)</p>
+          <div className="space-y-8 min-h-[400px]">
+            <div>
+              <h2 className="text-xl font-bold text-gray-900">Featured Image</h2>
+              <p className="text-sm text-gray-500 mb-8">Upload a high-quality image to represent your post.</p>
+              
+              <div className="flex flex-col lg:flex-row items-start gap-8">
+                {formData.thumbnailUrl ? (
+                  <div className="relative w-full lg:w-[400px] aspect-video rounded-2xl overflow-hidden border border-gray-200 group shadow-sm shrink-0">
+                    <img src={formData.thumbnailUrl} className="w-full h-full object-cover" alt="" />
+                    <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-all duration-200">
+                      <button 
+                        onClick={() => setFormData({...formData, thumbnailUrl: ''})}
+                        className="px-4 py-2 bg-white text-red-600 rounded-xl hover:bg-red-50 transition-colors shadow-lg flex items-center gap-2 font-bold text-sm transform scale-95 group-hover:scale-100"
+                      >
+                        <X className="w-4 h-4" /> Remove Image
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="w-full lg:w-[400px] aspect-video rounded-2xl border-2 border-dashed border-gray-200 flex flex-col items-center justify-center bg-gray-50 text-gray-400 hover:bg-gray-100 hover:border-blue-300 hover:text-blue-500 transition-all cursor-pointer relative group shrink-0">
+                    <ImagePlus className="w-10 h-10 mb-3 text-gray-300 group-hover:text-blue-400 transition-colors" />
+                    <span className="text-sm font-bold text-gray-600 group-hover:text-blue-600 transition-colors">Click to upload image</span>
+                    <span className="text-xs font-medium text-gray-400 mt-1">PNG, JPG, WEBP up to 5MB</span>
+                    
+                    <input 
+                      type="file" 
+                      accept="image/*"
+                      className="absolute inset-0 opacity-0 cursor-pointer"
+                      onChange={async (e) => {
+                        const file = e.target.files?.[0];
+                        if (!file) return;
+                        
+                        const uploadData = new FormData();
+                        uploadData.append('file', file);
+                        
+                        try {
+                          const res = await fetch('/api/upload', {
+                            method: 'POST',
+                            body: uploadData,
+                          });
+                          
+                          if (res.ok) {
+                            const data = await res.json();
+                            if (data.url) {
+                              setFormData({...formData, thumbnailUrl: data.url});
+                            }
+                          } else {
+                            alert("Failed to upload image");
+                          }
+                        } catch (error) {
+                          console.error('Upload failed:', error);
+                          alert("Upload error occurred");
+                        }
+                      }}
+                    />
+                  </div>
+                )}
+                
+                <div className="flex-1 w-full bg-blue-50/50 border border-blue-100 rounded-2xl p-6 text-sm font-medium text-blue-800">
+                  <h3 className="font-bold text-blue-900 mb-3 flex items-center gap-2 text-base">
+                    <Star className="w-5 h-5 fill-blue-600 text-blue-600" /> Image Guidelines
+                  </h3>
+                  <ul className="list-disc pl-5 space-y-2.5 text-blue-700/80">
+                    <li>Recommended dimensions: <strong className="text-blue-900">1200 x 630 pixels</strong></li>
+                    <li>Keep the main subject in the center to avoid cropping on mobile devices</li>
+                    <li>Supported formats: JPEG, PNG, WEBP</li>
+                    <li>Maximum file size: 5MB for optimal loading speed</li>
+                  </ul>
+                </div>
+              </div>
+            </div>
           </div>
         )}
 
         {activeTab === "SEO" && (
-          <div className="space-y-8 min-h-[400px] flex items-center justify-center">
-            <p className="text-gray-400 font-bold">SEO Settings (To be implemented)</p>
+          <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
+            {/* Search Preview */}
+            <div className="bg-[#f8f9fa] p-8 rounded-3xl border border-gray-100">
+              <div className="flex items-center gap-3 mb-6">
+                <div className="w-8 h-8 rounded-full bg-white flex items-center justify-center shadow-sm border border-gray-100">
+                  <Search className="w-4 h-4 text-blue-600" />
+                </div>
+                <h3 className="text-sm font-black text-gray-900 uppercase tracking-widest">Search Engine Preview</h3>
+              </div>
+              
+              <div className="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm max-w-2xl">
+                <p className="text-[#1a0dab] text-xl font-medium mb-1 truncate">
+                  {formData.metaTitle || formData.title || "Post Title"}
+                </p>
+                <p className="text-[#006621] text-sm mb-1 truncate">
+                  https://corehead.com/blog/{formData.slug || "your-slug"}
+                </p>
+                <p className="text-[#4d5156] text-sm line-clamp-2">
+                  {formData.metaDescription || formData.excerpt || "Please provide a meta description to see how your post appears in search results."}
+                </p>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+              <div className="space-y-6">
+                <div>
+                  <label className="block text-sm font-bold text-gray-900 mb-2">Meta Title</label>
+                  <input 
+                    type="text" 
+                    value={formData.metaTitle}
+                    onChange={(e) => setFormData({...formData, metaTitle: e.target.value})}
+                    placeholder="Enter meta title..."
+                    className="w-full px-5 py-3.5 bg-white border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all font-medium text-sm text-gray-900"
+                  />
+                  <p className="mt-2 text-xs text-gray-400 font-medium flex justify-between">
+                    <span>Recommended length: 50-60 characters</span>
+                    <span className={cn(formData.metaTitle.length > 60 ? "text-amber-500" : "text-gray-400")}>
+                      {formData.metaTitle.length}/60
+                    </span>
+                  </p>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-bold text-gray-900 mb-2">Meta Description</label>
+                  <textarea 
+                    rows={4}
+                    value={formData.metaDescription}
+                    onChange={(e) => setFormData({...formData, metaDescription: e.target.value})}
+                    placeholder="Enter meta description..."
+                    className="w-full px-5 py-3.5 bg-white border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all font-medium text-sm text-gray-900 resize-none"
+                  />
+                  <p className="mt-2 text-xs text-gray-400 font-medium flex justify-between">
+                    <span>Recommended length: 150-160 characters</span>
+                    <span className={cn(formData.metaDescription.length > 160 ? "text-amber-500" : "text-gray-400")}>
+                      {formData.metaDescription.length}/160
+                    </span>
+                  </p>
+                </div>
+              </div>
+
+              <div className="space-y-6">
+                <div>
+                  <label className="block text-sm font-bold text-gray-900 mb-2">Canonical URL</label>
+                  <input 
+                    type="url" 
+                    value={formData.canonicalUrl}
+                    onChange={(e) => setFormData({...formData, canonicalUrl: e.target.value})}
+                    placeholder="https://example.com/canonical-url"
+                    className="w-full px-5 py-3.5 bg-white border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all font-medium text-sm text-gray-900"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-bold text-gray-900 mb-2">Focus Keywords</label>
+                  <div className="flex flex-wrap gap-2 mb-3">
+                    {formData.keywords.map(kw => (
+                      <span key={kw} className="inline-flex items-center gap-1 px-3 py-1 bg-blue-50 text-blue-600 rounded-lg text-xs font-bold border border-blue-100">
+                        {kw}
+                        <button onClick={() => removeKeyword(kw)} className="hover:text-blue-800 transition-colors"><X className="w-3 h-3" /></button>
+                      </span>
+                    ))}
+                  </div>
+                  <div className="flex gap-2">
+                    <input 
+                      type="text" 
+                      value={keywordInput}
+                      onChange={(e) => setKeywordInput(e.target.value)}
+                      onKeyDown={(e) => e.key === 'Enter' && (e.preventDefault(), handleAddKeyword())}
+                      placeholder="Add focus keyword..."
+                      className="flex-1 px-5 py-3.5 bg-white border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all font-medium text-sm text-gray-900"
+                    />
+                    <button 
+                      type="button"
+                      onClick={handleAddKeyword}
+                      className="px-6 py-3.5 bg-gray-900 text-white rounded-xl font-bold hover:bg-black transition-colors"
+                    >
+                      Add
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
           </div>
         )}
       </div>
