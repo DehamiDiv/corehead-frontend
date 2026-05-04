@@ -1,12 +1,13 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { useRouter, useParams } from "next/navigation";
 import { 
   ChevronDown, Star, Search, FileText, ImagePlus, X, Library, 
   Eye, Type, Bold, Italic, Underline, Strikethrough,
   List, ListOrdered, AlignLeft, AlignCenter, AlignRight, AlignJustify,
   Quote, Code, Link as LinkIcon, Image as ImageIcon, LayoutGrid, Minus, RemoveFormatting, Tag, Loader2,
+  Upload,
   ChevronLeft,
   Check,
   Plus,
@@ -38,8 +39,15 @@ export default function EditPostPage() {
     thumbnailUrl: "",
     metaTitle: "",
     metaDescription: "",
-    keywords: "" as string,
+    keywords: [] as string[],
+    useThumbnailAsFeatured: true,
+    canonicalUrl: "",
+    structuredData: "",
   });
+
+  const [keywordInput, setKeywordInput] = useState("");
+
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -47,6 +55,28 @@ export default function EditPostPage() {
   const [error, setError] = useState<string | null>(null);
   const [isMediaModalOpen, setIsMediaModalOpen] = useState(false);
   const [activeTab, setActiveTab] = useState("Content");
+
+  const addKeyword = () => {
+    if (keywordInput.trim() && !formData.keywords.includes(keywordInput.trim())) {
+      setFormData(prev => ({ ...prev, keywords: [...prev.keywords, keywordInput.trim()] }));
+      setKeywordInput("");
+    }
+  };
+
+  const removeKeyword = (kw: string) => {
+    setFormData(prev => ({ ...prev, keywords: prev.keywords.filter(k => k !== kw) }));
+  };
+
+  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      setFormData(prev => ({ ...prev, thumbnailUrl: event.target?.result as string }));
+    };
+    reader.readAsDataURL(file);
+  };
 
   const fetchData = useCallback(async () => {
     setLoading(true);
@@ -56,7 +86,7 @@ export default function EditPostPage() {
         api.getUsers()
       ]);
       
-      const usersList = Array.isArray(usersData) ? usersData : [];
+      const usersList = usersData.users && Array.isArray(usersData.users) ? usersData.users : [];
       setUsers(usersList);
       
       let cats: string[] = [];
@@ -80,7 +110,9 @@ export default function EditPostPage() {
         thumbnailUrl: postData.thumbnailUrl || postData.featured_image || "",
         metaTitle: postData.meta_title || postData.metaTitle || "",
         metaDescription: postData.meta_description || postData.metaDescription || "",
-        keywords: Array.isArray(postData.tags) ? postData.tags.join(', ') : (postData.tags || ""),
+        keywords: Array.isArray(postData.tags) ? postData.tags : (postData.tags ? postData.tags.split(',').map((t: string) => t.trim()) : []),
+        canonicalUrl: postData.canonicalUrl || "",
+        structuredData: typeof postData.structuredData === 'string' ? postData.structuredData : JSON.stringify(postData.structuredData, null, 2),
       });
     } catch (err: any) {
       setError(err.message || "Failed to fetch post data");
@@ -137,6 +169,8 @@ export default function EditPostPage() {
       featured: formData.featured,
       meta_title: formData.metaTitle,
       meta_description: formData.metaDescription,
+      canonicalUrl: formData.canonicalUrl,
+      structuredData: formData.structuredData,
       show_toc: formData.showToc,
       allow_comments: formData.allowComments
     };
@@ -359,17 +393,87 @@ export default function EditPostPage() {
               <div className="space-y-8 animate-in fade-in duration-300">
                 <div>
                   <h2 className="text-[20px] font-bold text-[#1E293B]">Post Images</h2>
-                  <p className="text-[14px] text-[#64748B] mt-1">Manage thumbnails and assets</p>
+                  <p className="text-[14px] text-[#64748B] mt-1">Upload thumbnail and featured images for your blog post</p>
                 </div>
-                <div className="aspect-video border-2 border-dashed rounded-[20px] flex flex-col items-center justify-center gap-3 cursor-pointer transition-all max-w-xl" onClick={() => setIsMediaModalOpen(true)}>
-                  {formData.thumbnailUrl ? (
-                    <img src={formData.thumbnailUrl} className="w-full h-full object-cover rounded-[18px]" alt="" />
-                  ) : (
-                    <>
-                      <ImagePlus className="w-8 h-8 text-[#94A3B8]" />
-                      <span className="text-[13px] font-bold text-[#64748B]">Choose Featured Image</span>
-                    </>
-                  )}
+
+                <div className="space-y-6">
+                   <div>
+                      <h3 className="text-[16px] font-bold text-[#1E293B]">Thumbnail Image</h3>
+                      <p className="text-[13px] text-[#64748B] mt-0.5">This image appears in blog listing pages and previews</p>
+                   </div>
+
+                    <div className="relative group">
+                      <div 
+                        className={cn(
+                          "w-full min-h-[300px] border-2 border-dashed rounded-[20px] flex flex-col items-center justify-center gap-4 transition-all overflow-hidden bg-[#F8FAFC]",
+                          formData.thumbnailUrl ? "border-blue-200 bg-blue-50/10" : "border-[#E2E8F0] hover:bg-[#F1F5F9] hover:border-[#CBD5E1]"
+                        )}
+                      >
+                        {formData.thumbnailUrl ? (
+                          <div className="relative w-full h-full flex items-center justify-center p-4">
+                            <img src={formData.thumbnailUrl} className="max-h-[400px] w-auto object-contain rounded-[12px] shadow-sm" alt="Thumbnail" />
+                            <button 
+                              onClick={(e) => { e.stopPropagation(); setFormData({...formData, thumbnailUrl: ""}); }}
+                              className="absolute top-6 right-6 p-2 bg-white/90 backdrop-blur-sm rounded-full text-red-500 shadow-md hover:bg-white transition-all"
+                            >
+                              <X className="w-5 h-5" />
+                            </button>
+                          </div>
+                        ) : (
+                          <>
+                            <div className="w-16 h-16 bg-white rounded-2xl shadow-sm border border-[#E2E8F0] flex items-center justify-center mb-1">
+                              <ImageIcon className="w-8 h-8 text-[#94A3B8]" />
+                            </div>
+                            <div className="text-center">
+                              <p className="text-[16px] font-bold text-[#1E293B]">Click to upload image</p>
+                              <p className="text-[13px] text-[#94A3B8] mt-1 font-medium">PNG, JPG, GIF up to 5MB</p>
+                            </div>
+                            <div className="flex items-center gap-3 mt-2">
+                                <button 
+                                  onClick={() => fileInputRef.current?.click()}
+                                  className="h-10 px-5 bg-white border border-[#E2E8F0] rounded-xl text-[13px] font-bold text-[#1E293B] shadow-sm hover:bg-slate-50 transition-all flex items-center gap-2"
+                                >
+                                  <Upload className="w-4 h-4 text-[#64748B]" />
+                                  Upload New
+                                </button>
+                                <button 
+                                  onClick={() => setIsMediaModalOpen(true)}
+                                  className="h-10 px-5 bg-white border border-[#E2E8F0] rounded-xl text-[13px] font-bold text-[#1E293B] shadow-sm hover:bg-slate-50 transition-all flex items-center gap-2"
+                                >
+                                  <Library className="w-4 h-4 text-[#64748B]" />
+                                  Choose from Library
+                                </button>
+                            </div>
+                          </>
+                        )}
+                      </div>
+                      <input 
+                        ref={fileInputRef}
+                        type="file" 
+                        className="hidden" 
+                        accept="image/*"
+                        onChange={handleImageUpload}
+                      />
+                    </div>
+
+                    <div className={cn(
+                      "p-5 rounded-[16px] border flex items-center gap-4 transition-all",
+                      formData.useThumbnailAsFeatured ? "bg-white border-[#E2E8F0]" : "bg-white border-[#E2E8F0]"
+                    )}>
+                      <div 
+                        className={cn(
+                          "w-6 h-6 rounded-md border-2 flex items-center justify-center cursor-pointer transition-all",
+                          formData.useThumbnailAsFeatured ? "bg-[#2563EB] border-[#2563EB]" : "bg-white border-[#CBD5E1]"
+                        )}
+                        onClick={() => setFormData({...formData, useThumbnailAsFeatured: !formData.useThumbnailAsFeatured})}
+                      >
+                        {formData.useThumbnailAsFeatured && <Check className="w-4 h-4 text-white" />}
+                      </div>
+                      <div>
+                        <p className="text-[14px] font-bold text-[#1E293B]">Use thumbnail as featured image</p>
+                        <p className="text-[12px] text-[#64748B] mt-0.5">Uncheck to add a separate featured image or no featured image</p>
+                      </div>
+                    </div>
                 </div>
               </div>
             )}
@@ -378,27 +482,111 @@ export default function EditPostPage() {
             {activeTab === "SEO" && (
               <div className="space-y-8 animate-in fade-in duration-300">
                 <div>
-                  <h2 className="text-[20px] font-bold text-[#1E293B]">SEO & Metadata</h2>
-                  <p className="text-[14px] text-[#64748B] mt-1">Keep your post search-friendly</p>
+                  <h2 className="text-[20px] font-bold text-[#1E293B]">SEO Optimization</h2>
+                  <p className="text-[14px] text-[#64748B] mt-1">Optimize your blog post for search engines and social media</p>
                 </div>
-                <div className="space-y-6 max-w-2xl">
-                  <div className="space-y-2">
-                    <label className="text-[14px] font-bold text-[#1E293B]">Meta Title</label>
+
+                <div className="space-y-8 max-w-4xl">
+                  {/* Meta Title */}
+                  <div className="space-y-3">
+                    <div className="flex items-center justify-between">
+                      <label className="text-[14px] font-bold text-[#1E293B]">Meta Title</label>
+                      <span className={cn(
+                        "text-[12px] font-bold",
+                        formData.metaTitle.length > 60 ? "text-red-500" : "text-[#94A3B8]"
+                      )}>{formData.metaTitle.length}/60</span>
+                    </div>
                     <input 
                       type="text"
-                      className="w-full h-12 bg-white border border-[#E2E8F0] rounded-[10px] px-4 text-[14px]"
+                      className="w-full h-12 bg-white border border-[#E2E8F0] rounded-[12px] px-4 text-[14px] focus:outline-none focus:ring-2 focus:ring-blue-500/10 focus:border-blue-400 transition-all"
+                      placeholder="SEO optimized title (leave empty to use post title)"
                       value={formData.metaTitle}
                       onChange={e => setFormData({...formData, metaTitle: e.target.value})}
                     />
+                    <p className="text-[12px] text-[#94A3B8] font-medium">Recommended: 50-60 characters</p>
                   </div>
-                  <div className="space-y-2">
-                    <label className="text-[14px] font-bold text-[#1E293B]">Meta Description</label>
+
+                  {/* Meta Description */}
+                  <div className="space-y-3">
+                    <div className="flex items-center justify-between">
+                      <label className="text-[14px] font-bold text-[#1E293B]">Meta Description</label>
+                      <span className={cn(
+                        "text-[12px] font-bold",
+                        formData.metaDescription.length > 160 ? "text-red-500" : "text-[#94A3B8]"
+                      )}>{formData.metaDescription.length}/160</span>
+                    </div>
                     <textarea 
-                      rows={4}
-                      className="w-full bg-white border border-[#E2E8F0] rounded-[10px] p-4 text-[14px]"
+                      rows={3}
+                      className="w-full bg-white border border-[#E2E8F0] rounded-[12px] p-4 text-[14px] focus:outline-none focus:ring-2 focus:ring-blue-500/10 focus:border-blue-400 transition-all resize-none leading-relaxed"
+                      placeholder="Brief description for search engines (leave empty to use excerpt)"
                       value={formData.metaDescription}
                       onChange={e => setFormData({...formData, metaDescription: e.target.value})}
                     />
+                    <p className="text-[12px] text-[#94A3B8] font-medium">Recommended: 150-160 characters</p>
+                  </div>
+
+                  {/* Focus Keywords */}
+                  <div className="space-y-3">
+                    <label className="text-[14px] font-bold text-[#1E293B]">Focus Keywords</label>
+                    <div className="flex gap-2">
+                      <input 
+                        type="text"
+                        className="flex-1 h-12 bg-white border border-[#E2E8F0] rounded-[12px] px-4 text-[14px] focus:outline-none focus:ring-2 focus:ring-blue-500/10 focus:border-blue-400 transition-all"
+                        placeholder="Type keyword and press Enter"
+                        value={keywordInput}
+                        onChange={e => setKeywordInput(e.target.value)}
+                        onKeyDown={e => e.key === 'Enter' && (e.preventDefault(), addKeyword())}
+                      />
+                      <button 
+                        type="button"
+                        onClick={addKeyword}
+                        className="h-12 px-6 bg-[#F8FAFC] border border-[#E2E8F0] rounded-[12px] text-[14px] font-bold text-[#64748B] hover:bg-slate-100 transition-all"
+                      >
+                        Add
+                      </button>
+                    </div>
+                    <div className="min-h-[60px] p-4 bg-[#F8FAFC] border border-[#E2E8F0] border-dashed rounded-[12px] flex flex-wrap gap-2">
+                      {formData.keywords.length > 0 ? (
+                        formData.keywords.map(kw => (
+                          <span key={kw} className="px-3 py-1.5 bg-white border border-[#E2E8F0] rounded-lg text-[13px] font-bold text-[#1E293B] flex items-center gap-2 shadow-sm">
+                            {kw}
+                            <X className="w-3.5 h-3.5 text-[#94A3B8] cursor-pointer hover:text-red-500" onClick={() => removeKeyword(kw)} />
+                          </span>
+                        ))
+                      ) : (
+                        <p className="text-[13px] text-[#94A3B8] font-medium m-auto">No keywords added yet. Type a keyword and press Enter or click Add.</p>
+                      )}
+                    </div>
+                    <p className="text-[12px] text-[#94A3B8] font-medium">Add keywords that help search engines understand your content. Press Enter or click Add after typing each keyword.</p>
+                  </div>
+
+                  {/* Canonical URL */}
+                  <div className="space-y-3">
+                    <label className="text-[14px] font-bold text-[#1E293B]">Canonical URL</label>
+                    <input 
+                      type="text"
+                      className="w-full h-12 bg-white border border-[#E2E8F0] rounded-[12px] px-4 text-[14px] focus:outline-none focus:ring-2 focus:ring-blue-500/10 focus:border-blue-400 transition-all"
+                      placeholder="https://example.com/blog/post-slug"
+                      value={formData.canonicalUrl}
+                      onChange={e => setFormData({...formData, canonicalUrl: e.target.value})}
+                    />
+                    <p className="text-[12px] text-[#94A3B8] font-medium">Optional: Specify the preferred URL if this content exists elsewhere</p>
+                  </div>
+
+                  {/* Structured Data */}
+                  <div className="space-y-3">
+                    <div>
+                      <h3 className="text-[16px] font-bold text-[#1E293B]">Structured Data (JSON-LD)</h3>
+                      <p className="text-[13px] text-[#64748B] mt-0.5">Advanced: Add structured data for rich search results</p>
+                    </div>
+                    <textarea 
+                      rows={10}
+                      className="w-full bg-white border border-[#E2E8F0] rounded-[12px] p-6 text-[14px] font-mono focus:outline-none focus:ring-2 focus:ring-blue-500/10 focus:border-blue-400 transition-all leading-relaxed"
+                      placeholder={`{\n  "@context": "https://schema.org",\n  "@type": "Article",\n  "headline": "Article headline",\n  "description": "Article description",\n  "author": {\n    "@type": "Person",\n    "name": "Author Name"\n  }\n}`}
+                      value={formData.structuredData}
+                      onChange={e => setFormData({...formData, structuredData: e.target.value})}
+                    />
+                    <p className="text-[12px] text-[#94A3B8] font-medium">Optional: Valid JSON-LD markup for enhanced search appearance. Leave empty if not needed.</p>
                   </div>
                 </div>
               </div>
