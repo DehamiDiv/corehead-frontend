@@ -261,7 +261,7 @@ export const api = {
     return res.json();
   },
 
-  async inviteUser(data: { email: string, role: string }) {
+  async inviteUser(data: { email: string, role: string, name?: string, nicename?: string, designation?: string, bio?: string, password?: string }) {
     const res = await fetch(`${BASE_URL}/users/invite`, {
       method: 'POST',
       headers: {

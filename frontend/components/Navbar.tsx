@@ -64,7 +64,7 @@ export default function Navbar() {
         <div className="flex items-center gap-4">
           {user ? (
             <>
-              {user.role === "admin" && (
+              {(user.role?.toLowerCase() === "admin" || user.role?.toLowerCase() === "administrator") && (
                 <Link
                   href="/admin"
                   className="text-sm font-bold text-slate-600 hover:text-blue-600 transition-colors px-4"

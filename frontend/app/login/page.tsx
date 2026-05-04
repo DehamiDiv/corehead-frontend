@@ -39,7 +39,8 @@ export default function LoginPage() {
       document.cookie = `user_role=${data.user.role}; path=/; max-age=86400; SameSite=Lax`;
 
       // ROLE-BASED REDIRECTION
-      if (data.user.role === "admin") {
+      const isAdmin = data.user.role?.toLowerCase() === 'admin' || data.user.role?.toLowerCase() === 'administrator';
+      if (isAdmin) {
         setSuccess("Login successful! Redirecting to dashboard...");
         setTimeout(() => {
           router.push("/admin");
