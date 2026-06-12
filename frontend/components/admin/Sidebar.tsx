@@ -30,7 +30,6 @@ export default function Sidebar() {
 
   const navItems: NavItem[] = useMemo(
     () => [
-      { label: "AI Generator",   href: "/ai-prompt",        Icon: Sparkles       },
       { label: "Posts",         href: "/admin/posts",      Icon: FileText       },
       { label: "Layouts",       href: "/admin/layouts",    Icon: LayoutTemplate },
       { label: "Categories",    href: "/admin/categories", Icon: Tags           },
@@ -38,6 +37,7 @@ export default function Sidebar() {
       { label: "Interactions",  href: "/admin/comments",   Icon: MessageSquare  },
       { label: "Users",         href: "/admin/users",      Icon: Users          },
       { label: "Pages",         href: "/admin/pages",      Icon: File           },
+      { label: "AI Generator",  href: "/ai-prompt",        Icon: Sparkles       },
     ],
     []
   );
