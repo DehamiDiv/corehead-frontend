@@ -113,7 +113,7 @@ export default function LayoutsListPage() {
                         Refresh
                     </button>
                     <Link
-                        href="/admin/builder"
+                        href="/admin/layouts/new"
                         className="flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-5 py-2.5 rounded-xl text-sm font-bold shadow-lg shadow-blue-200 transition-all"
                     >
                         <Plus size={18} />
@@ -240,7 +240,7 @@ export default function LayoutsListPage() {
                                                     </button>
                                                     {/* Edit */}
                                                     <Link
-                                                        href={`/admin/layouts/${layout.id}`}
+                                                        href={`/admin/layouts/${layout.id}/edit`}
                                                         className="p-2.5 bg-white border border-gray-100 rounded-xl text-gray-500 hover:text-blue-600 shadow-sm transition-all"
                                                         title="Edit Layout"
                                                     >
