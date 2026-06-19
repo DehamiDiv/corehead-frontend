@@ -11,6 +11,7 @@ import ComponentsPanel from '@/components/builder/ComponentsPanel';
 import SettingsPanel from '@/components/builder/SettingsPanel';
 import SaveLayoutModal from '@/components/builder/SaveLayoutModal';
 import LoadLayoutModal from '@/components/builder/LoadLayoutModal';
+import AIChatPanel from '@/components/builder/AIChatPanel';
 import { useRouter } from 'next/navigation';
 import './page.css';
 import { builderApi } from '@/services/builderApi';
@@ -484,6 +485,10 @@ export default function BlogBuilderPage() {
 
           {activeTab === 'settings' && (
             <SettingsPanel settings={settings} onSettingsChange={setSettings} onSave={handleSaveClick} />
+          )}
+
+          {activeTab === 'ai-chat' && (
+            <AIChatPanel blogPosts={blogPosts} onUpdateLayout={handleAIGenerated} onSwitchToBuilder={() => setActiveTab('builder')} />
           )}
 
           {activeTab === 'preview' && (
