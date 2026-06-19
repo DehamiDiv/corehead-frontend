@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import BlogCard from './BlogCard';
+import BlockRenderer from './BlockRenderer';
 import './BuilderCanvas.css';
 
 const CARD_STYLES = [
@@ -83,18 +84,48 @@ export default function BuilderCanvas({ blogPosts, contentMode, selectedCard, se
             ))}
           </div>
 
-          {/* Blog Cards Grid */}
+          {/* Empty State */}
+          {blogPosts.length === 0 && (
+            <div style={{
+              padding: '60px 20px',
+              textAlign: 'center',
+              background: '#fff',
+              borderRadius: '16px',
+              border: '2px dashed #e2e8f0',
+              marginTop: '20px'
+            }}>
+              <div style={{ fontSize: '48px', marginBottom: '16px' }}>🏗️</div>
+              <h3 style={{ fontSize: '18px', fontWeight: '600', color: '#1e1e2e', marginBottom: '8px' }}>
+                Your canvas is empty
+              </h3>
+              <p style={{ fontSize: '14px', color: '#64748b', maxWidth: '300px', margin: '0 auto' }}>
+                Start by adding components from the sidebar or use the AI to generate a full layout.
+              </p>
+            </div>
+          )}
+
+          {/* Blog Cards Grid / Blocks */}
           <div className="blog-grid" style={gridStyle}>
-            {blogPosts.map((post) => (
-              <BlogCard
-                key={post.id}
-                post={post}
-                isSelected={selectedCard?.id === post.id}
-                onClick={() => setSelectedCard(post)}
-                contentMode={contentMode}
-                settings={settings}
-                cardLayout={cardLayout}
-              />
+            {blogPosts.map((item) => (
+              item.type && ['Heading', 'Paragraph', 'Image', 'Quote', 'Divider', 'Button', 'Collection List'].includes(item.type) ? (
+                <BlockRenderer
+                  key={item.id}
+                  block={item}
+                  isSelected={selectedCard?.id === item.id}
+                  onClick={() => setSelectedCard(item)}
+                  settings={settings}
+                />
+              ) : (
+                <BlogCard
+                  key={item.id}
+                  post={item}
+                  isSelected={selectedCard?.id === item.id}
+                  onClick={() => setSelectedCard(item)}
+                  contentMode={contentMode}
+                  settings={settings}
+                  cardLayout={cardLayout}
+                />
+              )
             ))}
           </div>
 

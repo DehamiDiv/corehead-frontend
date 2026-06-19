@@ -14,6 +14,7 @@ import {
   Settings as SettingsIcon,
   ChevronDown,
   LayoutTemplate,
+  Sparkles,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -36,6 +37,7 @@ export default function Sidebar() {
       { label: "Interactions",  href: "/admin/comments",   Icon: MessageSquare  },
       { label: "Users",         href: "/admin/users",      Icon: Users          },
       { label: "Pages",         href: "/admin/pages",      Icon: File           },
+      { label: "AI Generator",  href: "/ai-prompt",        Icon: Sparkles       },
     ],
     []
   );

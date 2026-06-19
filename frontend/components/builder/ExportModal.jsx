@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 
 import { useState } from 'react';
 import { X, Download, Code, FileJson } from 'lucide-react';
@@ -6,6 +6,8 @@ import { X, Download, Code, FileJson } from 'lucide-react';
 export default function ExportModal({ isOpen, onClose, blogPosts, contentMode }) {
   const [exportType, setExportType] = useState('html');
   const [copied, setCopied] = useState(false);
+
+  const isEmpty = !blogPosts || blogPosts.length === 0;
 
   if (!isOpen) return null;
 
@@ -110,8 +112,8 @@ export default function ExportModal({ isOpen, onClose, blogPosts, contentMode })
               <h2 style={{ fontSize: '16px', fontWeight: '700', margin: 0, color: '#333' }}>
                 Export Layout
               </h2>
-              <p style={{ fontSize: '12px', color: '#888', margin: 0 }}>
-                {blogPosts.length} posts · {contentMode} mode
+              <p style={{ fontSize: '12px', color: isEmpty ? '#ef4444' : '#888', margin: 0 }}>
+                {isEmpty ? '⚠️ No posts — add cards first!' : `${blogPosts.length} posts · ${contentMode} mode`}
               </p>
             </div>
           </div>
@@ -160,15 +162,29 @@ export default function ExportModal({ isOpen, onClose, blogPosts, contentMode })
 
         {/* Code Preview */}
         <div style={{ flex: 1, overflow: 'hidden', padding: '16px 24px' }}>
-          <pre style={{
-            background: '#1e1e2e', color: '#cdd6f4',
-            borderRadius: '12px', padding: '16px',
-            fontSize: '12px', lineHeight: 1.6,
-            overflow: 'auto', height: '280px',
-            fontFamily: 'monospace', margin: 0
-          }}>
-            {content.slice(0, 2000)}{content.length > 2000 ? '\n\n... (truncated, use Download to get full file)' : ''}
-          </pre>
+          {isEmpty ? (
+            <div style={{
+              background: '#fef2f2', border: '2px dashed #fecaca',
+              borderRadius: '12px', padding: '40px 24px',
+              textAlign: 'center', color: '#dc2626'
+            }}>
+              <div style={{ fontSize: '36px', marginBottom: '12px' }}>📭</div>
+              <div style={{ fontWeight: '700', fontSize: '15px', marginBottom: '6px' }}>Nothing to Export</div>
+              <div style={{ fontSize: '13px', color: '#ef4444' }}>
+                Your canvas is empty. Add some blocks from the Components panel first.
+              </div>
+            </div>
+          ) : (
+            <pre style={{
+              background: '#1e1e2e', color: '#cdd6f4',
+              borderRadius: '12px', padding: '16px',
+              fontSize: '12px', lineHeight: 1.6,
+              overflow: 'auto', height: '280px',
+              fontFamily: 'monospace', margin: 0
+            }}>
+              {content.slice(0, 2000)}{content.length > 2000 ? '\n\n... (truncated, use Download to get full file)' : ''}
+            </pre>
+          )}
         </div>
 
         {/* Actions */}
@@ -179,29 +195,38 @@ export default function ExportModal({ isOpen, onClose, blogPosts, contentMode })
         }}>
           <button
             onClick={handleCopy}
+            disabled={isEmpty}
             style={{
               flex: 1, padding: '11px',
               border: '2px solid #e5e5e5', borderRadius: '10px',
-              cursor: 'pointer', fontSize: '14px', fontWeight: '600',
-              background: copied ? '#f0fdf4' : '#fff',
-              color: copied ? '#16a34a' : '#555',
-              borderColor: copied ? '#16a34a' : '#e5e5e5',
-              fontFamily: 'inherit', transition: 'all 0.2s'
+              cursor: isEmpty ? 'not-allowed' : 'pointer',
+              fontSize: '14px', fontWeight: '600',
+              background: isEmpty ? '#f5f5f5' : copied ? '#f0fdf4' : '#fff',
+              color: isEmpty ? '#bbb' : copied ? '#16a34a' : '#555',
+              borderColor: isEmpty ? '#e5e5e5' : copied ? '#16a34a' : '#e5e5e5',
+              fontFamily: 'inherit', transition: 'all 0.2s',
+              opacity: isEmpty ? 0.6 : 1
             }}
           >
             {copied ? '✅ Copied!' : '📋 Copy to Clipboard'}
           </button>
           <button
             onClick={handleDownload}
+            disabled={isEmpty}
             style={{
               flex: 2, padding: '11px',
-              background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-              color: '#fff', border: 'none', borderRadius: '10px',
-              cursor: 'pointer', fontSize: '14px', fontWeight: '600',
+              background: isEmpty
+                ? '#e5e5e5'
+                : 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+              color: isEmpty ? '#aaa' : '#fff',
+              border: 'none', borderRadius: '10px',
+              cursor: isEmpty ? 'not-allowed' : 'pointer',
+              fontSize: '14px', fontWeight: '600',
               display: 'flex', alignItems: 'center',
               justifyContent: 'center', gap: '8px',
               fontFamily: 'inherit',
-              boxShadow: '0 4px 12px rgba(102,126,234,0.4)'
+              boxShadow: isEmpty ? 'none' : '0 4px 12px rgba(102,126,234,0.4)',
+              opacity: isEmpty ? 0.6 : 1
             }}
           >
             <Download size={16} />

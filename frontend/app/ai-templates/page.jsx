@@ -1,12 +1,21 @@
 'use client';
 
-import { Sparkles, ArrowLeft } from 'lucide-react';
+import { useEffect } from 'react';
+import { Sparkles, ArrowLeft, ArrowRight } from 'lucide-react';
 import Link from 'next/link';
 import './page.css';
 import { useRouter } from 'next/navigation';
 
 export default function AITemplatesPage() {
   const router = useRouter();
+
+  // Protect the page - must be logged in to use AI features
+  useEffect(() => {
+    const token = localStorage.getItem('token');
+    if (!token) {
+      router.push('/login?callback=/ai-templates');
+    }
+  }, [router]);
 
   const templates = [
     {
@@ -115,6 +124,10 @@ export default function AITemplatesPage() {
               <ArrowLeft size={18} />
               Back to Prompt
             </Link>
+            <button className="btn-next" onClick={() => router.push('/builder')}>
+              Go to Builder
+              <ArrowRight size={18} />
+            </button>
           </div>
         </div>
       </div>
