@@ -1,6 +1,6 @@
 "use client";
 
-import { Search, PanelLeft, Maximize, Minimize } from "lucide-react";
+import { PanelLeft, Maximize, Minimize } from "lucide-react";
 import { useEffect, useState } from "react";
 
 export default function Header({ onToggleSidebar }: { onToggleSidebar: () => void }) {
@@ -62,7 +62,7 @@ export default function Header({ onToggleSidebar }: { onToggleSidebar: () => voi
 
   return (
     <header className="h-16 bg-white border-b border-gray-100 flex items-center justify-between px-6 sticky top-0 z-40 max-w-[1700px]">
-      {/* Left Side: Toggle & Search */}
+      {/* Left Side: Toggle */}
       <div className="flex items-center gap-3">
         <button 
           onClick={onToggleSidebar}
@@ -71,15 +71,6 @@ export default function Header({ onToggleSidebar }: { onToggleSidebar: () => voi
         >
           <PanelLeft className="w-5 h-5" />
         </button>
-
-        <div className="flex items-center bg-gray-50 rounded-full px-5 py-2 w-80 border border-transparent focus-within:border-blue-200 focus-within:bg-white transition-all shadow-sm">
-          <Search className="w-4 h-4 text-gray-400 mr-2.5" />
-          <input
-            type="text"
-            placeholder="Search Blogs..."
-            className="bg-transparent border-none outline-none text-sm w-full placeholder:text-gray-400 text-gray-700"
-          />
-        </div>
       </div>
 
       {/* Right Side Actions */}

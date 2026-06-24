@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import CommentsSection from "@/components/blog/CommentsSection";
 import "./page.css";
 
 interface SinglePostPageProps {
@@ -49,6 +50,26 @@ export default async function SinglePostPage({ params }: SinglePostPageProps) {
     }
   }
 
+  // Dynamically extract headings for Table of Contents if showToc is enabled
+  const headings: { text: string; id: string; level: string }[] = [];
+  let modifiedContent = post.content || "";
+
+  if (post.showToc) {
+    // Use `s` flag (dotAll) so `.` matches newlines too — Quill often adds newlines inside tags
+    const headingRegex = /<(h[1-6])([^>]*)>([\s\S]*?)<\/\1>/gi;
+    let index = 0;
+    modifiedContent = modifiedContent.replace(headingRegex, (match: string, tag: string, attrs: string, text: string) => {
+      const level = tag.toLowerCase();
+      // Only build TOC for h2 and h3
+      if (level !== 'h2' && level !== 'h3') return match;
+      const cleanText = text.replace(/<[^>]*>?/gm, '').trim();
+      if (!cleanText) return match;
+      const id = `toc-${index++}-${cleanText.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '')}`;
+      headings.push({ text: cleanText, id, level });
+      return `<${tag} id="${id}"${attrs}>${text}</${tag}>`;
+    });
+  }
+
   return (
     <article className="single-post-page">
       {/* Back link */}
@@ -82,11 +103,30 @@ export default async function SinglePostPage({ params }: SinglePostPageProps) {
         </div>
       </header>
 
+      {/* Table of Contents */}
+      {post.showToc && headings.length > 0 && (
+        <div className="post-toc">
+          <h3 className="toc-title">Table of Contents</h3>
+          <ul className="toc-list">
+            {headings.map((h) => (
+              <li key={h.id} className={`toc-item toc-${h.level}`}>
+                <a href={`#${h.id}`}>{h.text}</a>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+
       {/* Content */}
       <div
         className="post-content"
-        dangerouslySetInnerHTML={{ __html: post.content.replace(/\n/g, "<br/>") }}
+        dangerouslySetInnerHTML={{ __html: modifiedContent.replace(/\n/g, "<br/>") }}
       />
+
+      {/* Comments Section */}
+      {post.allowComments && (
+        <CommentsSection postId={post.id} />
+      )}
 
       {/* Footer / Author box */}
       <div className="post-footer">

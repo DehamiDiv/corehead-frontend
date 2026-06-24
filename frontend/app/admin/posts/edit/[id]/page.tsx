@@ -261,11 +261,11 @@ export default function EditPostPage() {
                   <input 
                     type="text" 
                     placeholder="url-friendly-slug"
-                    className="w-full px-4 py-3 bg-white border border-gray-100 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all text-sm font-medium"
+                    className="w-full px-4 py-3 bg-gray-50 border border-gray-100 rounded-xl focus:outline-none transition-all text-sm font-medium text-gray-500 cursor-not-allowed"
                     value={formData.slug}
-                    onChange={e => setFormData({...formData, slug: e.target.value})}
+                    readOnly
                   />
-                  <p className="text-xs font-medium text-gray-500 mt-2">Auto-generated from title. Edit if needed.</p>
+                  <p className="text-xs font-medium text-gray-500 mt-2">Auto-generated from title.</p>
                 </div>
 
                 <div>
