@@ -27,7 +27,7 @@ export default function BlogsPage() {
   const [statusFilter, setStatusFilter] = useState("All");
   const [categoryFilter, setCategoryFilter] = useState("All Categories");
   const [authorFilter, setAuthorFilter] = useState("All Authors");
-
+  //retrieve all post from backend
   const fetchPosts = async () => {
     setLoading(true);
     try {
@@ -90,7 +90,7 @@ export default function BlogsPage() {
   const allAuthors = Array.from(new Set(
     (Array.isArray(posts) ? posts : []).map(p => String(p.author?.name || p.author_name || 'Unknown Author'))
   )).filter(Boolean).sort();
-
+  //filterposts
   const filteredPosts = Array.isArray(posts) 
     ? posts.filter(post => {
         const matchesSearch = (post.title || "").toLowerCase().includes((searchQuery || "").toLowerCase());
@@ -141,7 +141,7 @@ export default function BlogsPage() {
             Refresh
           </button>
           <Link 
-            href="/admin/posts/create"
+            href="/admin/posts/create" //crete blog button
             className="flex items-center gap-2 px-4 py-2 bg-blue-600 rounded-xl text-[13px] font-bold text-white hover:bg-blue-700 transition-all shadow-sm"
           >
             <Plus className="w-3.5 h-3.5" />
@@ -355,9 +355,7 @@ export default function BlogsPage() {
           <div className="flex flex-wrap items-center gap-6">
             <div className="flex items-center gap-3">
               <span className="text-sm text-gray-500">Rows per page:</span>
-              <button className="flex items-center gap-3 px-3 py-1.5 border border-gray-200 rounded-lg text-sm font-medium text-gray-700 bg-white shadow-sm">
-                20 <ChevronDown className="w-4 h-4 text-gray-400" />
-              </button>
+              <span className="px-3 py-1.5 border border-gray-200 rounded-lg text-sm font-medium text-gray-700 bg-white shadow-sm">20</span>
             </div>
             <div className="flex items-center gap-1">
               <button className="px-3 py-1.5 text-sm font-medium text-gray-400 hover:text-gray-600 transition-colors flex items-center gap-1">
@@ -379,7 +377,7 @@ export default function BlogsPage() {
     </div>
   );
 }
-
+//filter button function
 function FilterButton({ 
   label, 
   options, 
