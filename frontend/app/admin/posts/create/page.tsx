@@ -149,7 +149,8 @@ export default function CreatePostPage() {
 
     try {
       await api.createPost(finalData);
-      router.push('/admin/posts');
+      // After creating the post, navigate to the public blog page so users can see it immediately
+      router.push('/');
     } catch (err: any) {
       setError(err.message || "Failed to create post");
     } finally {
