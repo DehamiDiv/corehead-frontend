@@ -594,6 +594,7 @@ export default function CreatePostPage() {
           >
             Save as Draft
           </button>
+        
           <button 
             onClick={() => handleCreatePost()}
             disabled={loading}

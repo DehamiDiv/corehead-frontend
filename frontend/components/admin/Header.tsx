@@ -1,6 +1,6 @@
 "use client";
 
-import { Search, PanelLeft, Maximize, Minimize } from "lucide-react";
+import { PanelLeft, Maximize, Minimize } from "lucide-react";
 import { useEffect, useState } from "react";
 
 export default function Header({ onToggleSidebar }: { onToggleSidebar: () => void }) {
