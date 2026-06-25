@@ -165,19 +165,15 @@ export const api = {
     return res.json();
   },
 
-  // Public Facing / Receiver Mock Endpoints
   async getPostBySlug(slug: string) {
-    return {
-      id: `mock-${slug}`,
-      title: `The Ultimate Guide to ${slug.replace(/-/g, ' ')}`,
-      slug: slug,
-      excerpt: "This is a dynamically retrieved excerpt based on the slug.",
-      content: "<p>This is the full rich-text <strong>content</strong> of the blog post. It goes into extreme detail about the particular subject matter.</p><p>This should be rendered dynamically.</p>",
-      imageUrl: "https://picsum.photos/1200/600",
-      createdAt: new Date().toISOString(),
-      category: "Development",
-      author: { name: "System Admin", bio: "Tech enthusiast" }
-    };
+    const res = await fetch(`${BASE_URL}/posts/slug/${slug}`, {
+      cache: 'no-store'
+    });
+    if (!res.ok) {
+      if (res.status === 404) return null;
+      throw new Error('Failed to fetch post by slug');
+    }
+    return res.json();
   },
 
   async getPublicLayout(type: 'blog-loop' | 'single-post') {
