@@ -6,6 +6,8 @@
   padding: 48px 24px 100px;
   font-family: 'Inter', system-ui, sans-serif;
   color: #1e293b;
+  overflow-wrap: break-word;
+  word-wrap: break-word;
 }
 
 /* ── Back Link ── */
@@ -148,8 +150,25 @@
 
 .post-content img {
   max-width: 100%;
+  height: auto;
   border-radius: 16px;
   margin: 24px 0;
+}
+
+.post-content table {
+  display: block;
+  width: 100%;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  border-collapse: collapse;
+  margin: 24px 0;
+}
+
+.post-content table th,
+.post-content table td {
+  padding: 12px;
+  border: 1px solid #e2e8f0;
+  min-width: 120px;
 }
 
 .post-content code {

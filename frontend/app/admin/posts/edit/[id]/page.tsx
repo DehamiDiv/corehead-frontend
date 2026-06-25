@@ -185,6 +185,7 @@ export default function EditPostPage() {
     }
   };
 
+
   if (loading) {
     return (
       <div className="min-h-screen bg-[#F4F7FA] flex flex-col items-center justify-center">
@@ -350,7 +351,7 @@ export default function EditPostPage() {
                       value=""
                     >
                       <option value="">Add category...</option>
-                      {availableCategories.map(cat => <option key={cat} value={cat}>{cat}</option>)}
+                      {["Tech", "Education", "Lifestyle", "Business", "Marketing", "Travelling"].map(cat => <option key={cat} value={cat}>{cat}</option>)}
                     </select>
                   </div>
 
