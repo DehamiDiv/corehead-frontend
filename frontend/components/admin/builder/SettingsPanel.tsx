@@ -21,10 +21,13 @@ export default function SettingsPanel() {
 
   if (!selectedBlock) {
     return (
-      <aside className="w-72 bg-slate-50 border-l border-gray-200 flex flex-col p-4 h-[calc(100vh-64px)]">
-        <h3 className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-4">
-          Template Settings
-        </h3>
+      <aside className="w-80 bg-[#f8fafc] border-l border-slate-200/60 flex flex-col p-6 h-[calc(100vh-64px)] shadow-[-4px_0_15px_rgba(0,0,0,0.02)]">
+        <div className="flex items-center gap-2 mb-6">
+           <div className="w-8 h-8 rounded-lg bg-white shadow-sm flex items-center justify-center text-slate-400">
+              <Layout size={16} />
+           </div>
+           <h3 className="text-sm font-bold text-slate-800 tracking-tight uppercase">Template Settings</h3>
+        </div>
         {/* FR-07: The system shall allow selecting template type (Single Post vs Blog Archive) */}
         <div className="flex-1 flex flex-col gap-6">
           <div className="space-y-2">

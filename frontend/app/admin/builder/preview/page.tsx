@@ -256,87 +256,17 @@ export default function BlogPreviewPage() {
         </div>
       </nav>
 
-      {/* Blog Content */}
-      <article className="max-w-3xl mx-auto px-6 py-12">
-        {/* Category & Date */}
-        <div className="flex items-center gap-3 text-sm mb-6">
-          <span className="text-blue-600 font-semibold uppercase tracking-wider">
-            Development
-          </span>
-          <span className="text-slate-400">•</span>
-          <span className="text-slate-500">Oct 24, 2024</span>
-        </div>
-
-        {/* Title */}
-        <h1 className="text-4xl md:text-5xl font-extrabold text-slate-900 leading-tight mb-8">
-          The Future of AI in Web Development: A Comprehensive Guide
-        </h1>
-
-        {/* Author */}
-        <div className="flex items-center justify-between mb-10 pb-10 border-b border-gray-100">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-full bg-slate-200 overflow-hidden">
-              <img
-                src="https://api.dicebear.com/7.x/avataaars/svg?seed=Felix"
-                alt="Author"
-                className="w-full h-full object-cover"
-              />
-            </div>
-            <div>
-              <div className="font-semibold text-slate-900">Felix Vance</div>
-              <div className="text-sm text-slate-500">Senior Engineer</div>
-            </div>
+      {/* Dynamic Content Rendering */}
+      <main className="max-w-6xl mx-auto px-6 py-12">
+        {blocks.length > 0 ? (
+          renderBlockTree()
+        ) : (
+          <div className="flex flex-col items-center justify-center py-20 text-slate-400">
+            <p className="text-xl font-medium">Your canvas is empty</p>
+            <p>Go back to the editor to add some components.</p>
           </div>
-
-          <div className="flex items-center gap-3 text-slate-400">
-            <button className="hover:text-red-500 transition-colors">
-              <Heart className="w-5 h-5" />
-            </button>
-            <button className="hover:text-blue-500 transition-colors">
-              <MessageCircle className="w-5 h-5" />
-            </button>
-            <button className="hover:text-blue-600 transition-colors">
-              <Share2 className="w-5 h-5" />
-            </button>
-            <button className="hover:text-slate-700 transition-colors">
-              <Bookmark className="w-5 h-5" />
-            </button>
-          </div>
-        </div>
-
-        {/* Hero Image */}
-        <div className="rounded-2xl overflow-hidden bg-slate-100 mb-10 aspect-video relative">
-          <div className="absolute inset-0 flex items-center justify-center text-slate-300">
-            {/* Placeholder for actual image */}
-            <span className="font-medium text-lg">Featured Image Preview</span>
-          </div>
-        </div>
-
-        {/* Body Content (Dynamic content) */}
-        <div className="prose prose-lg prose-slate max-w-none">
-          {blocks.length > 0 ? (
-            renderBlockTree()
-          ) : (
-            <p className="lead italic text-slate-400">
-              No content found in this post.
-            </p>
-          )}
-        </div>
-
-        {/* Footer / Tags */}
-        <div className="mt-12 pt-8 border-t border-gray-100">
-          <div className="flex flex-wrap gap-2">
-            {["AI", "Web Dev", "Future", "Tech"].map((tag) => (
-              <span
-                key={tag}
-                className="px-3 py-1 bg-slate-100 text-slate-600 rounded-full text-sm font-medium hover:bg-slate-200 cursor-pointer transition-colors"
-              >
-                #{tag}
-              </span>
-            ))}
-          </div>
-        </div>
-      </article>
+        )}
+      </main>
     </div>
   );
 }

@@ -1,10 +1,26 @@
 "use client";
 
+import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import { motion } from "framer-motion";
 import { Sparkles, ArrowRight, Zap, Layout, Rocket, BarChart3 } from "lucide-react";
 
 export default function DashboardHero() {
+  const [user, setUser] = useState<{ name?: string; role?: string } | null>(null);
+
+  useEffect(() => {
+    const storedUser = localStorage.getItem('user');
+    if (storedUser) {
+      try {
+        setUser(JSON.parse(storedUser));
+      } catch (e) {
+        console.error("Error parsing user", e);
+      }
+    }
+  }, []);
+
+  const isAdmin = user?.role === 'admin';
+
   return (
     <section className="relative py-20 px-8 text-center overflow-hidden">
       {/* Decorative Gradient Background Elements */}
@@ -18,17 +34,20 @@ export default function DashboardHero() {
       >
         <div className="inline-flex items-center gap-2 px-3 py-1.5 bg-white/50 backdrop-blur-md text-blue-600 rounded-full text-[10px] font-black uppercase tracking-[0.2em] mb-8 border border-white shadow-sm">
           <Sparkles className="w-3 h-3" />
-          Enterprise AI CMS Platform
+          {isAdmin ? "Enterprise AI CMS Platform" : "CoreHead Content Creator"}
         </div>
 
         <h1 className="text-5xl md:text-7xl font-black text-slate-900 mb-8 tracking-tighter leading-[0.95]">
-          Manage Your <br/>
-          <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-indigo-600">Digital Empire</span>
+          Welcome back, <br/>
+          <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-indigo-600">
+            {user?.name?.split(' ')[0] || (isAdmin ? "Admin" : "Creator")}!
+          </span>
         </h1>
         
         <p className="text-lg md:text-xl text-slate-500 mb-12 max-w-2xl mx-auto leading-relaxed font-bold tracking-tight">
-          Welcome back to CoreHead. Your all-in-one suite for AI-driven layout generation, 
-          professional content management, and visual storytelling.
+          {isAdmin 
+            ? "You have full control over the CoreHead digital empire. Manage users, layouts, and site-wide configurations from one place."
+            : "Manage your personal content and designs. Use our AI-powered tools to bring your creative vision to life."}
         </p>
 
         {/* Action Buttons */}

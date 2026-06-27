@@ -84,17 +84,38 @@ export function BuilderProvider({ children }: { children: ReactNode }) {
 
   const [isLoaded, setIsLoaded] = useState(false);
 
-  // Load layout from local storage on mount
+  // Load layout from backend if ID exists in URL, otherwise from local storage
   useEffect(() => {
-    const saved = localStorage.getItem("corehead_builder_layout");
-    if (saved) {
-      try {
-        setBlocks(JSON.parse(saved));
-      } catch (e) {
-        console.error("Failed to parse saved layout", e);
+    const fetchInitialLayout = async () => {
+      const urlParams = new URLSearchParams(window.location.search);
+      const id = urlParams.get("id");
+
+      if (id) {
+        try {
+          const template = await api.getTemplateById(id);
+          if (template && template.layoutJson) {
+            setBlocks(template.layoutJson);
+            setTemplateId(template.id);
+            setTemplateName(template.name);
+            setTemplateType(template.type);
+          }
+        } catch (error) {
+          console.error("Failed to fetch template by ID", error);
+        }
+      } else {
+        const saved = localStorage.getItem("corehead_builder_layout");
+        if (saved) {
+          try {
+            setBlocks(JSON.parse(saved));
+          } catch (e) {
+            console.error("Failed to parse saved layout", e);
+          }
+        }
       }
-    }
-    setIsLoaded(true);
+      setIsLoaded(true);
+    };
+
+    fetchInitialLayout();
   }, []);
 
   // Auto-save layout on any change after initial load
@@ -224,6 +245,9 @@ export function BuilderProvider({ children }: { children: ReactNode }) {
         setBlocks(data.blocks);
         localStorage.setItem("corehead_builder_layout", JSON.stringify(data.blocks));
       }
+      
+      // Return provider info so chat can show it
+      return data.provider || 'ai';
     } catch (error: any) {
       console.error("AI Generation error:", error);
       alert("AI Generation failed: " + error.message);

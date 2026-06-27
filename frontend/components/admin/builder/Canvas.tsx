@@ -1,3 +1,4 @@
+import React, { useState } from "react";
 import {
   FileText,
   Type,
@@ -21,15 +22,36 @@ import {
 } from "@/components/admin/builder/BuilderContext";
 
 export default function Canvas() {
-  const { blocks, addBlock, selectBlock, selectedBlockId, deviceMode, isAnalyzing } = useBuilder();
+  const { blocks, addBlock, selectBlock, selectedBlockId, deviceMode, isAnalyzing, reorderBlocks } = useBuilder();
+  const [isDragging, setIsDragging] = useState(false);
 
   const handleDragOver = (e: React.DragEvent) => {
     e.preventDefault();
-    e.dataTransfer.dropEffect = "copy";
+    const isSidebarDrag = e.dataTransfer.types.includes("application/react-dnd");
+    const isInternalDrag = e.dataTransfer.types.includes("sourceblockid");
+    
+    if (isSidebarDrag || isInternalDrag) {
+      setIsDragging(true);
+      e.dataTransfer.dropEffect = isSidebarDrag ? "copy" : "move";
+    }
+  };
+
+  const handleDragLeave = (e: React.DragEvent) => {
+    // Only reset if we are leaving the main canvas area
+    const rect = e.currentTarget.getBoundingClientRect();
+    if (
+      e.clientX <= rect.left ||
+      e.clientX >= rect.right ||
+      e.clientY <= rect.top ||
+      e.clientY >= rect.bottom
+    ) {
+      setIsDragging(false);
+    }
   };
 
   const handleDropRoot = (e: React.DragEvent) => {
     e.preventDefault();
+    setIsDragging(false);
     const type = e.dataTransfer.getData("application/react-dnd") as BlockType;
     if (type) {
       addBlock(type);
@@ -39,8 +61,39 @@ export default function Canvas() {
   const handleDropNested = (e: React.DragEvent, parentId: string) => {
     e.preventDefault();
     e.stopPropagation();
+    setIsDragging(false);
     const type = e.dataTransfer.getData("application/react-dnd") as BlockType;
     if (type) {
+      addBlock(type, parentId);
+    }
+  };
+
+  const handleBlockDragStart = (e: React.DragEvent, blockId: string) => {
+    e.dataTransfer.setData("sourceBlockId", blockId);
+    e.dataTransfer.effectAllowed = "move";
+    // We can't set state here easily because it's a different component sometimes, 
+    // but since it's in the same Canvas, it's fine.
+    setTimeout(() => setIsDragging(true), 0);
+  };
+
+  const handleReorderDrop = (e: React.DragEvent, targetIndex: number, parentId?: string) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(false);
+    
+    const sourceId = e.dataTransfer.getData("sourceBlockId");
+    const type = e.dataTransfer.getData("application/react-dnd") as BlockType;
+
+    if (sourceId) {
+      const currentLevelBlocks = blocks.filter(b => b.parentId === parentId || (!b.parentId && !parentId));
+      const sourceIndex = blocks.findIndex(b => b.id === sourceId);
+      const targetBlock = currentLevelBlocks[targetIndex];
+      let globalTargetIndex = targetBlock ? blocks.findIndex(b => b.id === targetBlock.id) : blocks.length;
+      
+      if (sourceIndex !== -1) {
+        reorderBlocks(sourceIndex, globalTargetIndex);
+      }
+    } else if (type) {
       addBlock(type, parentId);
     }
   };
@@ -50,92 +103,136 @@ export default function Canvas() {
       (b) => b.parentId === parentId || (!b.parentId && !parentId),
     );
 
-    return levelBlocks.map((block) => {
-      const isSelected = selectedBlockId === block.id;
+    return (
+      <div className="flex flex-col">
+        {levelBlocks.map((block, index) => {
+          const isSelected = selectedBlockId === block.id;
 
-      return (
-        <div
-          key={block.id}
-          onClick={(e) => {
-            e.stopPropagation();
-            selectBlock(block.id);
-          }}
-          className={`relative transition-all cursor-pointer ${
-            isSelected
-              ? "ring-2 ring-blue-500 bg-blue-50/10"
-              : "hover:ring-1 hover:ring-blue-200"
-          } ${block.type === "Container" || block.type === "Columns" ? "p-2 border-2 border-dashed border-slate-200 rounded-lg min-h-[100px]" : "p-4 rounded-lg border-2 border-transparent hover:bg-slate-50"}`}
-        >
-          {renderBlockContent(block, isSelected)}
+          return (
+            <div key={block.id} className="group/block">
+              {/* Drop Zone Above */}
+              <div 
+                className={`h-4 transition-all flex items-center justify-center relative z-20 ${isDragging ? "bg-blue-50/50 border-y border-dashed border-blue-200 my-1" : "opacity-0 -my-2"}`}
+                onDragOver={handleDragOver}
+                onDrop={(e) => handleReorderDrop(e, index, parentId)}
+              >
+                {isDragging && <div className="w-12 h-1 bg-blue-400 rounded-full animate-pulse"></div>}
+              </div>
 
-          {(block.type === "Container" || block.type === "Columns") && (
-            <div
-              className={`mt-4 p-4 min-h-[50px] bg-slate-50/50 rounded gap-4 ${block.type === "Columns" ? "grid" : "flex flex-col"}`}
-              style={block.type === "Columns" ? { 
-                gridTemplateColumns: `repeat(${block.content || 2}, minmax(0, 1fr))` 
-              } : {}}
-              onDragOver={handleDragOver}
-              onDrop={(e) => handleDropNested(e, block.id)}
-            >
-              {renderBlockTree(block.id)}
-              {blocks.filter((b) => b.parentId === block.id).length === 0 && (
-                <div className={`text-sm text-slate-400 text-center py-4 border-2 border-dashed border-slate-200 rounded ${block.type === "Columns" ? `col-span-${block.content || 2}` : ""}`}>
-                  Drag{" "}
-                  {block.type === "Container" ? "blocks" : "columns content"}{" "}
-                  here
+              <div
+                draggable
+                onDragStart={(e) => handleBlockDragStart(e, block.id)}
+                onDragEnd={() => setIsDragging(false)}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  selectBlock(block.id);
+                }}
+                className={`relative transition-all cursor-move ${
+                  isSelected
+                    ? "ring-2 ring-blue-500 bg-blue-50/10 shadow-lg z-10"
+                    : "hover:ring-1 hover:ring-blue-200"
+                } ${block.type === "Container" || block.type === "Columns" ? "p-4 border-2 border-dashed border-slate-200 rounded-xl min-h-[120px]" : "p-6 rounded-xl border-2 border-transparent hover:bg-slate-50"}`}
+              >
+                {/* Drag Handle Indicator */}
+                <div className="absolute -left-10 top-1/2 -translate-y-1/2 opacity-0 group-hover/block:opacity-100 transition-opacity p-2 text-slate-300 hover:text-blue-500">
+                  <MoveVertical size={20} />
+                </div>
+
+                {renderBlockContent(block, isSelected)}
+
+                {(block.type === "Container" || block.type === "Columns") && (
+                  <div
+                    className={`mt-6 p-6 min-h-[80px] bg-slate-50/50 rounded-xl gap-6 border-2 border-dashed border-slate-100 ${block.type === "Columns" ? "grid" : "flex flex-col"}`}
+                    style={block.type === "Columns" ? { 
+                      gridTemplateColumns: `repeat(${block.content || 2}, minmax(0, 1fr))` 
+                    } : {}}
+                    onDragOver={handleDragOver}
+                    onDrop={(e) => handleDropNested(e, block.id)}
+                  >
+                    {renderBlockTree(block.id)}
+                    {blocks.filter((b) => b.parentId === block.id).length === 0 && (
+                      <div className="text-sm text-slate-400 text-center py-6 border-2 border-dashed border-slate-200 rounded-xl flex items-center justify-center gap-2">
+                        <LayoutGrid size={16} />
+                        Drag content here
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+
+              {/* Drop Zone Below (only for last item) */}
+              {index === levelBlocks.length - 1 && (
+                <div 
+                  className={`h-4 transition-all flex items-center justify-center relative z-20 ${isDragging ? "bg-blue-50/50 border-y border-dashed border-blue-200 my-1" : "opacity-0 -my-2"}`}
+                  onDragOver={handleDragOver}
+                  onDrop={(e) => handleReorderDrop(e, index + 1, parentId)}
+                >
+                  {isDragging && <div className="w-12 h-1 bg-blue-400 rounded-full animate-pulse"></div>}
                 </div>
               )}
             </div>
-          )}
-        </div>
-      );
-    });
+          );
+        })}
+      </div>
+    );
   };
 
   // Determine width based on deviceMode
   const maxWidthClass = 
     deviceMode === "mobile" ? "max-w-[375px]" :
     deviceMode === "tablet" ? "max-w-[768px]" :
-    "max-w-5xl";
+    "max-w-6xl";
 
   return (
     <div
-      className="flex-1 bg-slate-100 p-8 flex justify-center overflow-y-auto relative"
+      className="flex-1 bg-[#f8fafc] flex justify-center items-start overflow-y-auto relative scroll-smooth pb-40 selection:bg-blue-100"
       onDragOver={handleDragOver}
+      onDragLeave={handleDragLeave}
       onDrop={handleDropRoot}
+      style={{
+        backgroundImage: `radial-gradient(#e2e8f0 1px, transparent 1px)`,
+        backgroundSize: '24px 24px'
+      }}
     >
-      <div className={`w-full ${maxWidthClass} bg-white min-h-[800px] rounded-xl shadow-sm border border-slate-200 p-12 flex flex-col transition-all duration-300 relative`}>
+      <div className={`w-full ${maxWidthClass} bg-white min-h-[800px] h-fit transition-all duration-300 relative shadow-[0_0_80px_-15px_rgba(0,0,0,0.08)] my-8 rounded-3xl overflow-hidden border border-slate-100`}>
         
         {/* Analyzing Overlay */}
         {isAnalyzing && (
-          <div className="absolute inset-0 z-10 bg-slate-900/90 rounded-xl flex flex-col items-center justify-center p-8 backdrop-blur-sm">
-            <div className="w-20 h-20 bg-white rounded-2xl flex items-center justify-center mb-8 shadow-2xl relative overflow-hidden">
-               <FileText size={32} className="text-slate-800" />
-               <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 mt-3 ml-3">
-                 <div className="bg-slate-900 rounded-full p-1 border-2 border-white">
-                   <Search size={14} className="text-white" />
+          <div className="fixed inset-0 z-[100] bg-slate-900/90 flex flex-col items-center justify-center p-8 backdrop-blur-md">
+            <div className="w-24 h-24 bg-white rounded-3xl flex items-center justify-center mb-8 shadow-2xl relative overflow-hidden animate-bounce">
+               <FileText size={40} className="text-slate-800" />
+               <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 mt-4 ml-4">
+                 <div className="bg-indigo-600 rounded-full p-1.5 border-4 border-white">
+                   <Search size={18} className="text-white" />
                  </div>
                </div>
             </div>
             
-            <h2 className="text-2xl font-bold text-white mb-3">Analyzing your request...</h2>
-            <p className="text-slate-400 mb-8 text-sm">This may take around 2-3 minutes...</p>
+            <h2 className="text-3xl font-bold text-white mb-3">Crafting your layout...</h2>
+            <p className="text-slate-400 mb-8 text-center max-w-md">Our AI is analyzing your request to generate the most optimal design structure. This usually takes 2-3 minutes.</p>
 
-            <div className="flex gap-1.5 opacity-80">
-              <div className="w-6 h-1 bg-indigo-500 rounded-full animate-pulse"></div>
-              <div className="w-1.5 h-1 bg-indigo-500 rounded-full animate-pulse" style={{ animationDelay: '150ms' }}></div>
-              <div className="w-1.5 h-1 bg-indigo-500 rounded-full animate-pulse" style={{ animationDelay: '300ms' }}></div>
-              <div className="w-1.5 h-1 bg-indigo-500/30 rounded-full"></div>
+            <div className="flex gap-2">
+              <div className="w-8 h-1.5 bg-indigo-500 rounded-full animate-pulse"></div>
+              <div className="w-2 h-1.5 bg-indigo-500 rounded-full animate-pulse" style={{ animationDelay: '200ms' }}></div>
+              <div className="w-2 h-1.5 bg-indigo-500 rounded-full animate-pulse" style={{ animationDelay: '400ms' }}></div>
             </div>
           </div>
         )}
 
         {/* Builder Content */}
-        {blocks.length === 0 ? (
-          <div className="flex-1 min-h-[400px]"></div>
-        ) : (
-          <div className="space-y-4">{renderBlockTree()}</div>
-        )}
+        <div className="p-12 md:p-20">
+          {blocks.length === 0 ? (
+            <div className="flex flex-col items-center justify-center min-h-[600px] border-2 border-dashed border-slate-200 rounded-3xl bg-slate-50/50">
+               <div className="w-16 h-16 bg-white rounded-2xl shadow-sm border border-slate-100 flex items-center justify-center mb-6">
+                  <LayoutGrid className="w-8 h-8 text-slate-300" />
+               </div>
+               <h3 className="text-slate-800 font-bold text-xl mb-2">Your Canvas is Ready</h3>
+               <p className="text-slate-500 text-center max-w-xs">Start by dragging components from the sidebar or use the AI chat to build your page.</p>
+            </div>
+          ) : (
+            <div className="space-y-2">{renderBlockTree()}</div>
+          )}
+        </div>
       </div>
     </div>
   );

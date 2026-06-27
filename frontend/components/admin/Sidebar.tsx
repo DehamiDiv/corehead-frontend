@@ -3,7 +3,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useMemo, useState } from "react";
+import { useMemo, useState, useEffect } from "react";
 import {
   FileText,
   Tags,
@@ -15,6 +15,7 @@ import {
   ChevronDown,
   LayoutTemplate,
   Sparkles,
+  PanelLeft,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -27,19 +28,48 @@ type NavItem = {
 export default function Sidebar() {
   const pathname = usePathname();
   const [settingsOpen, setSettingsOpen] = useState(true);
+  const [user, setUser] = useState<{ name?: string; role?: string; email?: string; createdAt?: string } | null>(null);
+
+  useEffect(() => {
+    const fetchUser = async () => {
+      try {
+        const storedUser = localStorage.getItem('user');
+        if (storedUser) {
+          try {
+            setUser(JSON.parse(storedUser));
+          } catch (e) {
+            console.error("Error parsing stored user:", e);
+            localStorage.removeItem('user');
+          }
+        }
+      } catch (error) {
+        console.error("Failed to load user info:", error);
+      }
+    };
+    fetchUser();
+  }, []);
 
   const navItems: NavItem[] = useMemo(
-    () => [
-      { label: "AI Generator",   href: "/ai-prompt",        Icon: Sparkles       },
-      { label: "Posts",         href: "/admin/posts",      Icon: FileText       },
-      { label: "Layouts",       href: "/admin/layouts",    Icon: LayoutTemplate },
-      { label: "Categories",    href: "/admin/categories", Icon: Tags           },
-      { label: "Media Library", href: "/admin/media",      Icon: ImageIcon      },
-      { label: "Interactions",  href: "/admin/comments",   Icon: MessageSquare  },
-      { label: "Users",         href: "/admin/users",      Icon: Users          },
-      { label: "Pages",         href: "/admin/pages",      Icon: File           },
-    ],
-    []
+    () => {
+      const allItems = [
+        { label: "AI Generator",   href: "/ai-prompt",        Icon: Sparkles       },
+        { label: "Posts",         href: "/admin/posts",      Icon: FileText       },
+        { label: "Layouts",       href: "/admin/layouts",    Icon: LayoutTemplate },
+        { label: "Visual Builder",href: "/admin/builder",    Icon: PanelLeft      },
+        { label: "Categories",    href: "/admin/categories", Icon: Tags,           adminOnly: true },
+        { label: "Media Library", href: "/admin/media",      Icon: ImageIcon      },
+        { label: "Interactions",  href: "/admin/comments",   Icon: MessageSquare, adminOnly: true },
+        { label: "Users",         href: "/admin/users",      Icon: Users,          adminOnly: true },
+        { label: "Pages",         href: "/admin/pages",      Icon: File,           adminOnly: true },
+      ];
+
+      // If user is not admin, filter out adminOnly items
+      if (user?.role !== 'admin') {
+        return allItems.filter(item => !item.adminOnly);
+      }
+      return allItems;
+    },
+    [user?.role]
   );
 
   const isActive = (href: string) => pathname === href || pathname.startsWith(href + "/");
@@ -147,14 +177,18 @@ export default function Sidebar() {
       <div className="p-6 border-t border-gray-50">
         <div className="flex items-center gap-3 p-2 rounded-2xl hover:bg-gray-50 transition-colors cursor-pointer">
           <div className="w-10 h-10 rounded-xl bg-gray-900 text-white flex items-center justify-center font-bold">
-            D
+            {user?.name?.charAt(0).toUpperCase() || user?.email?.charAt(0).toUpperCase() || "A"}
           </div>
           <div className="flex-1 min-w-0">
-            <p className="text-sm font-bold text-slate-900 truncate">Dehami Div</p>
-            <p className="text-[11px] text-slate-400 truncate">Admin Account</p>
+            <p className="text-sm font-bold text-slate-900 truncate">
+              {user?.name || "Admin"}
+            </p>
+            <p className="text-[11px] text-slate-400 truncate uppercase tracking-tight font-semibold">
+              {user?.role || "Account"}
+            </p>
           </div>
         </div>
       </div>
     </aside>
   );
-}
+}

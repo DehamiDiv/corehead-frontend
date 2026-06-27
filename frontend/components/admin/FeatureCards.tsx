@@ -11,12 +11,12 @@ const features = [
     icon: LayoutTemplate,
     color: "blue",
     glow: "shadow-blue-500/20",
-    href: "/builder"
+    href: "/admin/builder"
   },
   {
     title: "AI Layout Generator",
     description: "Generate entire sections or pages using just a text prompt. Fast, creative, and smart.",
-    image: "https://www.gstatic.com/lamda/images/gemini_sparkle_v002_d4735304fb62aa258b39.svg",
+    icon: Sparkles,
     color: "purple",
     glow: "shadow-purple-500/20",
     href: "/ai-prompt"
