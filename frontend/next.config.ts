@@ -21,6 +21,18 @@ const nextConfig: NextConfig = {
       },
     ],
   },
+  async rewrites() {
+    return [
+      {
+        source: '/admin/blogs',
+        destination: '/admin/posts',
+      },
+      {
+        source: '/admin/blogs/:path*',
+        destination: '/admin/posts/:path*',
+      },
+    ];
+  },
 };
 
 export default nextConfig;

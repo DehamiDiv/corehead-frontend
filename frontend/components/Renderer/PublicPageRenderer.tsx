@@ -166,14 +166,14 @@ export function PublicPageRenderer({
             {posts.length > 0 ? (
               posts.map((post: any) => (
                 <Link
-                  href={`/posts/${post.slug || post.id}`}
+                  href={`/blog/${post.slug || post.id}`}
                   key={post.id}
                   className="group block border border-gray-200 rounded-xl overflow-hidden hover:shadow-lg transition bg-white flex flex-col h-full"
                 >
                   <div className="relative w-full h-48 bg-gray-100">
                     <Image
                       src={
-                        post.featured_image || "https://placehold.co/400x300"
+                        post.thumbnailUrl || post.imageUrl || post.coverImage || post.featured_image || `https://picsum.photos/seed/${post.id}/400/300`
                       }
                       fill
                       className="object-cover group-hover:scale-105 transition-transform duration-300"
@@ -182,7 +182,7 @@ export function PublicPageRenderer({
                   </div>
                   <div className="p-5 flex flex-col flex-grow">
                     <span className="text-xs font-semibold text-blue-600 mb-2 uppercase tracking-wider">
-                      {post.category || "Article"}
+                      {post.category || (Array.isArray(post.categories) ? post.categories[0] : post.categories) || "Article"}
                     </span>
                     <h3 className="font-bold text-gray-900 mb-2 line-clamp-2">
                       {post.title}

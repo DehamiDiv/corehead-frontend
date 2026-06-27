@@ -26,7 +26,8 @@ export function middleware(request: NextRequest) {
     }
 
     // Role-based access control for /admin routes
-    if (pathname.startsWith('/admin') && role !== 'admin') {
+    const isAdmin = role?.toLowerCase() === 'admin' || role?.toLowerCase() === 'administrator';
+    if (pathname.startsWith('/admin') && !isAdmin) {
       const homeUrl = new URL('/', request.url);
       return NextResponse.redirect(homeUrl);
     }

@@ -23,7 +23,7 @@ export default function AdminNavbar() {
 
   const navItems = [
     { label: "Dashboard", href: "/admin" },
-    { label: "All Blogs", href: "/admin/blogs" },
+    { label: "All Blogs", href: "/admin/posts" },
     { label: "Settings", href: "/admin/settings" },
   ];
 

@@ -1,259 +1,432 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
+import Link from "next/link";
 import {
-  RotateCcw,
-  Plus,
   Search,
+  Plus,
   Edit,
   Trash2,
   Star,
   ChevronDown,
+  Loader2,
   X,
-  Filter,
-  MoreHorizontal,
-  ExternalLink,
-  FileText,
+  RotateCcw,
+  ChevronLeft,
+  ChevronRight,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import Link from "next/link";
+import { api } from "@/lib/api";
 
-export default function BlogsPage() {
+export default function PostsPage() {
   const [posts, setPosts] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
+  const [statusFilter, setStatusFilter] = useState("All Statuses");
+  const [categoryFilter, setCategoryFilter] = useState("All Categories");
+  const [authorFilter, setAuthorFilter] = useState("All Authors");
+  const [featuredFilter, setFeaturedFilter] = useState("All Posts");
+  const [rowsPerPage, setRowsPerPage] = useState(20);
 
-  const fetchPosts = async () => {
+  const fetchPosts = useCallback(async () => {
     setLoading(true);
     try {
-      const res = await fetch("http://localhost:5000/api/posts");
-      const data = await res.json();
-      setPosts(data);
+      const data = await api.getPosts();
+      setPosts(Array.isArray(data) ? data : []);
     } catch (err) {
       console.error("Failed to fetch posts:", err);
+      setPosts([]);
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
   useEffect(() => {
     fetchPosts();
-  }, []);
+  }, [fetchPosts]);
 
   const handleDelete = async (id: number) => {
-    if (!confirm("Are you sure you want to delete this post?")) return;
+    if (!id || !confirm("Are you sure you want to delete this post?")) return;
     try {
-      const res = await fetch(`http://localhost:5000/api/posts/${id}`, {
-        method: "DELETE",
-      });
-      if (res.ok) {
-        setPosts(posts.filter((post) => post.id !== id));
-      }
+      await api.deletePost(id);
+      setPosts((prev) => prev.filter((p) => p.id !== id));
     } catch (err) {
       console.error("Error deleting post:", err);
     }
   };
 
-  const filteredPosts = Array.isArray(posts) 
-    ? posts.filter(post => post.title?.toLowerCase().includes(searchQuery.toLowerCase()))
-    : [];
+  const postsArray = Array.isArray(posts) ? posts : [];
 
-  const stats = [
-    { label: "Total Posts", value: Array.isArray(posts) ? posts.length : 0, color: "blue" },
-    { label: "Published", value: Array.isArray(posts) ? posts.filter(p => p.status === 'Published').length : 0, color: "emerald" },
-    { label: "Drafts", value: Array.isArray(posts) ? posts.filter(p => p.status === 'Draft').length : 0, color: "amber" },
-    { label: "Featured", value: Array.isArray(posts) ? posts.filter(p => p.featured).length : 0, color: "purple" },
-  ];
+  const allCategories = Array.from(
+    new Set(
+      postsArray.flatMap((p) => {
+        const rawCats = p?.categories || p?.category;
+        if (Array.isArray(rawCats)) return rawCats;
+        if (typeof rawCats === "string" && rawCats.trim()) {
+          try {
+            return JSON.parse(rawCats);
+          } catch (e) {
+            return [rawCats];
+          }
+        }
+        return [];
+      })
+    )
+  ).filter((c) => typeof c === "string" && (c as string).length > 0) as string[];
+
+  const allAuthors = Array.from(
+    new Set(
+      postsArray.map((p) => {
+        const name = p?.author?.name || p?.author_name || "Unknown Author";
+        return typeof name === "string" ? name : "Unknown Author";
+      })
+    )
+  ).filter(Boolean) as string[];
+
+  const filteredPosts = postsArray.filter((post) => {
+    if (!post) return false;
+    const title = String(post?.title || "").toLowerCase();
+    const authorName = String(
+      post?.author?.name || post?.author_name || "Unknown Author"
+    ).toLowerCase();
+    const query = searchQuery.toLowerCase();
+
+    if (query && !title.includes(query) && !authorName.includes(query))
+      return false;
+
+    if (statusFilter !== "All Statuses") {
+      const status = post?.status || "Draft";
+      if (status !== statusFilter) return false;
+    }
+
+    if (authorFilter !== "All Authors") {
+      const name =
+        post?.author?.name || post?.author_name || "Unknown Author";
+      if (name !== authorFilter) return false;
+    }
+
+    if (categoryFilter !== "All Categories") {
+      let cats: string[] = [];
+      const rawCats = post?.categories || post?.category;
+      if (Array.isArray(rawCats)) cats = rawCats.map(String);
+      else if (typeof rawCats === "string") {
+        try {
+          const parsed = JSON.parse(rawCats);
+          cats = Array.isArray(parsed)
+            ? parsed.map(String)
+            : [String(parsed)];
+        } catch (e) {
+          cats = [rawCats];
+        }
+      }
+      if (!cats.some((c) => c === categoryFilter)) return false;
+    }
+
+    if (featuredFilter === "Featured Only" && !post?.featured) return false;
+    if (featuredFilter === "Regular Only" && post?.featured) return false;
+
+    return true;
+  });
 
   return (
-    <div className="space-y-6 max-w-[1600px] mx-auto pb-10">
-      {/* Header */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-        <div>
-          <h1 className="text-3xl font-bold text-gray-900">Blog Posts</h1>
-          <p className="text-gray-500 mt-1">
-            Manage your content, edit stories and track performance.
-          </p>
-        </div>
-        <div className="flex items-center gap-3">
-          <button 
-            onClick={fetchPosts}
-            className="flex items-center gap-2 px-4 py-2.5 bg-white border border-gray-200 rounded-xl text-sm font-semibold text-gray-700 hover:bg-gray-50 transition-all shadow-sm"
-          >
-            <RotateCcw className={cn("w-4 h-4", loading && "animate-spin")} />
-            Refresh
-          </button>
-          <Link 
-            href="/admin/posts/create"
-            className="flex items-center gap-2 px-5 py-2.5 bg-blue-600 rounded-xl text-sm font-bold text-white hover:bg-blue-700 transition-all shadow-lg shadow-blue-200"
-          >
-            <Plus className="w-4 h-4" />
-            Create Blogs
-          </Link>
-        </div>
-      </div>
-
-      {/* Stats Quick View */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        {stats.map((stat, i) => (
-          <div key={i} className="bg-white p-5 rounded-2xl border border-gray-100 shadow-sm">
-            <p className="text-sm font-medium text-gray-500">{stat.label}</p>
-            <p className="text-2xl font-bold text-gray-900 mt-1">{stat.value}</p>
+    <div className="min-h-screen bg-[#E8F1F9] pt-4 pb-6 px-6">
+      <div className="max-w-[1575px] mx-auto">
+        {/* Header */}
+        <div className="h-[80px] flex items-center justify-between mb-3">
+          <div>
+            <h1 className="text-[32px] font-bold text-slate-900 leading-none">Posts</h1>
+            <p className="text-[15px] text-slate-500 font-medium mt-2">
+              Welcome back! Here&apos;s your Blog Posts.
+            </p>
           </div>
-        ))}
-      </div>
-
-      {/* Filters & Search */}
-      <div className="bg-white p-4 rounded-2xl shadow-sm border border-gray-100 flex flex-col lg:flex-row items-center gap-4">
-        <div className="relative flex-1 w-full">
-          <Search className="w-4 h-4 text-gray-400 absolute left-4 top-1/2 -translate-y-1/2" />
-          <input
-            type="text"
-            placeholder="Search by title or keyword..."
-            className="w-full pl-11 pr-4 py-3 bg-gray-50/50 border border-gray-100 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/10 transition-all text-sm"
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-          />
+          <div className="flex items-center gap-3">
+            <button
+              onClick={fetchPosts}
+              className="h-10 px-4 flex items-center gap-2.5 bg-white border border-slate-200 rounded-xl text-[14px] font-bold text-slate-700 hover:bg-slate-50 transition-all shadow-sm"
+            >
+              <RotateCcw className={cn("w-[18px] h-[18px]", loading && "animate-spin")} />
+              Refresh
+            </button>
+            <Link
+              href="/admin/posts/create"
+              className="h-10 px-4 flex items-center gap-2.5 bg-blue-600 text-white rounded-xl text-[14px] font-bold hover:bg-blue-700 transition-all shadow-lg shadow-blue-500/20"
+            >
+              <Plus className="w-[18px] h-[18px]" />
+              Create Blog
+            </Link>
+          </div>
         </div>
-        <div className="flex items-center gap-3 w-full lg:w-auto overflow-x-auto pb-2 lg:pb-0">
-          <FilterButton label="Status" />
-          <FilterButton label="Category" />
-          <FilterButton label="Author" />
-          <button className="flex items-center gap-2 px-4 py-2.5 text-sm font-semibold text-gray-400 hover:text-gray-600 transition-colors">
-            <X className="w-4 h-4" />
-            Clear
-          </button>
-        </div>
-      </div>
 
-      {/* Table Content */}
-      <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="w-full text-left">
-            <thead>
-              <tr className="bg-gray-50/50 border-b border-gray-100">
-                <th className="px-8 py-5 text-xs font-bold text-gray-400 uppercase tracking-wider">Post Details</th>
-                <th className="px-6 py-5 text-xs font-bold text-gray-400 uppercase tracking-wider">Author</th>
-                <th className="px-6 py-5 text-xs font-bold text-gray-400 uppercase tracking-wider">Status</th>
-                <th className="px-6 py-5 text-xs font-bold text-gray-400 uppercase tracking-wider">Featured</th>
-                <th className="px-8 py-5 text-xs font-bold text-gray-400 uppercase tracking-wider text-right">Actions</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-50">
-                {loading ? (
-                <tr>
-                  <td colSpan={5} className="px-8 py-20 text-center">
-                    <div className="flex flex-col items-center gap-3">
-                      <div className="w-8 h-8 border-4 border-blue-600 border-t-transparent rounded-full animate-spin" />
-                      <p className="text-gray-500 font-medium">Fetching your posts...</p>
-                    </div>
-                  </td>
-                </tr>
-              ) : filteredPosts.length > 0 ? (
-                filteredPosts.map((post) => (
-                  <tr key={post.id} className="hover:bg-gray-50/50 transition-all group">
-                    <td className="px-8 py-5">
-                      <div className="flex items-center gap-4">
-                        <div className="w-12 h-12 rounded-xl bg-gray-100 overflow-hidden shrink-0 border border-gray-200">
-                          <img 
-                            src={post.coverImage || "https://images.unsplash.com/photo-1499750310107-5fef28a66643?w=100&q=80"} 
-                            className="w-full h-full object-cover"
-                            alt=""
-                          />
-                        </div>
-                        <div className="min-w-0 max-w-[300px]">
-                          <p className="text-sm font-bold text-gray-900 truncate" title={post.title}>{post.title}</p>
-                          <div className="flex items-center gap-2 mt-1">
-                            {post.categories?.slice(0, 2).map((cat: string, i: number) => (
-                              <span key={i} className="text-[10px] font-bold px-2 py-0.5 bg-gray-100 text-gray-500 rounded-md">
-                                {cat}
-                              </span>
-                            ))}
-                            <span className="text-[10px] text-gray-400 font-medium">#{post.id}</span>
-                          </div>
-                        </div>
-                      </div>
-                    </td>
-                    <td className="px-6 py-5">
-                      <div className="flex items-center gap-3">
-                        <div className="w-8 h-8 rounded-full bg-blue-100 border border-white shadow-sm overflow-hidden">
-                          <img 
-                            src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${post.author?.name || 'User'}`} 
-                            alt="" 
-                          />
-                        </div>
-                        <span className="text-sm font-bold text-gray-700">{post.author?.name || 'Unknown Author'}</span>
-                      </div>
-                    </td>
-                    <td className="px-6 py-5">
-                      <span className={cn(
-                        "inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-bold border",
-                        post.status === "Published" 
-                          ? "bg-emerald-50 text-emerald-600 border-emerald-100" 
-                          : "bg-amber-50 text-amber-600 border-amber-100"
-                      )}>
-                        <div className={cn("w-1.5 h-1.5 rounded-full", post.status === "Published" ? "bg-emerald-500" : "bg-amber-500")} />
-                        {post.status || 'Draft'}
-                      </span>
-                    </td>
-                    <td className="px-6 py-5">
-                      <button className={cn(
-                        "p-2 rounded-xl transition-all",
-                        post.featured ? "bg-amber-50 text-amber-500 border border-amber-100 shadow-sm" : "text-gray-300 hover:text-gray-400"
-                      )}>
-                        <Star className={cn("w-4 h-4", post.featured && "fill-amber-500")} />
-                      </button>
-                    </td>
-                    <td className="px-8 py-5 text-right">
-                      <div className="flex items-center justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                        <Link 
-                          href={`/admin/posts/edit/${post.id}`}
-                          className="p-2.5 bg-white border border-gray-100 rounded-xl text-gray-500 hover:text-blue-600 hover:border-blue-100 hover:bg-blue-50/30 transition-all shadow-sm"
-                        >
-                          <Edit className="w-4 h-4" />
-                        </Link>
-                        <button 
-                          onClick={() => handleDelete(post.id)}
-                          className="p-2.5 bg-white border border-gray-100 rounded-xl text-gray-500 hover:text-red-600 hover:border-red-100 hover:bg-red-50/30 transition-all shadow-sm"
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </button>
-                        <button className="p-2.5 bg-white border border-gray-100 rounded-xl text-gray-500 hover:text-gray-900 shadow-sm">
-                          <MoreHorizontal className="w-4 h-4" />
-                        </button>
-                      </div>
-                    </td>
+        {/* Main Content Card */}
+        <div className="bg-white rounded-[14px] shadow-sm border border-slate-100 overflow-hidden">
+          {/* Filters */}
+          <div className="p-5">
+            <div className="flex flex-wrap items-center gap-4">
+              <div className="relative flex-1 min-w-[280px] max-w-[400px]">
+                <Search className="w-5 h-5 text-slate-400 absolute left-4 top-1/2 -translate-y-1/2" />
+                <input
+                  type="text"
+                  placeholder="Search posts..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="w-full h-10 bg-slate-50 border border-slate-200 rounded-xl pl-11 pr-4 text-[14px] font-medium text-slate-700 placeholder:text-slate-400 outline-none focus:ring-2 focus:ring-blue-500/10 focus:border-blue-200 focus:bg-white transition-all"
+                />
+              </div>
+
+              <div className="flex flex-wrap items-center gap-4">
+                <FilterSelect
+                  value={statusFilter}
+                  onChange={setStatusFilter}
+                  options={["All Statuses", "Published", "Draft", "Unpublished"]}
+                />
+                <FilterSelect
+                  value={authorFilter}
+                  onChange={setAuthorFilter}
+                  options={["All Authors", ...allAuthors]}
+                />
+                <FilterSelect
+                  value={categoryFilter}
+                  onChange={setCategoryFilter}
+                  options={["All Categories", ...allCategories]}
+                />
+                <FilterSelect
+                  value={featuredFilter}
+                  onChange={setFeaturedFilter}
+                  options={["All Posts", "Featured Only", "Regular Only"]}
+                />
+              </div>
+
+              <button
+                onClick={() => {
+                  setSearchQuery("");
+                  setStatusFilter("All Statuses");
+                  setAuthorFilter("All Authors");
+                  setCategoryFilter("All Categories");
+                  setFeaturedFilter("All Posts");
+                }}
+                className="h-10 px-4 flex items-center gap-2 text-[13px] font-bold text-slate-400 hover:text-slate-600 transition-colors border border-slate-100 rounded-xl whitespace-nowrap"
+              >
+                <X className="w-4 h-4" />
+                Clear Filters
+              </button>
+            </div>
+          </div>
+
+          {/* Table */}
+          <div className="border-t border-slate-100 p-5">
+            <div className="overflow-x-auto">
+              <table className="w-full text-left border-separate border-spacing-0">
+                <thead>
+                  <tr className="h-[52px]">
+                    <th className="px-4 text-[13px] font-bold text-slate-400 border-b border-slate-200 w-[80px]">ID</th>
+                    <th className="px-4 text-[13px] font-bold text-slate-400 border-b border-slate-200 w-[350px]">Title</th>
+                    <th className="px-4 text-[13px] font-bold text-slate-400 border-b border-slate-200">Author</th>
+                    <th className="px-4 text-[13px] font-bold text-slate-400 border-b border-slate-200">Categories</th>
+                    <th className="px-4 text-[13px] font-bold text-slate-400 border-b border-slate-200">Featured</th>
+                    <th className="px-4 text-[13px] font-bold text-slate-400 border-b border-slate-200">Status</th>
+                    <th className="px-4 text-[13px] font-bold text-slate-400 border-b border-slate-200 text-right">Actions</th>
                   </tr>
-                ))
+                </thead>
+                <tbody>
+                  {loading ? (
+                    <tr>
+                      <td colSpan={7} className="px-4 py-20 text-center">
+                        <Loader2 className="w-8 h-8 text-blue-500 animate-spin mx-auto" />
+                      </td>
+                    </tr>
+                  ) : filteredPosts.length > 0 ? (
+                    filteredPosts.map((post) => (
+                      <tr
+                        key={post?.id || Math.random()}
+                        className="h-[72px] hover:bg-slate-50/50 transition-colors group border-b border-slate-200 last:border-0"
+                      >
+                        <td className="px-4 text-[14px] font-medium text-slate-900">{post?.id}</td>
+                        <td className="px-4">
+                          <p className="text-[14px] font-bold text-slate-800 line-clamp-1">
+                            {post?.title || "Untitled"}
+                          </p>
+                        </td>
+                        <td className="px-4">
+                          <div className="flex items-center gap-2.5">
+                            {(() => {
+                              const author = post?.author;
+                              const avatar = author?.avatar;
+                              let src = `https://api.dicebear.com/7.x/avataaars/svg?seed=${author?.name || post?.author_name || post?.id || "A"}`;
+                              if (avatar && typeof avatar === "string") {
+                                src =
+                                  avatar.startsWith("http") || avatar.startsWith("data:")
+                                    ? avatar
+                                    : `http://localhost:5000${avatar.startsWith("/") ? "" : "/"}${avatar}`;
+                              }
+                              return (
+                                <img
+                                  src={src}
+                                  className="w-8 h-8 rounded-full bg-slate-100 object-cover border border-slate-100"
+                                  alt=""
+                                  onError={(e) => {
+                                    (e.target as HTMLImageElement).src = `https://api.dicebear.com/7.x/avataaars/svg?seed=${author?.name || post?.author_name || "A"}`;
+                                  }}
+                                />
+                              );
+                            })()}
+                            <span className="text-[14px] font-medium text-slate-700 truncate max-w-[120px]">
+                              {post?.author?.name || post?.author_name || "Unknown"}
+                            </span>
+                          </div>
+                        </td>
+                        <td className="px-4">
+                          <div className="flex flex-wrap gap-2">
+                            {(() => {
+                              let cats: string[] = [];
+                              const rawCats = post?.categories || post?.category;
+                              if (Array.isArray(rawCats)) cats = rawCats.map(String);
+                              else if (typeof rawCats === "string") {
+                                try {
+                                  const parsed = JSON.parse(rawCats);
+                                  cats = Array.isArray(parsed) ? parsed.map(String) : [String(parsed)];
+                                } catch (e) {
+                                  cats = [rawCats];
+                                }
+                              }
+                              return cats.length > 0 ? (
+                                cats.slice(0, 2).map((cat, i) => (
+                                  <span key={i} className="h-[26px] px-3 flex items-center rounded-full text-[12px] font-bold bg-blue-50 text-blue-600 border border-blue-100">
+                                    {cat}
+                                  </span>
+                                ))
+                              ) : (
+                                <span className="text-[12px] text-slate-300 italic">None</span>
+                              );
+                            })()}
+                          </div>
+                        </td>
+                        <td className="px-4">
+                          {post?.featured ? (
+                            <span className="h-[26px] px-3 inline-flex items-center gap-1.5 rounded-full text-[12px] font-bold bg-amber-50 text-amber-600 border border-amber-100">
+                              <Star className="w-3.5 h-3.5 fill-amber-600" />
+                              Featured
+                            </span>
+                          ) : (
+                            <span className="h-[26px] px-3 inline-flex items-center rounded-full text-[12px] font-bold bg-slate-50 text-slate-400 border border-slate-100">
+                              Regular
+                            </span>
+                          )}
+                        </td>
+                        <td className="px-4">
+                          <span
+                            className={cn(
+                              "h-[26px] px-3 inline-flex items-center rounded-full text-[12px] font-bold",
+                              post?.status === "Published"
+                                ? "bg-emerald-50 text-emerald-600 border border-emerald-100"
+                                : "bg-amber-50 text-amber-600 border border-amber-100"
+                            )}
+                          >
+                            {post?.status || "Draft"}
+                          </span>
+                        </td>
+                        <td className="px-4 text-right">
+                          <div className="flex items-center justify-end gap-3">
+                            <Link
+                              href={`/admin/posts/edit/${post?.id}`}
+                              className="p-1 text-slate-400 hover:text-slate-900 transition-colors"
+                            >
+                              <Edit className="w-[18px] h-[18px]" />
+                            </Link>
+                            <button
+                              onClick={() => handleDelete(post?.id)}
+                              className="p-1 text-slate-400 hover:text-red-500 transition-colors"
+                            >
+                              <Trash2 className="w-[18px] h-[18px]" />
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))
+                  ) : (
+                    <tr>
+                      <td colSpan={7} className="px-4 py-32 text-center text-slate-400">
+                        No posts found.
+                      </td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
 
-              ) : (
-                <tr>
-                  <td colSpan={5} className="px-8 py-20 text-center">
-                    <div className="flex flex-col items-center gap-4 text-gray-400">
-                      <div className="p-6 bg-gray-50 rounded-full">
-                        <FileText className="w-10 h-10" />
-                      </div>
-                      <p className="text-lg font-bold">No posts found</p>
-                      <Link href="/admin/posts/create" className="text-blue-600 font-bold hover:underline">
-                        Create your first post
-                      </Link>
-                    </div>
-                  </td>
-                </tr>
-              )}
-            </tbody>
-          </table>
+            {/* Pagination */}
+            <div className="mt-6 flex items-center justify-between">
+              <div className="flex items-center gap-6">
+                <p className="text-[14px] text-slate-500">
+                  Showing {filteredPosts.length > 0 ? 1 : 0} to{" "}
+                  {Math.min(rowsPerPage, filteredPosts.length)} of{" "}
+                  {filteredPosts.length} results
+                </p>
+                <div className="flex items-center gap-2.5">
+                  <span className="text-[14px] text-slate-500">Rows per page:</span>
+                  <div className="relative">
+                    <select
+                      value={rowsPerPage}
+                      onChange={(e) => setRowsPerPage(Number(e.target.value))}
+                      className="bg-white border border-slate-200 rounded-lg pl-3 pr-8 py-1.5 text-[14px] font-medium text-slate-700 appearance-none outline-none focus:ring-2 focus:ring-blue-500/10"
+                    >
+                      <option value={10}>10</option>
+                      <option value={20}>20</option>
+                      <option value={50}>50</option>
+                    </select>
+                    <ChevronDown className="w-3.5 h-3.5 text-slate-400 absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+                  </div>
+                </div>
+              </div>
+              <div className="flex items-center gap-2">
+                <button
+                  className="h-10 px-4 flex items-center gap-2 border border-slate-200 rounded-xl text-[14px] font-bold text-slate-600 hover:bg-slate-50 transition-all disabled:opacity-50"
+                  disabled
+                >
+                  <ChevronLeft className="w-4 h-4" />
+                  Previous
+                </button>
+                <button className="w-10 h-10 rounded-xl bg-blue-600 text-white font-bold text-[14px] shadow-lg shadow-blue-500/20">
+                  1
+                </button>
+                <button
+                  className="h-10 px-4 flex items-center gap-2 border border-slate-200 rounded-xl text-[14px] font-bold text-slate-600 hover:bg-slate-50 transition-all disabled:opacity-50"
+                  disabled
+                >
+                  Next
+                  <ChevronRight className="w-4 h-4" />
+                </button>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
     </div>
   );
 }
 
-function FilterButton({ label }: { label: string }) {
+function FilterSelect({
+  value,
+  onChange,
+  options,
+}: {
+  value: string;
+  onChange: (v: string) => void;
+  options: string[];
+}) {
   return (
-    <button className="flex items-center gap-8 px-4 py-2.5 bg-white border border-gray-100 rounded-xl text-sm font-bold text-gray-600 hover:border-gray-300 transition-all shadow-sm">
-      <span>{label}</span>
-      <ChevronDown className="w-3.5 h-3.5 text-gray-400" />
-    </button>
+    <div className="relative w-52">
+      <select
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        className="w-full h-10 bg-white border border-slate-200 rounded-xl px-4 text-[14px] font-medium text-slate-600 appearance-none outline-none focus:ring-2 focus:ring-blue-500/10 focus:border-blue-200 transition-all cursor-pointer"
+      >
+        {options.map((opt, i) => (
+          <option key={i} value={opt}>
+            {opt}
+          </option>
+        ))}
+      </select>
+      <ChevronDown className="w-4 h-4 text-slate-400 absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none" />
+    </div>
   );
 }
