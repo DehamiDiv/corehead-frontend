@@ -85,17 +85,23 @@ export default function BuilderCanvas({ blogPosts, contentMode, selectedCard, se
 
           {/* Blog Cards Grid */}
           <div className="blog-grid" style={gridStyle}>
-            {blogPosts.map((post) => (
-              <BlogCard
-                key={post.id}
-                post={post}
-                isSelected={selectedCard?.id === post.id}
-                onClick={() => setSelectedCard(post)}
-                contentMode={contentMode}
-                settings={settings}
-                cardLayout={cardLayout}
-              />
-            ))}
+            {blogPosts.map((post) => {
+              const isFullWidth = post.type === 'hero' || post.type === 'banner';
+              const itemStyle = isFullWidth ? { gridColumn: '1 / -1' } : {};
+              
+              return (
+                <div key={post.id} style={itemStyle}>
+                  <BlogCard
+                    post={post}
+                    isSelected={selectedCard?.id === post.id}
+                    onClick={() => setSelectedCard(post)}
+                    contentMode={contentMode}
+                    settings={settings}
+                    cardLayout={cardLayout}
+                  />
+                </div>
+              );
+            })}
           </div>
 
           {contentMode === 'dynamic' && (

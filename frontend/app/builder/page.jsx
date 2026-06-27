@@ -32,7 +32,7 @@ const defaultSettings = {
   spacingValue: '16px',
   radius: 'medium',
   radiusValue: '12px',
-  columns: 3,
+  columns: 1,
 };
 
 
@@ -55,35 +55,7 @@ export default function BlogBuilderPage() {
   const [compareMode, setCompareMode]       = useState(false); // show both side by side
   const [error, setError]                   = useState(null);
 
-  const [blogPosts, setBlogPosts] = useState([
-    {
-      id: 1,
-      title: 'Getting Started with React',
-      excerpt: 'Learn the fundamentals of React and start building amazing web applications.',
-      author: 'John Doe',
-      date: '2024-02-10',
-      image: 'https://picsum.photos/400/250?random=1',
-      category: 'Development'
-    },
-    {
-      id: 2,
-      title: 'Advanced CSS Techniques',
-      excerpt: 'Master modern CSS features and create stunning designs with ease.',
-      author: 'Jane Smith',
-      date: '2024-02-12',
-      image: 'https://picsum.photos/400/250?random=2',
-      category: 'Design'
-    },
-    {
-      id: 3,
-      title: 'JavaScript ES2024 Features',
-      excerpt: 'Explore the latest features in JavaScript and how to use them effectively.',
-      author: 'Mike Johnson',
-      date: '2024-02-13',
-      image: 'https://picsum.photos/400/250?random=3',
-      category: 'Development'
-    }
-  ]);
+  const [blogPosts, setBlogPosts] = useState([]);
 
   const [cmsFields] = useState({
     post: ['Title', 'Excerpt', 'Content', 'Featured Image', 'Category', 'Tags'],
@@ -100,7 +72,7 @@ export default function BlogBuilderPage() {
 
       if (aiPrompt || selectedTemplate) {
         try {
-          const token = localStorage.getItem('token');
+          const token = localStorage.getItem('accessToken');
           if (!token) {
              setError('Authentication required. Please login to use AI features.');
              // Clear AI prompt to prevent infinite loop/retry without login
