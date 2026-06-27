@@ -35,7 +35,7 @@ export default function AIHistoryPage() {
 
   // Protect the page - must be logged in to see history
   useEffect(() => {
-    const token = localStorage.getItem('token');
+    const token = localStorage.getItem('accessToken');
     if (!token) {
       router.push('/login?callback=/ai-history');
     }

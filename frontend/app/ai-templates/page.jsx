@@ -11,7 +11,7 @@ export default function AITemplatesPage() {
 
   // Protect the page - must be logged in to use AI features
   useEffect(() => {
-    const token = localStorage.getItem('token');
+    const token = localStorage.getItem('accessToken');
     if (!token) {
       router.push('/login?callback=/ai-templates');
     }
