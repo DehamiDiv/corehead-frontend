@@ -20,10 +20,16 @@ function LoginForm() {
   const [success, setSuccess] = useState<string | null>(null);
 
   useEffect(() => {
-    if (typeof window !== "undefined" && window.location.search.includes("registered=true")) {
+    const registered = searchParams.get('registered');
+    const session = searchParams.get('session');
+
+    if (registered === "true") {
       setSuccess("Account created successfully! Please login.");
     }
-  }, []);
+    if (session === "expired") {
+      setError("Your session has expired. Please log in again to continue.");
+    }
+  }, [searchParams]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -34,23 +40,25 @@ function LoginForm() {
       const data = await api.login({ email, password });
 
       // PERSIST AUTH STATE
-      localStorage.setItem("token", data.token);
+      localStorage.setItem("accessToken", data.accessToken);
+      localStorage.setItem("refreshToken", data.refreshToken);
       localStorage.setItem("user", JSON.stringify(data.user));
 
       // SET COOKIES for middleware
-      document.cookie = `auth_token=${data.token}; path=/; max-age=86400; SameSite=Lax`;
+      document.cookie = `auth_token=${data.accessToken}; path=/; max-age=86400; SameSite=Lax`;
       document.cookie = `user_role=${data.user.role}; path=/; max-age=86400; SameSite=Lax`;
 
-      // ROLE-BASED REDIRECTION
-      if (data.user.role === "admin") {
-        setSuccess("Login successful! Redirecting...");
+      // REDIRECTION
+      if (data.user.role === 'admin') {
+        setSuccess("Login successful! Redirecting to Admin Dashboard...");
         setTimeout(() => {
-          router.push(callbackUrl);
+          router.push('/admin');
         }, 1500);
       } else {
-        setSuccess("Login successful! Redirecting...");
+        // Regular users (Authors/Editors) go directly to the Drag & Drop Builder
+        setSuccess("Login successful! Redirecting to Visual Builder...");
         setTimeout(() => {
-          router.push("/");
+          router.push('/admin/builder'); 
         }, 1500);
       }
     } catch (err: any) {
@@ -164,7 +172,7 @@ function LoginForm() {
 
             <div className="flex justify-start">
               <Link
-                href="#"
+                href="/forgot-password"
                 className="text-xs font-medium text-slate-600 hover:text-blue-700 transition-colors"
               >
                 Forgot your password?

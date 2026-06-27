@@ -26,8 +26,11 @@ export function middleware(request: NextRequest) {
       return NextResponse.redirect(loginUrl);
     }
 
-    // Role-based access control for /admin routes
-    if (pathname.startsWith('/admin') && role !== 'admin') {
+    // Role-based access control for sensitive admin routes
+    const adminOnlyPaths = ['/admin/users', '/admin/categories', '/admin/comments', '/admin/pages'];
+    const isAdminOnlyPath = adminOnlyPaths.some(path => pathname.startsWith(path));
+
+    if (isAdminOnlyPath && role !== 'admin') {
       const homeUrl = new URL('/', request.url);
       return NextResponse.redirect(homeUrl);
     }
