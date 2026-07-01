@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import CommentsSection from "@/components/blog/CommentsSection";
+import DetailedFooter from "@/components/DetailedFooter";
 import "./page.css";
 
 interface SinglePostPageProps {
@@ -141,6 +142,7 @@ export default async function SinglePostPage({ params }: SinglePostPageProps) {
         </div>
         <Link href="/blog" className="post-back-btn">← All Posts</Link>
       </div>
+      <DetailedFooter />
     </article>
   );
 }
