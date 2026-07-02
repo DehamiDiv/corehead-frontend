@@ -156,7 +156,6 @@ export default async function SinglePostPage({ params }: SinglePostPageProps) {
           <CommentsSection postId={post.id} />
         </div>
       </div>
-
       <DetailedFooter />
     </article>
   );
