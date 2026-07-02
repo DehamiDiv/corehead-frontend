@@ -12,16 +12,18 @@ export const metadata = {
 
 export default async function BlogArchivePage() {
   // Fetch layout and posts concurrently
-  const [layout, posts, bindings] = await Promise.all([
+  const [layout, postsData, bindings] = await Promise.all([
     api.getPublicLayout("blog-loop").catch(() => ({
       blocks: [
         { id: '1', type: 'Heading', content: 'Latest Posts' },
         { id: '2', type: 'Collection List', content: { limit: 6 } }
       ]
     })),
-    api.getPosts().catch(() => []),
+    api.getPreviewPosts(100).catch(() => ({ posts: [] })),
     api.getBindings().catch(() => ({ mode: "dynamic", selected: {} })),
   ]);
+
+  const posts = Array.isArray(postsData.posts) ? postsData.posts : [];
 
   // Transform posts for the renderer if needed
   const renderData = {
