@@ -38,17 +38,30 @@ export default function ProfileSettingsPage() {
         if (res.success && res.users) {
           const dbUser = res.users.find((u: any) => u.id === currentUserId);
           if (dbUser) {
+             let bio = dbUser.bio || "No bio added yet.";
+             let avatar = dbUser.avatar || "";
+             
+             // Check localStorage for demo public profile overriding
+             const localDataRaw = localStorage.getItem('corehead_author_data_' + (dbUser.name || "Admin User"));
+             if (localDataRaw) {
+               try {
+                 const localData = JSON.parse(localDataRaw);
+                 if (localData.bio) bio = localData.bio;
+                 if (localData.avatar) avatar = localData.avatar;
+               } catch(e) {}
+             }
+
              const userState = {
                 name: dbUser.name || "Admin User",
                 email: dbUser.email,
                 role: dbUser.role.toUpperCase(),
                 status: "Active",
                 designation: dbUser.designation || "Developer",
-                bio: dbUser.bio || "No bio added yet.",
+                bio: bio,
                 userId: `#${dbUser.id}`,
                 accountCreated: new Date(dbUser.createdAt).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' }),
                 lastUpdated: new Date().toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' }),
-                avatar: dbUser.avatar || ""
+                avatar: avatar
              };
              setUser(userState);
              setFormData(userState);
@@ -77,6 +90,12 @@ export default function ProfileSettingsPage() {
         const currentUserId = payload.id;
         
         if (currentUserId) {
+          // ALSO SAVE TO LOCALSTORAGE FOR DEMO PUBLIC PROFILE
+          localStorage.setItem('corehead_author_data_' + formData.name, JSON.stringify({
+            bio: formData.bio,
+            avatar: formData.avatar
+          }));
+
           await api.updateUser(currentUserId, {
             name: formData.name,
             email: formData.email,
