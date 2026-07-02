@@ -15,6 +15,27 @@ import AIChatPanel from '@/components/builder/AIChatPanel';
 import { useRouter } from 'next/navigation';
 import './page.css';
 import { builderApi } from '@/services/builderApi';
+
+const defaultSettings = {
+  font: 'inter',
+  fontStyle: 'Inter, sans-serif',
+  theme: 'premium-indigo',
+  colors: {
+    id: 'premium-indigo',
+    label: 'Indigo Royale',
+    primary: '#4f46e5',
+    bg: '#ffffff',
+    text: '#1e1e2e',
+    gradient: 'linear-gradient(135deg, #4f46e5 0%, #3730a3 100%)'
+  },
+
+  spacing: 'normal',
+  spacingValue: '16px',
+  radius: 'medium',
+  radiusValue: '12px',
+  columns: 1,
+};
+
 import { defaultSettings, initialMockPosts, cmsFieldConfig } from '@/lib/builderConstants';
 
 export default function BlogBuilderPage() {
@@ -49,7 +70,7 @@ export default function BlogBuilderPage() {
 
       if (aiPrompt || selectedTemplate) {
         try {
-          const token = localStorage.getItem('token');
+          const token = localStorage.getItem('accessToken');
           if (!token) {
              setError('Authentication required. Please login to use AI features.');
              // Clear AI prompt to prevent infinite loop/retry without login

@@ -1,64 +1,72 @@
 "use client";
 
 
+import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import GuidesHero from "@/components/GuidesHero";
 import GuideCard from "@/components/GuideCard";
-import { ArrowRight } from "lucide-react";
+import { ArrowRight, BookOpen, Cpu, ShieldCheck, Database, Globe, Zap } from "lucide-react";
 import Link from "next/link";
-import CTA from "@/components/CTA"; // Assuming CTA component exists based on file list
+import CTA from "@/components/CTA";
 
 const quickstartGuides = [
   {
-    title: "Deploy CoreHead on Docker",
+    title: "Project Initialization & Setup",
     description:
-      "Learn how to get a production-ready instance running in under 5 minutes using Docker Compose.",
-    tags: ["React", "Nodejs"],
-    link: "#",
+      "Learn how to configure your environment variables and get the CoreHead backend running with PostgreSQL in minutes.",
+    tags: ["Setup", "Node.js", "Prisma"],
+    image: "https://images.unsplash.com/photo-1461749280684-dccba630e2f6?auto=format&fit=crop&w=800&q=80",
+    link: "/guides/setup",
   },
   {
-    title: "Next.js Blog Starter Kit",
+    title: "Mastering the AI Layout Builder",
     description:
-      "Connect your Next.js frontend to the CoreHead API and build a static blog with ISR.",
-    tags: ["Nextjs", "Typescript"],
-    link: "#",
+      "A complete guide on using generative AI to create dynamic blog layouts and landing pages with zero coding required.",
+    tags: ["AI Builder", "Design", "Automation"],
+    image: "https://images.unsplash.com/photo-1677442136019-21780ecad995?auto=format&fit=crop&w=800&q=80",
+    link: "/builder",
   },
   {
-    title: "PostgreSQL Database Schema",
+    title: "Secure Auth with JWT & OTP",
     description:
-      "Understand how CoreHead structures content and how to extend the database directly.",
-    tags: ["Postgresql", "Sql"],
-    link: "#",
+      "Understanding the multi-layer security flow: From bcrypt password hashing to secure OTP email verification.",
+    tags: ["Security", "JWT", "Auth"],
+    image: "https://images.unsplash.com/photo-1555949963-ff9fe0c870eb?auto=format&fit=crop&w=800&q=80",
+    link: "/guides/auth",
   },
 ];
 
 const buildGuides = [
   {
-    title: "Customizing the Dashboard",
+    title: "Prisma Schema & Migrations",
     description:
-      "Extend the dashboard functionality by creating custom React components for the frontend.",
-    tags: ["React", "Customization"],
-    link: "#",
+      "Step-by-step tutorial on extending content models, defining relationships, and running database migrations safely.",
+    tags: ["Prisma", "PostgreSQL", "Backend"],
+    image: "https://images.unsplash.com/photo-1544383835-bda2bc66a55d?auto=format&fit=crop&w=800&q=80",
+    link: "/guides/database",
   },
   {
-    title: "Webhooks & Automation",
+    title: "RESTful API Integration",
     description:
-      "Trigger build pipelines in Vercel or Netlify whenever content is published.",
-    tags: ["Webhooks", "Automation"],
-    link: "#",
+      "How to consume CoreHead's headless API endpoints in your React components or third-party mobile applications.",
+    tags: ["API", "Integration", "Webhooks"],
+    image: "https://images.unsplash.com/photo-1623282033815-40b05d96c9bb?auto=format&fit=crop&w=800&q=80",
+    link: "/guides/api",
   },
   {
-    title: "Multi-Language Setup",
+    title: "Optimizing for Next.js 14",
     description:
-      "Configure localization and manage translations for a global audience.",
-    tags: ["I18n", "Translation"],
-    link: "#",
+      "Leveraging Server Components and Incremental Static Regeneration (ISR) for maximum SEO and performance.",
+    tags: ["Next.js", "SEO", "Speed"],
+    image: "https://images.unsplash.com/photo-1551288049-bebda4e38f71?auto=format&fit=crop&w=800&q=80",
+    link: "/guides/performance",
   },
 ];
 
 export default function GuidesPage() {
   return (
     <main className="min-h-screen bg-slate-50">
+      <Navbar />
       <GuidesHero />
 
       {/* Quickstart Guides Section */}

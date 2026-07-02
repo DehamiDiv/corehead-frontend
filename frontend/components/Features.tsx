@@ -1,5 +1,4 @@
-import { LayoutGrid, PenTool, Users, Shield, Zap, Cpu, Code } from "lucide-react";
-import Image from "next/image";
+import { LayoutGrid, PenTool, Users, Shield, Zap, Cpu, Code, FileText, BarChart2, Sparkles } from "lucide-react";
 
 export default function Features() {
   return (
@@ -26,16 +25,46 @@ export default function Features() {
                      </div>
                    </div>
                    
-                   {/* Admin Image — full width, no clipping */}
-                   <div className="group overflow-hidden">
-                     <Image
-                       src="/dashboard.png"
-                       alt="CoreHead Admin Dashboard"
-                       width={900}
-                       height={600}
-                       className="w-full h-auto object-cover object-top transition-transform duration-700 group-hover:scale-105"
-                       priority
-                     />
+                   {/* Mock Admin Dashboard UI */}
+                   <div className="p-4 space-y-3 bg-slate-50 min-h-[320px]">
+                     {/* Top stats row */}
+                     <div className="grid grid-cols-3 gap-2">
+                       {[
+                         { label: "Posts", value: "142", color: "bg-blue-500" },
+                         { label: "Views", value: "28.4k", color: "bg-violet-500" },
+                         { label: "Users", value: "391", color: "bg-emerald-500" },
+                       ].map((stat) => (
+                         <div key={stat.label} className="bg-white rounded-xl p-3 shadow-sm border border-slate-100">
+                           <div className={`w-6 h-1.5 rounded-full ${stat.color} mb-2`} />
+                           <p className="text-xs font-bold text-slate-800">{stat.value}</p>
+                           <p className="text-[10px] text-slate-400">{stat.label}</p>
+                         </div>
+                       ))}
+                     </div>
+                     {/* Post list mock */}
+                     <div className="bg-white rounded-xl border border-slate-100 shadow-sm overflow-hidden">
+                       <div className="px-3 py-2 border-b border-slate-50 flex items-center justify-between">
+                         <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Recent Posts</span>
+                         <div className="w-12 h-2 bg-blue-100 rounded-full" />
+                       </div>
+                       {["AI-Powered Workflows", "Next.js 16 Guide", "Design Systems 101", "REST vs GraphQL"].map((title, i) => (
+                         <div key={i} className="px-3 py-2 flex items-center gap-2 hover:bg-slate-50 transition-colors border-b border-slate-50 last:border-0">
+                           <div className="w-6 h-6 rounded-lg bg-blue-50 flex items-center justify-center flex-shrink-0">
+                             <FileText className="w-3 h-3 text-blue-500" />
+                           </div>
+                           <span className="text-[11px] font-semibold text-slate-700 truncate">{title}</span>
+                           <div className={`ml-auto w-8 h-1.5 rounded-full flex-shrink-0 ${i === 0 ? "bg-emerald-400" : i === 1 ? "bg-blue-400" : "bg-slate-200"}`} />
+                         </div>
+                       ))}
+                     </div>
+                     {/* Bottom bar */}
+                     <div className="bg-white rounded-xl border border-slate-100 shadow-sm p-3 flex items-center gap-3">
+                       <Sparkles className="w-4 h-4 text-violet-500 flex-shrink-0" />
+                       <div className="flex-1 h-2 bg-violet-100 rounded-full overflow-hidden">
+                         <div className="h-full w-3/4 bg-violet-500 rounded-full animate-pulse" />
+                       </div>
+                       <span className="text-[10px] font-bold text-violet-500">AI Active</span>
+                     </div>
                    </div>
                 </div>
              </div>

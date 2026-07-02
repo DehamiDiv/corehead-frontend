@@ -9,38 +9,100 @@ import {
   Sparkles,
 } from "lucide-react";
 
+import { useBuilder } from "./BuilderContext";
+import { useState } from "react";
+import { useRouter } from "next/navigation";
+
 export default function BottomBar() {
+  const { generateLayout, isAnalyzing, setActiveSidebar, blocks, removeBlock } = useBuilder();
+  const [prompt, setPrompt] = useState("");
+  const [showNotif, setShowNotif] = useState(false);
+  const router = useRouter();
+
+  // Undo: remove the last added block
+  const handleUndo = () => {
+    if (blocks.length === 0) return;
+    const lastBlock = blocks[blocks.length - 1];
+    removeBlock(lastBlock.id);
+  };
+
+  // Settings: open the settings sidebar
+  const handleSettings = () => {
+    setActiveSidebar("settings" as any);
+  };
+
+  // Bell: show a quick notification
+  const handleBell = () => {
+    setShowNotif(true);
+    setTimeout(() => setShowNotif(false), 3000);
+  };
+
+  // User: navigate to profile settings
+  const handleUser = () => {
+    router.push("/admin/settings/profile");
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!prompt.trim() || isAnalyzing) return;
+    
+    // Open chat sidebar to show progress/messages
+    setActiveSidebar("chat");
+    
+    await generateLayout(prompt);
+    setPrompt("");
+  };
+
   return (
-    <div className="h-16 bg-white border-t border-gray-200 flex items-center px-6 gap-4 sticky bottom-0 z-50">
-      <div className="flex-1 max-w-2xl relative group">
-        <div className="absolute inset-0 bg-gradient-to-r from-blue-400 to-purple-400 rounded-full blur opacity-20 group-hover:opacity-30 transition-opacity" />
+    <div className="h-20 bg-white border-t border-slate-100 flex items-center px-8 gap-6 sticky bottom-0 z-50 shadow-[0_-1px_10px_rgba(0,0,0,0.02)]">
+      <form onSubmit={handleSubmit} className="flex-1 max-w-3xl relative group">
+        <div className="absolute inset-0 bg-gradient-to-r from-blue-400/20 via-purple-400/20 to-indigo-400/20 rounded-2xl blur-xl opacity-0 group-hover:opacity-100 transition-all duration-700" />
         <div className="relative flex items-center">
-          <Sparkles className="absolute left-4 w-4 h-4 text-blue-500" />
+          <div className="absolute left-4 w-8 h-8 rounded-lg bg-blue-50 flex items-center justify-center">
+            <Sparkles className="w-4 h-4 text-blue-600" />
+          </div>
           <input
             type="text"
-            placeholder="Ask AI to design, write, or edit..."
-            className="w-full h-11 bg-white rounded-full border border-blue-100 pl-10 pr-6 text-sm focus:outline-none focus:border-blue-400 focus:ring-4 focus:ring-blue-500/10 transition-all placeholder:text-slate-400 shadow-sm"
+            value={prompt}
+            onChange={(e) => setPrompt(e.target.value)}
+            disabled={isAnalyzing}
+            placeholder={isAnalyzing ? "AI is crafting your vision..." : "Ask AI to design, write, or refine your layout..."}
+            className="w-full h-12 bg-slate-50 border border-slate-200 pl-14 pr-14 text-[14px] font-medium rounded-2xl focus:outline-none focus:ring-4 focus:ring-blue-500/10 focus:bg-white focus:border-blue-400 transition-all placeholder:text-slate-400 shadow-sm disabled:bg-slate-100"
           />
+          <button 
+            type="submit"
+            disabled={!prompt.trim() || isAnalyzing}
+            className="absolute right-2 w-10 h-10 bg-slate-900 text-white rounded-xl flex items-center justify-center hover:bg-blue-600 hover:shadow-lg hover:shadow-blue-200 transition-all active:scale-90 disabled:opacity-30"
+          >
+            <SendHorizontal className="w-5 h-5" />
+          </button>
         </div>
-      </div>
+      </form>
 
-      <div className="flex items-center gap-4 text-slate-400">
-        <button className="hover:text-blue-600 transition-colors">
-          <SendHorizontal className="w-5 h-5" />
+      <div className="flex items-center gap-6 text-slate-400 relative">
+        {/* Notification toast */}
+        {showNotif && (
+          <div className="absolute bottom-16 right-0 bg-slate-900 text-white text-[12px] font-bold px-4 py-2.5 rounded-2xl shadow-2xl whitespace-nowrap animate-in fade-in slide-in-from-bottom-4 flex items-center gap-2">
+            <div className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+            Layout auto-saved successfully
+          </div>
+        )}
+
+        <button onClick={handleUndo} className="p-2 hover:text-blue-600 hover:bg-blue-50 rounded-xl transition-all" title="Undo last block">
+          <RotateCcw className="w-6 h-6" />
         </button>
-        <button className="hover:text-slate-600 transition-colors">
-          <RotateCcw className="w-5 h-5" />
+        <button onClick={handleSettings} className="p-2 hover:text-blue-600 hover:bg-blue-50 rounded-xl transition-all" title="Builder Settings">
+          <Settings className="w-6 h-6" />
         </button>
-        <button className="hover:text-slate-600 transition-colors">
-          <Settings className="w-5 h-5" />
+        <button onClick={handleBell} className="p-2 hover:text-yellow-500 hover:bg-yellow-50 rounded-xl transition-all" title="Notifications">
+          <Bell className="w-6 h-6" />
         </button>
-        <button className="hover:text-slate-600 transition-colors">
-          <Bell className="w-5 h-5 text-yellow-400 fill-yellow-400" />
-        </button>
-        <button className="hover:text-slate-600 transition-colors">
-          <User className="w-5 h-5" />
+        <div className="w-px h-8 bg-slate-100 mx-1" />
+        <button onClick={handleUser} className="w-10 h-10 rounded-2xl bg-slate-100 flex items-center justify-center hover:bg-blue-600 hover:text-white transition-all overflow-hidden border-2 border-transparent hover:border-blue-100" title="Profile Settings">
+           <User className="w-5 h-5" />
         </button>
       </div>
     </div>
   );
 }
+

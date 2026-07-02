@@ -19,7 +19,12 @@ export type BlockType =
   | "Container"
   | "Columns"
   | "Collection List"
-  | "Featured Carousel";
+  | "Featured Carousel"
+  | "Video"
+  | "Newsletter"
+  | "Social Links"
+  | "Spacer"
+  | "Code Block";
 
 export interface BuilderBlock {
   id: string;
@@ -59,6 +64,7 @@ interface BuilderContextType {
   setDeviceMode: (mode: "desktop" | "tablet" | "mobile") => void;
   isAnalyzing: boolean;
   setIsAnalyzing: (analyzing: boolean) => void;
+  generateLayout: (prompt: string) => Promise<void>;
 }
 
 const BuilderContext = createContext<BuilderContextType | undefined>(undefined);
@@ -78,17 +84,38 @@ export function BuilderProvider({ children }: { children: ReactNode }) {
 
   const [isLoaded, setIsLoaded] = useState(false);
 
-  // Load layout from local storage on mount
+  // Load layout from backend if ID exists in URL, otherwise from local storage
   useEffect(() => {
-    const saved = localStorage.getItem("corehead_builder_layout");
-    if (saved) {
-      try {
-        setBlocks(JSON.parse(saved));
-      } catch (e) {
-        console.error("Failed to parse saved layout", e);
+    const fetchInitialLayout = async () => {
+      const urlParams = new URLSearchParams(window.location.search);
+      const id = urlParams.get("id");
+
+      if (id) {
+        try {
+          const template = await api.getTemplateById(id);
+          if (template && template.layoutJson) {
+            setBlocks(template.layoutJson);
+            setTemplateId(template.id);
+            setTemplateName(template.name);
+            setTemplateType(template.type);
+          }
+        } catch (error) {
+          console.error("Failed to fetch template by ID", error);
+        }
+      } else {
+        const saved = localStorage.getItem("corehead_builder_layout");
+        if (saved) {
+          try {
+            setBlocks(JSON.parse(saved));
+          } catch (e) {
+            console.error("Failed to parse saved layout", e);
+          }
+        }
       }
-    }
-    setIsLoaded(true);
+      setIsLoaded(true);
+    };
+
+    fetchInitialLayout();
   }, []);
 
   // Auto-save layout on any change after initial load
@@ -202,6 +229,33 @@ export function BuilderProvider({ children }: { children: ReactNode }) {
     return result;
   };
 
+  // AI Layout Generation logic moved to context for global access
+  const generateLayout = async (prompt: string) => {
+    if (!prompt.trim() || isAnalyzing) return;
+
+    setIsAnalyzing(true);
+    try {
+      const data = await api.generateLayout({
+        prompt,
+        layoutType: templateType === "Blog Archive" ? "blog-archive" : "single-post",
+        designStyle: "modern",
+      });
+
+      if (data.blocks) {
+        setBlocks(data.blocks);
+        localStorage.setItem("corehead_builder_layout", JSON.stringify(data.blocks));
+      }
+      
+      // Return provider info so chat can show it
+      return data.provider || 'ai';
+    } catch (error: any) {
+      console.error("AI Generation error:", error);
+      alert("AI Generation failed: " + error.message);
+    } finally {
+      setIsAnalyzing(false);
+    }
+  };
+
   return (
     <BuilderContext.Provider
       value={{
@@ -227,6 +281,7 @@ export function BuilderProvider({ children }: { children: ReactNode }) {
         setDeviceMode,
         isAnalyzing,
         setIsAnalyzing,
+        generateLayout,
       }}
     >
       {children}
@@ -275,6 +330,16 @@ function getDefaultContent(type: BlockType): any {
       return { limit: 6, category: "" };
     case "Featured Carousel":
       return { limit: 3 };
+    case "Video":
+      return "https://www.youtube.com/watch?v=dQw4w9WgXcQ";
+    case "Newsletter":
+      return { title: "Subscribe to our newsletter", buttonText: "Subscribe", placeholder: "your@email.com" };
+    case "Social Links":
+      return ["facebook", "twitter", "instagram", "linkedin"];
+    case "Spacer":
+      return "40px";
+    case "Code Block":
+      return { code: "console.log('Hello World');", language: "javascript" };
     default:
       return "";
   }

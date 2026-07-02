@@ -7,6 +7,11 @@
   cursor: pointer;
   transition: all 0.3s;
   position: relative;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 200px;
+  z-index: 1;
 }
 
 .blog-card:hover {
@@ -159,7 +164,7 @@
 
 /* Overlay Layout */
 .card-layout-overlay {
-  height: 280px;
+  height: 350px;
 }
 
 .card-layout-overlay .card-image {

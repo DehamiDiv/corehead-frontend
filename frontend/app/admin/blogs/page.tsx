@@ -1,16 +1,7 @@
 "use client";
 
-import { useState } from "react";
-import {
-  RotateCcw,
-  Plus,
-  Search,
-  Edit,
-  Trash2,
-  Star,
-  ChevronDown,
-  X,
-} from "lucide-react";
+import { Sparkles, Bot, RotateCcw, Plus, Search, Edit, Trash2, Star, ChevronDown, X } from "lucide-react";
+import React, { useState, useEffect } from "react";
 import { cn } from "@/lib/utils";
 
 // Dummy data to match screenshot
@@ -73,6 +64,53 @@ const BLOG_POSTS = [
 ];
 
 export default function BlogsPage() {
+  const [isLaunching, setIsLaunching] = useState(true);
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setIsLaunching(false);
+    }, 1500);
+    return () => clearTimeout(timer);
+  }, []);
+
+  if (isLaunching) {
+    return (
+      <div className="fixed inset-0 z-[100] bg-slate-900 flex flex-col items-center justify-center overflow-hidden">
+        <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-blue-600/20 rounded-full blur-[120px] animate-pulse" />
+        <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-purple-600/20 rounded-full blur-[120px] animate-pulse" style={{ animationDelay: '1s' }} />
+        
+        <div className="relative flex flex-col items-center animate-in fade-in zoom-in duration-700">
+          <div className="w-24 h-24 bg-white rounded-[2.5rem] shadow-[0_0_50px_rgba(139,92,246,0.3)] flex items-center justify-center mb-8 relative group">
+            <div className="absolute inset-0 bg-purple-600 rounded-[2.5rem] animate-ping opacity-20 group-hover:opacity-40 transition-opacity" />
+            <Bot className="w-12 h-12 text-purple-600 relative z-10" />
+          </div>
+          
+          <h1 className="text-white text-3xl font-black tracking-tighter mb-2 italic">
+            CORE<span className="text-purple-500">HEAD</span>
+          </h1>
+          <div className="flex items-center gap-3">
+             <div className="h-0.5 w-12 bg-gradient-to-r from-transparent to-purple-500" />
+             <p className="text-purple-200/50 font-bold uppercase tracking-[0.3em] text-[10px]">Smart Layout Intelligence</p>
+             <div className="h-0.5 w-12 bg-gradient-to-l from-transparent to-purple-500" />
+          </div>
+        </div>
+
+        <div className="absolute bottom-12 w-64 h-1 bg-white/10 rounded-full overflow-hidden">
+           <div className="h-full bg-purple-500 rounded-full animate-progress-loading" style={{ width: '100%' }} />
+        </div>
+
+        <style jsx>{`
+          @keyframes progress-loading {
+            0% { transform: translateX(-100%); }
+            100% { transform: translateX(0); }
+          }
+          .animate-progress-loading {
+            animation: progress-loading 1.5s ease-in-out forwards;
+          }
+        `}</style>
+      </div>
+    );
+  }
   return (
     <div className="space-y-6">
       {/* Header */}

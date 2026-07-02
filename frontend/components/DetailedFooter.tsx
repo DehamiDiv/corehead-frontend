@@ -1,70 +1,235 @@
-import { Github, Twitter, Facebook, X } from "lucide-react";
+"use client";
+
+import { useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
+import { motion } from "framer-motion";
+import { ArrowRight, Mail, Sparkles, Heart, ExternalLink } from "lucide-react";
+
+const footerLinks = {
+  Product: [
+    { name: "Features", href: "/#features" },
+    { name: "Pricing", href: "/#pricing" },
+    { name: "Visual Builder", href: "/signup" },
+    { name: "AI Writer", href: "/signup" },
+    { name: "Templates", href: "/signup" },
+  ],
+  Resources: [
+    { name: "Documentation", href: "/guides" },
+    { name: "Blog", href: "/blog" },
+    { name: "Guides", href: "/guides" },
+    { name: "FAQs", href: "/#faq" },
+    { name: "Changelog", href: "#" },
+  ],
+  Company: [
+    { name: "About Us", href: "/" },
+    { name: "Careers", href: "#", badge: "Hiring" },
+    { name: "Contact", href: "#" },
+    { name: "Partners", href: "#" },
+  ],
+  Legal: [
+    { name: "Privacy Policy", href: "#" },
+    { name: "Terms of Service", href: "#" },
+    { name: "Cookie Policy", href: "#" },
+    { name: "GDPR", href: "#" },
+  ],
+};
+
+
+
+const containerVariants = {
+  hidden: {},
+  visible: {
+    transition: { staggerChildren: 0.08 },
+  },
+};
+
+const itemVariants = {
+  hidden: { opacity: 0, y: 20 },
+  visible: { opacity: 1, y: 0, transition: { duration: 0.5, ease: "easeOut" } },
+};
 
 export default function DetailedFooter() {
+  const [email, setEmail] = useState("");
+  const [subscribed, setSubscribed] = useState(false);
+  const [hoveredSocial, setHoveredSocial] = useState<string | null>(null);
+
+  const handleSubscribe = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (email) {
+      setSubscribed(true);
+      setEmail("");
+      setTimeout(() => setSubscribed(false), 4000);
+    }
+  };
+
   return (
-    <footer className="bg-white pt-32 pb-20 px-6 border-t border-slate-100">
-      <div className="max-w-7xl mx-auto">
-        <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-12 mb-24">
-          {/* Brand Column */}
-          <div className="col-span-2 lg:col-span-2 space-y-6">
-            <Link href="/" className="inline-block mb-2">
-              <Image 
-                src="/logo.png" 
-                alt="CoreHead Logo" 
-                width={160} 
-                height={40} 
-                className="h-14 w-auto object-contain" 
-              />
-            </Link>
-            <p className="text-slate-500 text-lg leading-relaxed max-w-sm">
-              The ultimate headless CMS for modern web development. Build, manage, and scale your content with ease.
-            </p>
+    <footer className="relative bg-white overflow-hidden">
+      {/* Animated Background Elements */}
+      <div className="absolute inset-0 pointer-events-none">
+        <div className="absolute top-0 left-1/4 w-[500px] h-[500px] bg-blue-600/5 rounded-full blur-[120px]" />
+        <div className="absolute bottom-0 right-1/4 w-[400px] h-[400px] bg-indigo-500/5 rounded-full blur-[100px]" />
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-blue-500/3 rounded-full blur-[150px]" />
+      </div>
+
+      {/* Top Gradient Border */}
+      <div className="h-px bg-gradient-to-r from-transparent via-blue-500/50 to-transparent" />
+
+      {/* Newsletter Section */}
+      <motion.div
+        initial={{ opacity: 0, y: 30 }}
+        whileInView={{ opacity: 1, y: 0 }}
+        viewport={{ once: true, margin: "-50px" }}
+        transition={{ duration: 0.7 }}
+        className="relative z-10 max-w-7xl mx-auto px-6 pt-20 pb-16"
+      >
+        <div className="relative bg-white border border-gray-200 rounded-3xl p-10 md:p-14 shadow-lg overflow-hidden">
+          {/* Decorative sparkles */}
+          <div className="absolute top-6 right-8 text-blue-400/30">
+            <Sparkles size={24} />
+          </div>
+          <div className="absolute bottom-8 left-10 text-indigo-400/20">
+            <Sparkles size={18} />
           </div>
 
-          {/* Product Column */}
-          <div>
-            <h4 className="font-bold text-slate-900 mb-6 text-lg">Product</h4>
-            <ul className="space-y-4 text-slate-500 font-medium">
-              <li><Link href="/#features" className="hover:text-blue-600 transition-colors">Features</Link></li>
-              <li><Link href="/#pricing" className="hover:text-blue-600 transition-colors">Pricing</Link></li>
-              <li><Link href="/guides" className="hover:text-blue-600 transition-colors">Guides</Link></li>
-              <li><Link href="/signup" className="hover:text-blue-600 transition-colors">Demo</Link></li>
-            </ul>
-          </div>
+          <div className="flex flex-col lg:flex-row items-center justify-between gap-8">
+            <div className="text-center lg:text-left">
+              <h3 className="text-2xl md:text-3xl font-bold text-gray-800 mb-3">
+                Stay ahead of the curve
+              </h3>
+              <p className="text-gray-600 text-lg max-w-md">
+                Get the latest updates on features, tips, and best practices delivered to your inbox.
+              </p>
+            </div>
 
-          {/* Company Column */}
-          <div>
-            <h4 className="font-bold text-slate-900 mb-6 text-lg">Company</h4>
-            <ul className="space-y-4 text-slate-500 font-medium">
-              <li><Link href="/" className="hover:text-blue-600 transition-colors">About Us</Link></li>
-              <li><Link href="#" className="hover:text-blue-600 transition-colors">Careers</Link></li>
-              <li><Link href="/blog" className="hover:text-blue-600 transition-colors">Blog</Link></li>
-            </ul>
-          </div>
-
-          {/* Support Column */}
-          <div>
-            <h4 className="font-bold text-slate-900 mb-6 text-lg">Support</h4>
-            <ul className="space-y-4 text-slate-500 font-medium">
-              <li><Link href="/#faq" className="hover:text-blue-600 transition-colors">Help Center</Link></li>
-              <li><Link href="/#faq" className="hover:text-blue-600 transition-colors">FAQs</Link></li>
-              <li><Link href="#" className="hover:text-blue-600 transition-colors">Contact Us</Link></li>
-            </ul>
+            <form onSubmit={handleSubscribe} className="flex w-full max-w-md">
+              <div className="relative flex w-full bg-white/[0.06] border border-gray-200 rounded-2xl p-1.5 focus-within:border-blue-500/40 transition-colors duration-300">
+                <Mail
+                  size={18}
+                  className="absolute left-5 top-1/2 -translate-y-1/2 text-slate-500"
+                />
+                <input
+                  type="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  placeholder="Enter your email"
+                  className="flex-1 bg-transparent text-gray-800 placeholder-slate-400 pl-11 pr-4 py-3 text-base outline-none"
+                />
+                <motion.button
+                  type="submit"
+                  whileHover={{ scale: 1.03 }}
+                  whileTap={{ scale: 0.97 }}
+                  className="px-6 py-3 bg-blue-600 hover:bg-blue-500 text-white font-bold text-sm rounded-xl transition-colors duration-200 flex items-center gap-2 whitespace-nowrap"
+                >
+                  {subscribed ? (
+                    <motion.span
+                      initial={{ scale: 0 }}
+                      animate={{ scale: 1 }}
+                      className="flex items-center gap-2"
+                    >
+                      ✓ Subscribed!
+                    </motion.span>
+                  ) : (
+                    <>
+                      Subscribe
+                      <ArrowRight size={16} />
+                    </>
+                  )}
+                </motion.button>
+              </div>
+            </form>
           </div>
         </div>
+      </motion.div>
 
-        {/* Bottom Bar */}
-        <div className="flex flex-col md:flex-row justify-between items-center gap-8 pt-12 border-t border-slate-100">
-          <div className="text-slate-400 text-sm font-medium">
-            © 2025 CoreHead CMS. All rights reserved.
+      {/* Main Footer Grid */}
+      <motion.div
+        variants={containerVariants}
+        initial="hidden"
+        whileInView="visible"
+        viewport={{ once: true, margin: "-50px" }}
+        className="relative z-10 max-w-7xl mx-auto px-6 pb-16"
+      >
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-10 lg:gap-8">
+          {/* Brand Column */}
+          <motion.div variants={itemVariants} className="col-span-2 space-y-6">
+            <Link href="/" className="inline-block">
+              <Image
+                src="/logo.png"
+                alt="CoreHead Logo"
+                width={160}
+                height={40}
+                className="h-12 w-auto object-contain brightness-0 invert opacity-90"
+              />
+            </Link>
+            <p className="text-slate-400 text-base leading-relaxed max-w-xs">
+              The ultimate headless CMS for modern web development. Build, manage,
+              and scale your content effortlessly.
+            </p>
+
+
+          </motion.div>
+
+          {/* Link Columns */}
+          {Object.entries(footerLinks).map(([title, links]) => (
+            <motion.div key={title} variants={itemVariants}>
+              <h4 className="font-bold text-gray-800 mb-6 text-sm uppercase tracking-widest">
+                {title}
+              </h4>
+              <ul className="space-y-3.5">
+                {links.map((link) => (
+                  <li key={link.name}>
+                    <Link
+                      href={link.href}
+                      className="group inline-flex items-center gap-2 text-gray-600 hover:text-gray-800 transition-colors duration-300 text-[15px]"
+                    >
+                      <span className="relative">
+                        {link.name}
+                        <span className="absolute -bottom-0.5 left-0 w-0 h-px bg-blue-400 transition-all duration-300 group-hover:w-full" />
+                      </span>
+                      {"badge" in link && link.badge && (
+                        <span className="px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider bg-emerald-500/15 text-emerald-400 border border-emerald-500/20 rounded-full">
+                          {link.badge}
+                        </span>
+                      )}
+                      <ExternalLink
+                        size={12}
+                        className="opacity-0 -translate-x-2 group-hover:opacity-50 group-hover:translate-x-0 transition-all duration-300"
+                      />
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+            </motion.div>
+          ))}
+        </div>
+      </motion.div>
+
+      {/* Bottom Bar */}
+      <div className="relative z-10 border-t border-gray-200">
+        <div className="max-w-7xl mx-auto px-6 py-8 flex flex-col md:flex-row justify-between items-center gap-6">
+          <div className="flex items-center gap-1.5 text-sm text-gray-600">
+            <span>© {new Date().getFullYear()} CoreHead CMS. Crafted with</span>
+            <motion.span
+              animate={{ scale: [1, 1.2, 1] }}
+              transition={{ duration: 1.5, repeat: Infinity, repeatDelay: 2 }}
+            >
+              <Heart size={14} className="text-red-400 fill-red-400" />
+            </motion.span>
+            <span>by the CoreHead team.</span>
           </div>
-          
-          <div className="flex gap-8 text-sm font-medium text-slate-400">
-            <Link href="#" className="hover:text-slate-900 transition-colors">Privacy Policy</Link>
-            <Link href="#" className="hover:text-slate-900 transition-colors">Terms of Service</Link>
-            <Link href="#" className="hover:text-slate-900 transition-colors">Cookie Policy</Link>
+
+          <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 px-3 py-1.5 bg-emerald-500/10 border border-emerald-500/20 rounded-full">
+              <motion.div
+                animate={{ scale: [1, 1.3, 1], opacity: [0.7, 1, 0.7] }}
+                transition={{ duration: 2, repeat: Infinity }}
+                className="w-2 h-2 rounded-full bg-emerald-400"
+              />
+              <span className="text-xs font-medium text-emerald-400">
+                All systems operational
+              </span>
+            </div>
           </div>
         </div>
       </div>

@@ -19,6 +19,7 @@ export default function GuideCard({
   description,
   tags,
   link,
+  image,
   delay = 0,
 }: GuideCardProps) {
   return (
@@ -27,23 +28,32 @@ export default function GuideCard({
       whileInView={{ opacity: 1, y: 0 }}
       viewport={{ once: true }}
       transition={{ delay }}
-      className="group flex flex-col h-full bg-white rounded-2xl overflow-hidden border border-slate-100 shadow-sm hover:shadow-xl transition-all duration-300 hover:-translate-y-1"
+      className="group flex flex-col h-full bg-white rounded-2xl overflow-hidden border border-slate-100 shadow-sm hover:shadow-xl transition-all duration-300 hover:-translate-y-1 relative"
     >
-      {/* Thumbnail Placeholder - would be an image in real implementation */}
-      <div className="relative h-48 bg-slate-100 overflow-hidden group-hover:bg-slate-200 transition-colors">
-        <div className="absolute inset-0 bg-gradient-to-br from-slate-200 to-slate-100 opacity-50"></div>
-        <div className="absolute inset-0 flex items-center justify-center p-6 text-center">
-          <span className="text-4xl font-bold text-slate-300 select-none opacity-40">
-            CoreHead
-          </span>
-        </div>
+      {/* Thumbnail */}
+      <div className="relative h-52 bg-slate-100 overflow-hidden">
+        {image ? (
+          <img
+            src={image}
+            alt={title}
+            className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
+          />
+        ) : (
+          <div className="absolute inset-0 bg-gradient-to-br from-blue-100 to-indigo-50 flex items-center justify-center p-6 text-center">
+             <span className="text-3xl font-black text-blue-200 select-none italic tracking-tighter uppercase opacity-50">
+               CORE<span className="text-indigo-200">HEAD</span>
+             </span>
+          </div>
+        )}
+        
+        <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
 
         {/* Tags Overlay */}
-        <div className="absolute bottom-4 right-4 flex flex-wrap justify-end gap-2">
+        <div className="absolute bottom-4 left-4 flex flex-wrap gap-2">
           {tags.map((tag, i) => (
             <span
               key={i}
-              className="px-2 py-1 rounded-md bg-black/50 backdrop-blur-sm text-white text-[10px] font-medium uppercase tracking-wider"
+              className="px-2 py-1 rounded-md bg-white/90 backdrop-blur-sm text-slate-900 text-[9px] font-bold uppercase tracking-wider shadow-sm"
             >
               {tag}
             </span>
