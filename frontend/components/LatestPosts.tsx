@@ -13,11 +13,9 @@ export default function LatestPosts() {
   useEffect(() => {
     const fetch = async () => {
       try {
-        const data = await api.getPosts();
-        const published = Array.isArray(data)
-          ? data.filter((p) => p.status === "Published")
-          : [];
-        setPosts(published.slice(0, 6)); // show top 6
+        const data = await api.getPreviewPosts(6);
+        const published = Array.isArray(data.posts) ? data.posts : [];
+        setPosts(published);
       } catch (e) {
         console.error("Failed to load posts", e);
       } finally {
