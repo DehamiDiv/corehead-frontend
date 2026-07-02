@@ -32,7 +32,7 @@ const defaultSettings = {
   spacingValue: '16px',
   radius: 'medium',
   radiusValue: '12px',
-  columns: 3,
+  columns: 1,
 };
 
 
@@ -53,36 +53,9 @@ export default function BlogBuilderPage() {
   const [aiPosts, setAiPosts]               = useState([]);    // AI cards stored separately
   const [aiSettings, setAiSettings]         = useState(null);  // AI settings stored separately
   const [compareMode, setCompareMode]       = useState(false); // show both side by side
+  const [error, setError]                   = useState(null);
 
-  const [blogPosts, setBlogPosts] = useState([
-    {
-      id: 1,
-      title: 'Getting Started with React',
-      excerpt: 'Learn the fundamentals of React and start building amazing web applications.',
-      author: 'John Doe',
-      date: '2024-02-10',
-      image: 'https://picsum.photos/400/250?random=1',
-      category: 'Development'
-    },
-    {
-      id: 2,
-      title: 'Advanced CSS Techniques',
-      excerpt: 'Master modern CSS features and create stunning designs with ease.',
-      author: 'Jane Smith',
-      date: '2024-02-12',
-      image: 'https://picsum.photos/400/250?random=2',
-      category: 'Design'
-    },
-    {
-      id: 3,
-      title: 'JavaScript ES2024 Features',
-      excerpt: 'Explore the latest features in JavaScript and how to use them effectively.',
-      author: 'Mike Johnson',
-      date: '2024-02-13',
-      image: 'https://picsum.photos/400/250?random=3',
-      category: 'Development'
-    }
-  ]);
+  const [blogPosts, setBlogPosts] = useState([]);
 
   const [cmsFields] = useState({
     post: ['Title', 'Excerpt', 'Content', 'Featured Image', 'Category', 'Tags'],
@@ -99,6 +72,15 @@ export default function BlogBuilderPage() {
 
       if (aiPrompt || selectedTemplate) {
         try {
+          const token = localStorage.getItem('accessToken');
+          if (!token) {
+             setError('Authentication required. Please login to use AI features.');
+             // Clear AI prompt to prevent infinite loop/retry without login
+             localStorage.removeItem('ai_prompt');
+             router.push('/login?callback=/builder');
+             return;
+          }
+
           const options = aiOptions ? JSON.parse(aiOptions) : {};
           const template = selectedTemplate ? JSON.parse(selectedTemplate) : null;
 
@@ -120,6 +102,12 @@ export default function BlogBuilderPage() {
 
         } catch (err) {
           console.error('AI Flow error:', err);
+          if (err.message?.includes('Access denied') || err.message?.includes('token')) {
+             setError('Your session has expired. Please login again.');
+             router.push('/login');
+          } else {
+             setError('Failed to generate AI layout. ' + err.message);
+          }
         }
       }
 
@@ -300,6 +288,28 @@ export default function BlogBuilderPage() {
               📂 Load Layout
             </button>
           </div>
+
+          {/* Error Banner */}
+          {error && (
+            <div style={{
+              padding: '12px 20px',
+              background: '#fef2f2',
+              borderBottom: '1px solid #fecaca',
+              color: '#dc2626',
+              fontSize: '14px',
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center'
+            }}>
+              <span>⚠️ {error}</span>
+              <button 
+                onClick={() => setError(null)}
+                style={{ background: 'none', border: 'none', color: '#dc2626', cursor: 'pointer', fontWeight: '700' }}
+              >
+                ✕
+              </button>
+            </div>
+          )}
 
           {/* Tab Content */}
           {activeTab === 'builder' && (

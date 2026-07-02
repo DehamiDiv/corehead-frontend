@@ -1,103 +1,120 @@
-const BASE_URL = 'http://localhost:5000/api';
+const BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api';
 
 // getAuthHeader: Helper function to attach the JWT token to outgoing API requests.
-// This allows the backend to verify the user's identity and role via authMiddleware.
 const getAuthHeader = (): Record<string, string> => {
   if (typeof window !== 'undefined') {
-    const token = localStorage.getItem('token');
+    const token = localStorage.getItem('accessToken');
     return token ? { 'Authorization': `Bearer ${token}` } : {};
   }
   return {};
 };
 
+// handleResponse: Centralized response handler — now supports auto-refresh on 401
+const handleResponse = async (res: Response, originalRequest: () => Promise<any>): Promise<any> => {
+  if (res.status === 401) {
+    if (typeof window !== 'undefined') {
+      const refreshToken = localStorage.getItem('refreshToken');
+      
+      if (refreshToken) {
+        try {
+          // Attempt to get a new access token
+          const refreshRes = await fetch(`${BASE_URL}/auth/refresh-token`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ refreshToken })
+          });
+
+          if (refreshRes.ok) {
+            const { accessToken } = await refreshRes.json();
+            localStorage.setItem('accessToken', accessToken);
+            
+            // Retry the original request
+            return originalRequest();
+          }
+        } catch (err) {
+          console.error("Refresh token failed", err);
+        }
+      }
+
+      // If refresh fails or no refresh token, log out
+      localStorage.removeItem('accessToken');
+      localStorage.removeItem('refreshToken');
+      localStorage.removeItem('user');
+      window.location.href = '/login?session=expired';
+    }
+    throw new Error('Session expired. Please log in again.');
+  }
+
+  if (!res.ok) {
+    try {
+      const errData = await res.json();
+      throw new Error(errData.details || errData.error || `Request failed with status ${res.status}`);
+    } catch {
+      throw new Error(`Request failed with status ${res.status}`);
+    }
+  }
+  return res.json();
+};
+
 export const api = {
+  // Helper to wrap fetch with auth and auto-refresh
+  async fetchWithAuth(url: string, options: RequestInit = {}) {
+    const execute = async () => {
+      const res = await fetch(url, {
+        ...options,
+        headers: {
+          ...options.headers,
+          ...getAuthHeader()
+        }
+      });
+      return handleResponse(res, execute);
+    };
+    return execute();
+  },
+
   // Templates
   async getTemplates() {
-    const res = await fetch(`${BASE_URL}/templates`, {
-      headers: { ...getAuthHeader() }
-    });
-    if (!res.ok) throw new Error('Failed to fetch templates');
-    return res.json();
+    return this.fetchWithAuth(`${BASE_URL}/templates`);
   },
 
   async getTemplateById(id: string) {
-    const res = await fetch(`${BASE_URL}/templates/${id}`, {
-      headers: { ...getAuthHeader() }
-    });
-    if (!res.ok) throw new Error('Failed to fetch template');
-    return res.json();
+    return this.fetchWithAuth(`${BASE_URL}/templates/${id}`);
   },
 
   async createTemplate(data: { name: string, type: string, layoutJson: any, status?: string }) {
-    const res = await fetch(`${BASE_URL}/templates`, {
+    return this.fetchWithAuth(`${BASE_URL}/templates`, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        ...getAuthHeader()
-      },
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(data)
     });
-    if (!res.ok) {
-        const err = await res.json();
-        throw new Error(err.error || 'Failed to create template');
-    }
-    return res.json();
   },
 
   async updateTemplate(id: string, data: { name?: string, type?: string, layoutJson?: any, status?: string }) {
-    const res = await fetch(`${BASE_URL}/templates/${id}`, {
+    return this.fetchWithAuth(`${BASE_URL}/templates/${id}`, {
       method: 'PUT',
-      headers: {
-        'Content-Type': 'application/json',
-        ...getAuthHeader()
-      },
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(data)
     });
-    if (!res.ok) {
-        const err = await res.json();
-        throw new Error(err.error || 'Failed to update template');
-    }
-    return res.json();
   },
 
   async deleteTemplate(id: string) {
-    const res = await fetch(`${BASE_URL}/templates/${id}`, {
-      method: 'DELETE',
-      headers: { ...getAuthHeader() }
+    return this.fetchWithAuth(`${BASE_URL}/templates/${id}`, {
+      method: 'DELETE'
     });
-    if (!res.ok) {
-      const err = await res.json();
-      throw new Error(err.error || 'Failed to delete template');
-    }
-    return res.json();
   },
 
   async publishTemplate(id: string) {
-    const res = await fetch(`${BASE_URL}/templates/${id}/publish`, {
-      method: 'PATCH',
-      headers: { ...getAuthHeader() }
+    return this.fetchWithAuth(`${BASE_URL}/templates/${id}/publish`, {
+      method: 'PATCH'
     });
-    if (!res.ok) {
-      const err = await res.json();
-      throw new Error(err.error || 'Failed to publish template');
-    }
-    return res.json();
   },
 
   async assignTemplate(id: string, data: { categoryId?: string; isGlobalDefault?: boolean }) {
-    const res = await fetch(`${BASE_URL}/templates/${id}/assign`, {
+    return this.fetchWithAuth(`${BASE_URL}/templates/${id}/assign`, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        ...getAuthHeader()
-      },
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(data)
     });
-    if (!res.ok) {
-      const err = await res.json();
-      throw new Error(err.error || 'Failed to assign template');
-    }
-    return res.json();
   },
 
   // Preview Data
@@ -165,19 +182,15 @@ export const api = {
     return res.json();
   },
 
-  // Public Facing / Receiver Mock Endpoints
   async getPostBySlug(slug: string) {
-    return {
-      id: `mock-${slug}`,
-      title: `The Ultimate Guide to ${slug.replace(/-/g, ' ')}`,
-      slug: slug,
-      excerpt: "This is a dynamically retrieved excerpt based on the slug.",
-      content: "<p>This is the full rich-text <strong>content</strong> of the blog post. It goes into extreme detail about the particular subject matter.</p><p>This should be rendered dynamically.</p>",
-      imageUrl: "https://picsum.photos/1200/600",
-      createdAt: new Date().toISOString(),
-      category: "Development",
-      author: { name: "System Admin", bio: "Tech enthusiast" }
-    };
+    const res = await fetch(`${BASE_URL}/posts/slug/${slug}`, {
+      cache: 'no-store'
+    });
+    if (!res.ok) {
+      if (res.status === 404) return null;
+      throw new Error('Failed to fetch post by slug');
+    }
+    return res.json();
   },
 
   async getPublicLayout(type: 'blog-loop' | 'single-post') {
@@ -214,7 +227,7 @@ export const api = {
     return res.json();
   },
 
-  async register(data: { email: string, password: string }) {
+  async register(data: { email: string, password: string, name?: string }) {
     const res = await fetch(`${BASE_URL}/auth/register`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -227,82 +240,71 @@ export const api = {
     return res.json();
   },
 
-  // AI Layouts
-  async generateLayout(data: { prompt: string, layoutType: string, designStyle: string, features?: any }) {
-    const res = await fetch(`${BASE_URL}/ai/generate-layout`, {
+  async forgotPassword(email: string) {
+    const res = await fetch(`${BASE_URL}/auth/forgot-password`, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        ...getAuthHeader()
-      },
-      body: JSON.stringify(data)
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email })
     });
     if (!res.ok) {
       const err = await res.json();
-      throw new Error(err.error || 'AI generation failed');
+      throw new Error(err.error || 'Failed to send reset email');
     }
     return res.json();
   },
 
-  async getAiHistory(limit: number = 50) {
-    const res = await fetch(`${BASE_URL}/ai/history?limit=${limit}`, {
-      headers: { ...getAuthHeader() }
+  async resetPassword(data: { token: string, password: string }) {
+    const res = await fetch(`${BASE_URL}/auth/reset-password`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data)
     });
-    if (!res.ok) throw new Error('Failed to fetch AI history');
+    if (!res.ok) {
+      const err = await res.json();
+      throw new Error(err.error || 'Failed to reset password');
+    }
+    return res.json();
+  },
+
+  // Auth/Verify & AI functions from auth-complete
+  async verifyEmail(data: { email: string, otp: string }) {
+    const res = await fetch(`${BASE_URL}/auth/verify-email`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data)
+    });
+    if (!res.ok) {
+      const err = await res.json();
+      throw new Error(err.error || 'Verification failed');
+    }
     return res.json();
   },
 
   // Users
   async getUsers() {
-    const res = await fetch(`${BASE_URL}/users`, {
-      headers: { ...getAuthHeader() }
-    });
-    if (!res.ok) throw new Error('Failed to fetch users');
-    return res.json();
+    return this.fetchWithAuth(`${BASE_URL}/users`);
   },
 
-  async inviteUser(data: { email: string, role: string, name?: string, nicename?: string, designation?: string, bio?: string, password?: string }) {
-    const res = await fetch(`${BASE_URL}/users/invite`, {
+  async inviteUser(data: { email: string, role: string, name?: string, nicename?: string, designation?: string, bio?: string, password?: string, avatar?: string }) {
+    return this.fetchWithAuth(`${BASE_URL}/users/invite`, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        ...getAuthHeader()
-      },
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(data)
     });
-    if (!res.ok) {
-      const err = await res.json();
-      throw new Error(err.message || 'Failed to invite user');
-    }
-    return res.json();
   },
 
   async updateUser(id: string | number, data: { email?: string, role?: string, password?: string, name?: string, designation?: string, bio?: string, avatar?: string }) {
-    const res = await fetch(`${BASE_URL}/users/${id}`, {
+    return this.fetchWithAuth(`${BASE_URL}/users/${id}`, {
       method: 'PUT',
-      headers: {
-        'Content-Type': 'application/json',
-        ...getAuthHeader()
-      },
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(data)
     });
-    if (!res.ok) {
-      const err = await res.json();
-      throw new Error(err.message || 'Failed to update user');
-    }
-    return res.json();
   },
 
   async deleteUser(id: string | number) {
-    const res = await fetch(`${BASE_URL}/users/${id}`, {
-      method: 'DELETE',
-      headers: { ...getAuthHeader() }
+    return this.fetchWithAuth(`${BASE_URL}/users/${id}`, {
+      method: 'DELETE'
     });
-    if (!res.ok) {
-      const err = await res.json();
-      throw new Error(err.message || 'Failed to delete user');
-    }
-    return res.json();
   },
 
   // Pages
@@ -523,5 +525,18 @@ export const api = {
     });
     if (!res.ok) throw new Error('Failed to delete comment');
     return res.json();
+  },
+
+  // AI Layouts
+  async generateLayout(data: { prompt: string, layoutType: string, designStyle: string, features?: any }) {
+    return this.fetchWithAuth(`${BASE_URL}/ai/generate-layout`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data)
+    });
+  },
+
+  async getAiHistory(limit: number = 50) {
+    return this.fetchWithAuth(`${BASE_URL}/ai/history?limit=${limit}`);
   }
 };

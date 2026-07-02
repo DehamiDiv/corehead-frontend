@@ -52,16 +52,16 @@ export default function SignupPage() {
 
     try {
       const data = await api.register({
+        name: formData.name,
         email: formData.email,
         password: formData.password,
-        // Backend register currenty only takes email and password based on authService.js
       });
 
-      setSuccess("Account created successfully! Redirecting to login...");
+      setSuccess("Account created successfully! We've sent an OTP to your email.");
       
-      // Redirect to login after success (small delay to show message)
+      // Redirect to verification page
       setTimeout(() => {
-        router.push("/login?registered=true");
+        router.push(`/verify-email?email=${encodeURIComponent(formData.email)}`);
       }, 2000);
     } catch (err: any) {
       setError(err.message || "Registration failed. Please try again.");
