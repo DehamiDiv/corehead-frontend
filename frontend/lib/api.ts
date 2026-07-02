@@ -194,23 +194,17 @@ export const api = {
   },
 
   async getPublicLayout(type: 'blog-loop' | 'single-post') {
-    if (type === 'blog-loop') {
-      return {
-        blocks: [
-          { id: '1', type: 'Heading' as const, content: 'Latest Posts' },
-          { id: '2', type: 'Collection List' as const, content: { limit: 6, category: '' } }
-        ]
-      };
-    } else {
-      return {
-         blocks: [
-           { id: '1', type: 'Image' as const, content: '', bindings: { content: 'featured_image' } },
-           { id: '2', type: 'Heading' as const, content: '', bindings: { content: 'title' } },
-           { id: '3', type: 'Paragraph' as const, content: '', bindings: { content: 'category' }, styles: { color: 'blue', textTransform: 'uppercase' } },
-           { id: '4', type: 'Paragraph' as const, content: '', bindings: { content: 'content' } }
-         ]
-      };
+    // Map the internal type to the backend's expected type name
+    const apiType = type === 'single-post' ? 'Single Post' : 'Blog Loop';
+    const res = await fetch(`${BASE_URL}/templates?type=${encodeURIComponent(apiType)}&status=published`, {
+      headers: { ...getAuthHeader() },
+    });
+    if (!res.ok) {
+      const err = await res.json();
+      throw new Error(err.error || 'Failed to fetch public layout');
     }
+    // Assuming the backend returns a layout object with a `blocks` field
+    return res.json();
   },
 
   // Auth

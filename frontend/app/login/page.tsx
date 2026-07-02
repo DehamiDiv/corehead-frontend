@@ -1,17 +1,14 @@
 "use client";
 
-import { useState, Suspense, useEffect } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useRouter } from "next/navigation";
 import Image from "next/image";
 import { Eye, EyeOff, LayoutGrid, BookOpen, Settings, AlertCircle, Loader2 } from "lucide-react";
 import { api } from "@/lib/api";
 
-function LoginForm() {
+export default function LoginPage() {
   const router = useRouter();
-  const searchParams = useSearchParams();
-  const callbackUrl = searchParams.get('callback') || '/admin';
-
   const [showPassword, setShowPassword] = useState(false);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -59,7 +56,7 @@ function LoginForm() {
         // Regular users (Authors/Editors) go directly to Shara's blog page
         setSuccess("Login successful! Redirecting to Blog Page...");
         setTimeout(() => {
-          router.push('/blog'); 
+          router.push('/blog');
         }, 1500);
       }
     } catch (err: any) {
@@ -70,7 +67,7 @@ function LoginForm() {
   };
 
   return (
-    <div className="min-h-screen w-full bg-gradient-to-br from-blue-100 via-blue-200 to-blue-400 flex flex-col font-sans">
+    <div className="min-h-screen w-full bg-gradient-to-br from-blue-200 via-blue-300 to-blue-400 flex flex-col font-sans">
       {/* Custom Navbar for Login Page */}
       <nav className="w-full px-6 py-4 flex items-center justify-between mx-auto max-w-7xl relative z-10">
         <Link href="/" className="flex items-center">
@@ -208,17 +205,5 @@ function LoginForm() {
         </div>
       </main>
     </div>
-  );
-}
-
-export default function LoginPage() {
-  return (
-    <Suspense fallback={
-      <div className="min-h-screen flex items-center justify-center bg-blue-200">
-        <Loader2 className="w-8 h-8 animate-spin text-blue-700" />
-      </div>
-    }>
-      <LoginForm />
-    </Suspense>
   );
 }

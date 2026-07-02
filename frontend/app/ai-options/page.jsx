@@ -109,6 +109,7 @@ export default function AIOptionsPage() {
           Quick templates
         </Link>
         <Link href="/ai-history" className="nav-item">History</Link> 
+        
       </div>
 
       {/* Content */}

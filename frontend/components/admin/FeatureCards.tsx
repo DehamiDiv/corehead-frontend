@@ -41,8 +41,8 @@ const features = [
     title: "Media Library",
     description: "Upload and manage all your assets in a unified cloud-based storage system.",
     icon: ImageIcon,
-    color: "rose",
-    glow: "shadow-rose-500/20",
+    color: "purple",
+    glow: "shadow-purple-500/20",
     href: "/admin/media"
   },
   {
@@ -115,7 +115,7 @@ export default function FeatureCards() {
 
               {/* Decorative line */}
               <div className="mt-auto pt-8 flex items-center gap-2 overflow-hidden relative z-10">
-                 <div className={cn("h-1.5 w-12 bg-slate-100 rounded-full group-hover:w-full transition-all duration-500", lineMap[feature.color])} />
+                <div className={cn("h-1.5 w-12 bg-slate-100 rounded-full group-hover:w-full transition-all duration-500", lineMap[feature.color])} />
               </div>
             </motion.div>
           </Link>
