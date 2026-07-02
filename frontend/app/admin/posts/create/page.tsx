@@ -1,31 +1,24 @@
 "use client";
 
-import { useState, useRef, useEffect } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { 
   ChevronDown, Star, Search, FileText, ImagePlus, X, Library, 
-  Eye, Type, Bold, Italic, Underline, Strikethrough, Superscript, 
+  Eye, Type, Bold, Italic, Underline, Strikethrough,
   List, ListOrdered, AlignLeft, AlignCenter, AlignRight, AlignJustify,
-  Quote, Code, Link as LinkIcon, Image as ImageIcon, LayoutGrid, Minus, RemoveFormatting, Tag, Loader2
+  Quote, Code, Link as LinkIcon, Image as ImageIcon, LayoutGrid, Minus, RemoveFormatting, Tag, Loader2,
+  Upload,
+  ChevronLeft,
+  Check,
+  Plus,
+  Maximize2,
+  Settings,
+  Globe,
+  PlusCircle
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import MediaLibraryModal from "@/components/admin/MediaLibraryModal";
-import dynamic from 'next/dynamic';
-import 'react-quill-new/dist/quill.snow.css';
-
-const ReactQuill = dynamic(() => import('react-quill-new'), { ssr: false });
-
-const quillModules = {
-  toolbar: [
-    [{ 'header': [1, 2, 3, 4, 5, 6, false] }, { 'font': [] }],
-    ['bold', 'italic', 'underline', 'strike'],
-    [{ 'color': [] }, { 'background': [] }],
-    [{ 'script': 'sub'}, { 'script': 'super' }],
-    [{ 'list': 'ordered'}, { 'list': 'bullet' }, { 'align': [] }],
-    ['blockquote', 'code-block', 'link', 'image'],
-    ['clean']
-  ],
-};
+import { api } from "@/lib/api";
 
 export default function CreatePostPage() {
   const router = useRouter();
@@ -40,330 +33,251 @@ export default function CreatePostPage() {
     featured: false,
     content: "",
     showToc: false,
-    allowComments: false,
-    // Images
+    allowComments: true,
     thumbnailUrl: "",
-    // SEO
     metaTitle: "",
     metaDescription: "",
     keywords: [] as string[],
+    useThumbnailAsFeatured: true,
     canonicalUrl: "",
-    structuredData: ""
+    structuredData: "",
   });
 
   const [keywordInput, setKeywordInput] = useState("");
+
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const [loading, setLoading] = useState(false);
   const [users, setUsers] = useState<any[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [isMediaModalOpen, setIsMediaModalOpen] = useState(false);
-  const [isPreviewModalOpen, setIsPreviewModalOpen] = useState(false);
-
   const [activeTab, setActiveTab] = useState("Content");
 
-  // Fetch users/authors on mount
-  useEffect(() => {
-    // First, try to get the logged-in user from localStorage
-    const savedUser = typeof window !== "undefined" ? localStorage.getItem("user") : null;
-    let loggedInUserId: string | null = null;
-    
-    if (savedUser) {
-      try {
-        const user = JSON.parse(savedUser);
-        if (user && user.id) {
-          loggedInUserId = String(user.id);
-          setFormData(prev => ({ ...prev, authorId: loggedInUserId as string }));
-        }
-      } catch (e) {
-        console.error("Failed to parse saved user", e);
-      }
-    }
-
-    const fetchUsers = async () => {
-      try {
-        const res = await fetch("http://localhost:5000/api/users");
-        if (res.ok) {
-          const data = await res.json();
-          setUsers(data);
-          
-          // Only set default authorId if we don't have a logged-in user's ID
-          if (!loggedInUserId && data.length > 0) {
-            setFormData(prev => ({ ...prev, authorId: String(data[0].id) }));
-          }
-        } else {
-          // Default fallback if API fails
-          setUsers([{ id: 1, name: "Admin User" }]);
-          if (!loggedInUserId) {
-            setFormData(prev => ({ ...prev, authorId: "1" }));
-          }
-        }
-      } catch (err) {
-        console.error("Failed to fetch users:", err);
-        setUsers([{ id: 1, name: "Admin User" }]);
-        if (!loggedInUserId) {
-          setFormData(prev => ({ ...prev, authorId: "1" }));
-        }
-      }
-    };
-    fetchUsers();
-  }, []);
-
-  const availableCategories = ["Tech", "Education", "Lifestyle", "Business", "Marketing", "Travelling"];
-
-  const handleCategoryToggle = (cat: string) => {
-    setFormData(prev => ({
-      ...prev,
-      categories: prev.categories.includes(cat)
-        ? prev.categories.filter(c => c !== cat)
-        : [...prev.categories, cat]
-    }));
-  };
-
-  const handleAddKeyword = () => {
+  const addKeyword = () => {
     if (keywordInput.trim() && !formData.keywords.includes(keywordInput.trim())) {
-      setFormData(prev => ({
-        ...prev,
-        keywords: [...prev.keywords, keywordInput.trim()]
-      }));
+      setFormData(prev => ({ ...prev, keywords: [...prev.keywords, keywordInput.trim()] }));
       setKeywordInput("");
     }
   };
 
   const removeKeyword = (kw: string) => {
-    setFormData(prev => ({
-      ...prev,
-      keywords: prev.keywords.filter(k => k !== kw)
-    }));
+    setFormData(prev => ({ ...prev, keywords: prev.keywords.filter(k => k !== kw) }));
   };
 
+  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    
+    // In a real app, you'd upload to a server here.
+    // For now, we'll create a preview URL or use a mock.
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      setFormData(prev => ({ ...prev, thumbnailUrl: event.target?.result as string }));
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const fetchUsers = useCallback(async () => {
+    try {
+      const data = await api.getUsers();
+      const usersList = data.users && Array.isArray(data.users) ? data.users : [];
+      setUsers(usersList);
+      if (usersList.length > 0 && !formData.authorId) {
+        setFormData(prev => ({ ...prev, authorId: String(usersList[0].id) }));
+      }
+    } catch (err) {
+      setUsers([{ id: 1, name: "Admin User" }]);
+      setFormData(prev => ({ ...prev, authorId: "1" }));
+    }
+  }, [formData.authorId]);
+
+  useEffect(() => {
+    fetchUsers();
+  }, [fetchUsers]);
+
+  const availableCategories = ["Technology", "Design", "Business", "Marketing", "Lifestyle", "AI", "Development"];
+
+  // Calculate Progress
+  const calculateProgress = () => {
+    const fields = [
+      formData.title.trim().length > 0,
+      formData.slug.trim().length > 0,
+      formData.excerpt.trim().length > 0,
+      formData.authorId !== "",
+      formData.categories.length > 0,
+      formData.content.trim().length > 0,
+      formData.thumbnailUrl !== "",
+      formData.metaTitle !== "",
+      formData.metaDescription !== ""
+    ];
+    const completed = fields.filter(f => f).length;
+    return { completed, total: fields.length };
+  };
+
+  const { completed, total } = calculateProgress();
+  const progressPercent = (completed / total) * 100;
+
   const handleCreatePost = async (overrideStatus?: string) => {
+    if (!formData.title || !formData.content) {
+      setError("Title and Content are required.");
+      return;
+    }
+
     setLoading(true);
     setError(null);
 
-    const token = typeof window !== "undefined" ? localStorage.getItem("token") : null;
-    
-    // Construct the payload as expected by the backend
     const finalData = {
       title: formData.title,
       slug: formData.slug,
       excerpt: formData.excerpt,
       content: formData.content,
       status: overrideStatus || formData.status,
-      category: formData.categories[0] || "General", // Backend expects a single category string currently
+      category: formData.categories[0] || "General",
+      categories: formData.categories,
       tags: formData.keywords,
-      authorId: formData.authorId,
+      authorId: parseInt(formData.authorId),
       thumbnailUrl: formData.thumbnailUrl,
-      showToc: formData.showToc,
-      allowComments: formData.allowComments,
+      featured: formData.featured,
+      meta_title: formData.metaTitle,
+      meta_description: formData.metaDescription,
+      canonicalUrl: formData.canonicalUrl,
+      structuredData: formData.structuredData,
+      show_toc: formData.showToc,
+      allow_comments: formData.allowComments,
       published_date: new Date().toISOString()
     };
 
     try {
-      const res = await fetch("http://localhost:5000/api/posts", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          ...(token ? { "Authorization": `Bearer ${token}` } : {}),
-        },
-        body: JSON.stringify(finalData),
-      });
-
-      if (!res.ok) {
-        const data = await res.json();
-        throw new Error(data.error || "Failed to create post");
-      }
-
-      // Navigate to the public blog page after creation
-      router.push('/blog');
+      await api.createPost(finalData);
+      router.push('/');
     } catch (err: any) {
-      setError(err.message);
+      setError(err.message || "Failed to create post");
     } finally {
       setLoading(false);
     }
   };
 
-  const handlePreview = () => {
-    setIsPreviewModalOpen(true);
-  };
-
-  const completedFields = [
-    formData.title,
-    formData.slug,
-    formData.excerpt,
-    formData.authorId,
-    formData.categories.length > 0,
-    formData.content
-  ].filter(Boolean).length;
-
   return (
-    <div className="max-w-[1200px] mx-auto pb-20 space-y-6">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold text-gray-900">Create New Post</h1>
-          <p className="text-gray-500 text-sm mt-1">
-            Fill in the details below to create a new blog post
-          </p>
+    <div className="min-h-screen bg-[#F4F7FA] pb-32 pt-8 px-6">
+      <div className="max-w-[1200px] mx-auto space-y-6">
+        
+        {/* Top Header */}
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-[32px] font-bold text-[#1E293B]">Create New Post</h1>
+            <p className="text-[15px] text-[#64748B] mt-1">Fill in the details below to create a new blog post</p>
+          </div>
+          <span className={cn(
+            "px-4 py-1.5 text-white text-[13px] font-bold rounded-full transition-colors",
+            formData.status === "Published" ? "bg-[#2563EB]" : "bg-[#94A3B8]"
+          )}>
+            {formData.status}
+          </span>
         </div>
-        <div className="px-4 py-1.5 bg-blue-600 text-white rounded-full text-sm font-bold shadow-sm">
-          {formData.status}
+
+        {/* Progress Bar Card */}
+        <div className="bg-white rounded-[20px] p-6 border border-[#E2E8F0] shadow-sm">
+          <div className="flex items-center justify-between mb-3">
+            <span className="text-[14px] font-bold text-[#1E293B]">Completion Progress</span>
+            <span className="text-[13px] font-bold text-[#94A3B8]">{completed}/{total} fields completed</span>
+          </div>
+          <div className="w-full h-2 bg-[#F1F5F9] rounded-full overflow-hidden">
+            <div 
+              className="h-full bg-[#2563EB] transition-all duration-500 ease-out" 
+              style={{ width: `${progressPercent}%` }}
+            />
+          </div>
         </div>
-      </div>
 
-      {/* Progress Card */}
-      <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
-        <div className="flex justify-between items-center mb-3">
-          <span className="text-sm font-bold text-gray-900">Completion Progress</span>
-          <span className="text-sm font-medium text-gray-400">{completedFields}/6 fields completed</span>
+        {/* Section Tabs */}
+        <div className="bg-[#F8FAFC] rounded-[16px] p-1.5 flex gap-2 border border-[#E2E8F0]">
+          {["Content", "Images", "SEO"].map((tab) => (
+            <button
+              key={tab}
+              onClick={() => setActiveTab(tab)}
+              className={cn(
+                "flex-1 h-12 flex items-center justify-center gap-2 text-[14px] font-bold transition-all rounded-[12px]",
+                activeTab === tab 
+                  ? "bg-white text-[#2563EB] shadow-sm border border-[#E2E8F0]" 
+                  : "text-[#64748B] hover:text-[#475569]"
+              )}
+            >
+              {tab === "Content" && <FileText className="w-4 h-4" />}
+              {tab === "Images" && <ImageIcon className="w-4 h-4" />}
+              {tab === "SEO" && <Search className="w-4 h-4" />}
+              {tab}
+            </button>
+          ))}
         </div>
-        <div className="h-3 w-full bg-gray-50 rounded-full overflow-hidden">
-          <div 
-            className="h-full bg-blue-600 transition-all duration-300" 
-            style={{ width: `${(completedFields / 6) * 100}%` }}
-          />
-        </div>
-      </div>
 
-      {/* Tabs */}
-      <div className="bg-white p-2 rounded-2xl shadow-sm border border-gray-100 flex gap-2">
-        {[
-          { id: "Content", icon: "FileText" },
-          { id: "Images", icon: "Image" },
-          { id: "SEO", icon: "Search" }
-        ].map(tab => (
-          <button
-            key={tab.id}
-            onClick={() => setActiveTab(tab.id)}
-            className={cn(
-              "flex-1 py-3 px-4 text-sm font-bold rounded-xl transition-colors flex items-center justify-center gap-2",
-              activeTab === tab.id 
-                ? "bg-gray-50 text-gray-900 border border-gray-100 shadow-[0_2px_10px_rgba(0,0,0,0.02)]" 
-                : "text-gray-500 hover:text-gray-700 hover:bg-gray-50/50"
-            )}
-          >
-            {tab.id === "Content" && <FileText className="w-4 h-4" />}
-            {tab.id === "Images" && <ImagePlus className="w-4 h-4" />}
-            {tab.id === "SEO" && <Search className="w-4 h-4" />}
-            {tab.id}
-          </button>
-        ))}
-      </div>
+        {error && (
+          <div className="p-4 bg-red-50 text-red-600 rounded-[12px] border border-red-100 flex items-center gap-3">
+            <X className="w-5 h-5" />
+            <span className="text-[14px] font-bold">{error}</span>
+          </div>
+        )}
 
-      {error && (
-        <div className="p-4 bg-red-50 text-red-600 rounded-xl text-sm font-bold border border-red-100">
-          {error}
-        </div>
-      )}
-
-      {/* Tab Content */}
-      <div className="bg-white p-8 rounded-2xl shadow-sm border border-gray-100">
-        {activeTab === "Content" && (
-          <div className="space-y-8">
-            <div>
-              <h2 className="text-xl font-bold text-gray-900">Basic Information</h2>
-              <p className="text-sm text-gray-500 mb-8">Enter the core details of your blog post</p>
-
-              <div className="space-y-6">
-                <div>
-                  <label className="block text-sm font-bold text-gray-900 mb-2">Post Title <span className="text-red-500">*</span></label>
-                  <input 
-                    type="text" 
-                    placeholder="Enter an engaging title for your blog post"
-                    className="w-full px-4 py-3 bg-white border border-gray-100 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all text-sm font-medium"
-                    value={formData.title}
-                    onChange={e => setFormData({...formData, title: e.target.value, slug: e.target.value.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)+/g, '')})}
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-bold text-gray-900 mb-2">URL Slug <span className="text-red-500">*</span></label>
-                  <input 
-                    type="text" 
-                    placeholder="url-friendly-slug"
-                    className="w-full px-4 py-3 bg-gray-50 border border-gray-100 rounded-xl focus:outline-none transition-all text-sm font-medium text-gray-500 cursor-not-allowed"
-                    value={formData.slug}
-                    readOnly
-                  />
-                  <p className="text-xs font-medium text-gray-500 mt-2">Auto-generated from title.</p>
-                </div>
-
-                <div>
-                  <label className="block text-sm font-bold text-gray-900 mb-2">Excerpt <span className="text-red-500">*</span></label>
-                  <textarea 
-                    rows={3}
-                    placeholder="Write a compelling summary that will appear in blog listings and previews"
-                    className="w-full px-4 py-3 bg-white border border-gray-100 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all resize-none text-sm font-medium"
-                    value={formData.excerpt}
-                    onChange={e => setFormData({...formData, excerpt: e.target.value})}
-                  />
-                  <p className="text-xs font-medium text-gray-500 mt-2">Brief summary for blog listings</p>
-                </div>
-
-                <div>
-                  <label className="block text-sm font-bold text-gray-900 mb-2">Author <span className="text-red-500">*</span></label>
-                  <div className="relative">
-                    <select 
-                      className="w-full px-4 py-3 bg-white border border-gray-100 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all appearance-none text-sm font-medium text-gray-900"
-                      value={formData.authorId}
-                      onChange={e => setFormData({...formData, authorId: e.target.value})}
-                    >
-                      {users.length > 0 ? (
-                        users.map(user => (
-                          <option key={user.id} value={user.id}>{user.name || user.email}</option>
-                        ))
-                      ) : (
-                        <option value="1">Admin User</option>
-                      )}
-                    </select>
-                    <ChevronDown className="w-4 h-4 text-gray-400 absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none" />
-                  </div>
-                  <p className="text-xs font-medium text-gray-500 mt-2">Select the author who will be credited for this blog post</p>
-                </div>
-
-                <div>
-                  <label className="block text-sm font-bold text-gray-900 mb-2">Categories <span className="text-red-500">*</span></label>
-                  <div className="relative mb-3">
-                    <select 
-                      className="w-[250px] px-4 py-3 bg-white border border-gray-100 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all appearance-none text-sm font-medium text-gray-500"
-                      onChange={(e) => {
-                        if (e.target.value && !formData.categories.includes(e.target.value)) {
-                          setFormData({...formData, categories: [...formData.categories, e.target.value]});
-                        }
-                      }}
-                      value=""
-                    >
-                      <option value="" disabled hidden>Add categories to your post</option>
-                      {availableCategories.map(cat => <option key={cat} value={cat}>{cat}</option>)}
-                    </select>
-                    <ChevronDown className="w-4 h-4 text-gray-400 absolute left-[220px] top-1/2 -translate-y-1/2 pointer-events-none" />
-                  </div>
-                  
-                  {formData.categories.length === 0 ? (
-                    <div className="w-full h-32 bg-[#fafafa] rounded-2xl border border-gray-100 flex flex-col items-center justify-center text-center gap-3">
-                      <Tag className="w-8 h-8 text-gray-300" />
-                      <span className="text-sm font-medium text-gray-500">No categories selected. Please add at least one category.</span>
-                    </div>
-                  ) : (
-                    <div className="flex flex-wrap gap-2 p-4 bg-[#fafafa] rounded-2xl border border-gray-100">
-                      {formData.categories.map(cat => (
-                        <span key={cat} className="px-3 py-1 bg-white border border-gray-200 rounded-lg text-sm font-bold text-gray-700 flex items-center gap-2 shadow-sm">
-                          {cat}
-                          <button onClick={() => setFormData({...formData, categories: formData.categories.filter(c => c !== cat)})} className="text-gray-400 hover:text-red-500">
-                            <X className="w-3 h-3" />
-                          </button>
-                        </span>
-                      ))}
-                    </div>
-                  )}
-                  <p className="text-xs font-medium text-gray-500 mt-2">Select one or more categories. You can choose both parent categories and their subcategories.</p>
-                </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        {/* Main Form Content */}
+        <div className="bg-white rounded-[24px] border border-[#E2E8F0] shadow-sm overflow-hidden">
+          <div className="p-8">
+            
+            {/* CONTENT TAB */}
+            {activeTab === "Content" && (
+              <div className="space-y-10 animate-in fade-in duration-300">
+                <div className="space-y-6">
                   <div>
-                    <label className="block text-sm font-bold text-gray-900 mb-2">Publish Status <span className="text-red-500">*</span></label>
-                    <div className="relative w-fit">
+                    <h2 className="text-[20px] font-bold text-[#1E293B]">Basic Information</h2>
+                    <p className="text-[14px] text-[#64748B] mt-1">Enter the core details of your blog post</p>
+                  </div>
+
+                  <div className="space-y-2">
+                    <label className="text-[14px] font-bold text-[#1E293B]">Post Title <span className="text-red-500">*</span></label>
+                    <input 
+                      type="text"
+                      placeholder="Enter an engaging title for your blog post"
+                      className="w-full h-12 bg-white border border-[#E2E8F0] rounded-[10px] px-4 text-[14px] focus:outline-none focus:ring-2 focus:ring-blue-500/10 focus:border-blue-400 transition-all"
+                      value={formData.title}
+                      onChange={e => setFormData({...formData, title: e.target.value, slug: e.target.value.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)+/g, '')})}
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <label className="text-[14px] font-bold text-[#1E293B]">URL Slug <span className="text-red-500">*</span></label>
+                    <input 
+                      type="text"
+                      placeholder="url-friendly-slug"
+                      className="w-full h-12 bg-white border border-[#E2E8F0] rounded-[10px] px-4 text-[14px] focus:outline-none"
+                      value={formData.slug}
+                      onChange={e => setFormData({...formData, slug: e.target.value})}
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <label className="text-[14px] font-bold text-[#1E293B]">Excerpt <span className="text-red-500">*</span></label>
+                    <textarea 
+                      rows={3}
+                      placeholder="Write a compelling summary..."
+                      className="w-full bg-white border border-[#E2E8F0] rounded-[10px] p-4 text-[14px] focus:outline-none"
+                      value={formData.excerpt}
+                      onChange={e => setFormData({...formData, excerpt: e.target.value})}
+                    />
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div className="space-y-2">
+                      <label className="text-[14px] font-bold text-[#1E293B]">Author <span className="text-red-500">*</span></label>
                       <select 
-                        className="pl-10 pr-10 py-3 bg-white border border-gray-100 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all appearance-none text-sm font-bold text-gray-900 min-w-[160px]"
+                        className="w-full h-12 bg-white border border-[#E2E8F0] rounded-[10px] px-4 text-[14px] appearance-none"
+                        value={formData.authorId}
+                        onChange={e => setFormData({...formData, authorId: e.target.value})}
+                      >
+                        {users.map(u => <option key={u.id} value={u.id}>{u.name || u.email}</option>)}
+                      </select>
+                    </div>
+                    <div className="space-y-2">
+                      <label className="text-[14px] font-bold text-[#1E293B]">Publish Status <span className="text-red-500">*</span></label>
+                      <select 
+                        className="w-full h-12 bg-white border border-[#E2E8F0] rounded-[10px] px-4 text-[14px]"
                         value={formData.status}
                         onChange={e => setFormData({...formData, status: e.target.value})}
                       >
@@ -371,51 +285,45 @@ export default function CreatePostPage() {
                         <option value="Draft">Draft</option>
                         <option value="Unpublished">Unpublished</option>
                       </select>
-                      <div className="w-2 h-2 rounded-full bg-emerald-500 absolute left-4 top-1/2 -translate-y-1/2" />
-                      <ChevronDown className="w-4 h-4 text-gray-400 absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none" />
-                    </div>
-                    <p className="text-xs font-medium text-gray-500 mt-2">Choose the visibility of your post</p>
-                  </div>
-
-                  <div>
-                    <div className={cn(
-                      "p-4 rounded-xl border flex flex-col items-start gap-1 transition-all cursor-pointer",
-                      formData.featured ? "border-amber-200 bg-amber-50/30" : "border-gray-100 bg-white hover:border-gray-200"
-                    )}
-                    onClick={() => setFormData({...formData, featured: !formData.featured})}
-                    >
-                      <div className="flex items-center justify-between w-full">
-                        <div className="flex items-center gap-2">
-                          <Star className={cn("w-4 h-4", formData.featured ? "text-amber-500 fill-amber-500" : "text-gray-400")} />
-                          <span className="text-sm font-bold text-gray-900">Featured Post</span>
-                        </div>
-                        <div className={cn(
-                          "w-10 h-5 rounded-full relative transition-colors",
-                          formData.featured ? "bg-amber-500" : "bg-gray-200"
-                        )}>
-                          <div className={cn(
-                            "absolute top-1 w-3 h-3 bg-white rounded-full transition-all",
-                            formData.featured ? "right-1" : "left-1"
-                          )} />
-                        </div>
-                      </div>
-                      <p className="text-xs font-medium text-gray-500 pl-6">Highlight this post on your homepage and category listings</p>
                     </div>
                   </div>
-                </div>
 
-                <div className="space-y-4 pt-4 border-t border-gray-50">
+                  <div className="space-y-2">
+                    <label className="text-[14px] font-bold text-[#1E293B]">Categories <span className="text-red-500">*</span></label>
+                    <div className="flex flex-wrap gap-2 mb-2">
+                      {availableCategories.map(cat => (
+                        <button
+                          key={cat}
+                          onClick={() => setFormData({
+                            ...formData, 
+                            categories: formData.categories.includes(cat) 
+                              ? formData.categories.filter(c => c !== cat) 
+                              : [...formData.categories, cat]
+                          })}
+                          className={cn(
+                            "px-3 py-1.5 rounded-lg text-xs font-bold border transition-all",
+                            formData.categories.includes(cat)
+                              ? "bg-blue-600 text-white border-blue-600"
+                              : "bg-white text-gray-600 border-gray-200 hover:border-blue-400"
+                          )}
+                        >
+                          {cat}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
                   <div className="p-4 border border-gray-100 rounded-xl bg-white flex items-start gap-4">
                     <input 
                       type="checkbox" 
-                      id="toc"
+                      id="featured"
                       className="mt-1 w-4 h-4 text-blue-600 rounded border-gray-300 focus:ring-blue-500"
-                      checked={formData.showToc}
-                      onChange={(e) => setFormData({...formData, showToc: e.target.checked})}
+                      checked={formData.featured}
+                      onChange={(e) => setFormData({...formData, featured: e.target.checked})}
                     />
                     <div>
-                      <label htmlFor="toc" className="text-sm font-bold text-gray-900 cursor-pointer block">Show Table of Contents</label>
-                      <p className="text-xs font-medium text-gray-500 mt-0.5">Display an automatic table of contents for this post</p>
+                      <label htmlFor="featured" className="text-sm font-bold text-gray-900 cursor-pointer block">Featured Post</label>
+                      <p className="text-xs font-medium text-gray-500 mt-0.5">Show this post in the featured section</p>
                     </div>
                   </div>
 
@@ -459,9 +367,9 @@ export default function CreatePostPage() {
                   </div>
                 </div>
               </div>
-            </div>
+            )}
           </div>
-        )}
+        </div>
 
         {activeTab === "Images" && (
           <div className="space-y-8 animate-in fade-in duration-300">
@@ -673,7 +581,7 @@ export default function CreatePostPage() {
         </button>
         <div className="flex items-center gap-3">
           <button 
-            onClick={handlePreview}
+            onClick={() => {}}
             className="px-6 py-3 text-sm font-bold text-gray-700 bg-white border border-gray-200 rounded-xl hover:bg-gray-50 transition-colors flex items-center gap-2 shadow-sm"
           >
             <Eye className="w-4 h-4" />
@@ -707,66 +615,12 @@ export default function CreatePostPage() {
           <span>v1.0.0</span>
         </div>
       </div>
-      {/* Preview Modal */}
-      {isPreviewModalOpen && (
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-white w-full max-w-4xl max-h-[90vh] rounded-3xl overflow-hidden flex flex-col shadow-2xl">
-            <div className="p-6 border-b border-gray-100 flex justify-between items-center bg-gray-50">
-              <div>
-                <h2 className="text-xl font-bold text-gray-900">Post Preview</h2>
-                <p className="text-sm text-gray-500 font-medium">This is how your post will look</p>
-              </div>
-              <button 
-                onClick={() => setIsPreviewModalOpen(false)}
-                className="p-2 hover:bg-gray-200 rounded-full transition-colors"
-              >
-                <X className="w-6 h-6 text-gray-500" />
-              </button>
-            </div>
-            <div className="flex-1 overflow-y-auto p-8 md:p-12 bg-white">
-              <article className="max-w-2xl mx-auto space-y-8">
-                <header className="space-y-4">
-                  {formData.categories.length > 0 && (
-                    <div className="flex gap-2">
-                      {formData.categories.map(cat => (
-                        <span key={cat} className="text-xs font-black uppercase tracking-widest text-blue-600 bg-blue-50 px-3 py-1 rounded-full">
-                          {cat}
-                        </span>
-                      ))}
-                    </div>
-                  )}
-                  <h1 className="text-4xl md:text-5xl font-black text-gray-900 leading-tight">
-                    {formData.title || "Untitled Post"}
-                  </h1>
-                  <p className="text-xl text-gray-500 font-medium leading-relaxed italic">
-                    {formData.excerpt}
-                  </p>
-                </header>
-
-                {formData.thumbnailUrl && (
-                  <img 
-                    src={formData.thumbnailUrl} 
-                    alt="" 
-                    className="w-full aspect-video object-cover rounded-3xl shadow-lg"
-                  />
-                )}
-
-                <div className="prose prose-lg max-w-none text-gray-700 leading-relaxed whitespace-pre-wrap font-medium">
-                  {formData.content || "No content yet..."}
-                </div>
-              </article>
-            </div>
-            <div className="p-6 border-t border-gray-100 flex justify-end bg-gray-50">
-              <button 
-                onClick={() => setIsPreviewModalOpen(false)}
-                className="px-8 py-3 bg-gray-900 text-white rounded-xl font-bold hover:bg-black transition-colors"
-              >
-                Close Preview
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      
+      <MediaLibraryModal 
+        isOpen={isMediaModalOpen}
+        onClose={() => setIsMediaModalOpen(false)}
+        onSelect={(url) => setFormData({...formData, thumbnailUrl: url})}
+      />
     </div>
   );
 }

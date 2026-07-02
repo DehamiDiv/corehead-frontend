@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Sparkles, ArrowRight } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
@@ -9,7 +9,62 @@ import './page.css';
 export default function AIPromptPage() {
   const [prompt, setPrompt] = useState('');
   const [error, setError] = useState('');
+  const [isLaunching, setIsLaunching] = useState(true);
   const router = useRouter();
+
+  // Protect the page - must be logged in to use AI features
+  useEffect(() => {
+    const token = localStorage.getItem('accessToken');
+    if (!token) {
+      router.push('/login?callback=/ai-prompt');
+    }
+  }, [router]);
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setIsLaunching(false);
+    }, 1500);
+    return () => clearTimeout(timer);
+  }, []);
+
+  if (isLaunching) {
+    return (
+      <div className="fixed inset-0 z-[100] bg-slate-900 flex flex-col items-center justify-center overflow-hidden">
+        <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-indigo-600/20 rounded-full blur-[120px] animate-pulse" />
+        <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-blue-600/20 rounded-full blur-[120px] animate-pulse" style={{ animationDelay: '1s' }} />
+        
+        <div className="relative flex flex-col items-center animate-in fade-in zoom-in duration-700">
+          <div className="w-24 h-24 bg-white rounded-[2.5rem] shadow-[0_0_50px_rgba(79,70,229,0.3)] flex items-center justify-center mb-8 relative group">
+            <div className="absolute inset-0 bg-indigo-600 rounded-[2.5rem] animate-ping opacity-20 group-hover:opacity-40 transition-opacity" />
+            <Sparkles className="w-12 h-12 text-indigo-600 relative z-10" />
+          </div>
+          
+          <h1 className="text-white text-3xl font-black tracking-tighter mb-2 italic">
+            CORE<span className="text-indigo-500">HEAD</span>
+          </h1>
+          <div className="flex items-center gap-3">
+             <div className="h-0.5 w-12 bg-gradient-to-r from-transparent to-indigo-500" />
+             <p className="text-indigo-200/50 font-bold uppercase tracking-[0.3em] text-[10px]">Initializing Neural Design</p>
+             <div className="h-0.5 w-12 bg-gradient-to-l from-transparent to-indigo-500" />
+          </div>
+        </div>
+
+        <div className="absolute bottom-12 w-64 h-1 bg-white/10 rounded-full overflow-hidden">
+           <div className="h-full bg-indigo-500 rounded-full animate-progress-loading" style={{ width: '100%' }} />
+        </div>
+
+        <style jsx>{`
+          @keyframes progress-loading {
+            0% { transform: translateX(-100%); }
+            100% { transform: translateX(0); }
+          }
+          .animate-progress-loading {
+            animation: progress-loading 1.5s ease-in-out forwards;
+          }
+        `}</style>
+      </div>
+    );
+  }
 
   const quickSuggestions = [
     { icon: '📄', label: 'Minimal blog post' },
@@ -128,6 +183,10 @@ export default function AIPromptPage() {
           </div>
 
           <div className="action-buttons">
+            <button className="btn-back" onClick={handleGenerate} title="Generate with current description">
+              Skip to Builder
+              <Sparkles size={18} />
+            </button>
             <Link href="/ai-options" className="btn-next" onClick={handleNext}>
               Next: Configure Options
               <ArrowRight size={18} />

@@ -3,93 +3,89 @@ import { notFound } from "next/navigation";
 import CommentsSection from "@/components/blog/CommentsSection";
 import DetailedFooter from "@/components/DetailedFooter";
 import "./page.css";
+import { notFound } from 'next/navigation';
+import { api } from '@/lib/api';
+import Link from 'next/link';
+import { ArrowLeft, Calendar, User, Clock, Share2 } from 'lucide-react';
 
 interface SinglePostPageProps {
-  params: Promise<{ slug: string }>;
-}
-
-async function getPost(slug: string) {
-  try {
-    const res = await fetch(`http://localhost:5000/api/posts/slug/${slug}`, {
-      cache: "no-store",
-    });
-    if (res.status === 404) return null;
-    if (!res.ok) return null;
-    return await res.json();
-  } catch {
-    return null;
-  }
+  params: Promise<{
+    slug: string;
+  }>;
 }
 
 export async function generateMetadata({ params }: SinglePostPageProps) {
-  const { slug } = await params;
-  const post = await getPost(slug);
-  if (!post) return { title: "Post Not Found | CoreHead Blog" };
-  return {
-    title: `${post.title} | CoreHead Blog`,
-    description: post.excerpt || post.metaDescription || "",
-  };
+  const resolvedParams = await params;
+  try {
+    const post = await api.getPostBySlug(resolvedParams.slug);
+    return {
+      title: `${post.title} | CoreHead Blog`,
+      description: post.excerpt,
+    };
+  } catch {
+    return {
+      title: "Blog Post | CoreHead",
+      description: "Read the latest from CoreHead",
+    };
+  }
 }
 
 export default async function SinglePostPage({ params }: SinglePostPageProps) {
-  const { slug } = await params;
-  const post = await getPost(slug);
+  const resolvedParams = await params;
+  let post;
+  
+  try {
+    post = await api.getPostBySlug(resolvedParams.slug);
+  } catch (error) {
+    console.error("Failed to fetch post:", error);
+  }
 
   if (!post) notFound();
 
-  let categories: string[] = [];
+  const imageUrl = post.coverImage || post.imageUrl || post.thumbnailUrl || `https://picsum.photos/seed/${post.id}/1200/600`;
+  
+  // Try to parse categories
+  let categoryName = "Article";
   const rawCats = post.categories || post.category;
-  if (Array.isArray(rawCats)) {
-    categories = rawCats;
+  if (Array.isArray(rawCats) && rawCats.length > 0) {
+    categoryName = rawCats[0];
   } else if (typeof rawCats === 'string') {
     try {
       const parsed = JSON.parse(rawCats);
-      if (Array.isArray(parsed)) categories = parsed;
-      else categories = rawCats.split(",").map((c: string) => c.replace(/[\[\]"']/g, '').trim()).filter(Boolean);
+      if (Array.isArray(parsed) && parsed.length > 0) categoryName = parsed[0];
+      else categoryName = rawCats.split(",")[0].replace(/[\[\]"']/g, '').trim();
     } catch {
-      categories = rawCats.split(",").map((c: string) => c.replace(/[\[\]"']/g, '').trim()).filter(Boolean);
+      categoryName = rawCats.split(",")[0].replace(/[\[\]"']/g, '').trim();
     }
   }
 
-  // Dynamically extract headings for Table of Contents if showToc is enabled
-  const headings: { text: string; id: string; level: string }[] = [];
-  let modifiedContent = post.content || "";
-
-  if (post.showToc) {
-    // Use `s` flag (dotAll) so `.` matches newlines too — Quill often adds newlines inside tags
-    const headingRegex = /<(h[1-6])([^>]*)>([\s\S]*?)<\/\1>/gi;
-    let index = 0;
-    modifiedContent = modifiedContent.replace(headingRegex, (match: string, tag: string, attrs: string, text: string) => {
-      const level = tag.toLowerCase();
-      // Only build TOC for h2 and h3
-      if (level !== 'h2' && level !== 'h3') return match;
-      const cleanText = text.replace(/<[^>]*>?/gm, '').trim();
-      if (!cleanText) return match;
-      const id = `toc-${index++}-${cleanText.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '')}`;
-      headings.push({ text: cleanText, id, level });
-      return `<${tag} id="${id}"${attrs}>${text}</${tag}>`;
-    });
-  }
+  // Calculate reading time roughly
+  const wordCount = post.content ? post.content.replace(/<[^>]*>?/gm, '').split(/\s+/).length : 0;
+  const readingTime = Math.max(1, Math.ceil(wordCount / 200));
 
   return (
-    <article className="single-post-page">
-      {/* Back link */}
-      <Link href="/blog" className="post-back-link">← Back to Blog</Link>
-
-      {/* Hero image */}
-      {(post.coverImage || post.imageUrl || post.thumbnailUrl) && (
-        <div className="post-hero-image">
-          <img src={post.coverImage || post.imageUrl || post.thumbnailUrl} alt={post.title} />
+    <article className="min-h-screen bg-[#F8FAFC] pb-24">
+      {/* Navigation Bar */}
+      <div className="w-full bg-white border-b border-slate-200 sticky top-0 z-50">
+        <div className="max-w-[1000px] mx-auto px-6 h-16 flex items-center justify-between">
+          <Link 
+            href="/blog" 
+            className="flex items-center gap-2 text-[14px] font-bold text-slate-600 hover:text-blue-600 transition-colors"
+          >
+            <ArrowLeft className="w-4 h-4" />
+            Back to Blog
+          </Link>
+          <button className="w-9 h-9 rounded-full bg-slate-50 flex items-center justify-center text-slate-500 hover:text-blue-600 hover:bg-blue-50 transition-colors">
+            <Share2 className="w-4 h-4" />
+          </button>
         </div>
-      )}
+      </div>
 
-      {/* Header */}
-      <header className="post-header">
-        {categories.length > 0 && (
-          <div className="post-categories">
-            {categories.map((cat: string) => (
-              <span key={cat} className="post-category-badge">{cat}</span>
-            ))}
+      <div className="max-w-[1000px] mx-auto px-6 pt-12">
+        {/* Header Section */}
+        <header className="mb-10 text-center">
+          <div className="inline-flex items-center justify-center px-4 py-1.5 rounded-full bg-blue-50 text-blue-600 text-[12px] font-black uppercase tracking-widest mb-6 border border-blue-100">
+            {categoryName}
           </div>
         )}
         <h1>{post.title}</h1>
@@ -105,31 +101,57 @@ export default async function SinglePostPage({ params }: SinglePostPageProps) {
           </span>
         </div>
       </header>
+          
+          <h1 className="text-4xl md:text-5xl lg:text-6xl font-black text-[#0F172A] leading-[1.1] mb-8 tracking-tight">
+            {post.title}
+          </h1>
 
-      {/* Table of Contents */}
-      {post.showToc && headings.length > 0 && (
-        <div className="post-toc">
-          <h3 className="toc-title">Table of Contents</h3>
-          <ul className="toc-list">
-            {headings.map((h) => (
-              <li key={h.id} className={`toc-item toc-${h.level}`}>
-                <a href={`#${h.id}`}>{h.text}</a>
-              </li>
-            ))}
-          </ul>
+          <div className="flex flex-wrap items-center justify-center gap-6 text-[14px] font-medium text-slate-500">
+            <div className="flex items-center gap-2">
+              <div className="w-8 h-8 rounded-full bg-slate-200 flex items-center justify-center overflow-hidden">
+                {post.author?.avatar ? (
+                  <img src={post.author.avatar} alt="Author" className="w-full h-full object-cover" />
+                ) : (
+                  <User className="w-4 h-4 text-slate-500" />
+                )}
+              </div>
+              <span className="text-slate-700 font-bold">{post.author?.name || "CoreHead Editor"}</span>
+            </div>
+            <span className="w-1 h-1 rounded-full bg-slate-300"></span>
+            <span className="flex items-center gap-2">
+              <Calendar className="w-4 h-4" />
+              {new Date(post.createdAt || Date.now()).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}
+            </span>
+            <span className="w-1 h-1 rounded-full bg-slate-300 hidden sm:block"></span>
+            <span className="flex items-center gap-2 hidden sm:flex">
+              <Clock className="w-4 h-4" />
+              {readingTime} min read
+            </span>
+          </div>
+        </header>
+
+        {/* Hero Image */}
+        <div className="w-full aspect-[16/9] md:aspect-[2/1] bg-slate-100 rounded-[32px] overflow-hidden mb-16 shadow-[0_20px_40px_rgba(0,0,0,0.08)] border border-slate-200/60 relative">
+          <img 
+            src={imageUrl} 
+            alt={post.title} 
+            className="w-full h-full object-cover"
+          />
         </div>
-      )}
 
-      {/* Content */}
-      <div
-        className="post-content"
-        dangerouslySetInnerHTML={{ __html: modifiedContent.replace(/\n/g, "<br/>") }}
-      />
+        {/* Content Section */}
+        <div className="max-w-[800px] mx-auto bg-white rounded-[32px] p-8 md:p-16 shadow-sm border border-slate-200/60 relative -mt-32 z-10">
+          
+          {post.excerpt && (
+            <div className="text-xl md:text-2xl font-medium text-slate-600 leading-relaxed mb-10 pb-10 border-b border-slate-100 italic">
+              "{post.excerpt}"
+            </div>
+          )}
 
-      {/* Comments Section */}
-      {post.allowComments && (
-        <CommentsSection postId={post.id} />
-      )}
+          <div 
+            className="post-content"
+            dangerouslySetInnerHTML={{ __html: post.content }} 
+          />
 
       {/* Footer / Author box */}
       <div className="post-footer">
@@ -145,6 +167,20 @@ export default async function SinglePostPage({ params }: SinglePostPageProps) {
           </div>
         </Link>
         <Link href="/blog" className="post-back-btn">← All Posts</Link>
+          {/* Tags */}
+          {post.keywords && post.keywords.length > 0 && (
+            <div className="mt-16 pt-8 border-t border-slate-100">
+              <h3 className="text-[13px] font-bold text-slate-400 uppercase tracking-wider mb-4">Tags</h3>
+              <div className="flex flex-wrap gap-2">
+                {post.keywords.map((kw: string) => (
+                  <span key={kw} className="px-4 py-2 bg-slate-50 text-slate-600 rounded-xl text-[13px] font-bold hover:bg-slate-100 transition-colors cursor-pointer border border-slate-100">
+                    #{kw}
+                  </span>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
       </div>
       <DetailedFooter />
     </article>

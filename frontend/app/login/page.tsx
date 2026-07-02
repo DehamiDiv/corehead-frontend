@@ -1,14 +1,17 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, Suspense, useEffect } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import Image from "next/image";
 import { Eye, EyeOff, LayoutGrid, BookOpen, Settings, AlertCircle, Loader2 } from "lucide-react";
 import { api } from "@/lib/api";
 
-export default function LoginPage() {
+function LoginForm() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const callbackUrl = searchParams.get('callback') || '/admin';
+
   const [showPassword, setShowPassword] = useState(false);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -17,10 +20,16 @@ export default function LoginPage() {
   const [success, setSuccess] = useState<string | null>(null);
 
   useEffect(() => {
-    if (typeof window !== "undefined" && window.location.search.includes("registered=true")) {
+    const registered = searchParams.get('registered');
+    const session = searchParams.get('session');
+
+    if (registered === "true") {
       setSuccess("Account created successfully! Please login.");
     }
-  }, []);
+    if (session === "expired") {
+      setError("Your session has expired. Please log in again to continue.");
+    }
+  }, [searchParams]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -29,25 +38,28 @@ export default function LoginPage() {
 
     try {
       const data = await api.login({ email, password });
-      
+
       // PERSIST AUTH STATE
-      localStorage.setItem("token", data.token);
+      localStorage.setItem("accessToken", data.accessToken);
+      localStorage.setItem("refreshToken", data.refreshToken);
       localStorage.setItem("user", JSON.stringify(data.user));
-      
+
       // SET COOKIES for middleware
-      document.cookie = `auth_token=${data.token}; path=/; max-age=86400; SameSite=Lax`;
+      document.cookie = `auth_token=${data.accessToken}; path=/; max-age=86400; SameSite=Lax`;
       document.cookie = `user_role=${data.user.role}; path=/; max-age=86400; SameSite=Lax`;
 
       // ROLE-BASED REDIRECTION
-      if (data.user.role === "admin") {
-        setSuccess("Login successful! Redirecting to dashboard...");
+      const isAdmin = data.user.role?.toLowerCase() === 'admin' || data.user.role?.toLowerCase() === 'administrator';
+      if (isAdmin) {
+        setSuccess("Login successful! Redirecting to Admin Dashboard...");
         setTimeout(() => {
-          router.push("/admin");
+          router.push('/admin');
         }, 1500);
       } else {
-        setSuccess("Login successful! Redirecting...");
+        // Regular users (Authors/Editors) go directly to the Drag & Drop Builder
+        setSuccess("Login successful! Redirecting to Visual Builder...");
         setTimeout(() => {
-          router.push("/");
+          router.push('/admin/builder'); 
         }, 1500);
       }
     } catch (err: any) {
@@ -58,23 +70,23 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen w-full bg-gradient-to-br from-blue-200 via-blue-300 to-blue-400 flex flex-col font-sans">
+    <div className="min-h-screen w-full bg-gradient-to-br from-blue-100 via-blue-200 to-blue-400 flex flex-col font-sans">
       {/* Custom Navbar for Login Page */}
       <nav className="w-full px-6 py-4 flex items-center justify-between mx-auto max-w-7xl relative z-10">
         <Link href="/" className="flex items-center">
-          <Image 
-            src="/logo.png" 
-            alt="CoreHead Logo" 
-            width={160} 
-            height={40} 
-            className="h-14 w-auto object-contain" 
+          <Image
+            src="/logo.png"
+            alt="CoreHead Logo"
+            width={160}
+            height={40}
+            className="h-14 w-auto object-contain"
             priority
           />
         </Link>
 
         <div className="flex items-center gap-4">
           <span className="hidden sm:inline text-sm text-slate-700">Don't have an account?</span>
-          <Link 
+          <Link
             href="/signup"
             className="px-5 py-2 text-sm font-bold text-blue-700 transition-all bg-white/50 backdrop-blur-md border border-white/50 rounded-full hover:bg-white/80 shadow-sm"
           >
@@ -161,7 +173,7 @@ export default function LoginPage() {
 
             <div className="flex justify-start">
               <Link
-                href="#"
+                href="/forgot-password"
                 className="text-xs font-medium text-slate-600 hover:text-blue-700 transition-colors"
               >
                 Forgot your password?
@@ -196,5 +208,17 @@ export default function LoginPage() {
         </div>
       </main>
     </div>
+  );
+}
+
+export default function LoginPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen flex items-center justify-center bg-blue-200">
+        <Loader2 className="w-8 h-8 animate-spin text-blue-700" />
+      </div>
+    }>
+      <LoginForm />
+    </Suspense>
   );
 }

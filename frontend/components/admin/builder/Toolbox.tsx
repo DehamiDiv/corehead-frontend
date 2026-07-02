@@ -10,6 +10,11 @@ import {
   List,
   Settings,
   LayoutGrid,
+  Video,
+  Mail,
+  Share2,
+  MoveVertical,
+  Code,
 } from "lucide-react";
 import Link from "next/link";
 
@@ -21,9 +26,14 @@ const tools = [
   { icon: Minus, label: "Divider" },
   { icon: Square, label: "Button" },
   { icon: LayoutGrid, label: "Container" },
-  { icon: LayoutGrid, label: "Columns" }, // Using LayoutGrid for columns as well for simplicity
+  { icon: LayoutGrid, label: "Columns" },
   { icon: List, label: "Collection List" },
   { icon: ImageIcon, label: "Featured Carousel" },
+  { icon: Video, label: "Video" },
+  { icon: Mail, label: "Newsletter" },
+  { icon: Share2, label: "Social Links" },
+  { icon: MoveVertical, label: "Spacer" },
+  { icon: Code, label: "Code Block" },
 ];
 
 const bottomTools = [
@@ -38,7 +48,7 @@ export default function Toolbox() {
         Blog Components
       </h3>
 
-      <div className="space-y-3 mb-8">
+      <div className="grid grid-cols-2 gap-3 mb-8">
         {tools.map((tool) => (
           <div
             key={tool.label}
@@ -47,10 +57,12 @@ export default function Toolbox() {
               e.dataTransfer.setData("application/react-dnd", tool.label);
               e.dataTransfer.effectAllowed = "copy";
             }}
-            className="flex items-center gap-3 p-3.5 bg-blue-500 text-white rounded-lg cursor-grab hover:bg-blue-600 hover:shadow-md transition-all shadow-sm group border border-transparent active:cursor-grabbing"
+            className="flex flex-col items-center justify-center gap-2.5 p-4 bg-gradient-to-br from-white to-blue-50/30 border border-blue-100/50 rounded-2xl cursor-grab hover:border-blue-300 hover:shadow-xl hover:shadow-blue-500/10 hover:-translate-y-1 transition-all group active:cursor-grabbing"
           >
-            <tool.icon className="w-5 h-5 text-blue-100 group-hover:text-white transition-colors" />
-            <span className="font-medium text-base">{tool.label}</span>
+            <div className="w-12 h-12 rounded-2xl bg-white shadow-sm border border-blue-50 flex items-center justify-center group-hover:scale-110 group-hover:bg-blue-600 group-hover:text-white transition-all duration-300">
+              <tool.icon className="w-5 h-5 text-blue-600 group-hover:text-white transition-colors" />
+            </div>
+            <span className="font-bold text-[12px] text-slate-600 group-hover:text-blue-700 transition-colors uppercase tracking-tight">{tool.label}</span>
           </div>
         ))}
       </div>
