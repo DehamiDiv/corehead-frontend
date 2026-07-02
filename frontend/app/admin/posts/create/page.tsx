@@ -19,6 +19,21 @@ import {
 import { cn } from "@/lib/utils";
 import MediaLibraryModal from "@/components/admin/MediaLibraryModal";
 import { api } from "@/lib/api";
+import dynamic from "next/dynamic";
+
+const ReactQuill = dynamic(() => import("react-quill-new"), { ssr: false });
+import "react-quill-new/dist/quill.snow.css";
+
+const quillModules = {
+  toolbar: [
+    [{ header: [1, 2, 3, false] }],
+    ["bold", "italic", "underline", "strike"],
+    [{ list: "ordered" }, { list: "bullet" }],
+    ["blockquote", "code-block"],
+    ["link"],
+    ["clean"],
+  ],
+};
 
 export default function CreatePostPage() {
   const router = useRouter();
@@ -53,7 +68,7 @@ export default function CreatePostPage() {
   const [isMediaModalOpen, setIsMediaModalOpen] = useState(false);
   const [activeTab, setActiveTab] = useState("Content");
 
-  const addKeyword = () => {
+  const handleAddKeyword = () => {
     if (keywordInput.trim() && !formData.keywords.includes(keywordInput.trim())) {
       setFormData(prev => ({ ...prev, keywords: [...prev.keywords, keywordInput.trim()] }));
       setKeywordInput("");
@@ -350,7 +365,7 @@ export default function CreatePostPage() {
                     <ReactQuill 
                       theme="snow"
                       value={formData.content}
-                      onChange={(val) => setFormData({...formData, content: val})}
+                      onChange={(val: string) => setFormData({...formData, content: val})}
                       modules={quillModules}
                       className="min-h-[400px] [&_.ql-editor]:min-h-[400px] [&_.ql-editor]:text-base [&_.ql-editor]:font-medium [&_.ql-container]:border-none [&_.ql-toolbar]:border-none [&_.ql-toolbar]:bg-[#fafafa] [&_.ql-toolbar]:border-b [&_.ql-toolbar]:border-gray-100"
                       placeholder="Write your blog post content here..."

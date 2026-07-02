@@ -56,10 +56,10 @@ function LoginForm() {
           router.push('/admin');
         }, 1500);
       } else {
-        // Regular users (Authors/Editors) go directly to the Drag & Drop Builder
-        setSuccess("Login successful! Redirecting to Visual Builder...");
+        // Regular users (Authors/Editors) go directly to Shara's blog page
+        setSuccess("Login successful! Redirecting to Blog Page...");
         setTimeout(() => {
-          router.push('/admin/builder'); 
+          router.push('/blog'); 
         }, 1500);
       }
     } catch (err: any) {
