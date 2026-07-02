@@ -5,7 +5,8 @@ import type { NextRequest } from 'next/server';
 const protectedPaths: string[] = [
   '/admin',
   '/builder',
-  '/dashboard'
+  '/dashboard',
+  '/ai-prompt'
 ];
 
 export function middleware(request: NextRequest) {
@@ -25,9 +26,12 @@ export function middleware(request: NextRequest) {
       return NextResponse.redirect(loginUrl);
     }
 
-    // Role-based access control for /admin routes
+    // Role-based access control for sensitive admin routes
+    const adminOnlyPaths = ['/admin/users', '/admin/categories', '/admin/comments', '/admin/pages'];
+    const isAdminOnlyPath = adminOnlyPaths.some(path => pathname.startsWith(path));
     const isAdmin = role?.toLowerCase() === 'admin' || role?.toLowerCase() === 'administrator';
-    if (pathname.startsWith('/admin') && !isAdmin) {
+
+    if (isAdminOnlyPath && !isAdmin) {
       const homeUrl = new URL('/', request.url);
       return NextResponse.redirect(homeUrl);
     }

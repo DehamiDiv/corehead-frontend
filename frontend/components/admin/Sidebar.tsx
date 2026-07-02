@@ -3,7 +3,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useMemo, useState } from "react";
+import { useMemo, useState, useEffect } from "react";
 import {
   FileText,
   Tags,
@@ -14,6 +14,8 @@ import {
   Settings as SettingsIcon,
   ChevronDown,
   LayoutTemplate,
+  Sparkles,
+  PanelLeft,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -21,22 +23,46 @@ type NavItem = {
   label: string;
   href: string;
   Icon: any;
+  adminOnly?: boolean;
 };
 
 export default function Sidebar({ isOpen = true }: { isOpen?: boolean }) {
   const pathname = usePathname();
   const [settingsOpen, setSettingsOpen] = useState(true);
+  const [user, setUser] = useState<{ name?: string; role?: string; email?: string } | null>(null);
+
+  useEffect(() => {
+    const storedUser = localStorage.getItem('user');
+    if (storedUser) {
+      try {
+        setUser(JSON.parse(storedUser));
+      } catch (e) {
+        console.error("Error parsing stored user:", e);
+      }
+    }
+  }, []);
 
   const navItems: NavItem[] = useMemo(
-    () => [
-      { label: "Posts",         href: "/admin/posts",      Icon: FileText       },
-      { label: "Categories",    href: "/admin/categories", Icon: Tags           },
-      { label: "Media Library", href: "/admin/media",      Icon: ImageIcon      },
-      { label: "Interactions",  href: "/admin/comments",   Icon: MessageSquare  },
-      { label: "Users",         href: "/admin/users",      Icon: Users          },
-      { label: "Pages",         href: "/admin/pages",      Icon: File           },
-    ],
-    []
+    () => {
+      const allItems = [
+        { label: "AI Generator",   href: "/ai-prompt",        Icon: Sparkles       },
+        { label: "Posts",         href: "/admin/posts",      Icon: FileText       },
+        { label: "Layouts",       href: "/admin/layouts",    Icon: LayoutTemplate },
+        { label: "Visual Builder",href: "/admin/builder",    Icon: PanelLeft      },
+        { label: "Categories",    href: "/admin/categories", Icon: Tags,           adminOnly: true },
+        { label: "Media Library", href: "/admin/media",      Icon: ImageIcon      },
+        { label: "Interactions",  href: "/admin/comments",   Icon: MessageSquare, adminOnly: true },
+        { label: "Users",         href: "/admin/users",      Icon: Users,          adminOnly: true },
+        { label: "Pages",         href: "/admin/pages",      Icon: File,           adminOnly: true },
+      ];
+
+      const isAdmin = user?.role?.toLowerCase() === 'admin' || user?.role?.toLowerCase() === 'administrator';
+      if (!isAdmin) {
+        return allItems.filter(item => !item.adminOnly);
+      }
+      return allItems;
+    },
+    [user?.role]
   );
 
   const isActive = (href: string) => pathname === href || pathname.startsWith(href + "/");
@@ -81,7 +107,7 @@ export default function Sidebar({ isOpen = true }: { isOpen?: boolean }) {
                   "h-8 w-8 rounded-lg flex items-center justify-center transition-all duration-200",
                   active
                     ? "bg-[#C6D9FB] text-[#2563EB]"
-                    : "text-[#64748B] group-hover:text-[#1E293B]"
+                    : "bg-slate-50 text-slate-400 group-hover:bg-white border border-transparent group-hover:border-gray-100"
                 )}
               >
                 <Icon size={20} strokeWidth={active ? 2.5 : 2} />
@@ -133,7 +159,10 @@ export default function Sidebar({ isOpen = true }: { isOpen?: boolean }) {
                       : "text-[#64748B] hover:text-[#1E293B] hover:bg-slate-50/50"
                   )}
                 >
-                  <div className="w-1 h-1 rounded-full bg-slate-300" />
+                  <div className={cn(
+                    "w-1.5 h-1.5 rounded-full",
+                    isActive(subItem.href) ? "bg-[#2563EB]" : "bg-slate-300"
+                  )} />
                   {subItem.label}
                 </Link>
               ))}
@@ -142,10 +171,20 @@ export default function Sidebar({ isOpen = true }: { isOpen?: boolean }) {
         </div>
       </nav>
 
-      {/* Version Footer */}
-      <div className="p-6 mt-auto">
-        <div className="flex items-center gap-3 text-[11px] font-bold text-slate-300 uppercase tracking-widest">
-           v1.0.0 Stable
+      {/* Profile Footer */}
+      <div className="p-6 border-t border-slate-50 mt-auto">
+        <div className="flex items-center gap-3 p-2 rounded-2xl hover:bg-slate-50 transition-colors cursor-pointer">
+          <div className="w-10 h-10 rounded-xl bg-slate-900 text-white flex items-center justify-center font-bold">
+            {user?.name?.charAt(0).toUpperCase() || user?.email?.charAt(0).toUpperCase() || "A"}
+          </div>
+          <div className="flex-1 min-w-0">
+            <p className="text-sm font-bold text-slate-900 truncate">
+              {user?.name || "Admin"}
+            </p>
+            <p className="text-[11px] text-slate-400 truncate uppercase tracking-tight font-semibold">
+              {user?.role || "Account"}
+            </p>
+          </div>
         </div>
       </div>
     </aside>

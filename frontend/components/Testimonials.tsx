@@ -7,27 +7,75 @@ import { useState, useRef, useEffect } from "react";
 const testimonials = [
   {
     name: "William Hazelip",
-    role: "Homeowner",
-    title: "Sparkling Clean Home",
-    quote: "Tellus aliquam faucibus imperdiet eget interdum risus diam.",
+    role: "Content Creator",
+    title: "Lightning Fast Creation",
+    quote: "Corehead has made content creation extremely fast and effortless.",
     image: "",
     color: "bg-blue-600",
   },
   {
     name: "Teresa Hamilton",
-    role: "Homeowner",
-    title: "Professional & Reliable",
-    quote: "Tellus aliquam faucibus imperdiet eget interdum risus diam.",
+    role: "Senior Developer",
+    title: "Incredibly Modular",
+    quote: "The component builder integration is incredibly flexible and elegant.",
     image: "",
-    color: "bg-blue-600",
+    color: "bg-indigo-600",
   },
   {
     name: "Louis Swanson",
-    role: "Homeowner",
-    title: "Flexible Scheduling",
-    quote: "Tellus aliquam faucibus imperdiet eget interdum risus diam.",
+    role: "Marketing Director",
+    title: "Boosted Our Conversions",
+    quote: "Since switching to Corehead, our site load times have dropped and signups are up.",
     image: "",
-    color: "bg-blue-600",
+    color: "bg-purple-600",
+  },
+  {
+    name: "Sophia Rodriguez",
+    role: "Product Manager",
+    title: "Highly Productive & Fun",
+    quote: "Setting up new campaign and landing pages is super fast now. My team loves it.",
+    image: "",
+    color: "bg-pink-600",
+  },
+  {
+    name: "David Chen",
+    role: "Technical Writer",
+    title: "Great Developer Experience",
+    quote: "The editor is extremely responsive, and the export options saved us hours.",
+    image: "",
+    color: "bg-sky-600",
+  },
+  {
+    name: "Emma Watson",
+    role: "Blog Manager",
+    title: "Perfect for Collaboration",
+    quote: "Collaborating on layouts and drafts has never been this smooth and fast.",
+    image: "",
+    color: "bg-emerald-600",
+  },
+  {
+    name: "Marcus Aurelius",
+    role: "Head of Growth",
+    title: "Scalable Content Platform",
+    quote: "We grew our organic traffic by 150% after building our blog on top of Corehead.",
+    image: "",
+    color: "bg-amber-600",
+  },
+  {
+    name: "Priya Sharma",
+    role: "UX Designer",
+    title: "Stunning Design Control",
+    quote: "Having complete freedom over block layout while maintaining performance is a dream.",
+    image: "",
+    color: "bg-violet-600",
+  },
+  {
+    name: "Liam O'Connor",
+    role: "SEO Specialist",
+    title: "Google Loves Our Speed",
+    quote: "Our landing pages score a perfect 100/100 on PageSpeed Insights. Incredible results.",
+    image: "",
+    color: "bg-teal-600",
   },
 ];
 
@@ -41,6 +89,9 @@ const shortVideos = [
 ];
 
 export default function Testimonials() {
+  const [showAll, setShowAll] = useState(false);
+  const displayedTestimonials = showAll ? testimonials : testimonials.slice(0, 3);
+
   return (
     <section id="testimonials" className="py-24 px-6 md:px-12 bg-white">
       <div className="max-w-7xl mx-auto space-y-20">
@@ -49,47 +100,55 @@ export default function Testimonials() {
           <h2 className="text-4xl md:text-5xl font-bold text-slate-900 leading-tight max-w-lg">
             Testimonials from Satisfied Customers
           </h2>
-          <button className="px-6 py-2.5 rounded-full bg-slate-50 text-slate-900 font-semibold text-sm hover:bg-slate-100 transition-colors border border-slate-200">
-            View All
+          <button 
+            onClick={() => setShowAll(!showAll)}
+            className="px-6 py-2.5 rounded-full bg-slate-50 text-slate-900 font-semibold text-sm hover:bg-slate-100 transition-all active:scale-95 border border-slate-200 shadow-sm"
+          >
+            {showAll ? "Show Less" : "View All"}
           </button>
         </div>
 
         {/* Testimonial Cards */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-          {testimonials.map((t, i) => (
-            <motion.div
-              key={i}
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              transition={{ delay: i * 0.1 }}
-              className="p-8 rounded-2xl bg-slate-50 border border-slate-100"
-            >
-              <div className="flex items-center gap-4 mb-6">
-                <div
-                  className={`w-12 h-12 rounded-full ${t.color} shrink-0`}
-                ></div>
+          <AnimatePresence mode="popLayout">
+            {displayedTestimonials.map((t, i) => (
+              <motion.div
+                key={t.name}
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -20, scale: 0.95 }}
+                transition={{ duration: 0.3, ease: "easeOut" }}
+                layout
+                className="p-8 rounded-2xl bg-slate-50 border border-slate-100 flex flex-col justify-between"
+              >
                 <div>
-                  <h4 className="font-bold text-slate-900">{t.name}</h4>
-                  <p className="text-sm text-slate-500">{t.role}</p>
+                  <div className="flex items-center gap-4 mb-6">
+                    <div
+                      className={`w-12 h-12 rounded-full ${t.color} shrink-0`}
+                    ></div>
+                    <div>
+                      <h4 className="font-bold text-slate-900">{t.name}</h4>
+                      <p className="text-sm text-slate-500">{t.role}</p>
+                    </div>
+                  </div>
+
+                  <div className="flex gap-1 mb-4">
+                    {[...Array(5)].map((_, idx) => (
+                      <Star
+                        key={idx}
+                        className="w-4 h-4 text-lime-400 fill-lime-400"
+                      />
+                    ))}
+                  </div>
+
+                  <h3 className="font-bold text-lg text-slate-900 mb-2">
+                    {t.title}
+                  </h3>
+                  <p className="text-slate-500 leading-relaxed">{t.quote}</p>
                 </div>
-              </div>
-
-              <div className="flex gap-1 mb-4">
-                {[...Array(5)].map((_, i) => (
-                  <Star
-                    key={i}
-                    className="w-4 h-4 text-lime-400 fill-lime-400"
-                  />
-                ))}
-              </div>
-
-              <h3 className="font-bold text-lg text-slate-900 mb-2">
-                {t.title}
-              </h3>
-              <p className="text-slate-500 leading-relaxed">{t.quote}</p>
-            </motion.div>
-          ))}
+              </motion.div>
+            ))}
+          </AnimatePresence>
         </div>
 
         {/* Video Banner */}

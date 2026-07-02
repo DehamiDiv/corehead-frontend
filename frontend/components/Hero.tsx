@@ -42,7 +42,8 @@ export default function Hero() {
         <div className="flex flex-col items-center justify-center gap-5 sm:flex-row mt-10">
           <Link
             href="/signup"
-            className="group flex items-center px-8 py-4 text-lg font-bold text-white transition-all duration-300 bg-blue-700 rounded-full hover:bg-blue-800 shadow-[0_0_40px_-10px_rgba(29,78,216,0.5)] hover:shadow-[0_0_60px_-15px_rgba(29,78,216,0.7)] hover:-translate-y-1"
+            style={{ backgroundColor: 'var(--primary)' }}
+            className="group flex items-center px-8 py-4 text-lg font-bold text-white transition-all duration-300 rounded-full hover:opacity-90 shadow-[0_0_40px_-10px_rgba(29,78,216,0.5)] hover:shadow-[0_0_60px_-15px_rgba(29,78,216,0.7)] hover:-translate-y-1"
           >
             Get Started Free
             <ArrowRight className="w-5 h-5 ml-2 transition-transform duration-300 group-hover:translate-x-1" />
@@ -61,7 +62,7 @@ export default function Hero() {
         initial={{ opacity: 0, y: 40, scale: 0.95 }}
         animate={{ opacity: 1, y: 0, scale: 1 }}
         transition={{ duration: 1, delay: 0.4, type: "spring", stiffness: 100 }}
-        className="relative z-20 w-full max-w-3xl px-6 mb-10"
+        className="relative z-20 w-full max-w-5xl px-6 mb-10"
         style={{ perspective: "1000px" }}
       >
         <div className="relative w-full aspect-[16/9] bg-black/80 backdrop-blur-sm rounded-2xl md:rounded-[32px] shadow-2xl shadow-blue-900/40 border border-white/40 overflow-hidden group hover:border-white/60 transition-colors duration-500">
