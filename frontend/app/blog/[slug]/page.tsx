@@ -95,7 +95,9 @@ export default async function SinglePostPage({ params }: SinglePostPageProps) {
         <h1>{post.title}</h1>
         {post.excerpt && <p className="post-excerpt">{post.excerpt}</p>}
         <div className="post-meta">
-          <span className="post-author">✍️ {post.author?.name || "Admin"}</span>
+          <Link href={`/author/${encodeURIComponent(post.author?.name || "Admin")}`} className="post-author-link">
+            <span className="post-author">✍️ {post.author?.name || "Admin"}</span>
+          </Link>
           <span className="post-date">
             🗓️ {new Date(post.createdAt).toLocaleDateString("en-US", {
               year: "numeric", month: "long", day: "numeric",
@@ -131,15 +133,17 @@ export default async function SinglePostPage({ params }: SinglePostPageProps) {
 
       {/* Footer / Author box */}
       <div className="post-footer">
-        <div className="post-author-box">
-          <div className="author-avatar">
-            {(post.author?.name || "A").charAt(0).toUpperCase()}
+        <Link href={`/author/${encodeURIComponent(post.author?.name || "Admin")}`} className="post-author-box-link">
+          <div className="post-author-box">
+            <div className="author-avatar">
+              {(post.author?.name || "A").charAt(0).toUpperCase()}
+            </div>
+            <div>
+              <p className="author-name">{post.author?.name || "Admin"}</p>
+              <p className="author-label">Author</p>
+            </div>
           </div>
-          <div>
-            <p className="author-name">{post.author?.name || "Admin"}</p>
-            <p className="author-label">Author</p>
-          </div>
-        </div>
+        </Link>
         <Link href="/blog" className="post-back-btn">← All Posts</Link>
       </div>
       <DetailedFooter />

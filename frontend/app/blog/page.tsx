@@ -73,7 +73,11 @@ export default async function BlogArchivePage() {
                     <h2>{post.title}</h2>
                     {post.excerpt && <p>{post.excerpt}</p>}
                     <div className="post-card-meta">
-                      <span className="post-card-author">✍️ {post.author?.name || "Admin"}</span>
+                      <object>
+                        <Link href={`/author/${encodeURIComponent(post.author?.name || "Admin")}`} className="post-card-author-link">
+                          <span className="post-card-author">✍️ {post.author?.name || "Admin"}</span>
+                        </Link>
+                      </object>
                       <span className="post-card-read">Read more →</span>
                     </div>
                   </div>
