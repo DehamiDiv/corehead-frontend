@@ -3,9 +3,7 @@ import { notFound } from "next/navigation";
 import CommentsSection from "@/components/blog/CommentsSection";
 import DetailedFooter from "@/components/DetailedFooter";
 import "./page.css";
-import { notFound } from 'next/navigation';
 import { api } from '@/lib/api';
-import Link from 'next/link';
 import { ArrowLeft, Calendar, User, Clock, Share2 } from 'lucide-react';
 
 interface SinglePostPageProps {
@@ -87,21 +85,7 @@ export default async function SinglePostPage({ params }: SinglePostPageProps) {
           <div className="inline-flex items-center justify-center px-4 py-1.5 rounded-full bg-blue-50 text-blue-600 text-[12px] font-black uppercase tracking-widest mb-6 border border-blue-100">
             {categoryName}
           </div>
-        )}
-        <h1>{post.title}</h1>
-        {post.excerpt && <p className="post-excerpt">{post.excerpt}</p>}
-        <div className="post-meta">
-          <Link href={`/author/${encodeURIComponent(post.author?.name || "Admin")}`} className="post-author-link">
-            <span className="post-author">✍️ {post.author?.name || "Admin"}</span>
-          </Link>
-          <span className="post-date">
-            🗓️ {new Date(post.createdAt).toLocaleDateString("en-US", {
-              year: "numeric", month: "long", day: "numeric",
-            })}
-          </span>
-        </div>
-      </header>
-          
+
           <h1 className="text-4xl md:text-5xl lg:text-6xl font-black text-[#0F172A] leading-[1.1] mb-8 tracking-tight">
             {post.title}
           </h1>
@@ -181,6 +165,7 @@ export default async function SinglePostPage({ params }: SinglePostPageProps) {
             </div>
           )}
         </div>
+      </div>
       </div>
       <DetailedFooter />
     </article>
