@@ -143,8 +143,8 @@ export default function LoadLayoutModal({
           )}
 
           {!loading && filteredLayouts.length === 0 && (
-            <p style={{ textAlign: 'center', color: '#6b7280' }}>
-              No layouts found.
+            <p style={{ textAlign: 'center', color: '#6b7280', padding: '20px 0' }}>
+              No templates yet.
             </p>
           )}
 

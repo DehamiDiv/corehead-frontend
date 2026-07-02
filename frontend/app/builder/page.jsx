@@ -11,6 +11,7 @@ import ComponentsPanel from '@/components/builder/ComponentsPanel';
 import SettingsPanel from '@/components/builder/SettingsPanel';
 import SaveLayoutModal from '@/components/builder/SaveLayoutModal';
 import LoadLayoutModal from '@/components/builder/LoadLayoutModal';
+import AIChatPanel from '@/components/builder/AIChatPanel';
 import { useRouter } from 'next/navigation';
 import './page.css';
 import { builderApi } from '@/services/builderApi';
@@ -35,6 +36,7 @@ const defaultSettings = {
   columns: 1,
 };
 
+import { defaultSettings, initialMockPosts, cmsFieldConfig } from '@/lib/builderConstants';
 
 export default function BlogBuilderPage() {
   const router = useRouter();
@@ -57,11 +59,7 @@ export default function BlogBuilderPage() {
 
   const [blogPosts, setBlogPosts] = useState([]);
 
-  const [cmsFields] = useState({
-    post: ['Title', 'Excerpt', 'Content', 'Featured Image', 'Category', 'Tags'],
-    author: ['Name', 'Bio', 'Avatar', 'Social Links'],
-    seo: ['Meta Title', 'Meta Description', 'Keywords', 'OG Image']
-  });
+  const [cmsFields] = useState(cmsFieldConfig);
 
   // Handle AI flows from separate pages
   useEffect(() => {
@@ -91,7 +89,9 @@ export default function BlogBuilderPage() {
             features: options.features || {}
           });
 
-          if (result.layout?.cards) {
+          if (result.blocks) {
+            handleAIGenerated(result.blocks, { theme: options.designStyle || 'modern', columns: 3 });
+          } else if (result.layout?.cards) {
             handleAIGenerated(result.layout.cards, result.layout.settings);
           }
 
@@ -129,8 +129,32 @@ export default function BlogBuilderPage() {
     triggerAIFlow();
   }, []);
 
-  // Open save modal
-  const handleSaveClick = () => setSaveModalOpen(true);
+  // Persist settings to localStorage
+  useEffect(() => {
+    const saved = localStorage.getItem('corehead_builder_settings');
+    if (saved) {
+      try {
+        setSettings(JSON.parse(saved));
+      } catch (e) {
+        console.error('Failed to load settings:', e);
+      }
+    }
+  }, []);
+
+  useEffect(() => {
+    localStorage.setItem('corehead_builder_settings', JSON.stringify(settings));
+  }, [settings]);
+
+  // Open save modal with validation
+  const handleSaveClick = () => {
+    if (blogPosts.length === 0) {
+      setError('Cannot save an empty layout. Please add some components first.');
+      // Auto-clear error after 4 seconds
+      setTimeout(() => setError(null), 4000);
+      return;
+    }
+    setSaveModalOpen(true);
+  };
 
   // Save with custom name
   const handleSaveWithName = async (name) => {
@@ -187,9 +211,18 @@ export default function BlogBuilderPage() {
     setSavedLayouts(prev => prev.filter(l => l.id !== id));
   };
 
-  // Add component from Components tab
+  // Add or Replace block from Blocks tab
   const handleAddComponent = (template) => {
-    setBlogPosts(prev => [...prev, { ...template, id: Date.now() }]);
+    // If a card is selected, REPLACE it. Otherwise ADD it.
+    if (selectedCard) {
+      const updatedComponent = { ...template, id: selectedCard.id }; // Keep the same ID
+      setBlogPosts(prev => prev.map(p => p.id === selectedCard.id ? updatedComponent : p));
+      setSelectedCard(updatedComponent);
+    } else {
+      const newComponent = { ...template, id: Date.now() };
+      setBlogPosts(prev => [...prev, newComponent]);
+      setSelectedCard(newComponent);
+    }
     setActiveTab('builder');
   };
 
@@ -280,9 +313,17 @@ export default function BlogBuilderPage() {
           {/* Save / Load */}
           <div className="layout-actions">
             <button className="btn-secondary" onClick={handleSaveClick}>
-              {saveStatus === 'saved' ? '✅ Saved!' : null}
-              {saveStatus === 'error' ? '❌ Save Failed' : null}
-              {saveStatus === null ? '💾 Save Layout' : null}
+              {saveStatus === 'saved' && '✅ Saved!'}
+              {saveStatus === 'error' && '❌ Save Failed'}
+              {saveStatus === null && (
+                <>
+                  💾 {
+                    activeTab === 'settings' ? 'Save Settings & Layout' :
+                    activeTab === 'cms' ? 'Save Content & Layout' :
+                    'Save Layout'
+                  }
+                </>
+              )}
             </button>
             <button className="btn-secondary" onClick={handleOpenLayoutPicker}>
               📂 Load Layout
@@ -423,7 +464,10 @@ export default function BlogBuilderPage() {
           )}
 
           {activeTab === 'components' && (
-            <ComponentsPanel onAddComponent={handleAddComponent} />
+            <ComponentsPanel 
+              onAddComponent={handleAddComponent} 
+              selectedCard={selectedCard}
+            />
           )}
 
           {activeTab === 'cms' && (
@@ -447,9 +491,11 @@ export default function BlogBuilderPage() {
                   }}
                 >
                   <div>
-                    <div style={{ fontSize: '13px', fontWeight: '600' }}>{post.title}</div>
+                    <div style={{ fontSize: '13px', fontWeight: '600' }}>
+                      {post.title || `${post.type}: ${typeof post.content === 'string' ? post.content.slice(0, 30) : 'Custom Block'}...`}
+                    </div>
                     <div style={{ fontSize: '11px', color: '#888' }}>
-                      {post.category} · {post.author}
+                      {post.category || 'AI Block'} {post.author ? `· ${post.author}` : ''}
                     </div>
                   </div>
                   <span style={{ fontSize: '12px', color: '#4f46e5' }}>Edit →</span>
@@ -459,7 +505,11 @@ export default function BlogBuilderPage() {
           )}
 
           {activeTab === 'settings' && (
-            <SettingsPanel settings={settings} onSettingsChange={setSettings} />
+            <SettingsPanel settings={settings} onSettingsChange={setSettings} onSave={handleSaveClick} />
+          )}
+
+          {activeTab === 'ai-chat' && (
+            <AIChatPanel blogPosts={blogPosts} onUpdateLayout={handleAIGenerated} onSwitchToBuilder={() => setActiveTab('builder')} />
           )}
 
           {activeTab === 'preview' && (
