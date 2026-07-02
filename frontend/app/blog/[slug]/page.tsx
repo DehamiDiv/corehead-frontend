@@ -2,11 +2,9 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import CommentsSection from "@/components/blog/CommentsSection";
 import DetailedFooter from "@/components/DetailedFooter";
+import { api } from "@/lib/api";
+import { ArrowLeft, Calendar, User, Clock, Share2 } from "lucide-react";
 import "./page.css";
-import { notFound } from 'next/navigation';
-import { api } from '@/lib/api';
-import Link from 'next/link';
-import { ArrowLeft, Calendar, User, Clock, Share2 } from 'lucide-react';
 
 interface SinglePostPageProps {
   params: Promise<{
@@ -49,18 +47,18 @@ export default async function SinglePostPage({ params }: SinglePostPageProps) {
   const rawCats = post.categories || post.category;
   if (Array.isArray(rawCats) && rawCats.length > 0) {
     categoryName = rawCats[0];
-  } else if (typeof rawCats === 'string') {
+  } else if (typeof rawCats === "string") {
     try {
       const parsed = JSON.parse(rawCats);
       if (Array.isArray(parsed) && parsed.length > 0) categoryName = parsed[0];
-      else categoryName = rawCats.split(",")[0].replace(/[\[\]"']/g, '').trim();
+      else categoryName = rawCats.split(",")[0].replace(/[\[\]"']/g, "").trim();
     } catch {
-      categoryName = rawCats.split(",")[0].replace(/[\[\]"']/g, '').trim();
+      categoryName = rawCats.split(",")[0].replace(/[\[\]"']/g, "").trim();
     }
   }
 
   // Calculate reading time roughly
-  const wordCount = post.content ? post.content.replace(/<[^>]*>?/gm, '').split(/\s+/).length : 0;
+  const wordCount = post.content ? post.content.replace(/<[^>]*>?/gm, "").split(/\s+/).length : 0;
   const readingTime = Math.max(1, Math.ceil(wordCount / 200));
 
   return (
@@ -87,20 +85,6 @@ export default async function SinglePostPage({ params }: SinglePostPageProps) {
           <div className="inline-flex items-center justify-center px-4 py-1.5 rounded-full bg-blue-50 text-blue-600 text-[12px] font-black uppercase tracking-widest mb-6 border border-blue-100">
             {categoryName}
           </div>
-        )}
-        <h1>{post.title}</h1>
-        {post.excerpt && <p className="post-excerpt">{post.excerpt}</p>}
-        <div className="post-meta">
-          <Link href={`/author/${encodeURIComponent(post.author?.name || "Admin")}`} className="post-author-link">
-            <span className="post-author">✍️ {post.author?.name || "Admin"}</span>
-          </Link>
-          <span className="post-date">
-            🗓️ {new Date(post.createdAt).toLocaleDateString("en-US", {
-              year: "numeric", month: "long", day: "numeric",
-            })}
-          </span>
-        </div>
-      </header>
           
           <h1 className="text-4xl md:text-5xl lg:text-6xl font-black text-[#0F172A] leading-[1.1] mb-8 tracking-tight">
             {post.title}
@@ -120,7 +104,7 @@ export default async function SinglePostPage({ params }: SinglePostPageProps) {
             <span className="w-1 h-1 rounded-full bg-slate-300"></span>
             <span className="flex items-center gap-2">
               <Calendar className="w-4 h-4" />
-              {new Date(post.createdAt || Date.now()).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}
+              {new Date(post.createdAt || Date.now()).toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" })}
             </span>
             <span className="w-1 h-1 rounded-full bg-slate-300 hidden sm:block"></span>
             <span className="flex items-center gap-2 hidden sm:flex">
@@ -141,7 +125,6 @@ export default async function SinglePostPage({ params }: SinglePostPageProps) {
 
         {/* Content Section */}
         <div className="max-w-[800px] mx-auto bg-white rounded-[32px] p-8 md:p-16 shadow-sm border border-slate-200/60 relative -mt-32 z-10">
-          
           {post.excerpt && (
             <div className="text-xl md:text-2xl font-medium text-slate-600 leading-relaxed mb-10 pb-10 border-b border-slate-100 italic">
               "{post.excerpt}"
@@ -153,35 +136,27 @@ export default async function SinglePostPage({ params }: SinglePostPageProps) {
             dangerouslySetInnerHTML={{ __html: post.content }} 
           />
 
-      {/* Footer / Author box */}
-      <div className="post-footer">
-        <Link href={`/author/${encodeURIComponent(post.author?.name || "Admin")}`} className="post-author-box-link">
-          <div className="post-author-box">
-            <div className="author-avatar">
-              {(post.author?.name || "A").charAt(0).toUpperCase()}
-            </div>
-            <div>
-              <p className="author-name">{post.author?.name || "Admin"}</p>
-              <p className="author-label">Author</p>
-            </div>
-          </div>
-        </Link>
-        <Link href="/blog" className="post-back-btn">← All Posts</Link>
           {/* Tags */}
           {post.keywords && post.keywords.length > 0 && (
             <div className="mt-16 pt-8 border-t border-slate-100">
               <h3 className="text-[13px] font-bold text-slate-400 uppercase tracking-wider mb-4">Tags</h3>
               <div className="flex flex-wrap gap-2">
-                {post.keywords.map((kw: string) => (
+                {post.keywords.split(",").map((kw: string) => (
                   <span key={kw} className="px-4 py-2 bg-slate-50 text-slate-600 rounded-xl text-[13px] font-bold hover:bg-slate-100 transition-colors cursor-pointer border border-slate-100">
-                    #{kw}
+                    #{kw.trim()}
                   </span>
                 ))}
               </div>
             </div>
           )}
         </div>
+
+        {/* Comments Section */}
+        <div className="max-w-[800px] mx-auto mt-12">
+          <CommentsSection postId={post.id} />
+        </div>
       </div>
+
       <DetailedFooter />
     </article>
   );

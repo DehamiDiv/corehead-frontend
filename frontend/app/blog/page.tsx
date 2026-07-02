@@ -94,13 +94,5 @@ export default async function BlogArchivePage() {
       </main>
       <DetailedFooter />
     </>
-    <main className="blog-archive-page">
-      <PublicPageRenderer
-        layout={layout}
-        data={renderData}
-        isLoop={true}
-        bindings={bindings}
-      />
-    </main>
   );
 }
