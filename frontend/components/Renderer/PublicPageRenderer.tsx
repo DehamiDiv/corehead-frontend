@@ -201,6 +201,119 @@ export function PublicPageRenderer({
           </div>
         );
 
+      case "Video":
+        const videoSrc = typeof content === "string" ? content.replace("watch?v=", "embed/") : "";
+        return (
+          <div
+            key={block.id}
+            style={styleString}
+            className="my-8 aspect-video rounded-2xl overflow-hidden bg-slate-100"
+          >
+            {videoSrc ? (
+              <iframe
+                className="w-full h-full border-0"
+                src={videoSrc}
+                title="Video"
+                allowFullScreen
+              ></iframe>
+            ) : null}
+          </div>
+        );
+
+      case "Newsletter":
+        return (
+          <div
+            key={block.id}
+            style={styleString}
+            className="my-8 bg-slate-900 rounded-3xl p-12 text-center text-white"
+          >
+            <h3 className="text-3xl font-bold mb-4">{block.content?.title || "Newsletter"}</h3>
+            <p className="text-slate-400 mb-8 max-w-md mx-auto">
+              Stay updated with our latest news and articles delivered straight to your inbox.
+            </p>
+            <div className="flex flex-col md:flex-row gap-3 max-w-md mx-auto">
+              <input
+                type="email"
+                placeholder="Enter your email"
+                className="flex-1 bg-white/10 border border-white/20 rounded-xl px-4 py-3 outline-none focus:border-blue-500 text-white"
+              />
+              <button className="bg-blue-600 hover:bg-blue-700 text-white font-bold px-8 py-3 rounded-xl transition-colors">
+                {block.content?.buttonText || "Subscribe"}
+              </button>
+            </div>
+          </div>
+        );
+
+      case "Featured Carousel":
+        const carouselPosts = Array.isArray(data?.posts) ? data.posts : [];
+        const featuredPost = carouselPosts[0];
+        return (
+          <div
+            key={block.id}
+            style={styleString}
+            className="my-8 relative rounded-3xl overflow-hidden bg-slate-900 aspect-[21/9]"
+          >
+            {featuredPost ? (
+              <>
+                <img
+                  src={featuredPost.imageUrl || featuredPost.thumbnailUrl || featuredPost.coverImage || featuredPost.featured_image || `https://picsum.photos/seed/${featuredPost.id}/800/400`}
+                  className="absolute inset-0 w-full h-full object-cover opacity-50"
+                  alt={featuredPost.title}
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-black/80 to-transparent flex flex-col justify-end p-12">
+                  <span className="text-blue-400 font-bold uppercase tracking-widest text-sm mb-4">
+                    Featured Article
+                  </span>
+                  <h2 className="text-white text-4xl font-extrabold max-w-2xl mb-4">
+                    {featuredPost.title}
+                  </h2>
+                  <p className="text-white/70 max-w-xl line-clamp-2">
+                    {featuredPost.excerpt}
+                  </p>
+                </div>
+              </>
+            ) : (
+              <div className="flex items-center justify-center h-full text-slate-400">
+                No featured articles available.
+              </div>
+            )}
+          </div>
+        );
+
+      case "Spacer":
+        return <div key={block.id} style={{ height: block.content || "40px" }}></div>;
+
+      case "Code Block":
+        return (
+          <div
+            key={block.id}
+            className="my-6 bg-slate-900 rounded-xl p-6 overflow-x-auto border border-slate-800"
+            style={styleString}
+          >
+            <pre className="text-blue-300 font-mono text-sm">
+              <code>{block.content?.code || block.content}</code>
+            </pre>
+          </div>
+        );
+
+      case "Social Links":
+        return (
+          <div
+            key={block.id}
+            className="my-8 flex justify-center gap-6"
+            style={styleString}
+          >
+            {["Facebook", "Twitter", "Instagram"].map((s) => (
+              <span
+                key={s}
+                className="text-slate-400 hover:text-blue-500 font-medium cursor-pointer transition-colors"
+              >
+                {s}
+              </span>
+            ))}
+          </div>
+        );
+
       default:
         return null;
     }

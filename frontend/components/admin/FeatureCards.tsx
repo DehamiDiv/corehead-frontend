@@ -22,8 +22,8 @@ const features = [
     href: "/ai-prompt"
   },
   {
-    title: "Posts Management",
-    description: "Write, edit, and organize your blog posts with a premium rich-text experience.",
+    title: "Content Management",
+    description: "Moderate comments, manage categories, media library, and organize your blog posts.",
     icon: FileText,
     color: "emerald",
     glow: "shadow-emerald-500/20",
