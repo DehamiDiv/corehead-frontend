@@ -1,9 +1,10 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { CheckCircle2, Eye, Palette, Layout, Sparkles, RefreshCw, X, Settings2, Image as ImageIcon, Send, Plus, Upload } from "lucide-react";
+import { useState, useEffect, useRef } from "react";
+import { CheckCircle2, Eye, Palette, Sparkles, RefreshCw, X, Settings2, Send, Plus, Upload, Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { api } from "@/lib/api";
+import Theme1Preview from "@/components/admin/Theme1Preview";
 
 const THEMES = [
   {
@@ -84,6 +85,7 @@ export default function AppearancePage() {
   const [activeTheme, setActiveTheme] = useState("default");
   const [isLoading, setIsLoading] = useState(true);
   const [previewImage, setPreviewImage] = useState<string | null>(null);
+  const [previewThemeId, setPreviewThemeId] = useState<string | null>(null);
 
   // Customizer State
   const [activeTab, setActiveTab] = useState("header");
@@ -103,6 +105,10 @@ export default function AppearancePage() {
   const [ctaBg, setCtaBg] = useState("#156cab");
   const [ctaColor, setCtaColor] = useState("#ffffff");
   const [isSavingHeader, setIsSavingHeader] = useState(false);
+  const [isUploadingLogo, setIsUploadingLogo] = useState(false);
+  const logoFileInputRef = useRef<HTMLInputElement>(null);
+  const [isUploadingFooterLogo, setIsUploadingFooterLogo] = useState(false);
+  const footerLogoFileInputRef = useRef<HTMLInputElement>(null);
 
   // Footer State
   const [footerBg, setFooterBg] = useState("#10172e");
@@ -126,7 +132,28 @@ export default function AppearancePage() {
   const [newSocialUrl, setNewSocialUrl] = useState("");
   const [copyrightText, setCopyrightText] = useState("© 2026 CoreHead by SeekaHost Technologies Ltd. All rights reserved");
   const [isSavingFooter, setIsSavingFooter] = useState(false);
+  const [selectedFont, setSelectedFont] = useState("dm-sans");
+  const [isSavingFonts, setIsSavingFonts] = useState(false);
 
+  // Colours State
+  const [colourPrimary, setColourPrimary] = useState("#025e03");
+  const [colourBackground, setColourBackground] = useState("#ffffff");
+  const [colourForeground, setColourForeground] = useState("#000000");
+  const [colourAccent, setColourAccent] = useState("#0cc00c");
+  const [colourCard, setColourCard] = useState("#ffffff");
+  const [colourCardForeground, setColourCardForeground] = useState("#151515");
+  const [colourDarkForeground, setColourDarkForeground] = useState("#ffffff");
+  const [isSavingColours, setIsSavingColours] = useState(false);
+
+  useEffect(() => {
+    const link = document.createElement("link");
+    link.href = "https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,100..1000;1,9..40,100..1000&family=IBM+Plex+Sans:ital,wght@0,100;0,200;0,300;0,400;0,500;0,600;0,700;1,100;1,200;1,300;1,400;1,500;1,600;1,700&display=swap";
+    link.rel = "stylesheet";
+    document.head.appendChild(link);
+    return () => {
+      document.head.removeChild(link);
+    };
+  }, []);
 
   useEffect(() => {
     const fetchTheme = async () => {
@@ -151,19 +178,43 @@ export default function AppearancePage() {
       try {
         const headerData = await api.getSetting(`theme_${activeTheme}_header`);
         if (headerData) {
-          setHeaderBg(headerData.headerBg || "#ffffff");
-          setHeaderFont(headerData.headerFont || "#000000");
+          setHeaderBg(headerData.headerBg || (activeTheme === "theme-1" ? "#000000" : "#ffffff"));
+          setHeaderFont(headerData.headerFont || (activeTheme === "theme-1" ? "#ffffff" : "#000000"));
           setHeaderLogo(headerData.headerLogo || "https://seeklogo.com/images/C/corehead-logo-0A288E3E34-seeklogo.com.png");
           setHeaderAlt(headerData.headerAlt || "header-logo");
-          setNavLinks(headerData.navLinks || [
+          setNavLinks(headerData.navLinks || (activeTheme === "theme-1" ? [
+            { id: 1, name: "home", link: "/" },
+            { id: 2, name: "About us", link: "/about-us" },
+            { id: 3, name: "Contact us", link: "/contact-us" },
+            { id: 4, name: "Sign-in", link: "/" },
+          ] : [
             { id: 1, name: "Home", link: "/" },
             { id: 2, name: "Contact", link: "/contact-us" },
             { id: 3, name: "About", link: "/about-us" },
-          ]);
+          ]));
           setCtaText(headerData.ctaText || "Sign-In");
           setCtaUrl(headerData.ctaUrl || "/");
           setCtaBg(headerData.ctaBg || "#156cab");
           setCtaColor(headerData.ctaColor || "#ffffff");
+        } else {
+          setHeaderBg(activeTheme === "theme-1" ? "#000000" : "#ffffff");
+          setHeaderFont(activeTheme === "theme-1" ? "#ffffff" : "#000000");
+          setHeaderLogo("https://seeklogo.com/images/C/corehead-logo-0A288E3E34-seeklogo.com.png");
+          setHeaderAlt("header-logo");
+          setNavLinks(activeTheme === "theme-1" ? [
+            { id: 1, name: "home", link: "/" },
+            { id: 2, name: "About us", link: "/about-us" },
+            { id: 3, name: "Contact us", link: "/contact-us" },
+            { id: 4, name: "Sign-in", link: "/" },
+          ] : [
+            { id: 1, name: "Home", link: "/" },
+            { id: 2, name: "Contact", link: "/contact-us" },
+            { id: 3, name: "About", link: "/about-us" },
+          ]);
+          setCtaText("Sign-In");
+          setCtaUrl("/");
+          setCtaBg("#156cab");
+          setCtaColor("#ffffff");
         }
 
         const footerData = await api.getSetting(`theme_${activeTheme}_footer`);
@@ -185,6 +236,24 @@ export default function AppearancePage() {
           ]);
           setCopyrightText(footerData.copyrightText || "© 2026 CoreHead by SeekaHost Technologies Ltd. All rights reserved");
         }
+
+        const colourData = await api.getSetting(`theme_${activeTheme}_colours`);
+        if (colourData) {
+          setColourPrimary(colourData.primary || "#025e03");
+          setColourBackground(colourData.background || "#ffffff");
+          setColourForeground(colourData.foreground || "#000000");
+          setColourAccent(colourData.accent || "#0cc00c");
+          setColourCard(colourData.card || "#ffffff");
+          setColourCardForeground(colourData.cardForeground || "#151515");
+          setColourDarkForeground(colourData.darkForeground || "#ffffff");
+        }
+
+        const fontData = await api.getSetting(`theme_${activeTheme}_font`);
+        if (fontData && fontData.font) {
+          setSelectedFont(fontData.font);
+        } else {
+          setSelectedFont("dm-sans");
+        }
       } catch (error) {
         console.error("Failed to load theme settings:", error);
       }
@@ -192,6 +261,40 @@ export default function AppearancePage() {
     
     fetchThemeSettings();
   }, [activeTheme, isLoading]);
+
+  const saveFontSettings = async () => {
+    setIsSavingFonts(true);
+    try {
+      await api.updateSetting(`theme_${activeTheme}_font`, { font: selectedFont });
+      alert("Font settings saved successfully!");
+    } catch (error) {
+      console.error("Failed to save font settings:", error);
+      alert("Failed to save font settings.");
+    } finally {
+      setIsSavingFonts(false);
+    }
+  };
+
+  const saveColourSettings = async () => {
+    setIsSavingColours(true);
+    try {
+      await api.updateSetting(`theme_${activeTheme}_colours`, {
+        primary: colourPrimary,
+        background: colourBackground,
+        foreground: colourForeground,
+        accent: colourAccent,
+        card: colourCard,
+        cardForeground: colourCardForeground,
+        darkForeground: colourDarkForeground,
+      });
+      alert("Colour settings saved successfully!");
+    } catch (error) {
+      console.error("Failed to save colour settings:", error);
+      alert("Failed to save colour settings.");
+    } finally {
+      setIsSavingColours(false);
+    }
+  };
 
   const handleActivateTheme = async (themeId: string) => {
     try {
@@ -237,6 +340,78 @@ export default function AppearancePage() {
 
   const removeNavLink = (id: number) => {
     setNavLinks(navLinks.filter(n => n.id !== id));
+  };
+
+  const handleLogoFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (file.size > 2 * 1024 * 1024) {
+      alert("Logo file size must be less than 2MB");
+      return;
+    }
+    setIsUploadingLogo(true);
+    try {
+      const reader = new FileReader();
+      reader.onload = async () => {
+        const base64Data = reader.result as string;
+        try {
+          const uploaded = await api.uploadMedia({
+            name: file.name,
+            type: file.type,
+            size: String(file.size),
+            base64Data,
+          });
+          const rawUrl = uploaded.media?.url || uploaded.url || "";
+          const fullUrl = rawUrl.startsWith("/") ? `http://localhost:5000${rawUrl}` : rawUrl;
+          setHeaderLogo(fullUrl);
+        } catch {
+          // Fallback: use local object URL for preview only
+          setHeaderLogo(URL.createObjectURL(file));
+        }
+        setIsUploadingLogo(false);
+      };
+      reader.readAsDataURL(file);
+    } catch {
+      setIsUploadingLogo(false);
+    }
+    // Reset input so same file can be re-uploaded
+    e.target.value = "";
+  };
+
+  const handleFooterLogoFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (file.size > 2 * 1024 * 1024) {
+      alert("Footer logo file size must be less than 2MB");
+      return;
+    }
+    setIsUploadingFooterLogo(true);
+    try {
+      const reader = new FileReader();
+      reader.onload = async () => {
+        const base64Data = reader.result as string;
+        try {
+          const uploaded = await api.uploadMedia({
+            name: file.name,
+            type: file.type,
+            size: String(file.size),
+            base64Data,
+          });
+          const rawUrl = uploaded.media?.url || uploaded.url || "";
+          const fullUrl = rawUrl.startsWith("/") ? `http://localhost:5000${rawUrl}` : rawUrl;
+          setFooterLogo(fullUrl);
+        } catch {
+          // Fallback: use local object URL for preview only
+          setFooterLogo(URL.createObjectURL(file));
+        }
+        setIsUploadingFooterLogo(false);
+      };
+      reader.readAsDataURL(file);
+    } catch {
+      setIsUploadingFooterLogo(false);
+    }
+    // Reset input so same file can be re-uploaded
+    e.target.value = "";
   };
 
   const addQuickLink = () => {
@@ -367,7 +542,8 @@ export default function AppearancePage() {
                 <button 
                   onClick={(e) => {
                     e.stopPropagation();
-                    setPreviewImage(theme.preview);
+                    setPreviewThemeId(theme.id);
+                    if (theme.id !== "theme-1") setPreviewImage(theme.preview);
                   }}
                   className="absolute top-4 left-4 z-10 p-2.5 bg-black/40 hover:bg-black/60 backdrop-blur-md rounded-full text-white transition-colors shadow-lg"
                   title="Preview Theme"
@@ -422,7 +598,7 @@ export default function AppearancePage() {
 
         {/* Tabs */}
         <div className="px-8 pt-6 border-b border-gray-100 flex gap-4">
-          {["Header", "Footer", "Colours", "Fonts"].map((tab) => (
+          {["Header", "Footer", "Colours", "Fonts", "Homepage"].map((tab) => (
             <button
               key={tab}
               onClick={() => setActiveTab(tab.toLowerCase())}
@@ -485,8 +661,50 @@ export default function AppearancePage() {
                   </div>
                 </div>
 
-                <div className="border border-gray-100 rounded-2xl p-6 text-center" style={{ backgroundColor: headerBg, color: headerFont }}>
-                  <p className="font-bold text-sm">Header Preview</p>
+                <div className="border border-gray-200 rounded-3xl overflow-hidden shadow-sm mt-4">
+                  <div className="bg-gray-50 px-4 py-2.5 border-b border-gray-100 flex items-center justify-between">
+                    <span className="text-[10px] font-black uppercase tracking-wider text-gray-400">Interactive Header Preview</span>
+                    <div className="flex gap-1.5">
+                      <span className="w-2.5 h-2.5 rounded-full bg-red-400"></span>
+                      <span className="w-2.5 h-2.5 rounded-full bg-yellow-400"></span>
+                      <span className="w-2.5 h-2.5 rounded-full bg-green-400"></span>
+                    </div>
+                  </div>
+                  <nav 
+                    className="flex items-center justify-between px-6 py-4 transition-colors"
+                    style={{ backgroundColor: headerBg, color: headerFont }}
+                  >
+                    {/* Logo Area */}
+                    <div className="flex items-center gap-2">
+                      {headerLogo ? (
+                        <img src={headerLogo} alt="Logo" className="h-6 object-contain" />
+                      ) : (
+                        <>
+                          <div className="w-6 h-6 rounded-full bg-white flex items-center justify-center">
+                            <span className="text-[#0e5c38] text-[10px] font-black">C</span>
+                          </div>
+                          <span className="font-extrabold text-white text-xs tracking-wide">CoreHead</span>
+                        </>
+                      )}
+                    </div>
+                    
+                    {/* Nav Links */}
+                    <div className="flex items-center gap-4 text-[10px] font-bold">
+                      {navLinks.map((item) => (
+                        <span key={item.id} className="opacity-80 hover:opacity-100 cursor-pointer">
+                          {item.name}
+                        </span>
+                      ))}
+                    </div>
+
+                    {/* CTA Button */}
+                    <button 
+                      className="text-[10px] px-3.5 py-1 rounded-full font-bold transition-all shadow-sm"
+                      style={{ backgroundColor: ctaBg, color: ctaColor }}
+                    >
+                      {ctaText}
+                    </button>
+                  </nav>
                 </div>
               </div>
 
@@ -504,12 +722,20 @@ export default function AppearancePage() {
                 </div>
                 <p className="text-xs text-gray-500 mb-4">Upload your logo image (PNG or SVG recommended, max 1MB)</p>
 
-                <div className="border border-gray-100 bg-gray-50/50 rounded-2xl p-8 mb-6 relative flex justify-center items-center">
-                  {headerLogo ? (
+                <div 
+                  className="border-2 border-dashed border-gray-200 bg-black rounded-2xl p-8 mb-6 relative flex justify-center items-center cursor-pointer hover:border-blue-400 transition-colors group"
+                  onClick={() => !isUploadingLogo && logoFileInputRef.current?.click()}
+                >
+                  {isUploadingLogo ? (
+                    <div className="text-center">
+                      <Loader2 className="w-8 h-8 text-white animate-spin mx-auto mb-2" />
+                      <p className="text-white text-xs font-bold">Uploading...</p>
+                    </div>
+                  ) : headerLogo ? (
                     <>
                       <img src={headerLogo} alt="Logo" className="h-16 object-contain" />
                       <button 
-                        onClick={() => setHeaderLogo("")}
+                        onClick={(e) => { e.stopPropagation(); setHeaderLogo(""); }}
                         className="absolute top-4 right-4 w-8 h-8 bg-red-600 text-white rounded-full flex items-center justify-center hover:scale-105 transition-transform shadow-lg"
                       >
                         <X className="w-4 h-4" />
@@ -517,13 +743,23 @@ export default function AppearancePage() {
                     </>
                   ) : (
                     <div className="text-center">
-                      <div className="w-12 h-12 bg-white border border-gray-200 rounded-xl flex items-center justify-center mx-auto mb-3 shadow-sm">
-                        <Upload className="w-5 h-5 text-gray-400" />
+                      <div className="w-12 h-12 bg-white border border-gray-200 rounded-xl flex items-center justify-center mx-auto mb-3 shadow-sm group-hover:bg-blue-50 transition-colors">
+                        <Upload className="w-5 h-5 text-gray-400 group-hover:text-blue-500 transition-colors" />
                       </div>
-                      <button className="text-sm font-bold text-blue-600 hover:text-blue-700">Click to upload logo</button>
+                      <p className="text-sm font-bold text-blue-400 group-hover:text-blue-300">Click to upload logo</p>
+                      <p className="text-[10px] text-gray-500 mt-1">PNG, SVG, JPG — max 2MB</p>
                     </div>
                   )}
                 </div>
+
+                {/* Hidden file input */}
+                <input
+                  ref={logoFileInputRef}
+                  type="file"
+                  accept="image/*"
+                  className="hidden"
+                  onChange={handleLogoFileChange}
+                />
 
                 <label className="text-sm font-bold text-gray-900 block mb-2">Alt Text</label>
                 <input 
@@ -745,12 +981,20 @@ export default function AppearancePage() {
                 </div>
                 <p className="text-xs text-gray-500 mb-4">Upload your logo image for footer (PNG or SVG recommended, max 1MB)</p>
 
-                <div className="border border-gray-100 bg-[#0c1322] rounded-2xl p-8 mb-6 relative flex justify-center items-center">
-                  {footerLogo ? (
+                <div 
+                  className="border border-gray-100 bg-[#0c1322] rounded-2xl p-8 mb-6 relative flex justify-center items-center cursor-pointer hover:border-blue-400 transition-colors group"
+                  onClick={() => !isUploadingFooterLogo && footerLogoFileInputRef.current?.click()}
+                >
+                  {isUploadingFooterLogo ? (
+                    <div className="text-center">
+                      <Loader2 className="w-8 h-8 text-white animate-spin mx-auto mb-2" />
+                      <p className="text-white text-xs font-bold">Uploading...</p>
+                    </div>
+                  ) : footerLogo ? (
                     <>
                       <img src={footerLogo} alt="Logo" className="h-16 object-contain" />
                       <button 
-                        onClick={() => setFooterLogo("")}
+                        onClick={(e) => { e.stopPropagation(); setFooterLogo(""); }}
                         className="absolute top-4 right-4 w-8 h-8 bg-red-600 text-white rounded-full flex items-center justify-center hover:scale-105 transition-transform shadow-lg"
                       >
                         <X className="w-4 h-4" />
@@ -758,13 +1002,22 @@ export default function AppearancePage() {
                     </>
                   ) : (
                     <div className="text-center text-white/50">
-                      <div className="w-12 h-12 bg-white/10 border border-white/20 rounded-xl flex items-center justify-center mx-auto mb-3">
-                        <Upload className="w-5 h-5 text-white/50" />
+                      <div className="w-12 h-12 bg-white/10 border border-white/20 rounded-xl flex items-center justify-center mx-auto mb-3 group-hover:bg-blue-50/10 transition-colors">
+                        <Upload className="w-5 h-5 text-white/50 group-hover:text-blue-300 transition-colors" />
                       </div>
-                      <button className="text-sm font-bold hover:text-white transition-colors">Click to upload logo</button>
+                      <p className="text-sm font-bold text-white/50 group-hover:text-blue-300 transition-colors">Click to upload logo</p>
                     </div>
                   )}
                 </div>
+
+                {/* Hidden file input */}
+                <input
+                  ref={footerLogoFileInputRef}
+                  type="file"
+                  accept="image/*"
+                  className="hidden"
+                  onChange={handleFooterLogoFileChange}
+                />
 
                 <label className="text-sm font-bold text-gray-900 block mb-2">Alt Text</label>
                 <input 
@@ -945,7 +1198,178 @@ export default function AppearancePage() {
             </div>
           )}
           
-          {activeTab !== "header" && activeTab !== "footer" && (
+          {activeTab === "fonts" && (
+            <div className="space-y-8 animate-in fade-in duration-300">
+              <div>
+                <h3 className="text-sm font-bold text-gray-900 uppercase tracking-wider mb-4">Primary Font</h3>
+              </div>
+              
+              <div className="space-y-6">
+                {/* DM Sans */}
+                <div 
+                  onClick={() => setSelectedFont("dm-sans")}
+                  className={cn(
+                    "p-8 rounded-3xl border-2 transition-all cursor-pointer bg-white relative flex flex-col gap-2",
+                    selectedFont === "dm-sans" ? "border-blue-600 ring-2 ring-blue-600/10" : "border-gray-200 hover:border-gray-300"
+                  )}
+                  style={{ fontFamily: "'DM Sans', sans-serif" }}
+                >
+                  <div className="flex items-center gap-3">
+                    <input 
+                      type="radio" 
+                      name="font-option"
+                      checked={selectedFont === "dm-sans"}
+                      onChange={() => setSelectedFont("dm-sans")}
+                      className="w-4 h-4 text-blue-600 border-gray-300 focus:ring-blue-500 cursor-pointer"
+                    />
+                    <span className="text-sm font-bold text-gray-900">DM Sans</span>
+                  </div>
+                  <div className="mt-2 space-y-1">
+                    <p className="text-lg text-gray-800 font-medium">The quick brown fox jumps over the lazy dog</p>
+                    <p className="text-lg text-gray-800 font-medium uppercase">THE QUICK BROWN FOX JUMPS OVER THE LAZY DOG</p>
+                    <p className="text-lg text-gray-800 font-medium">0123456789</p>
+                  </div>
+                </div>
+
+                {/* IBM Plex Sans */}
+                <div 
+                  onClick={() => setSelectedFont("ibm-plex-sans")}
+                  className={cn(
+                    "p-8 rounded-3xl border-2 transition-all cursor-pointer bg-white relative flex flex-col gap-2",
+                    selectedFont === "ibm-plex-sans" ? "border-blue-600 ring-2 ring-blue-600/10" : "border-gray-200 hover:border-gray-300"
+                  )}
+                  style={{ fontFamily: "'IBM Plex Sans', sans-serif" }}
+                >
+                  <div className="flex items-center gap-3">
+                    <input 
+                      type="radio" 
+                      name="font-option"
+                      checked={selectedFont === "ibm-plex-sans"}
+                      onChange={() => setSelectedFont("ibm-plex-sans")}
+                      className="w-4 h-4 text-blue-600 border-gray-300 focus:ring-blue-500 cursor-pointer"
+                    />
+                    <span className="text-sm font-bold text-gray-900">IBM Plex Sans</span>
+                  </div>
+                  <div className="mt-2 space-y-1">
+                    <p className="text-lg text-gray-800 font-medium">The quick brown fox jumps over the lazy dog</p>
+                    <p className="text-lg text-gray-800 font-medium uppercase">THE QUICK BROWN FOX JUMPS OVER THE LAZY DOG</p>
+                    <p className="text-lg text-gray-800 font-medium">0123456789</p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Action Button */}
+              <div className="flex justify-end pt-4">
+                <button 
+                  onClick={saveFontSettings}
+                  disabled={isSavingFonts}
+                  className={cn(
+                    "px-8 py-3 bg-blue-600 text-white rounded-xl text-sm font-bold shadow-lg shadow-blue-200 transition-all hover:bg-blue-700",
+                    isSavingFonts ? "opacity-70 cursor-not-allowed" : ""
+                  )}
+                >
+                  {isSavingFonts ? "Saving..." : "Save Fonts"}
+                </button>
+              </div>
+            </div>
+          )}
+          
+          {activeTab === "colours" && (
+            <div className="space-y-6">
+              <div className="border border-gray-100 rounded-3xl p-8">
+                <h3 className="text-2xl font-bold text-gray-900 mb-1">Theme Colours</h3>
+                <p className="text-sm text-gray-500 mb-8">Configure the <span className="text-blue-500">colour palette</span> for your website</p>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                  {/* Primary */}
+                  <div>
+                    <label className="text-sm font-bold text-gray-900 block mb-1">Primary</label>
+                    <p className="text-xs text-blue-500 mb-3">Main theme colour used for buttons and links</p>
+                    <div className="flex gap-3">
+                      <input type="color" value={colourPrimary} onChange={(e) => setColourPrimary(e.target.value)} className="w-14 h-11 rounded-xl cursor-pointer border border-gray-200 flex-shrink-0" />
+                      <input type="text" value={colourPrimary} onChange={(e) => setColourPrimary(e.target.value)} className="flex-1 px-4 py-2.5 bg-white border border-gray-200 rounded-xl text-sm font-medium outline-none focus:border-blue-500" />
+                    </div>
+                  </div>
+
+                  {/* Background */}
+                  <div>
+                    <label className="text-sm font-bold text-gray-900 block mb-1">Background</label>
+                    <p className="text-xs text-gray-400 mb-3">Main page background colour</p>
+                    <div className="flex gap-3">
+                      <input type="color" value={colourBackground} onChange={(e) => setColourBackground(e.target.value)} className="w-14 h-11 rounded-xl cursor-pointer border border-gray-200 flex-shrink-0" />
+                      <input type="text" value={colourBackground} onChange={(e) => setColourBackground(e.target.value)} className="flex-1 px-4 py-2.5 bg-white border border-gray-200 rounded-xl text-sm font-medium outline-none focus:border-blue-500" />
+                    </div>
+                  </div>
+
+                  {/* Foreground */}
+                  <div>
+                    <label className="text-sm font-bold text-gray-900 block mb-1">Foreground</label>
+                    <p className="text-xs text-gray-400 mb-3">Main text colour</p>
+                    <div className="flex gap-3">
+                      <input type="color" value={colourForeground} onChange={(e) => setColourForeground(e.target.value)} className="w-14 h-11 rounded-xl cursor-pointer border border-gray-200 flex-shrink-0" />
+                      <input type="text" value={colourForeground} onChange={(e) => setColourForeground(e.target.value)} className="flex-1 px-4 py-2.5 bg-white border border-gray-200 rounded-xl text-sm font-medium outline-none focus:border-blue-500" />
+                    </div>
+                  </div>
+
+                  {/* Accent */}
+                  <div>
+                    <label className="text-sm font-bold text-gray-900 block mb-1">Accent</label>
+                    <p className="text-xs text-blue-500 mb-3">Highlight and hover text colour</p>
+                    <div className="flex gap-3">
+                      <input type="color" value={colourAccent} onChange={(e) => setColourAccent(e.target.value)} className="w-14 h-11 rounded-xl cursor-pointer border border-gray-200 flex-shrink-0" />
+                      <input type="text" value={colourAccent} onChange={(e) => setColourAccent(e.target.value)} className="flex-1 px-4 py-2.5 bg-white border border-gray-200 rounded-xl text-sm font-medium outline-none focus:border-blue-500" />
+                    </div>
+                  </div>
+
+                  {/* Card */}
+                  <div>
+                    <label className="text-sm font-bold text-gray-900 block mb-1">Card</label>
+                    <p className="text-xs text-gray-400 mb-3">Card background colour</p>
+                    <div className="flex gap-3">
+                      <input type="color" value={colourCard} onChange={(e) => setColourCard(e.target.value)} className="w-14 h-11 rounded-xl cursor-pointer border border-gray-200 flex-shrink-0" />
+                      <input type="text" value={colourCard} onChange={(e) => setColourCard(e.target.value)} className="flex-1 px-4 py-2.5 bg-white border border-gray-200 rounded-xl text-sm font-medium outline-none focus:border-blue-500" />
+                    </div>
+                  </div>
+
+                  {/* Card Foreground */}
+                  <div>
+                    <label className="text-sm font-bold text-gray-900 block mb-1">Card Foreground</label>
+                    <p className="text-xs text-gray-400 mb-3">Card text colour</p>
+                    <div className="flex gap-3">
+                      <input type="color" value={colourCardForeground} onChange={(e) => setColourCardForeground(e.target.value)} className="w-14 h-11 rounded-xl cursor-pointer border border-gray-200 flex-shrink-0" />
+                      <input type="text" value={colourCardForeground} onChange={(e) => setColourCardForeground(e.target.value)} className="flex-1 px-4 py-2.5 bg-white border border-gray-200 rounded-xl text-sm font-medium outline-none focus:border-blue-500" />
+                    </div>
+                  </div>
+
+                  {/* Dark Foreground */}
+                  <div>
+                    <label className="text-sm font-bold text-gray-900 block mb-1">Dark Foreground</label>
+                    <p className="text-xs text-blue-500 mb-3">Light text colour over dark background</p>
+                    <div className="flex gap-3">
+                      <input type="color" value={colourDarkForeground} onChange={(e) => setColourDarkForeground(e.target.value)} className="w-14 h-11 rounded-xl cursor-pointer border border-gray-200 flex-shrink-0" />
+                      <input type="text" value={colourDarkForeground} onChange={(e) => setColourDarkForeground(e.target.value)} className="flex-1 px-4 py-2.5 bg-white border border-gray-200 rounded-xl text-sm font-medium outline-none focus:border-blue-500" />
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Save */}
+              <div className="flex justify-end">
+                <button
+                  onClick={saveColourSettings}
+                  disabled={isSavingColours}
+                  className={cn(
+                    "px-8 py-3 bg-blue-600 text-white rounded-xl text-sm font-bold shadow-lg shadow-blue-200 transition-all",
+                    isSavingColours ? "opacity-70 cursor-not-allowed" : "hover:bg-blue-700"
+                  )}
+                >
+                  {isSavingColours ? "Saving..." : "Save Colours"}
+                </button>
+              </div>
+            </div>
+          )}
+
+          {activeTab !== "header" && activeTab !== "footer" && activeTab !== "fonts" && activeTab !== "colours" && (
             <div className="h-64 flex flex-col items-center justify-center text-center">
               <div className="w-16 h-16 bg-gray-50 rounded-2xl flex items-center justify-center mb-4 border border-gray-100">
                 <Settings2 className="w-8 h-8 text-gray-300" />
@@ -959,12 +1383,27 @@ export default function AppearancePage() {
         </div>
       </div>
 
-      {/* Preview Modal */}
-      {previewImage && (
+      {/* Preview Modal — Theme 1 gets a live rendered preview */}
+      {previewThemeId === "theme-1" && (
+        <Theme1Preview 
+          onClose={() => { setPreviewThemeId(null); setPreviewImage(null); }} 
+          logoUrl={headerLogo}
+          navLinks={navLinks}
+          headerBg={headerBg}
+          headerFont={headerFont}
+          fontFamily={selectedFont}
+          footerLogoUrl={footerLogo}
+          footerBg={footerBg}
+          footerFont={footerFont}
+        />
+      )}
+
+      {/* Preview Modal — all other themes show image */}
+      {previewImage && previewThemeId !== "theme-1" && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 sm:p-8 bg-black/80 backdrop-blur-sm animate-in fade-in duration-300">
           <div className="relative w-full max-w-5xl bg-white rounded-3xl overflow-hidden shadow-2xl animate-in zoom-in-95 duration-300">
             <button 
-              onClick={() => setPreviewImage(null)}
+              onClick={() => { setPreviewImage(null); setPreviewThemeId(null); }}
               className="absolute top-4 right-4 p-2 bg-black/50 hover:bg-black/80 text-white rounded-full transition-colors z-10 backdrop-blur-md"
             >
               <X className="w-6 h-6" />

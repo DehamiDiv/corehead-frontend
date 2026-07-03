@@ -19,7 +19,10 @@ export default async function BlogArchivePage() {
         { id: '2', type: 'Collection List', content: { limit: 6 } }
       ]
     })),
-    api.getPreviewPosts(100).catch(() => ({ posts: [] })),
+    api.getPreviewPosts(100).catch((e) => {
+      console.error("Failed to fetch posts for /blog:", e);
+      return { posts: [] };
+    }),
     api.getBindings().catch(() => ({ mode: "dynamic", selected: {} })),
   ]);
 

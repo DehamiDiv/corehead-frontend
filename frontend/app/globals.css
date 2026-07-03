@@ -50,3 +50,36 @@ body {
 ::-webkit-scrollbar-thumb:hover {
   background: #cbd5e1;
 }
+
+/* ReactQuill - Custom Undo/Redo toolbar buttons */
+.ql-toolbar .ql-undo::before {
+  content: "↩";
+  font-size: 16px;
+  line-height: 1;
+}
+
+.ql-toolbar .ql-redo::before {
+  content: "↪";
+  font-size: 16px;
+  line-height: 1;
+}
+
+.ql-toolbar .ql-undo,
+.ql-toolbar .ql-redo {
+  width: 28px;
+  height: 24px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 15px;
+  color: #444;
+  cursor: pointer;
+  border-radius: 4px;
+  transition: background 0.15s;
+}
+
+.ql-toolbar .ql-undo:hover,
+.ql-toolbar .ql-redo:hover {
+  background: #e8f0fe;
+  color: #2563eb;
+}

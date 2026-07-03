@@ -282,7 +282,7 @@ export const api = {
 
   // Users
   async getUsers() {
-    return this.fetchWithAuth(`${BASE_URL}/users`);
+    return this.fetchWithAuth(`${BASE_URL}/users`, { cache: 'no-store' });
   },
 
   async inviteUser(data: { email: string, role: string, name?: string, nicename?: string, designation?: string, bio?: string, password?: string, avatar?: string }) {
@@ -538,5 +538,40 @@ export const api = {
 
   async getAiHistory(limit: number = 50) {
     return this.fetchWithAuth(`${BASE_URL}/ai/history?limit=${limit}`);
+  },
+
+  // Settings
+  async getSetting(key: string) {
+    const res = await fetch(`${BASE_URL}/settings?key=${encodeURIComponent(key)}`, {
+      headers: { ...getAuthHeader() },
+      cache: 'no-store'
+    });
+    if (!res.ok) {
+      if (res.status === 404) return null;
+      throw new Error('Failed to fetch setting');
+    }
+    const data = await res.json();
+    // Backend returns { success, setting: { key, value } }
+    const rawValue = data?.setting?.value;
+    if (rawValue === undefined || rawValue === null) return null;
+    try {
+      return typeof rawValue === 'string' ? JSON.parse(rawValue) : rawValue;
+    } catch {
+      return rawValue;
+    }
+  },
+
+  async updateSetting(key: string, value: any) {
+    const res = await fetch(`${BASE_URL}/settings/${key}`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+        ...getAuthHeader()
+      },
+      // Backend stores value as a JSON string
+      body: JSON.stringify({ value: typeof value === 'string' ? value : JSON.stringify(value) })
+    });
+    if (!res.ok) throw new Error('Failed to update setting');
+    return res.json();
   }
 };

@@ -19,6 +19,45 @@ import {
 import { cn } from "@/lib/utils";
 import MediaLibraryModal from "@/components/admin/MediaLibraryModal";
 import { api } from "@/lib/api";
+import dynamic from 'next/dynamic';
+import 'react-quill-new/dist/quill.snow.css';
+
+const ReactQuill = dynamic(() => import('react-quill-new'), { ssr: false });
+
+const quillModules = {
+  toolbar: {
+    container: [
+      ["undo", "redo"],
+      [{ header: [1, 2, 3, 4, 5, 6, false] }, { font: [] }, { size: [] }],
+      ["bold", "italic", "underline", "strike", { script: "sub" }, { script: "super" }],
+      [{ color: [] }, { background: [] }],
+      [{ list: "ordered" }, { list: "bullet" }, { indent: "-1" }, { indent: "+1" }],
+      [{ align: [] }],
+      ["blockquote", "code-block"],
+      ["link", "image", "video"],
+      ["clean"],
+    ],
+    handlers: {
+      undo: function (this: any) { this.quill.history.undo(); },
+      redo: function (this: any) { this.quill.history.redo(); },
+    },
+  },
+  history: {
+    delay: 1000,
+    maxStack: 100,
+    userOnly: true,
+  },
+};
+
+const quillFormats = [
+  "header", "font", "size",
+  "bold", "italic", "underline", "strike", "script",
+  "color", "background",
+  "list", "bullet", "indent",
+  "align",
+  "blockquote", "code-block",
+  "link", "image", "video"
+];
 
 export default function EditPostPage() {
   const router = useRouter();
@@ -55,6 +94,17 @@ export default function EditPostPage() {
   const [error, setError] = useState<string | null>(null);
   const [isMediaModalOpen, setIsMediaModalOpen] = useState(false);
   const [activeTab, setActiveTab] = useState("Content");
+  const [availableCategories, setAvailableCategories] = useState<string[]>([]);
+
+  // Fetch categories from DB
+  useEffect(() => {
+    api.getCategories()
+      .then((res: any) => {
+        const cats = res?.categories || res || [];
+        setAvailableCategories(cats.map((c: any) => c.name).filter(Boolean));
+      })
+      .catch(() => setAvailableCategories([]));
+  }, []);
 
   const addKeyword = () => {
     if (keywordInput.trim() && !formData.keywords.includes(keywordInput.trim())) {
@@ -81,13 +131,16 @@ export default function EditPostPage() {
   const fetchData = useCallback(async () => {
     setLoading(true);
     try {
-      const [postData, usersData] = await Promise.all([
-        api.getPostById(postId),
-        api.getUsers()
-      ]);
+      const postData = await api.getPostById(postId);
       
-      const usersList = usersData.users && Array.isArray(usersData.users) ? usersData.users : [];
-      setUsers(usersList);
+      const PREDEFINED_AUTHORS = [
+        { id: 1, name: "Pipuni Piyasooriya" },
+        { id: 2, name: "Dehami Divyanjalee" },
+        { id: 3, name: "Nimasha Dissanayaka" },
+        { id: 4, name: "Rashmi Sharaa" },
+        { id: 10, name: "Admin" }
+      ];
+      setUsers(PREDEFINED_AUTHORS);
       
       let cats: string[] = [];
       const rawCats = postData.categories || postData.category;
@@ -125,7 +178,7 @@ export default function EditPostPage() {
     if (postId) fetchData();
   }, [fetchData]);
 
-  const availableCategories = ["Technology", "Design", "Business", "Marketing", "Lifestyle", "AI", "Development"];
+
 
   const calculateProgress = () => {
     const fields = [
@@ -351,7 +404,7 @@ export default function EditPostPage() {
                       value=""
                     >
                       <option value="">Add category...</option>
-                      {["Tech", "Education", "Lifestyle", "Business", "Marketing", "Travelling"].map(cat => <option key={cat} value={cat}>{cat}</option>)}
+                      {availableCategories.map(cat => <option key={cat} value={cat}>{cat}</option>)}
                     </select>
                   </div>
 
@@ -374,14 +427,14 @@ export default function EditPostPage() {
                   <div className="space-y-4 pt-4 border-t border-[#F1F5F9]">
                     <h2 className="text-[20px] font-bold text-[#1E293B]">Post Content <span className="text-red-500">*</span></h2>
                     <div className="border border-[#E2E8F0] rounded-[16px] overflow-hidden">
-                      <div className="h-11 bg-[#F8FAFC] border-b border-[#E2E8F0] flex items-center px-4 gap-1">
-                        <Bold className="w-4 h-4 text-[#64748B] mx-2" /><Italic className="w-4 h-4 text-[#64748B] mx-2" /><List className="w-4 h-4 text-[#64748B] mx-2" /><LinkIcon className="w-4 h-4 text-[#64748B] mx-2" />
-                      </div>
-                      <textarea 
-                        rows={15}
-                        className="w-full p-6 text-[16px] focus:outline-none min-h-[300px]"
+                      <ReactQuill 
+                        theme="snow"
                         value={formData.content}
-                        onChange={e => setFormData({...formData, content: e.target.value})}
+                        onChange={(content) => setFormData({...formData, content})}
+                        modules={quillModules}
+                        formats={quillFormats}
+                        className="bg-white"
+                        style={{ height: '400px', paddingBottom: '42px' }}
                       />
                     </div>
                   </div>

@@ -1,10 +1,11 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { motion } from "framer-motion";
 import { ArrowRight, Mail, Sparkles, Heart, ExternalLink } from "lucide-react";
+import { api } from "@/lib/api";
 
 const footerLinks = {
   Product: [
@@ -53,6 +54,25 @@ export default function DetailedFooter() {
   const [email, setEmail] = useState("");
   const [subscribed, setSubscribed] = useState(false);
   const [hoveredSocial, setHoveredSocial] = useState<string | null>(null);
+  const [footerLogo, setFooterLogo] = useState<string>("/logo.png");
+  const [footerDescription, setFooterDescription] = useState<string>("The ultimate headless CMS for modern web development. Build, manage, and scale your content effortlessly.");
+
+  useEffect(() => {
+    const loadSettings = async () => {
+      try {
+        const data = await api.getSetting("theme_theme-1_footer");
+        if (data && data.footerLogo) {
+          setFooterLogo(data.footerLogo);
+        }
+        if (data && data.footerDescription) {
+          setFooterDescription(data.footerDescription);
+        }
+      } catch (error) {
+        console.error("Failed to fetch footer settings:", error);
+      }
+    };
+    loadSettings();
+  }, []);
 
   const handleSubscribe = (e: React.FormEvent) => {
     e.preventDefault();
@@ -154,17 +174,14 @@ export default function DetailedFooter() {
           {/* Brand Column */}
           <motion.div variants={itemVariants} className="col-span-2 space-y-6">
             <Link href="/" className="inline-block">
-              <Image
-                src="/logo.png"
-                alt="CoreHead Logo"
-                width={160}
-                height={40}
-                className="h-12 w-auto object-contain brightness-0 invert opacity-90"
+              <img
+                src={footerLogo}
+                alt="Footer Logo"
+                className="h-12 w-auto object-contain"
               />
             </Link>
             <p className="text-slate-400 text-base leading-relaxed max-w-xs">
-              The ultimate headless CMS for modern web development. Build, manage,
-              and scale your content effortlessly.
+              {footerDescription}
             </p>
 
 

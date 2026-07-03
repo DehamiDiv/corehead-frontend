@@ -25,14 +25,28 @@ const ReactQuill = dynamic(() => import("react-quill-new"), { ssr: false });
 import "react-quill-new/dist/quill.snow.css";
 
 const quillModules = {
-  toolbar: [
-    [{ header: [1, 2, 3, false] }],
-    ["bold", "italic", "underline", "strike"],
-    [{ list: "ordered" }, { list: "bullet" }],
-    ["blockquote", "code-block"],
-    ["link"],
-    ["clean"],
-  ],
+  toolbar: {
+    container: [
+      ["undo", "redo"],
+      [{ header: [1, 2, 3, 4, 5, 6, false] }, { font: [] }, { size: [] }],
+      ["bold", "italic", "underline", "strike", { script: "sub" }, { script: "super" }],
+      [{ color: [] }, { background: [] }],
+      [{ list: "ordered" }, { list: "bullet" }, { indent: "-1" }, { indent: "+1" }],
+      [{ align: [] }],
+      ["blockquote", "code-block"],
+      ["link", "image", "video"],
+      ["clean"],
+    ],
+    handlers: {
+      undo: function (this: any) { this.quill.history.undo(); },
+      redo: function (this: any) { this.quill.history.redo(); },
+    },
+  },
+  history: {
+    delay: 1000,
+    maxStack: 100,
+    userOnly: true,
+  },
 };
 
 export default function CreatePostPage() {
@@ -67,6 +81,7 @@ export default function CreatePostPage() {
   const [error, setError] = useState<string | null>(null);
   const [isMediaModalOpen, setIsMediaModalOpen] = useState(false);
   const [activeTab, setActiveTab] = useState("Content");
+  const [availableCategories, setAvailableCategories] = useState<string[]>([]);
 
   const handleAddKeyword = () => {
     if (keywordInput.trim() && !formData.keywords.includes(keywordInput.trim())) {
@@ -93,15 +108,15 @@ export default function CreatePostPage() {
   };
 
   const fetchUsers = useCallback(async () => {
-    try {
-      const data = await api.getUsers();
-      const usersList = data.users && Array.isArray(data.users) ? data.users : [];
-      setUsers(usersList);
-      if (usersList.length > 0 && !formData.authorId) {
-        setFormData(prev => ({ ...prev, authorId: String(usersList[0].id) }));
-      }
-    } catch (err) {
-      setUsers([{ id: 1, name: "Admin User" }]);
+    const PREDEFINED_AUTHORS = [
+      { id: 1, name: "Pipuni Piyasooriya" },
+      { id: 2, name: "Dehami Divyanjalee" },
+      { id: 3, name: "Nimasha Dissanayaka" },
+      { id: 4, name: "Rashmi Sharaa" },
+      { id: 10, name: "Admin" }
+    ];
+    setUsers(PREDEFINED_AUTHORS);
+    if (!formData.authorId) {
       setFormData(prev => ({ ...prev, authorId: "1" }));
     }
   }, [formData.authorId]);
@@ -110,7 +125,15 @@ export default function CreatePostPage() {
     fetchUsers();
   }, [fetchUsers]);
 
-  const availableCategories = ["Technology", "Design", "Business", "Marketing", "Lifestyle", "AI", "Development"];
+  // Fetch categories from DB
+  useEffect(() => {
+    api.getCategories()
+      .then((res: any) => {
+        const cats = res?.categories || res || [];
+        setAvailableCategories(cats.map((c: any) => c.name).filter(Boolean));
+      })
+      .catch(() => setAvailableCategories([]));
+  }, []);
 
   // Calculate Progress
   const calculateProgress = () => {

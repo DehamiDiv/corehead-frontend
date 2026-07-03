@@ -98,7 +98,7 @@ export default function CategoriesPage() {
     try {
       const reader = new FileReader();
       reader.onload = async () => {
-        const base64Data = (reader.result as string).split(",")[1];
+        const base64Data = reader.result as string;
         try {
           const uploaded = await api.uploadMedia({
             name: file.name,
@@ -106,7 +106,9 @@ export default function CategoriesPage() {
             size: String(file.size),
             base64Data,
           });
-          setImageUrl(uploaded.media?.url || uploaded.url || "");
+          const rawUrl = uploaded.media?.url || uploaded.url || "";
+          const fullUrl = rawUrl.startsWith("/") ? `http://localhost:5000${rawUrl}` : rawUrl;
+          setImageUrl(fullUrl);
         } catch {
           // Fallback: use local object URL for preview only
           setImageUrl(URL.createObjectURL(file));
@@ -391,8 +393,9 @@ export default function CategoriesPage() {
                 <input
                   type="text"
                   required
+                  disabled
                   placeholder="category-slug"
-                  className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-400 transition-all text-[14px] text-slate-500 font-medium"
+                  className="w-full px-4 py-3 bg-slate-100 border border-slate-200 rounded-xl focus:outline-none transition-all text-[14px] text-slate-400 font-medium cursor-not-allowed"
                   value={slug}
                   onChange={(e) => setSlug(e.target.value)}
                 />

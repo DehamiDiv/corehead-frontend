@@ -28,15 +28,17 @@ export default function ProfileSettingsPage() {
   useEffect(() => {
     const fetchUser = async () => {
       try {
-        const token = localStorage.getItem('token');
+        const token = localStorage.getItem('accessToken');
         if (!token) return;
         const payload = JSON.parse(atob(token.split('.')[1]));
         const currentUserId = payload.id;
         if (!currentUserId) return;
 
         const res = await api.getUsers();
-        if (res.success && res.users) {
-          const dbUser = res.users.find((u: any) => u.id === currentUserId);
+        const usersList = Array.isArray(res) ? res : (res.users || []);
+        
+        if (usersList.length > 0) {
+          const dbUser = usersList.find((u: any) => u.id === currentUserId);
           if (dbUser) {
              let bio = dbUser.bio || "No bio added yet.";
              let avatar = dbUser.avatar || "";
@@ -48,6 +50,7 @@ export default function ProfileSettingsPage() {
                  const localData = JSON.parse(localDataRaw);
                  if (localData.bio) bio = localData.bio;
                  if (localData.avatar) avatar = localData.avatar;
+                 if (localData.designation) dbUser.designation = localData.designation;
                } catch(e) {}
              }
 
@@ -84,7 +87,7 @@ export default function ProfileSettingsPage() {
 
   const handleSave = async () => {
     try {
-      const token = localStorage.getItem('token');
+      const token = localStorage.getItem('accessToken');
       if (token) {
         const payload = JSON.parse(atob(token.split('.')[1]));
         const currentUserId = payload.id;
@@ -93,7 +96,8 @@ export default function ProfileSettingsPage() {
           // ALSO SAVE TO LOCALSTORAGE FOR DEMO PUBLIC PROFILE
           localStorage.setItem('corehead_author_data_' + formData.name, JSON.stringify({
             bio: formData.bio,
-            avatar: formData.avatar
+            avatar: formData.avatar,
+            designation: formData.designation
           }));
 
           await api.updateUser(currentUserId, {
