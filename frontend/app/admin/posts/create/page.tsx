@@ -71,6 +71,7 @@ export default function CreatePostPage() {
   const [isMediaModalOpen, setIsMediaModalOpen] = useState(false);
   const [isAiModalOpen, setIsAiModalOpen] = useState(false);
   const [activeTab, setActiveTab] = useState("Content");
+  const [refining, setRefining] = useState(false);
 
   const handleAiGenerate = (data: any) => {
     setFormData(prev => ({
@@ -83,6 +84,34 @@ export default function CreatePostPage() {
       metaDescription: data.seo?.metaDescription || prev.metaDescription,
       keywords: data.seo?.keywords?.length ? data.seo.keywords : prev.keywords,
     }));
+  };
+
+  const handleInlineRefine = async (action: "grammar" | "longer" | "summarize") => {
+    if (!formData.content) return;
+    setRefining(true);
+    setError(null);
+    try {
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api'}/ai/refine`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${localStorage.getItem('accessToken')}`
+        },
+        body: JSON.stringify({ content: formData.content, action }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        throw new Error(data.error || data.message || "Failed to refine content");
+      }
+      if (data.refined) {
+        setFormData(prev => ({ ...prev, content: data.refined }));
+      }
+    } catch (err: any) {
+      console.error(err);
+      setError("AI refinement failed: " + err.message);
+    } finally {
+      setRefining(false);
+    }
   };
   const handleAddKeyword = () => {
     if (keywordInput.trim() && !formData.keywords.includes(keywordInput.trim())) {
@@ -187,6 +216,8 @@ export default function CreatePostPage() {
       setLoading(false);
     }
   };
+
+  const hasRealContent = formData.content.replace(/<[^>]*>/g, '').trim().length > 3;
 
   return (
     <div className="min-h-screen bg-[#F4F7FA] pb-32 pt-8 px-6">
@@ -396,8 +427,39 @@ export default function CreatePostPage() {
                       placeholder="Write your blog post content here..."
                     />
 
-                    <div className="flex justify-between items-center px-4 py-3 border-t border-gray-100 bg-[#fafafa]">
-                      <div />
+                    <div className="flex justify-between items-center px-4 py-3 border-t border-gray-100 bg-[#fafafa] flex-wrap gap-3">
+                      <div className="flex items-center gap-1.5 flex-wrap">
+                        <span className="text-xs font-bold text-gray-400 mr-1 flex items-center gap-1">
+                          <Sparkles className="w-3.5 h-3.5 text-blue-500 animate-pulse" /> AI Assistant:
+                        </span>
+                        <button
+                          type="button"
+                          onClick={() => handleInlineRefine("grammar")}
+                          disabled={refining || !hasRealContent}
+                          className="px-3 py-1.5 text-xs font-bold text-gray-700 bg-white border border-gray-200 rounded-lg hover:bg-gray-100 hover:border-gray-300 transition-all flex items-center gap-1 shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                          Polish Grammar ✍️
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => handleInlineRefine("longer")}
+                          disabled={refining || !hasRealContent}
+                          className="px-3 py-1.5 text-xs font-bold text-gray-700 bg-white border border-gray-200 rounded-lg hover:bg-gray-100 hover:border-gray-300 transition-all flex items-center gap-1 shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                          Make Longer 📝
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => handleInlineRefine("summarize")}
+                          disabled={refining || !hasRealContent}
+                          className="px-3 py-1.5 text-xs font-bold text-gray-700 bg-white border border-gray-200 rounded-lg hover:bg-gray-100 hover:border-gray-300 transition-all flex items-center gap-1 shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                          Summarize Content 🔍
+                        </button>
+                        {refining && (
+                          <Loader2 className="w-3.5 h-3.5 text-blue-500 animate-spin ml-2" />
+                        )}
+                      </div>
                       <div className="flex items-center gap-2">
                         <span className="text-xs font-bold text-gray-500">
                           {formData.content.replace(/<[^>]*>?/gm, '').trim() ? formData.content.replace(/<[^>]*>?/gm, '').trim().split(/\s+/).length : 0} words | {formData.content.replace(/<[^>]*>?/gm, '').length} characters

@@ -50,6 +50,7 @@
   font-weight: 700;
   margin: 0 0 8px 0;
   color: #0f172a;
+  border-left: none !important;
 }
 
 .header-content p {
@@ -159,7 +160,9 @@
 }
 
 @keyframes spin {
-  to { transform: rotate(360deg); }
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 .prompt-textarea {
@@ -324,21 +327,70 @@
 
 /* Responsive */
 @media (max-width: 768px) {
-  .ai-generator { padding: 20px 16px; }
-  .generator-header { flex-direction: column; gap: 20px; text-align: center; padding: 28px 24px; }
-  .generator-header .header-content h1 { font-size: 26px; }
-  .generator-nav { flex-wrap: wrap; }
-  .nav-item { flex: none; width: calc(50% - 4px); padding: 12px; font-size: 13px; }
-  .generator-content { padding: 24px 16px; }
-  .option-grid { grid-template-columns: 1fr; }
-  .template-card { flex-direction: column; text-align: center; }
-  .template-icon { width: 100%; height: 60px; }
-  .action-buttons { flex-direction: column; }
-  .btn-back, .btn-next { justify-content: center; }
-  .suggestions-grid { grid-template-columns: 1fr 1fr; }
+  .ai-generator {
+    padding: 20px 16px;
+  }
+
+  .generator-header {
+    flex-direction: column;
+    gap: 20px;
+    text-align: center;
+    padding: 28px 24px;
+  }
+
+  .generator-header .header-content h1 {
+    font-size: 26px;
+  }
+
+  .generator-nav {
+    flex-wrap: wrap;
+  }
+
+  .nav-item {
+    flex: none;
+    width: calc(50% - 4px);
+    padding: 12px;
+    font-size: 13px;
+  }
+
+  .generator-content {
+    padding: 24px 16px;
+  }
+
+  .option-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .template-card {
+    flex-direction: column;
+    text-align: center;
+  }
+
+  .template-icon {
+    width: 100%;
+    height: 60px;
+  }
+
+  .action-buttons {
+    flex-direction: column;
+  }
+
+  .btn-back,
+  .btn-next {
+    justify-content: center;
+  }
+
+  .suggestions-grid {
+    grid-template-columns: 1fr 1fr;
+  }
 }
 
 @media (max-width: 480px) {
-  .nav-item { width: 100%; }
-  .suggestions-grid { grid-template-columns: 1fr; }
+  .nav-item {
+    width: 100%;
+  }
+
+  .suggestions-grid {
+    grid-template-columns: 1fr;
+  }
 }

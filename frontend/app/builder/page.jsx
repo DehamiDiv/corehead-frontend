@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Sparkles, Eye, Code, FileText } from 'lucide-react';
+import { Sparkles, Eye, Code, FileText, Trash2 } from 'lucide-react';
 import Sidebar from '@/components/builder/Sidebar';
 import BuilderCanvas from '@/components/builder/BuilderCanvas';
 import CMSFieldsPanel from '@/components/builder/CMSFieldsPanel';
@@ -35,6 +35,8 @@ export default function BlogBuilderPage() {
   const [aiSettings, setAiSettings] = useState(null);  // AI settings stored separately
   const [compareMode, setCompareMode] = useState(false); // show both side by side
   const [error, setError] = useState(null);
+  const [confirmDeleteLayoutId, setConfirmDeleteLayoutId] = useState(null);
+  const [confirmDeleteCardId, setConfirmDeleteCardId] = useState(null);
 
   const [blogPosts, setBlogPosts] = useState([]);
 
@@ -48,12 +50,15 @@ export default function BlogBuilderPage() {
       const aiOptions = localStorage.getItem('ai_options');
 
       if (aiPrompt || selectedTemplate) {
+        // Clear immediately to prevent double trigger in React StrictMode
+        localStorage.removeItem('ai_prompt');
+        localStorage.removeItem('selected_template');
+        localStorage.removeItem('ai_options');
+
         try {
           const token = localStorage.getItem('accessToken');
           if (!token) {
             setError('Authentication required. Please login to use AI features.');
-            // Clear AI prompt to prevent infinite loop/retry without login
-            localStorage.removeItem('ai_prompt');
             router.push('/login?callback=/builder');
             return;
           }
@@ -73,11 +78,6 @@ export default function BlogBuilderPage() {
           } else if (result.layout?.cards) {
             handleAIGenerated(result.layout.cards, result.layout.settings);
           }
-
-          // Clear after use
-          localStorage.removeItem('ai_prompt');
-          localStorage.removeItem('selected_template');
-          localStorage.removeItem('ai_options');
 
         } catch (err) {
           console.error('AI Flow error:', err);
@@ -184,10 +184,34 @@ export default function BlogBuilderPage() {
     }
   };
 
+  // Compare layout by ID
+  const handleCompareSelected = async (id) => {
+    try {
+      const data = await builderApi.getLayout(id);
+      if (data.layout.layout_data?.cards) setAiPosts(data.layout.layout_data.cards);
+      if (data.layout.layout_data?.settings) setAiSettings(data.layout.layout_data.settings);
+      setCompareMode(true);
+      setShowLayoutPicker(false);
+    } catch (err) {
+      alert('Failed to load comparison template: ' + err.message);
+    }
+  };
+
   // Delete saved layout
-  const handleDeleteLayout = async (id) => {
-    await builderApi.deleteLayout(id);
-    setSavedLayouts(prev => prev.filter(l => l.id !== id));
+  const handleDeleteLayout = (id) => {
+    setConfirmDeleteLayoutId(id);
+  };
+
+  const handleConfirmDeleteLayout = async () => {
+    if (confirmDeleteLayoutId === null) return;
+    const id = confirmDeleteLayoutId;
+    setConfirmDeleteLayoutId(null);
+    try {
+      await builderApi.deleteLayout(id);
+      setSavedLayouts(prev => prev.filter(l => l.id !== id));
+    } catch (err) {
+      alert('Failed to delete layout: ' + err.message);
+    }
   };
 
   // Add or Replace block from Blocks tab
@@ -207,6 +231,13 @@ export default function BlogBuilderPage() {
 
   // Delete a card from canvas
   const handleDeleteCard = (cardId) => {
+    setConfirmDeleteCardId(cardId);
+  };
+
+  const handleConfirmDeleteCard = () => {
+    if (confirmDeleteCardId === null) return;
+    const cardId = confirmDeleteCardId;
+    setConfirmDeleteCardId(null);
     setBlogPosts(prev => prev.filter(post => post.id !== cardId));
     if (selectedCard?.id === cardId) setSelectedCard(null);
   };
@@ -524,6 +555,7 @@ export default function BlogBuilderPage() {
         isOpen={showLayoutPicker}
         onClose={() => setShowLayoutPicker(false)}
         onLoad={handleLoadSelected}
+        onCompare={handleCompareSelected}
         onDelete={handleDeleteLayout}
         layouts={savedLayouts}
         isLoading={loadingLayouts}
@@ -542,6 +574,200 @@ export default function BlogBuilderPage() {
         blogPosts={blogPosts}
         contentMode={contentMode}
       />
+
+      {/* ── Custom Deletion Confirmation Modal for Layout ── */}
+      {confirmDeleteLayoutId !== null && (
+        <div style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          backgroundColor: 'rgba(15, 23, 42, 0.6)',
+          backdropFilter: 'blur(4px)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          zIndex: 9999,
+          padding: '20px',
+        }}>
+          <div style={{
+            backgroundColor: '#ffffff',
+            borderRadius: '20px',
+            maxWidth: '400px',
+            width: '100%',
+            padding: '30px',
+            boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)',
+            textAlign: 'center',
+            border: '1px solid rgba(226, 232, 240, 0.8)',
+            animation: 'modalFadeIn 0.3s ease-out'
+          }}>
+            <div style={{
+              width: '60px',
+              height: '60px',
+              backgroundColor: '#fee2e2',
+              borderRadius: '50%',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              margin: '0 auto 20px',
+              color: '#ef4444'
+            }}>
+              <Trash2 size={30} />
+            </div>
+            <h3 style={{
+              fontSize: '18px',
+              fontWeight: 700,
+              color: '#0f172a',
+              margin: '0 0 10px 0'
+            }}>Delete Saved Layout?</h3>
+            <p style={{
+              fontSize: '14px',
+              color: '#64748b',
+              margin: '0 0 24px 0',
+              lineHeight: 1.5
+            }}>Are you sure you want to delete this visual layout design? This action cannot be undone.</p>
+            <div style={{
+              display: 'flex',
+              gap: '12px',
+              justifyContent: 'center'
+            }}>
+              <button
+                onClick={() => setConfirmDeleteLayoutId(null)}
+                style={{
+                  flex: 1,
+                  padding: '12px 20px',
+                  backgroundColor: '#f1f5f9',
+                  color: '#475569',
+                  border: 'none',
+                  borderRadius: '12px',
+                  fontSize: '14px',
+                  fontWeight: 600,
+                  cursor: 'pointer',
+                  fontFamily: 'inherit'
+                }}
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleConfirmDeleteLayout}
+                style={{
+                  flex: 1,
+                  padding: '12px 20px',
+                  backgroundColor: '#ef4444',
+                  color: '#ffffff',
+                  border: 'none',
+                  borderRadius: '12px',
+                  fontSize: '14px',
+                  fontWeight: 600,
+                  cursor: 'pointer',
+                  boxShadow: '0 4px 12px rgba(239, 68, 68, 0.25)',
+                  fontFamily: 'inherit'
+                }}
+              >
+                Yes, Delete
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── Custom Deletion Confirmation Modal for Card Block ── */}
+      {confirmDeleteCardId !== null && (
+        <div style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          backgroundColor: 'rgba(15, 23, 42, 0.6)',
+          backdropFilter: 'blur(4px)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          zIndex: 9999,
+          padding: '20px',
+        }}>
+          <div style={{
+            backgroundColor: '#ffffff',
+            borderRadius: '20px',
+            maxWidth: '400px',
+            width: '100%',
+            padding: '30px',
+            boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)',
+            textAlign: 'center',
+            border: '1px solid rgba(226, 232, 240, 0.8)',
+            animation: 'modalFadeIn 0.3s ease-out'
+          }}>
+            <div style={{
+              width: '60px',
+              height: '60px',
+              backgroundColor: '#fee2e2',
+              borderRadius: '50%',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              margin: '0 auto 20px',
+              color: '#ef4444'
+            }}>
+              <Trash2 size={30} />
+            </div>
+            <h3 style={{
+              fontSize: '18px',
+              fontWeight: 700,
+              color: '#0f172a',
+              margin: '0 0 10px 0'
+            }}>Delete Block?</h3>
+            <p style={{
+              fontSize: '14px',
+              color: '#64748b',
+              margin: '0 0 24px 0',
+              lineHeight: 1.5
+            }}>Are you sure you want to remove this block from the canvas?</p>
+            <div style={{
+              display: 'flex',
+              gap: '12px',
+              justifyContent: 'center'
+            }}>
+              <button
+                onClick={() => setConfirmDeleteCardId(null)}
+                style={{
+                  flex: 1,
+                  padding: '12px 20px',
+                  backgroundColor: '#f1f5f9',
+                  color: '#475569',
+                  border: 'none',
+                  borderRadius: '12px',
+                  fontSize: '14px',
+                  fontWeight: 600,
+                  cursor: 'pointer',
+                  fontFamily: 'inherit'
+                }}
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleConfirmDeleteCard}
+                style={{
+                  flex: 1,
+                  padding: '12px 20px',
+                  backgroundColor: '#ef4444',
+                  color: '#ffffff',
+                  border: 'none',
+                  borderRadius: '12px',
+                  fontSize: '14px',
+                  fontWeight: 600,
+                  cursor: 'pointer',
+                  boxShadow: '0 4px 12px rgba(239, 68, 68, 0.25)',
+                  fontFamily: 'inherit'
+                }}
+              >
+                Yes, Delete
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
     </div>
   );

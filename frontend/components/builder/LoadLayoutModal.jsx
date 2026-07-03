@@ -8,6 +8,7 @@ export default function LoadLayoutModal({
   onClose,
   layouts,
   onLoad,
+  onCompare,
   onDelete,
   loading
 }) {
@@ -183,7 +184,30 @@ export default function LoadLayoutModal({
                 </div>
               </div>
 
-              <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onCompare(layout.id);
+                  }}
+                  style={{
+                    border: 'none',
+                    background: '#eff6ff',
+                    color: '#2563eb',
+                    fontSize: '12px',
+                    fontWeight: '600',
+                    padding: '5px 10px',
+                    borderRadius: '8px',
+                    cursor: 'pointer',
+                    transition: 'all 0.2s',
+                    fontFamily: 'inherit',
+                  }}
+                  onMouseEnter={e => e.currentTarget.style.background = '#dbeafe'}
+                  onMouseLeave={e => e.currentTarget.style.background = '#eff6ff'}
+                >
+                  Compare ⚖️
+                </button>
+
                 <span style={{
                   color: '#4f46e5',
                   fontSize: '13px',

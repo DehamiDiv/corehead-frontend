@@ -12,7 +12,7 @@ export const aiApi = {
   generateLayout: async ({ prompt, layoutType, designStyle, features }) => {
     const res = await fetch(`${BASE_URL}/ai/generate-layout`, {
       method: 'POST',
-      headers: { 
+      headers: {
         'Content-Type': 'application/json',
         ...getAuthHeader()
       },
@@ -29,16 +29,39 @@ export const aiApi = {
 
   getHistory: async (limit = 50) => {
     const res = await fetch(`${BASE_URL}/ai/history?limit=${limit}`, {
+      cache: 'no-store',
       headers: { ...getAuthHeader() }
     });
     if (!res.ok) throw new Error('Failed to fetch history');
     return res.json();
   },
 
+  deleteHistory: async (id) => {
+    const res = await fetch(`${BASE_URL}/ai/history/${id}`, {
+      method: 'DELETE',
+      headers: { ...getAuthHeader() }
+    });
+    if (!res.ok) throw new Error('Failed to delete history');
+    return res.json();
+  },
+
+  updateHistory: async (id, prompt) => {
+    const res = await fetch(`${BASE_URL}/ai/history/${id}`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+        ...getAuthHeader()
+      },
+      body: JSON.stringify({ prompt })
+    });
+    if (!res.ok) throw new Error('Failed to update history');
+    return res.json();
+  },
+
   generateBlogContent: async ({ topic, tone, keywords, wordCount }) => {
     const res = await fetch(`${BASE_URL}/ai/generate-blog`, {
       method: 'POST',
-      headers: { 
+      headers: {
         'Content-Type': 'application/json',
         ...getAuthHeader()
       },
@@ -56,7 +79,7 @@ export const aiApi = {
   modifyLayout: async ({ currentBlocks, instruction }) => {
     const res = await fetch(`${BASE_URL}/ai/modify-layout`, {
       method: 'POST',
-      headers: { 
+      headers: {
         'Content-Type': 'application/json',
         ...getAuthHeader()
       },
