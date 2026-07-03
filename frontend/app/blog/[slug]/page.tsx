@@ -92,11 +92,13 @@ export default async function SinglePostPage({ params }: SinglePostPageProps) {
 
           <div className="flex flex-wrap items-center justify-center gap-6 text-[14px] font-medium text-slate-500">
             <div className="flex items-center gap-2">
-              <div className="w-8 h-8 rounded-full bg-slate-200 flex items-center justify-center overflow-hidden">
-                {post.author?.avatar ? (
+              <div className="w-8 h-8 rounded-full bg-blue-50 flex items-center justify-center overflow-hidden border border-blue-100">
+                {post.author?.avatar && post.author.avatar.length > 1 ? (
                   <img src={post.author.avatar} alt="Author" className="w-full h-full object-cover" />
                 ) : (
-                  <User className="w-4 h-4 text-slate-500" />
+                  <span className="text-[12px] font-bold text-blue-600">
+                    {post.author?.avatar || post.author?.name?.charAt(0) || "U"}
+                  </span>
                 )}
               </div>
               <span className="text-slate-700 font-bold">{post.author?.name || "CoreHead Editor"}</span>
@@ -156,7 +158,6 @@ export default async function SinglePostPage({ params }: SinglePostPageProps) {
           <CommentsSection postId={post.id} />
         </div>
       </div>
-
       <DetailedFooter />
     </article>
   );

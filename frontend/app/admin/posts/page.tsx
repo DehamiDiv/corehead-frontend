@@ -29,6 +29,7 @@ export default function PostsPage() {
   const [featuredFilter, setFeaturedFilter] = useState("All Posts");
   const [rowsPerPage, setRowsPerPage] = useState(20);
   const [isLaunching, setIsLaunching] = useState(true);
+  const [dbCategories, setDbCategories] = useState<string[]>([]);
 
   useEffect(() => {
     // Premium launch delay to show animation
@@ -54,6 +55,16 @@ export default function PostsPage() {
   useEffect(() => {
     fetchPosts();
   }, [fetchPosts]);
+
+  // Fetch categories from DB
+  useEffect(() => {
+    api.getCategories()
+      .then((res: any) => {
+        const cats = res?.categories || res || [];
+        setDbCategories(cats.map((c: any) => c.name).filter(Boolean));
+      })
+      .catch(() => setDbCategories([]));
+  }, []);
 
   if (isLaunching) {
     return (
@@ -238,7 +249,7 @@ export default function PostsPage() {
                 <FilterSelect
                   value={categoryFilter}
                   onChange={setCategoryFilter}
-                  options={["All Categories", ...allCategories]}
+                  options={["All Categories", ...dbCategories]}
                 />
                 <FilterSelect
                   value={featuredFilter}

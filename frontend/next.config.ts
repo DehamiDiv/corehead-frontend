@@ -31,6 +31,10 @@ const nextConfig: NextConfig = {
         source: '/admin/blogs/:path*',
         destination: '/admin/posts/:path*',
       },
+      {
+        source: '/uploads/:path*',
+        destination: 'http://localhost:5000/uploads/:path*',
+      },
     ];
   },
 };

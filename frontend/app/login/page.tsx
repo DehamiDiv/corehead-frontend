@@ -33,6 +33,7 @@ export default function LoginPage() {
     e.preventDefault();
     setError(null);
     setSuccess(null);
+    setIsLoading(true);
 
     try {
       const data = await api.login({ email, password });
@@ -61,7 +62,9 @@ export default function LoginPage() {
         }, 1500);
       }
     } catch (err: any) {
-      setError(err.message || "An error occurred during login.");
+      // If the API responded with a JSON error payload, surface its message
+      const message = err?.response?.data?.error || err.message || "Login failed. Please check your credentials and try again.";
+      setError(message);
     } finally {
       setIsLoading(false);
     }
