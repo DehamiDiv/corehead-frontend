@@ -8,7 +8,10 @@ const getAuthHeader = () => {
         console.warn('No authentication token found in localStorage');
         return {};
     }
-    return { 'Authorization': `Bearer ${token}` };
+    const headers = { 'Authorization': `Bearer ${token}` };
+    const siteId = localStorage.getItem('currentSiteId');
+    if (siteId) headers['X-Site-Id'] = siteId;
+    return headers;
   }
   return {};
 };

@@ -2,6 +2,8 @@
 
 import { PanelLeft, Maximize, Minimize, Search } from "lucide-react";
 import { useEffect, useState } from "react";
+import SiteSwitcher from "@/components/admin/SiteSwitcher";
+import VisitPublicSiteButton from "@/components/admin/VisitPublicSiteButton";
 
 export default function Header({ onToggleSidebar }: { onToggleSidebar: () => void }) {
   const [user, setUser] = useState<any>(null);
@@ -84,6 +86,13 @@ export default function Header({ onToggleSidebar }: { onToggleSidebar: () => voi
 
       {/* Right Side Actions */}
       <div className="flex items-center gap-3">
+        {/* Multi-tenant site switcher (T7) */}
+        <SiteSwitcher />
+        <VisitPublicSiteButton
+          className="hidden md:inline-flex items-center gap-1.5 px-3 h-10 rounded-xl border border-slate-100 bg-white text-xs font-bold text-slate-600 hover:text-blue-600 hover:border-blue-200 transition-colors"
+          label="Visit site"
+        />
+
         {/* Fullscreen Toggle */}
         <button 
           onClick={toggleFullscreen}

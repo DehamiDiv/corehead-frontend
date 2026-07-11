@@ -50,7 +50,10 @@ interface BuilderContextType {
   reorderBlocks: (startIndex: number, endIndex: number) => void;
   serializeLayout: () => string;
   loadLayout: (json: string) => void;
-  saveToBackend: (status: string) => Promise<any>;
+  saveToBackend: (
+    status: string,
+    overrides?: { name?: string; type?: "Single Post" | "Blog Archive" },
+  ) => Promise<any>;
   // FR-07: The system shall allow selecting template type
   templateName: string;
   setTemplateName: (name: string) => void;
@@ -64,7 +67,7 @@ interface BuilderContextType {
   setDeviceMode: (mode: "desktop" | "tablet" | "mobile") => void;
   isAnalyzing: boolean;
   setIsAnalyzing: (analyzing: boolean) => void;
-  generateLayout: (prompt: string) => Promise<void>;
+  generateLayout: (prompt: string) => Promise<string | void>;
 }
 
 const BuilderContext = createContext<BuilderContextType | undefined>(undefined);
@@ -84,6 +87,21 @@ export function BuilderProvider({ children }: { children: ReactNode }) {
 
   const [isLoaded, setIsLoaded] = useState(false);
 
+  const persistMeta = (
+    name: string,
+    type: string,
+    id: string | null,
+  ) => {
+    try {
+      localStorage.setItem(
+        "corehead_builder_meta",
+        JSON.stringify({ name, type, id }),
+      );
+    } catch {
+      /* ignore quota */
+    }
+  };
+
   // Load layout from backend if ID exists in URL, otherwise from local storage
   useEffect(() => {
     const fetchInitialLayout = async () => {
@@ -94,10 +112,16 @@ export function BuilderProvider({ children }: { children: ReactNode }) {
         try {
           const template = await api.getTemplateById(id);
           if (template && template.layoutJson) {
-            setBlocks(template.layoutJson);
-            setTemplateId(template.id);
+            const layout = Array.isArray(template.layoutJson)
+              ? template.layoutJson
+              : template.layoutJson.blocks || [];
+            setBlocks(layout);
+            setTemplateId(String(template.id));
             setTemplateName(template.name);
-            setTemplateType(template.type);
+            const tType =
+              template.type === "Blog Archive" ? "Blog Archive" : "Single Post";
+            setTemplateType(tType);
+            persistMeta(template.name, tType, String(template.id));
           }
         } catch (error) {
           console.error("Failed to fetch template by ID", error);
@@ -111,6 +135,19 @@ export function BuilderProvider({ children }: { children: ReactNode }) {
             console.error("Failed to parse saved layout", e);
           }
         }
+        try {
+          const rawMeta = localStorage.getItem("corehead_builder_meta");
+          if (rawMeta) {
+            const m = JSON.parse(rawMeta);
+            if (m.name) setTemplateName(m.name);
+            if (m.type === "Single Post" || m.type === "Blog Archive") {
+              setTemplateType(m.type);
+            }
+            if (m.id) setTemplateId(String(m.id));
+          }
+        } catch {
+          /* ignore */
+        }
       }
       setIsLoaded(true);
     };
@@ -118,12 +155,13 @@ export function BuilderProvider({ children }: { children: ReactNode }) {
     fetchInitialLayout();
   }, []);
 
-  // Auto-save layout on any change after initial load
+  // Auto-save layout + meta after initial load (preview reads these keys)
   useEffect(() => {
     if (isLoaded) {
       localStorage.setItem("corehead_builder_layout", JSON.stringify(blocks));
+      persistMeta(templateName, templateType, templateId);
     }
-  }, [blocks, isLoaded]);
+  }, [blocks, isLoaded, templateName, templateType, templateId]);
 
   const addBlock = (type: BlockType, parentId?: string) => {
     const newBlock: BuilderBlock = {
@@ -208,13 +246,23 @@ export function BuilderProvider({ children }: { children: ReactNode }) {
     }
   };
 
-  // Saves layout to real PostgreSQL backend via the Node API.
-  const saveToBackend = async (status: string) => {
+  // Saves layout to real PostgreSQL backend via the Node API (site-scoped via X-Site-Id).
+  // Optional overrides avoid stale React state when the save modal sets a new name.
+  const saveToBackend = async (
+    status: string,
+    overrides?: { name?: string; type?: "Single Post" | "Blog Archive" },
+  ) => {
+    const name = (overrides?.name ?? templateName).trim() || templateName;
+    const type = overrides?.type ?? templateType;
+
+    if (overrides?.name) setTemplateName(name);
+    if (overrides?.type) setTemplateType(type);
+
     const layoutData = {
-      name: templateName,
-      type: templateType,
+      name,
+      type,
       layoutJson: blocks,
-      status
+      status,
     };
 
     let result;
@@ -222,15 +270,23 @@ export function BuilderProvider({ children }: { children: ReactNode }) {
       result = await api.updateTemplate(templateId, layoutData);
     } else {
       result = await api.createTemplate(layoutData);
-      if (result.id) {
-         setTemplateId(result.id);
+      if (result?.id) {
+        setTemplateId(String(result.id));
+        // Keep shareable editor URL in sync after first create
+        if (typeof window !== "undefined") {
+          const url = new URL(window.location.href);
+          url.searchParams.set("id", String(result.id));
+          window.history.replaceState({}, "", url.toString());
+        }
       }
     }
-    return result;
+    const id = result?.id ?? templateId;
+    persistMeta(name, type, id != null ? String(id) : null);
+    return { ...result, id, name, type, status };
   };
 
   // AI Layout Generation logic moved to context for global access
-  const generateLayout = async (prompt: string) => {
+  const generateLayout = async (prompt: string): Promise<string | void> => {
     if (!prompt.trim() || isAnalyzing) return;
 
     setIsAnalyzing(true);
@@ -247,10 +303,11 @@ export function BuilderProvider({ children }: { children: ReactNode }) {
       }
       
       // Return provider info so chat can show it
-      return data.provider || 'ai';
+      return (data.provider as string) || "ai";
     } catch (error: any) {
       console.error("AI Generation error:", error);
       alert("AI Generation failed: " + error.message);
+      return;
     } finally {
       setIsAnalyzing(false);
     }

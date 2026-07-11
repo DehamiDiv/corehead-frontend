@@ -81,7 +81,7 @@ export default function AIPromptPage() {
       return;
     }
     localStorage.setItem('ai_prompt', prompt.trim());
-    router.push('/builder');
+    router.push('/admin/builder');
   };
 
   const handleNext = (e) => {

@@ -3,14 +3,15 @@
 import React from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { BuilderBlock } from "../admin/builder/BuilderContext";
+import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
+import { BuilderBlock, BlockType } from "../admin/builder/BuilderContext";
+import { looksLikeHtml, preparePostHtml } from "@/lib/htmlContent";
+import { resolveMediaUrl } from "@/lib/siteMedia";
 
 /**
- * FR-25: Public Page Renderer Component
- * Takes the raw JSON schema stored in PostgreSQL and renders it using optimized Next.js components.
- *
- * @param {BuilderBlock[]} layout - The layout array extracted from the DB JSON.
- * @param {any} data - The real CMS data (e.g. { post: { title: "Hello", content: "...", featured_image: "url" } })
+ * R2-3: Public Page Renderer — all builder BlockTypes supported.
+ * Renders layout JSON from DB with CMS bindings.
  */
 
 interface PublicPageRendererProps {
@@ -18,29 +19,120 @@ interface PublicPageRendererProps {
   data?: Record<string, any>;
   isLoop?: boolean;
   bindings?: Record<string, any>;
+  /** e.g. /s/acme-foods — collection / featured post links */
+  siteBasePath?: string;
 }
 
-// FR-26: Dynamic Template Binding Helper
-// Evaluates `{post.title}` type syntax and replaces it with real CMS data.
+function resolvePath(data: any, path: string) {
+  const parts = path.replace(/^\{|\}$/g, "").split(".");
+  let resolvedData = data;
+  for (const key of parts) {
+    if (resolvedData && resolvedData[key] !== undefined) {
+      resolvedData = resolvedData[key];
+    } else {
+      return null;
+    }
+  }
+  return resolvedData;
+}
+
 function bindData(
   content: any,
   bindings: Record<string, string> | undefined,
   data: any,
 ) {
-  if (!bindings?.content) return content;
-
-  const path = bindings.content.split(".");
-  let resolvedData = data;
-  for (const key of path) {
-    if (resolvedData && resolvedData[key] !== undefined) {
-      resolvedData = resolvedData[key];
-    } else {
-      resolvedData = null;
-      break;
+  if (bindings?.content) {
+    const path = bindings.content;
+    let resolved = resolvePath(data, path);
+    if (
+      (resolved === null || resolved === undefined || resolved === "") &&
+      !path.includes(".")
+    ) {
+      resolved = resolvePath(data, `post.${path}`);
+    }
+    if (
+      (resolved === null || resolved === undefined || resolved === "") &&
+      (path === "featured_image" || path.endsWith(".featured_image"))
+    ) {
+      resolved =
+        resolvePath(data, "post.coverImage") ||
+        resolvePath(data, "post.featured_image") ||
+        resolvePath(data, "post.thumbnailUrl");
+    }
+    if (resolved !== null && resolved !== undefined && resolved !== "") {
+      return resolved;
     }
   }
 
-  return resolvedData || content;
+  if (typeof content === "string" && content.includes("{")) {
+    return content.replace(/\{([a-zA-Z0-9_.]+)\}/g, (_, path) => {
+      const v = resolvePath(data, path);
+      return v != null ? String(v) : "";
+    });
+  }
+
+  return content;
+}
+
+function normalizeBlockType(type: string): string {
+  const t = String(type || "").trim();
+  const map: Record<string, BlockType | string> = {
+    heading: "Heading",
+    paragraph: "Paragraph",
+    image: "Image",
+    quote: "Quote",
+    divider: "Divider",
+    button: "Button",
+    container: "Container",
+    columns: "Columns",
+    "collection list": "Collection List",
+    collection: "Collection List",
+    "featured carousel": "Featured Carousel",
+    carousel: "Featured Carousel",
+    video: "Video",
+    newsletter: "Newsletter",
+    "social links": "Social Links",
+    social: "Social Links",
+    spacer: "Spacer",
+    "code block": "Code Block",
+    code: "Code Block",
+    html: "Html",
+    markdown: "Markdown",
+    "rich-text": "Paragraph",
+    "hero-section": "Heading",
+  };
+  const key = t.toLowerCase();
+  return map[key] || t;
+}
+
+function mediaUrl(src: any): string {
+  if (!src || typeof src !== "string") {
+    return "https://placehold.co/800x400?text=No+image";
+  }
+  // Always resolve /uploads/... to backend origin (Next rewrite alone is easy to break)
+  const resolved = resolveMediaUrl(src.trim());
+  return resolved || "https://placehold.co/800x400?text=No+image";
+}
+
+function postHref(siteBasePath: string | undefined, data: any, post: any) {
+  const postBase =
+    siteBasePath ||
+    (data?.siteSlug ? `/s/${data.siteSlug}` : "") ||
+    "";
+  if (postBase) {
+    return `${postBase}/blog/${post.slug || post.id}`.replace(
+      /\/blog\/blog\//,
+      "/blog/",
+    );
+  }
+  return `/blog/${post.slug || post.id}`;
+}
+
+function colClass(cols: number) {
+  if (cols <= 1) return "md:grid-cols-1";
+  if (cols === 2) return "md:grid-cols-2";
+  if (cols === 3) return "md:grid-cols-3";
+  return "md:grid-cols-4";
 }
 
 export function PublicPageRenderer({
@@ -48,6 +140,7 @@ export function PublicPageRenderer({
   data = {},
   isLoop,
   bindings,
+  siteBasePath,
 }: PublicPageRendererProps) {
   const blocksArray = Array.isArray(layout)
     ? layout
@@ -55,55 +148,113 @@ export function PublicPageRenderer({
 
   const renderBlock = (block: BuilderBlock) => {
     const styleString = block.styles || {};
-
-    // Resolve any dynamic CMS bindings
+    const type = normalizeBlockType(block.type);
     const content = bindData(block.content, block.bindings, data);
 
-    switch (block.type) {
-      case "Heading":
+    switch (type) {
+      case "Heading": {
+        const level = Number((block as any).level || content?.level || 2);
+        const text =
+          typeof content === "object" && content?.text != null
+            ? content.text
+            : content;
+        const className = "font-bold mb-4 text-slate-900";
+        if (level === 1)
+          return (
+            <h1 key={block.id} style={styleString} className={className + " text-4xl"}>
+              {text}
+            </h1>
+          );
+        if (level === 3)
+          return (
+            <h3 key={block.id} style={styleString} className={className + " text-xl"}>
+              {text}
+            </h3>
+          );
         return (
-          <h2 key={block.id} style={styleString} className="font-bold mb-4">
-            {content}
+          <h2 key={block.id} style={styleString} className={className + " text-2xl"}>
+            {text}
           </h2>
         );
+      }
 
-      case "Paragraph":
+      case "Paragraph": {
+        const binding = block.bindings?.content || "";
+        const isBodyBinding =
+          binding.includes("contentHtml") ||
+          binding === "post.content" ||
+          binding === "content" ||
+          binding === "contentHtml";
+
+        // Prefer full HTML body for post content bindings
+        let rawHtml = "";
+        if (isBodyBinding) {
+          rawHtml =
+            data?.post?.contentHtml ||
+            data?.post?.content ||
+            String(content || "");
+        } else if (looksLikeHtml(content)) {
+          rawHtml = String(content || "");
+        }
+
+        if (rawHtml && (isBodyBinding || looksLikeHtml(rawHtml))) {
+          return (
+            <div
+              key={block.id}
+              style={styleString}
+              className="mb-4 text-gray-700 leading-relaxed prose prose-slate max-w-none prose-headings:font-bold"
+              dangerouslySetInnerHTML={{
+                __html: preparePostHtml(rawHtml),
+              }}
+            />
+          );
+        }
+
         return (
           <p
             key={block.id}
             style={styleString}
             className="mb-4 text-gray-700 leading-relaxed"
           >
-            {content}
+            {typeof content === "object" ? content?.text || "" : content}
           </p>
         );
+      }
 
-      case "Image":
-        // FR-27: Optimized Next.js `next/image` usage
+      case "Image": {
+        const src = mediaUrl(
+          typeof content === "string"
+            ? content
+            : content?.src || content?.url || "",
+        );
+        const alt =
+          (typeof content === "object" && content?.alt) ||
+          data?.post?.title ||
+          "Image";
         return (
           <div
             key={block.id}
             style={styleString}
-            className="relative w-full aspect-video my-4 rounded-lg overflow-hidden"
+            className="relative w-full aspect-video my-4 rounded-lg overflow-hidden bg-slate-100"
           >
-            <Image
-              src={content || "https://placehold.co/800x400"}
-              alt="Dynamic Blog Image"
-              fill
-              className="object-cover"
-              sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src={src}
+              alt={alt}
+              className="absolute inset-0 w-full h-full object-cover"
             />
           </div>
         );
+      }
 
       case "Quote":
         return (
           <blockquote
             key={block.id}
             style={styleString}
-            className="border-l-4 border-blue-500 pl-4 py-2 my-4 italic text-gray-600 bg-gray-50"
+            className="border-l-4 border-blue-500 pl-4 py-2 my-4 italic text-gray-600 bg-gray-50 rounded-r-lg"
           >
-            {content}
+            {typeof content === "object" ? content?.text || "" : content}
           </blockquote>
         );
 
@@ -116,42 +267,66 @@ export function PublicPageRenderer({
           />
         );
 
-      case "Button":
-        // FR-27: Optimized Next.js `next/link` usage
-        const url = content?.url || "#";
-        const text = content?.text || "Click Here";
+      case "Button": {
+        const url =
+          (typeof content === "object" && (content?.url || content?.href)) ||
+          (typeof content === "string" ? content : "#") ||
+          "#";
+        const text =
+          (typeof content === "object" && (content?.text || content?.label)) ||
+          "Click Here";
+        const isInternal = typeof url === "string" && url.startsWith("/");
         return (
           <div key={block.id} style={styleString} className="my-4">
-            <Link
-              href={url}
-              className="px-6 py-2 bg-blue-600 text-white rounded-md font-medium hover:bg-blue-700 transition"
-            >
-              {text}
-            </Link>
+            {isInternal ? (
+              <Link
+                href={url}
+                className="inline-flex px-6 py-2 bg-blue-600 text-white rounded-md font-medium hover:bg-blue-700 transition"
+              >
+                {text}
+              </Link>
+            ) : (
+              <a
+                href={url}
+                className="inline-flex px-6 py-2 bg-blue-600 text-white rounded-md font-medium hover:bg-blue-700 transition"
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                {text}
+              </a>
+            )}
           </div>
         );
+      }
 
       case "Container":
-        return (
-          <div key={block.id} style={styleString}>
-            {renderChildren(block.id)}
-          </div>
-        );
-
-      case "Columns":
-        const cols = content || 2;
         return (
           <div
             key={block.id}
             style={styleString}
-            className={`grid grid-cols-1 md:grid-cols-${cols} gap-6 my-6`}
+            className="my-2 w-full"
           >
             {renderChildren(block.id)}
           </div>
         );
 
-      case "Collection List":
-        // FR-18: Blog Loop handling
+      case "Columns": {
+        const cols = Math.min(
+          4,
+          Math.max(1, Number(content?.columns || content || 2) || 2),
+        );
+        return (
+          <div
+            key={block.id}
+            style={styleString}
+            className={`grid grid-cols-1 ${colClass(cols)} gap-6 my-6`}
+          >
+            {renderChildren(block.id)}
+          </div>
+        );
+      }
+
+      case "Collection List": {
         const limit = content?.limit || 6;
         const posts = Array.isArray(data?.posts)
           ? data.posts.slice(0, limit)
@@ -166,23 +341,30 @@ export function PublicPageRenderer({
             {posts.length > 0 ? (
               posts.map((post: any) => (
                 <Link
-                  href={`/blog/${post.slug || post.id}`}
+                  href={postHref(siteBasePath, data, post)}
                   key={post.id}
                   className="group block border border-gray-200 rounded-xl overflow-hidden hover:shadow-lg transition bg-white flex flex-col h-full"
                 >
                   <div className="relative w-full h-48 bg-gray-100">
-                    <Image
-                      src={
-                        post.thumbnailUrl || post.imageUrl || post.coverImage || post.featured_image || `https://picsum.photos/seed/${post.id}/400/300`
-                      }
-                      fill
-                      className="object-cover group-hover:scale-105 transition-transform duration-300"
-                      alt={post.title}
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img
+                      src={mediaUrl(
+                        post.thumbnailUrl ||
+                          post.imageUrl ||
+                          post.coverImage ||
+                          post.featured_image,
+                      )}
+                      className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                      alt={post.title || "Post"}
                     />
                   </div>
                   <div className="p-5 flex flex-col flex-grow">
                     <span className="text-xs font-semibold text-blue-600 mb-2 uppercase tracking-wider">
-                      {post.category || (Array.isArray(post.categories) ? post.categories[0] : post.categories) || "Article"}
+                      {post.category ||
+                        (Array.isArray(post.categories)
+                          ? post.categories[0]
+                          : post.categories) ||
+                        "Article"}
                     </span>
                     <h3 className="font-bold text-gray-900 mb-2 line-clamp-2">
                       {post.title}
@@ -200,9 +382,61 @@ export function PublicPageRenderer({
             )}
           </div>
         );
+      }
 
-      case "Video":
-        const videoSrc = typeof content === "string" ? content.replace("watch?v=", "embed/") : "";
+      case "Featured Carousel": {
+        const carouselPosts = Array.isArray(data?.posts) ? data.posts : [];
+        const featuredPost = carouselPosts[0];
+        const href = featuredPost
+          ? postHref(siteBasePath, data, featuredPost)
+          : "#";
+        return (
+          <div
+            key={block.id}
+            style={styleString}
+            className="my-8 relative rounded-3xl overflow-hidden bg-slate-900 aspect-[21/9]"
+          >
+            {featuredPost ? (
+              <Link href={href} className="absolute inset-0 block">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src={mediaUrl(
+                    featuredPost.imageUrl ||
+                      featuredPost.thumbnailUrl ||
+                      featuredPost.coverImage ||
+                      featuredPost.featured_image,
+                  )}
+                  className="absolute inset-0 w-full h-full object-cover opacity-50"
+                  alt={featuredPost.title}
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-black/80 to-transparent flex flex-col justify-end p-8 md:p-12">
+                  <span className="text-blue-400 font-bold uppercase tracking-widest text-sm mb-4">
+                    Featured Article
+                  </span>
+                  <h2 className="text-white text-2xl md:text-4xl font-extrabold max-w-2xl mb-4">
+                    {featuredPost.title}
+                  </h2>
+                  <p className="text-white/70 max-w-xl line-clamp-2">
+                    {featuredPost.excerpt}
+                  </p>
+                </div>
+              </Link>
+            ) : (
+              <div className="flex items-center justify-center h-full text-slate-400">
+                No featured articles available.
+              </div>
+            )}
+          </div>
+        );
+      }
+
+      case "Video": {
+        let videoSrc = "";
+        if (typeof content === "string") {
+          videoSrc = content.replace("watch?v=", "embed/");
+        } else if (content?.url) {
+          videoSrc = String(content.url).replace("watch?v=", "embed/");
+        }
         return (
           <div
             key={block.id}
@@ -215,73 +449,66 @@ export function PublicPageRenderer({
                 src={videoSrc}
                 title="Video"
                 allowFullScreen
-              ></iframe>
-            ) : null}
+              />
+            ) : (
+              <div className="flex items-center justify-center h-full text-slate-400 text-sm">
+                No video URL
+              </div>
+            )}
           </div>
         );
+      }
 
       case "Newsletter":
         return (
           <div
             key={block.id}
             style={styleString}
-            className="my-8 bg-slate-900 rounded-3xl p-12 text-center text-white"
+            className="my-8 bg-slate-900 rounded-3xl p-8 md:p-12 text-center text-white"
           >
-            <h3 className="text-3xl font-bold mb-4">{block.content?.title || "Newsletter"}</h3>
+            <h3 className="text-2xl md:text-3xl font-bold mb-4">
+              {(typeof content === "object" && content?.title) ||
+                block.content?.title ||
+                "Newsletter"}
+            </h3>
             <p className="text-slate-400 mb-8 max-w-md mx-auto">
-              Stay updated with our latest news and articles delivered straight to your inbox.
+              {(typeof content === "object" && content?.description) ||
+                "Stay updated with our latest news and articles delivered straight to your inbox."}
             </p>
-            <div className="flex flex-col md:flex-row gap-3 max-w-md mx-auto">
+            <form
+              className="flex flex-col md:flex-row gap-3 max-w-md mx-auto"
+              onSubmit={(e) => e.preventDefault()}
+            >
               <input
                 type="email"
                 placeholder="Enter your email"
                 className="flex-1 bg-white/10 border border-white/20 rounded-xl px-4 py-3 outline-none focus:border-blue-500 text-white"
               />
-              <button className="bg-blue-600 hover:bg-blue-700 text-white font-bold px-8 py-3 rounded-xl transition-colors">
-                {block.content?.buttonText || "Subscribe"}
+              <button
+                type="submit"
+                className="bg-blue-600 hover:bg-blue-700 text-white font-bold px-8 py-3 rounded-xl transition-colors"
+              >
+                {(typeof content === "object" && content?.buttonText) ||
+                  block.content?.buttonText ||
+                  "Subscribe"}
               </button>
-            </div>
+            </form>
           </div>
         );
 
-      case "Featured Carousel":
-        const carouselPosts = Array.isArray(data?.posts) ? data.posts : [];
-        const featuredPost = carouselPosts[0];
+      case "Spacer": {
+        const h =
+          typeof content === "number" || typeof content === "string"
+            ? content
+            : content?.height || "40px";
         return (
           <div
             key={block.id}
-            style={styleString}
-            className="my-8 relative rounded-3xl overflow-hidden bg-slate-900 aspect-[21/9]"
-          >
-            {featuredPost ? (
-              <>
-                <img
-                  src={featuredPost.imageUrl || featuredPost.thumbnailUrl || featuredPost.coverImage || featuredPost.featured_image || `https://picsum.photos/seed/${featuredPost.id}/800/400`}
-                  className="absolute inset-0 w-full h-full object-cover opacity-50"
-                  alt={featuredPost.title}
-                />
-                <div className="absolute inset-0 bg-gradient-to-t from-black/80 to-transparent flex flex-col justify-end p-12">
-                  <span className="text-blue-400 font-bold uppercase tracking-widest text-sm mb-4">
-                    Featured Article
-                  </span>
-                  <h2 className="text-white text-4xl font-extrabold max-w-2xl mb-4">
-                    {featuredPost.title}
-                  </h2>
-                  <p className="text-white/70 max-w-xl line-clamp-2">
-                    {featuredPost.excerpt}
-                  </p>
-                </div>
-              </>
-            ) : (
-              <div className="flex items-center justify-center h-full text-slate-400">
-                No featured articles available.
-              </div>
-            )}
-          </div>
+            style={{ height: typeof h === "number" ? `${h}px` : h }}
+            aria-hidden
+          />
         );
-
-      case "Spacer":
-        return <div key={block.id} style={{ height: block.content || "40px" }}></div>;
+      }
 
       case "Code Block":
         return (
@@ -291,40 +518,115 @@ export function PublicPageRenderer({
             style={styleString}
           >
             <pre className="text-blue-300 font-mono text-sm">
-              <code>{block.content?.code || block.content}</code>
+              <code>
+                {(typeof content === "object" && content?.code) ||
+                  (typeof content === "string" ? content : "")}
+              </code>
             </pre>
           </div>
         );
 
-      case "Social Links":
+      case "Social Links": {
+        const links =
+          (typeof content === "object" && Array.isArray(content?.links)
+            ? content.links
+            : null) ||
+          ["Facebook", "Twitter", "Instagram"].map((name) => ({
+            name,
+            url: "#",
+          }));
         return (
           <div
             key={block.id}
-            className="my-8 flex justify-center gap-6"
+            className="my-8 flex flex-wrap justify-center gap-6"
             style={styleString}
           >
-            {["Facebook", "Twitter", "Instagram"].map((s) => (
-              <span
-                key={s}
-                className="text-slate-400 hover:text-blue-500 font-medium cursor-pointer transition-colors"
+            {links.map((s: any, i: number) => (
+              <a
+                key={s.name || i}
+                href={s.url || s.href || "#"}
+                className="text-slate-400 hover:text-blue-500 font-medium transition-colors"
+                target="_blank"
+                rel="noopener noreferrer"
               >
-                {s}
-              </span>
+                {s.name || s.label || "Link"}
+              </a>
             ))}
+          </div>
+        );
+      }
+
+      case "Html":
+      case "HTML":
+        return (
+          <div
+            key={block.id}
+            style={styleString}
+            className="my-4 prose prose-slate max-w-none"
+            dangerouslySetInnerHTML={{
+              __html: String(
+                typeof content === "string"
+                  ? content
+                  : content?.html || content?.code || "",
+              ),
+            }}
+          />
+        );
+
+      case "Markdown":
+        return (
+          <div
+            key={block.id}
+            style={styleString}
+            className="my-4 prose prose-slate max-w-none"
+          >
+            <ReactMarkdown remarkPlugins={[remarkGfm]}>
+              {String(
+                typeof content === "string"
+                  ? content
+                  : content?.markdown || content?.text || "",
+              )}
+            </ReactMarkdown>
           </div>
         );
 
       default:
+        // Unknown block: show nothing in production UI, avoid crash
+        if (process.env.NODE_ENV === "development") {
+          return (
+            <div
+              key={block.id}
+              className="my-2 p-2 text-xs text-amber-700 bg-amber-50 border border-amber-100 rounded"
+            >
+              Unsupported block type: {String(block.type)}
+            </div>
+          );
+        }
         return null;
     }
   };
 
   const renderChildren = (parentId?: string) => {
-    const levelBlocks = blocksArray.filter(
-      (b: any) => b.parentId === parentId || (!b.parentId && !parentId),
+    const levelBlocks = blocksArray.filter((b: any) =>
+      parentId
+        ? b.parentId === parentId
+        : !b.parentId,
     );
+    // Root: also include blocks whose parent is missing from tree (flat layouts)
+    if (!parentId) {
+      const ids = new Set(blocksArray.map((b: any) => b.id));
+      const roots = blocksArray.filter(
+        (b: any) => !b.parentId || !ids.has(b.parentId),
+      );
+      // Prefer explicit roots without parentId; if all have parentId, use filtered
+      const list =
+        blocksArray.some((b: any) => !b.parentId) ? levelBlocks : roots;
+      return list.map((block: any) => renderBlock(block));
+    }
     return levelBlocks.map((block: any) => renderBlock(block));
   };
 
-  return <div className="public-renderer-wrapper">{renderChildren()}</div>;
+  return (
+    <div className="public-renderer-wrapper w-full">{renderChildren()}</div>
+  );
 }

@@ -1,7 +1,6 @@
-import Link from "next/link";
 import DetailedFooter from "@/components/DetailedFooter";
-import { api } from "@/lib/api";
 import { PublicPageRenderer } from "@/components/Renderer/PublicPageRenderer";
+import type { BuilderBlock } from "@/components/admin/builder/BuilderContext";
 import "./page.css";
 
 export const metadata = {
@@ -11,26 +10,12 @@ export const metadata = {
 };
 
 export default async function BlogArchivePage() {
-  // Fetch layout and posts concurrently
-  const [layout, postsData, bindings] = await Promise.all([
-    api.getPublicLayout("blog-loop").catch(() => ({
-      blocks: [
-        { id: '1', type: 'Heading', content: 'Latest Posts' },
-        { id: '2', type: 'Collection List', content: { limit: 6 } }
-      ]
-    })),
-    api.getPreviewPosts(100).catch((e) => {
-      console.error("Failed to fetch posts for /blog:", e);
-      return { posts: [] };
-    }),
-    api.getBindings().catch(() => ({ mode: "dynamic", selected: {} })),
-  ]);
-
-  const posts = Array.isArray(postsData.posts) ? postsData.posts : [];
-
-  // Transform posts for the renderer if needed
-  const renderData = {
-    posts: posts.filter((p: any) => p.status === "Published")
+  // Platform /blog is not multi-tenant. Tenant blogs: /s/{slug}/blog
+  const layout: { blocks: BuilderBlock[] } = {
+    blocks: [
+      { id: "1", type: "Heading", content: "Latest Posts" },
+      { id: "2", type: "Collection List", content: { limit: 6, category: "" } },
+    ],
   };
 
   return (
@@ -38,9 +23,8 @@ export default async function BlogArchivePage() {
       <main className="blog-archive-page">
         <PublicPageRenderer
           layout={layout}
-          data={renderData}
+          data={{ posts: [] }}
           isLoop={true}
-          bindings={bindings}
         />
       </main>
       <DetailedFooter />

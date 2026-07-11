@@ -100,9 +100,9 @@ export default function ProfileSettingsPage() {
             designation: formData.designation
           }));
 
+          // Email is locked on profile — never send it on update
           await api.updateUser(currentUserId, {
             name: formData.name,
-            email: formData.email,
             designation: formData.designation,
             bio: formData.bio,
             avatar: formData.avatar
@@ -247,16 +247,15 @@ export default function ProfileSettingsPage() {
               <input 
                 type="email" 
                 name="email"
-                value={isEditing ? formData.email : user.email}
-                onChange={handleChange}
-                readOnly={!isEditing}
-                className={cn(
-                  "w-full px-5 py-3.5 rounded-2xl font-bold text-sm transition-all focus:outline-none",
-                  isEditing 
-                    ? "bg-white border-2 border-blue-100 text-gray-900 focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10" 
-                    : "bg-gray-50/50 border border-gray-100 text-gray-500"
-                )}
+                value={user.email}
+                readOnly
+                disabled
+                title="Email cannot be changed from profile"
+                className="w-full px-5 py-3.5 rounded-2xl font-bold text-sm bg-gray-50/80 border border-gray-100 text-gray-400 cursor-not-allowed focus:outline-none opacity-90"
               />
+              <p className="text-xs text-gray-400 font-medium ml-1">
+                Email cannot be edited from your profile.
+              </p>
             </div>
             <div className="space-y-2">
               <label className="text-sm font-bold text-gray-700 ml-1">Designation</label>

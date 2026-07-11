@@ -6,11 +6,13 @@ import { useRouter, useSearchParams } from "next/navigation";
 import Image from "next/image";
 import { Eye, EyeOff, LayoutGrid, BookOpen, Settings, AlertCircle, Loader2 } from "lucide-react";
 import { api } from "@/lib/api";
+import { resolvePostAuthDestination } from "@/lib/postAuthRedirect";
+import { persistSession } from "@/lib/authSession";
 
 function LoginForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const callbackUrl = searchParams.get('callback') || '/admin';
+  const callbackUrl = searchParams.get('callback');
 
   const [showPassword, setShowPassword] = useState(false);
   const [email, setEmail] = useState("");
@@ -40,29 +42,26 @@ function LoginForm() {
     try {
       const data = await api.login({ email, password });
 
-      // PERSIST AUTH STATE
-      localStorage.setItem("accessToken", data.accessToken);
-      localStorage.setItem("refreshToken", data.refreshToken);
-      localStorage.setItem("user", JSON.stringify(data.user));
+      // PERSIST AUTH STATE (localStorage + middleware cookies) — R5-1
+      persistSession({
+        accessToken: data.accessToken,
+        refreshToken: data.refreshToken,
+        user: data.user,
+      });
 
-      // SET COOKIES for middleware
-      document.cookie = `auth_token=${data.accessToken}; path=/; max-age=86400; SameSite=Lax`;
-      document.cookie = `user_role=${data.user.role}; path=/; max-age=86400; SameSite=Lax`;
+      // T5: route by sites — no site → onboarding wizard; has site → admin
+      const destination = await resolvePostAuthDestination(data.user, callbackUrl);
+      const goingToOnboarding = destination.startsWith("/onboarding");
 
-      // ROLE-BASED REDIRECTION
-      const isAdmin = data.user.role?.toLowerCase() === 'admin' || data.user.role?.toLowerCase() === 'administrator';
-      if (isAdmin) {
-        setSuccess("Login successful! Redirecting to Admin Dashboard...");
-        setTimeout(() => {
-          router.push('/admin');
-        }, 1500);
-      } else {
-        // Regular users (Authors/Editors) go directly to Shara's blog page
-        setSuccess("Login successful! Redirecting to Blog Page...");
-        setTimeout(() => {
-          router.push('/blog');
-        }, 1500);
-      }
+      setSuccess(
+        goingToOnboarding
+          ? "Login successful! Let's create your site…"
+          : "Login successful! Redirecting…"
+      );
+
+      setTimeout(() => {
+        router.push(destination);
+      }, 900);
     } catch (err: any) {
       // If the API responded with a JSON error payload, surface its message
       const message = err?.response?.data?.error || err.message || "Login failed. Please check your credentials and try again.";

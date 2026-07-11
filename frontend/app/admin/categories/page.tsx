@@ -9,6 +9,7 @@ import {
 import { cn } from "@/lib/utils";
 import { api } from "@/lib/api";
 import MediaLibraryModal from "@/components/admin/MediaLibraryModal";
+import EmptyState from "@/components/ui/EmptyState";
 
 export default function CategoriesPage() {
   const [searchQuery, setSearchQuery] = useState("");
@@ -263,18 +264,43 @@ export default function CategoriesPage() {
                     </td>
                   </tr>
                 ))
-              ) : (
-                <tr>
-                  <td colSpan={5} className="py-20 text-center">
-                    <div className="p-6 bg-slate-50 rounded-full inline-block mb-4">
-                      <Tags className="w-10 h-10 text-slate-200" />
-                    </div>
-                    <p className="text-slate-400 font-bold text-lg">No categories found</p>
-                  </td>
-                </tr>
-              )}
+              ) : null}
             </tbody>
           </table>
+          {!isLoading && filteredCategories.length === 0 && (
+            <div className="p-6">
+              {categories.length === 0 ? (
+                <EmptyState
+                  icon={Tags}
+                  title="No categories yet"
+                  description="Organize posts with categories (e.g. News, Guides). Create one to start grouping content on this site."
+                  actions={[
+                    {
+                      label: "Create category",
+                      onClick: () => {
+                        setEditingId(null);
+                        setIsModalOpen(true);
+                      },
+                    },
+                  ]}
+                />
+              ) : (
+                <EmptyState
+                  compact
+                  icon={Search}
+                  title="No categories match your search"
+                  description="Try a different name, or clear search to see all categories on this site."
+                  actions={[
+                    {
+                      label: "Clear search",
+                      variant: "secondary",
+                      onClick: () => setSearchQuery(""),
+                    },
+                  ]}
+                />
+              )}
+            </div>
+          )}
         </div>
       </div>
 

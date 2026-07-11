@@ -18,6 +18,7 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import MediaLibraryModal from "@/components/admin/MediaLibraryModal";
+import PostPreviewModal from "@/components/admin/PostPreviewModal";
 import { api } from "@/lib/api";
 import dynamic from "next/dynamic";
 
@@ -58,11 +59,11 @@ export default function CreatePostPage() {
     excerpt: "",
     authorId: "",
     categories: [] as string[],
-    status: "Published",
+    status: "Draft",
     featured: false,
     content: "",
     showToc: false,
-    allowComments: true,
+    allowComments: true, // public can comment by default
     thumbnailUrl: "",
     metaTitle: "",
     metaDescription: "",
@@ -80,6 +81,7 @@ export default function CreatePostPage() {
   const [users, setUsers] = useState<any[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [isMediaModalOpen, setIsMediaModalOpen] = useState(false);
+  const [showPreview, setShowPreview] = useState(false);
   const [activeTab, setActiveTab] = useState("Content");
   const [availableCategories, setAvailableCategories] = useState<string[]>([]);
 
@@ -97,14 +99,29 @@ export default function CreatePostPage() {
   const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    
-    // In a real app, you'd upload to a server here.
-    // For now, we'll create a preview URL or use a mock.
-    const reader = new FileReader();
-    reader.onload = (event) => {
-      setFormData(prev => ({ ...prev, thumbnailUrl: event.target?.result as string }));
-    };
-    reader.readAsDataURL(file);
+
+    try {
+      setError(null);
+      const reader = new FileReader();
+      const base64Data: string = await new Promise((resolve, reject) => {
+        reader.onload = () => resolve(String(reader.result || ""));
+        reader.onerror = () => reject(new Error("Failed to read image"));
+        reader.readAsDataURL(file);
+      });
+      const uploaded = await api.uploadMedia({
+        name: file.name,
+        type: file.type,
+        size: String(file.size),
+        base64Data,
+      });
+      const rawUrl = uploaded.media?.url || uploaded.url || "";
+      if (!rawUrl) throw new Error("Upload succeeded but no URL returned");
+      setFormData((prev) => ({ ...prev, thumbnailUrl: rawUrl }));
+    } catch (err: any) {
+      setError(err?.message || "Failed to upload cover image");
+    } finally {
+      e.target.value = "";
+    }
   };
 
   const fetchUsers = useCallback(async () => {
@@ -164,17 +181,37 @@ export default function CreatePostPage() {
     setLoading(true);
     setError(null);
 
+    const nextStatus = overrideStatus || formData.status || "Draft";
+    let cover = formData.thumbnailUrl || "";
+    if (cover.startsWith("data:")) {
+      setError(
+        "Cover is still a local preview. Upload again (device upload uses backend) or pick from Media Library.",
+      );
+      setLoading(false);
+      return;
+    }
+    // Normalize absolute backend URL → relative /uploads/...
+    if (cover.includes("/uploads/")) {
+      try {
+        if (cover.startsWith("http")) {
+          cover = new URL(cover).pathname;
+        }
+      } catch {
+        /* keep */
+      }
+    }
+
     const finalData = {
       title: formData.title,
       slug: formData.slug,
       excerpt: formData.excerpt,
       content: formData.content,
-      status: overrideStatus || formData.status,
+      status: nextStatus,
       category: formData.categories[0] || "General",
       categories: formData.categories,
       tags: formData.keywords,
       authorId: parseInt(formData.authorId),
-      thumbnailUrl: formData.thumbnailUrl,
+      thumbnailUrl: cover || null,
       featured: formData.featured,
       meta_title: formData.metaTitle,
       meta_description: formData.metaDescription,
@@ -182,12 +219,14 @@ export default function CreatePostPage() {
       structuredData: formData.structuredData,
       show_toc: formData.showToc,
       allow_comments: formData.allowComments,
-      published_date: new Date().toISOString()
+      ...(nextStatus === "Published"
+        ? { published_date: new Date().toISOString() }
+        : {}),
     };
 
     try {
       await api.createPost(finalData);
-      router.push('/');
+      router.push("/admin/posts");
     } catch (err: any) {
       setError(err.message || "Failed to create post");
     } finally {
@@ -207,7 +246,7 @@ export default function CreatePostPage() {
           </div>
           <span className={cn(
             "px-4 py-1.5 text-white text-[13px] font-bold rounded-full transition-colors",
-            formData.status === "Published" ? "bg-[#2563EB]" : "bg-[#94A3B8]"
+            formData.status === "Published" ? "bg-emerald-600" : "bg-[#94A3B8]"
           )}>
             {formData.status}
           </span>
@@ -426,39 +465,13 @@ export default function CreatePostPage() {
                         type="file" 
                         accept="image/*"
                         className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
-                        onChange={async (e) => {
-                          const file = e.target.files?.[0];
-                          if (!file) return;
-                          
-                          const uploadData = new FormData();
-                          uploadData.append('file', file);
-                          
-                          try {
-                            const res = await fetch('/api/upload', {
-                              method: 'POST',
-                              body: uploadData,
-                            });
-                            
-                            if (res.ok) {
-                              const data = await res.json();
-                              if (data.url) {
-                                setFormData({...formData, thumbnailUrl: data.url});
-                              }
-                            } else {
-                              const errData = await res.text();
-                              alert("Failed to upload image. Server said: " + errData);
-                            }
-                          } catch (error: any) {
-                            console.error('Upload failed:', error);
-                            alert("Upload error occurred: " + error.message);
-                          }
-                        }}
+                        onChange={handleImageUpload}
                       />
                       <div className="w-14 h-14 bg-gray-50 rounded-2xl flex items-center justify-center mb-4 group-hover:bg-blue-100 transition-colors">
                         <ImagePlus className="w-7 h-7 text-gray-400 group-hover:text-blue-600" />
                       </div>
                       <span className="text-sm font-bold text-gray-900 mb-1">Upload from Device</span>
-                      <span className="text-[10px] text-gray-500 uppercase tracking-wider font-bold">PNG, JPG, GIF up to 5MB</span>
+                      <span className="text-[10px] text-gray-500 uppercase tracking-wider font-bold">Saves to backend /uploads (required for public posts)</span>
                     </div>
 
                     <div 
@@ -476,7 +489,7 @@ export default function CreatePostPage() {
                   {formData.thumbnailUrl && (
                     <div className="mt-8 p-4 bg-gray-50 rounded-3xl border border-gray-100 flex items-center gap-6 animate-in slide-in-from-bottom-4 duration-500">
                       <div className="w-24 h-24 rounded-2xl overflow-hidden border-2 border-white shadow-md shrink-0">
-                        <img src={formData.thumbnailUrl} className="w-full h-full object-cover" alt="Preview" />
+                        <img src={formData.thumbnailUrl.startsWith("/") ? `http://localhost:5000${formData.thumbnailUrl}` : formData.thumbnailUrl} className="w-full h-full object-cover" alt="Preview" />
                       </div>
                       <div className="flex-1 min-w-0">
                         <p className="text-xs font-black text-gray-400 uppercase tracking-widest mb-1">Selected Thumbnail</p>
@@ -619,7 +632,8 @@ export default function CreatePostPage() {
         </button>
         <div className="flex items-center gap-3">
           <button 
-            onClick={() => {}}
+            type="button"
+            onClick={() => setShowPreview(true)}
             className="px-6 py-3 text-sm font-bold text-gray-700 bg-white border border-gray-200 rounded-xl hover:bg-gray-50 transition-colors flex items-center gap-2 shadow-sm"
           >
             <Eye className="w-4 h-4" />
@@ -630,15 +644,15 @@ export default function CreatePostPage() {
             disabled={loading}
             className="px-6 py-3 text-sm font-bold text-gray-700 bg-gray-50 hover:bg-gray-100 rounded-xl transition-colors shadow-sm border border-gray-100 disabled:opacity-50"
           >
-            Save as Draft
+            {loading ? "Saving…" : "Save as Draft"}
           </button>
         
           <button 
-            onClick={() => handleCreatePost()}
+            onClick={() => handleCreatePost("Published")}
             disabled={loading}
-            className="px-8 py-3 text-sm font-bold text-white bg-blue-600 rounded-xl hover:bg-blue-700 transition-colors shadow-md disabled:opacity-50"
+            className="px-8 py-3 text-sm font-bold text-white bg-emerald-600 rounded-xl hover:bg-emerald-700 transition-colors shadow-md disabled:opacity-50"
           >
-            {loading ? "Creating..." : "Create Post"}
+            {loading ? "Publishing…" : "Publish"}
           </button>
         </div>
       </div>
@@ -658,6 +672,23 @@ export default function CreatePostPage() {
         isOpen={isMediaModalOpen}
         onClose={() => setIsMediaModalOpen(false)}
         onSelect={(url) => setFormData({...formData, thumbnailUrl: url})}
+      />
+
+      <PostPreviewModal
+        open={showPreview}
+        onClose={() => setShowPreview(false)}
+        post={{
+          title: formData.title,
+          slug: formData.slug,
+          excerpt: formData.excerpt,
+          content: formData.content,
+          status: formData.status,
+          categories: formData.categories,
+          thumbnailUrl: formData.thumbnailUrl,
+          authorName:
+            users.find((u) => String(u.id) === String(formData.authorId))?.name ||
+            undefined,
+        }}
       />
     </div>
   );

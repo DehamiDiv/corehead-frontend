@@ -19,6 +19,7 @@ import {
 import { cn } from "@/lib/utils";
 import MediaLibraryModal from "@/components/admin/MediaLibraryModal";
 import { api } from "@/lib/api";
+import PostPreviewModal from "@/components/admin/PostPreviewModal";
 import dynamic from 'next/dynamic';
 import 'react-quill-new/dist/quill.snow.css';
 
@@ -70,7 +71,7 @@ export default function EditPostPage() {
     excerpt: "",
     authorId: "",
     categories: [] as string[],
-    status: "Published",
+    status: "Draft",
     featured: false,
     content: "",
     showToc: false,
@@ -93,6 +94,7 @@ export default function EditPostPage() {
   const [users, setUsers] = useState<any[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [isMediaModalOpen, setIsMediaModalOpen] = useState(false);
+  const [showPreview, setShowPreview] = useState(false);
   const [activeTab, setActiveTab] = useState("Content");
   const [availableCategories, setAvailableCategories] = useState<string[]>([]);
 
@@ -120,12 +122,33 @@ export default function EditPostPage() {
   const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    
-    const reader = new FileReader();
-    reader.onload = (event) => {
-      setFormData(prev => ({ ...prev, thumbnailUrl: event.target?.result as string }));
-    };
-    reader.readAsDataURL(file);
+
+    // Upload to media API — never store huge base64 in coverImage (DB/API fails)
+    try {
+      setError(null);
+      const reader = new FileReader();
+      const base64Data: string = await new Promise((resolve, reject) => {
+        reader.onload = () => resolve(String(reader.result || ""));
+        reader.onerror = () => reject(new Error("Failed to read image"));
+        reader.readAsDataURL(file);
+      });
+
+      const uploaded = await api.uploadMedia({
+        name: file.name,
+        type: file.type,
+        size: String(file.size),
+        base64Data,
+      });
+      const rawUrl = uploaded.media?.url || uploaded.url || "";
+      if (!rawUrl) throw new Error("Upload succeeded but no URL returned");
+      // Prefer relative /uploads/... path (fits DB + works with resolveMediaUrl)
+      setFormData((prev) => ({ ...prev, thumbnailUrl: rawUrl }));
+    } catch (err: any) {
+      console.error(err);
+      setError(err?.message || "Failed to upload cover image. Try Media Library instead.");
+    } finally {
+      e.target.value = "";
+    }
   };
 
   const fetchData = useCallback(async () => {
@@ -155,17 +178,27 @@ export default function EditPostPage() {
         excerpt: postData.excerpt || "",
         authorId: String(postData.authorId || postData.author?.id || ""),
         categories: cats,
-        status: postData.status || "Published",
+        status: postData.status || "Draft",
         featured: !!postData.featured,
         content: postData.content || "",
         showToc: !!postData.show_toc || !!postData.showToc,
         allowComments: postData.allow_comments !== false && postData.allowComments !== false,
-        thumbnailUrl: postData.thumbnailUrl || postData.featured_image || "",
+        thumbnailUrl: postData.thumbnailUrl || postData.coverImage || postData.featured_image || "",
         metaTitle: postData.meta_title || postData.metaTitle || "",
         metaDescription: postData.meta_description || postData.metaDescription || "",
-        keywords: Array.isArray(postData.tags) ? postData.tags : (postData.tags ? postData.tags.split(',').map((t: string) => t.trim()) : []),
+        keywords: Array.isArray(postData.tags)
+          ? postData.tags
+          : typeof postData.tags === "string" && postData.tags
+            ? postData.tags.split(",").map((t: string) => t.trim())
+            : [],
+        useThumbnailAsFeatured: true,
         canonicalUrl: postData.canonicalUrl || "",
-        structuredData: typeof postData.structuredData === 'string' ? postData.structuredData : JSON.stringify(postData.structuredData, null, 2),
+        structuredData:
+          typeof postData.structuredData === "string"
+            ? postData.structuredData
+            : postData.structuredData
+              ? JSON.stringify(postData.structuredData, null, 2)
+              : "",
       });
     } catch (err: any) {
       setError(err.message || "Failed to fetch post data");
@@ -208,31 +241,68 @@ export default function EditPostPage() {
     setSaving(true);
     setError(null);
 
-    const finalData = {
+    const nextStatus = overrideStatus || formData.status;
+
+    // Reject base64 covers before API call (too large for old schema / payloads)
+    let cover = formData.thumbnailUrl || "";
+    if (cover.startsWith("data:")) {
+      setError(
+        "Cover image is still a temporary local preview. Re-upload via the image button or Media Library so it becomes a short /uploads/... URL, then save again.",
+      );
+      setSaving(false);
+      return;
+    }
+
+    const authorIdNum = parseInt(String(formData.authorId), 10);
+    const finalData: Record<string, any> = {
       title: formData.title,
       slug: formData.slug,
       excerpt: formData.excerpt,
       content: formData.content,
-      status: overrideStatus || formData.status,
+      status: nextStatus,
       category: formData.categories[0] || "General",
-      categories: formData.categories,
-      tags: typeof formData.keywords === 'string' ? formData.keywords.split(',').map(t => t.trim()).filter(Boolean) : formData.keywords,
-      authorId: parseInt(formData.authorId),
-      thumbnailUrl: formData.thumbnailUrl,
+      tags: formData.keywords,
+      thumbnailUrl: cover || null,
       featured: formData.featured,
-      meta_title: formData.metaTitle,
-      meta_description: formData.metaDescription,
-      canonicalUrl: formData.canonicalUrl,
-      structuredData: formData.structuredData,
-      show_toc: formData.showToc,
-      allow_comments: formData.allowComments
+      showToc: formData.showToc,
+      allowComments: formData.allowComments,
+      ...(Number.isFinite(authorIdNum) && authorIdNum > 0
+        ? { authorId: authorIdNum }
+        : {}),
+      ...(nextStatus === "Published"
+        ? { published_date: new Date().toISOString() }
+        : {}),
     };
 
     try {
       await api.updatePost(postId, finalData);
-      router.push('/admin/posts');
+      setFormData((prev) => ({ ...prev, status: nextStatus }));
+      router.push("/admin/posts");
     } catch (err: any) {
       setError(err.message || "Failed to update post");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleQuickPublishToggle = async () => {
+    if (!formData.title || !formData.content) {
+      setError("Title and Content are required before publishing.");
+      return;
+    }
+    const goingLive = formData.status !== "Published";
+    setSaving(true);
+    setError(null);
+    try {
+      if (goingLive) {
+        await api.publishPost(postId);
+        setFormData((prev) => ({ ...prev, status: "Published" }));
+      } else {
+        await api.unpublishPost(postId, "Draft");
+        setFormData((prev) => ({ ...prev, status: "Draft" }));
+      }
+    } catch (err: any) {
+      setError(err.message || "Failed to update publish status");
     } finally {
       setSaving(false);
     }
@@ -268,7 +338,7 @@ export default function EditPostPage() {
           </div>
           <span className={cn(
             "px-4 py-1.5 text-white text-[13px] font-bold rounded-full transition-colors",
-            formData.status === "Published" ? "bg-[#2563EB]" : "bg-[#94A3B8]"
+            formData.status === "Published" ? "bg-emerald-600" : "bg-[#94A3B8]"
           )}>
             {formData.status}
           </span>
@@ -465,7 +535,7 @@ export default function EditPostPage() {
                       >
                         {formData.thumbnailUrl ? (
                           <div className="relative w-full h-full flex items-center justify-center p-4">
-                            <img src={formData.thumbnailUrl} className="max-h-[400px] w-auto object-contain rounded-[12px] shadow-sm" alt="Thumbnail" />
+                            <img src={formData.thumbnailUrl.startsWith("/") ? `http://localhost:5000${formData.thumbnailUrl}` : formData.thumbnailUrl} className="max-h-[400px] w-auto object-contain rounded-[12px] shadow-sm" alt="Thumbnail" />
                             <button 
                               onClick={(e) => { e.stopPropagation(); setFormData({...formData, thumbnailUrl: ""}); }}
                               className="absolute top-6 right-6 p-2 bg-white/90 backdrop-blur-sm rounded-full text-red-500 shadow-md hover:bg-white transition-all"
@@ -650,22 +720,58 @@ export default function EditPostPage() {
         </div>
 
         {/* Floating Action Bar */}
-        <div className="bg-white rounded-[16px] border border-[#E2E8F0] p-4 shadow-xl flex items-center justify-between sticky bottom-6 z-40">
+        <div className="bg-white rounded-[16px] border border-[#E2E8F0] p-4 shadow-xl flex items-center justify-between sticky bottom-6 z-40 gap-3 flex-wrap">
           <button 
             onClick={() => router.push('/admin/posts')}
             className="px-6 h-11 border border-[#E2E8F0] rounded-[10px] text-[14px] font-bold text-[#64748B] hover:bg-slate-50"
           >
             Cancel
           </button>
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-3 flex-wrap justify-end">
+            <button
+              type="button"
+              onClick={() => setShowPreview(true)}
+              className="h-11 px-5 rounded-[10px] border border-[#E2E8F0] text-[14px] font-bold text-[#64748B] hover:bg-slate-50"
+            >
+              Preview
+            </button>
+            <button
+              type="button"
+              onClick={handleQuickPublishToggle}
+              disabled={saving}
+              className={cn(
+                "h-11 px-6 rounded-[10px] text-[14px] font-bold shadow-sm disabled:opacity-50 flex items-center gap-2 border transition-colors",
+                formData.status === "Published"
+                  ? "bg-amber-50 text-amber-700 border-amber-200 hover:bg-amber-100"
+                  : "bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-100"
+              )}
+            >
+              {saving ? (
+                <Loader2 className="w-4 h-4 animate-spin" />
+              ) : formData.status === "Published" ? (
+                "Unpublish"
+              ) : (
+                "Publish"
+              )}
+            </button>
             <button 
               onClick={() => handleUpdatePost()}
               disabled={saving}
-              className="h-11 px-10 bg-[#2563EB] text-white rounded-[10px] text-[14px] font-bold hover:bg-[#1D4ED8] shadow-lg shadow-blue-500/20 disabled:opacity-50 flex items-center gap-2"
+              className="h-11 px-8 bg-[#2563EB] text-white rounded-[10px] text-[14px] font-bold hover:bg-[#1D4ED8] shadow-lg shadow-blue-500/20 disabled:opacity-50 flex items-center gap-2"
             >
               {saving && <Loader2 className="w-4 h-4 animate-spin" />}
               {saving ? "Saving..." : "Save Changes"}
             </button>
+            {formData.status !== "Published" && (
+              <button
+                type="button"
+                onClick={() => handleUpdatePost("Published")}
+                disabled={saving}
+                className="h-11 px-8 bg-emerald-600 text-white rounded-[10px] text-[14px] font-bold hover:bg-emerald-700 shadow-lg shadow-emerald-500/20 disabled:opacity-50 flex items-center gap-2"
+              >
+                Save & Publish
+              </button>
+            )}
           </div>
         </div>
 
@@ -675,6 +781,23 @@ export default function EditPostPage() {
         isOpen={isMediaModalOpen}
         onClose={() => setIsMediaModalOpen(false)}
         onSelect={(url) => setFormData({...formData, thumbnailUrl: url})}
+      />
+
+      <PostPreviewModal
+        open={showPreview}
+        onClose={() => setShowPreview(false)}
+        post={{
+          title: formData.title,
+          slug: formData.slug,
+          excerpt: formData.excerpt,
+          content: formData.content,
+          status: formData.status,
+          categories: formData.categories,
+          thumbnailUrl: formData.thumbnailUrl,
+          authorName:
+            users.find((u) => String(u.id) === String(formData.authorId))?.name ||
+            undefined,
+        }}
       />
     </div>
   );

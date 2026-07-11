@@ -15,11 +15,21 @@ import {
   ChevronLeft,
   ChevronRight,
   FileText,
+  Upload,
+  EyeOff,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { api } from "@/lib/api";
+import {
+  isPostLive,
+  normalizePostStatus,
+  postStatusBadgeClass,
+} from "@/lib/postStatus";
+import EmptyState from "@/components/ui/EmptyState";
+import { useOptionalSite } from "@/components/admin/SiteContext";
 
 export default function PostsPage() {
+  const siteCtx = useOptionalSite();
   const [posts, setPosts] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
@@ -30,6 +40,7 @@ export default function PostsPage() {
   const [rowsPerPage, setRowsPerPage] = useState(20);
   const [isLaunching, setIsLaunching] = useState(true);
   const [dbCategories, setDbCategories] = useState<string[]>([]);
+  const [statusActionId, setStatusActionId] = useState<number | null>(null);
 
   useEffect(() => {
     // Premium launch delay to show animation
@@ -117,6 +128,53 @@ export default function PostsPage() {
     }
   };
 
+  /** T11: Publish post → public site visible */
+  const handlePublish = async (id: number) => {
+    if (!id) return;
+    setStatusActionId(id);
+    try {
+      const res = await api.publishPost(id);
+      const updated = res?.post || res;
+      setPosts((prev) =>
+        prev.map((p) =>
+          p.id === id
+            ? { ...p, ...updated, status: "Published", isPublished: true }
+            : p
+        )
+      );
+    } catch (err: any) {
+      console.error("Publish failed:", err);
+      alert(err?.message || "Failed to publish post");
+    } finally {
+      setStatusActionId(null);
+    }
+  };
+
+  /** T11: Unpublish → hidden from public site */
+  const handleUnpublish = async (id: number) => {
+    if (!id) return;
+    if (!confirm("Unpublish this post? It will no longer appear on your public site.")) {
+      return;
+    }
+    setStatusActionId(id);
+    try {
+      const res = await api.unpublishPost(id, "Draft");
+      const updated = res?.post || res;
+      setPosts((prev) =>
+        prev.map((p) =>
+          p.id === id
+            ? { ...p, ...updated, status: "Draft", isPublished: false }
+            : p
+        )
+      );
+    } catch (err: any) {
+      console.error("Unpublish failed:", err);
+      alert(err?.message || "Failed to unpublish post");
+    } finally {
+      setStatusActionId(null);
+    }
+  };
+
   const postsArray = Array.isArray(posts) ? posts : [];
 
   const allCategories = Array.from(
@@ -157,7 +215,7 @@ export default function PostsPage() {
       return false;
 
     if (statusFilter !== "All Statuses") {
-      const status = post?.status || "Draft";
+      const status = normalizePostStatus(post?.status);
       if (status !== statusFilter) return false;
     }
 
@@ -378,25 +436,55 @@ export default function PostsPage() {
                           <span
                             className={cn(
                               "h-[26px] px-3 inline-flex items-center rounded-full text-[12px] font-bold",
-                              post?.status === "Published"
-                                ? "bg-emerald-50 text-emerald-600 border border-emerald-100"
-                                : "bg-amber-50 text-amber-600 border border-amber-100"
+                              postStatusBadgeClass(post?.status)
                             )}
                           >
-                            {post?.status || "Draft"}
+                            {normalizePostStatus(post?.status)}
                           </span>
                         </td>
                         <td className="px-4 text-right">
-                          <div className="flex items-center justify-end gap-3">
+                          <div className="flex items-center justify-end gap-2">
+                            {isPostLive(post) ? (
+                              <button
+                                type="button"
+                                title="Unpublish"
+                                disabled={statusActionId === post?.id}
+                                onClick={() => handleUnpublish(post?.id)}
+                                className="p-1.5 text-slate-400 hover:text-amber-600 hover:bg-amber-50 rounded-lg transition-colors disabled:opacity-50"
+                              >
+                                {statusActionId === post?.id ? (
+                                  <Loader2 className="w-4 h-4 animate-spin" />
+                                ) : (
+                                  <EyeOff className="w-[18px] h-[18px]" />
+                                )}
+                              </button>
+                            ) : (
+                              <button
+                                type="button"
+                                title="Publish"
+                                disabled={statusActionId === post?.id}
+                                onClick={() => handlePublish(post?.id)}
+                                className="p-1.5 text-slate-400 hover:text-emerald-600 hover:bg-emerald-50 rounded-lg transition-colors disabled:opacity-50"
+                              >
+                                {statusActionId === post?.id ? (
+                                  <Loader2 className="w-4 h-4 animate-spin" />
+                                ) : (
+                                  <Upload className="w-[18px] h-[18px]" />
+                                )}
+                              </button>
+                            )}
                             <Link
                               href={`/admin/posts/edit/${post?.id}`}
-                              className="p-1 text-slate-400 hover:text-slate-900 transition-colors"
+                              className="p-1.5 text-slate-400 hover:text-slate-900 hover:bg-slate-50 rounded-lg transition-colors"
+                              title="Edit"
                             >
                               <Edit className="w-[18px] h-[18px]" />
                             </Link>
                             <button
+                              type="button"
+                              title="Delete"
                               onClick={() => handleDelete(post?.id)}
-                              className="p-1 text-slate-400 hover:text-red-500 transition-colors"
+                              className="p-1.5 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors"
                             >
                               <Trash2 className="w-[18px] h-[18px]" />
                             </button>
@@ -404,15 +492,59 @@ export default function PostsPage() {
                         </td>
                       </tr>
                     ))
-                  ) : (
-                    <tr>
-                      <td colSpan={7} className="px-4 py-32 text-center text-slate-400">
-                        No posts found.
-                      </td>
-                    </tr>
-                  )}
+                  ) : null}
                 </tbody>
               </table>
+              {!loading && filteredPosts.length === 0 && (
+                <div className="pt-4">
+                  {postsArray.length === 0 ? (
+                    <EmptyState
+                      icon={FileText}
+                      title="Create your first post"
+                      description={
+                        siteCtx?.currentSite?.name
+                          ? `“${siteCtx.currentSite.name}” has no posts yet. Write a draft, then publish it so readers can see it on your public site.`
+                          : "This site has no posts yet. Write a draft, then publish it so readers can see it on your public blog."
+                      }
+                      actions={[
+                        {
+                          label: "Create post",
+                          href: "/admin/posts/create",
+                        },
+                        ...(siteCtx?.currentSite?.slug
+                          ? [
+                              {
+                                label: "View public blog",
+                                href: `/s/${siteCtx.currentSite.slug}/blog`,
+                                variant: "secondary" as const,
+                              },
+                            ]
+                          : []),
+                      ]}
+                    />
+                  ) : (
+                    <EmptyState
+                      compact
+                      icon={Search}
+                      title="No posts match your filters"
+                      description="Try clearing search or status filters to see all posts on this site."
+                      actions={[
+                        {
+                          label: "Clear filters",
+                          variant: "secondary",
+                          onClick: () => {
+                            setSearchQuery("");
+                            setStatusFilter("All Statuses");
+                            setAuthorFilter("All Authors");
+                            setCategoryFilter("All Categories");
+                            setFeaturedFilter("All Posts");
+                          },
+                        },
+                      ]}
+                    />
+                  )}
+                </div>
+              )}
             </div>
 
             {/* Pagination */}

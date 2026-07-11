@@ -1,4 +1,21 @@
+import { getSiteHeader } from '@/lib/siteStorage';
+import { clearSession, persistAccessToken } from '@/lib/authSession';
+
 const BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api';
+
+export type SiteSummary = {
+  id: number;
+  name: string;
+  slug: string;
+  status?: string;
+  logo?: string | null;
+  ownerId?: number;
+  /** R6 */
+  customDomain?: string | null;
+  domainStatus?: string;
+  plan?: string;
+  planStatus?: string;
+};
 
 // getAuthHeader: Helper function to attach the JWT token to outgoing API requests.
 const getAuthHeader = (): Record<string, string> => {
@@ -7,6 +24,26 @@ const getAuthHeader = (): Record<string, string> => {
     return token ? { 'Authorization': `Bearer ${token}` } : {};
   }
   return {};
+};
+
+/**
+ * Auth + multi-tenant site headers (T7).
+ * Pass skipSite for /sites CRUD and auth endpoints that must not send X-Site-Id.
+ */
+const getRequestHeaders = (options?: {
+  skipSite?: boolean;
+  json?: boolean;
+}): Record<string, string> => {
+  const headers: Record<string, string> = {
+    ...getAuthHeader(),
+  };
+  if (options?.json) {
+    headers['Content-Type'] = 'application/json';
+  }
+  if (!options?.skipSite) {
+    Object.assign(headers, getSiteHeader());
+  }
+  return headers;
 };
 
 // handleResponse: Centralized response handler — now supports auto-refresh on 401
@@ -25,11 +62,14 @@ const handleResponse = async (res: Response, originalRequest: () => Promise<any>
           });
 
           if (refreshRes.ok) {
-            const { accessToken } = await refreshRes.json();
-            localStorage.setItem('accessToken', accessToken);
-            
-            // Retry the original request
-            return originalRequest();
+            const body = await refreshRes.json();
+            const accessToken = body.accessToken;
+            if (accessToken) {
+              // R5-1: keep middleware cookie in sync with refreshed JWT
+              persistAccessToken(accessToken);
+              // Retry the original request
+              return originalRequest();
+            }
           }
         } catch (err) {
           console.error("Refresh token failed", err);
@@ -37,9 +77,7 @@ const handleResponse = async (res: Response, originalRequest: () => Promise<any>
       }
 
       // If refresh fails or no refresh token, log out
-      localStorage.removeItem('accessToken');
-      localStorage.removeItem('refreshToken');
-      localStorage.removeItem('user');
+      clearSession();
       window.location.href = '/login?session=expired';
     }
     throw new Error('Session expired. Please log in again.');
@@ -48,28 +86,212 @@ const handleResponse = async (res: Response, originalRequest: () => Promise<any>
   if (!res.ok) {
     try {
       const errData = await res.json();
-      throw new Error(errData.details || errData.error || `Request failed with status ${res.status}`);
-    } catch {
+      throw new Error(errData.details || errData.error || errData.message || `Request failed with status ${res.status}`);
+    } catch (e: any) {
+      if (e?.message && e.message !== `Request failed with status ${res.status}`) throw e;
       throw new Error(`Request failed with status ${res.status}`);
     }
   }
   return res.json();
 };
 
+type FetchAuthOptions = RequestInit & { skipSite?: boolean };
+
 export const api = {
-  // Helper to wrap fetch with auth and auto-refresh
-  async fetchWithAuth(url: string, options: RequestInit = {}) {
+  // Helper to wrap fetch with auth, site context, and auto-refresh
+  async fetchWithAuth(url: string, options: FetchAuthOptions = {}) {
+    const { skipSite, headers: optionHeaders, ...rest } = options;
     const execute = async () => {
       const res = await fetch(url, {
-        ...options,
+        ...rest,
         headers: {
-          ...options.headers,
-          ...getAuthHeader()
+          ...getRequestHeaders({ skipSite }),
+          ...(optionHeaders as Record<string, string> | undefined),
         }
       });
       return handleResponse(res, execute);
     };
     return execute();
+  },
+
+  // ── Sites (T3/T7) — no X-Site-Id on list/create ──────────────────────────
+  async getMySites() {
+    return this.fetchWithAuth(`${BASE_URL}/sites`, {
+      skipSite: true,
+      cache: 'no-store',
+    });
+  },
+
+  async createSite(data: { name: string; slug: string; logo?: string | null }) {
+    return this.fetchWithAuth(`${BASE_URL}/sites`, {
+      method: 'POST',
+      skipSite: true,
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data),
+    });
+  },
+
+  async getSiteById(id: string | number) {
+    return this.fetchWithAuth(`${BASE_URL}/sites/${id}`, { skipSite: true });
+  },
+
+  async getSiteBySlug(slug: string) {
+    const res = await fetch(`${BASE_URL}/sites/by-slug/${encodeURIComponent(slug)}`, {
+      cache: 'no-store',
+    });
+    if (!res.ok) {
+      if (res.status === 404) return null;
+      throw new Error('Failed to fetch site');
+    }
+    return res.json();
+  },
+
+  async updateSite(
+    id: string | number,
+    data: { name?: string; slug?: string; logo?: string | null; status?: string }
+  ) {
+    return this.fetchWithAuth(`${BASE_URL}/sites/${id}`, {
+      method: 'PATCH',
+      skipSite: true,
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data),
+    });
+  },
+
+  async deleteSite(id: string | number) {
+    return this.fetchWithAuth(`${BASE_URL}/sites/${id}`, {
+      method: 'DELETE',
+      skipSite: true,
+    });
+  },
+
+  // ── R1-3 Team invites ────────────────────────────────────────────────────
+  async getSiteMembers(siteId: string | number) {
+    return this.fetchWithAuth(`${BASE_URL}/sites/${siteId}/members`, {
+      skipSite: true,
+      cache: 'no-store',
+    });
+  },
+
+  async inviteSiteMember(
+    siteId: string | number,
+    data: { email: string; role: 'EDITOR' | 'AUTHOR' | string }
+  ) {
+    return this.fetchWithAuth(`${BASE_URL}/sites/${siteId}/members/invite`, {
+      method: 'POST',
+      skipSite: true,
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data),
+    });
+  },
+
+  async updateSiteMemberRole(
+    siteId: string | number,
+    userId: string | number,
+    role: 'EDITOR' | 'AUTHOR' | string
+  ) {
+    return this.fetchWithAuth(`${BASE_URL}/sites/${siteId}/members/${userId}`, {
+      method: 'PATCH',
+      skipSite: true,
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ role }),
+    });
+  },
+
+  async removeSiteMember(siteId: string | number, userId: string | number) {
+    return this.fetchWithAuth(`${BASE_URL}/sites/${siteId}/members/${userId}`, {
+      method: 'DELETE',
+      skipSite: true,
+    });
+  },
+
+  async getSiteInvites(siteId: string | number) {
+    return this.fetchWithAuth(`${BASE_URL}/sites/${siteId}/invites`, {
+      skipSite: true,
+      cache: 'no-store',
+    });
+  },
+
+  async revokeSiteInvite(siteId: string | number, inviteId: string | number) {
+    return this.fetchWithAuth(
+      `${BASE_URL}/sites/${siteId}/invites/${inviteId}`,
+      {
+        method: 'DELETE',
+        skipSite: true,
+      }
+    );
+  },
+
+  async getInviteByToken(token: string) {
+    const res = await fetch(`${BASE_URL}/invites/${encodeURIComponent(token)}`, {
+      cache: 'no-store',
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.error || 'Invite not found');
+    }
+    return res.json();
+  },
+
+  async acceptInvite(token: string) {
+    return this.fetchWithAuth(
+      `${BASE_URL}/invites/${encodeURIComponent(token)}/accept`,
+      {
+        method: 'POST',
+        skipSite: true,
+      }
+    );
+  },
+
+  // ── R6 Custom domain + billing ───────────────────────────────────────────
+  async getSiteByDomain(domain: string) {
+    const res = await fetch(
+      `${BASE_URL}/sites/by-domain/${encodeURIComponent(domain)}`,
+      { cache: 'no-store' }
+    );
+    if (!res.ok) {
+      if (res.status === 404) return null;
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.error || 'Failed to resolve domain');
+    }
+    return res.json();
+  },
+
+  async setSiteDomain(siteId: string | number, domain: string | null) {
+    return this.fetchWithAuth(`${BASE_URL}/sites/${siteId}/domain`, {
+      method: 'PUT',
+      skipSite: true,
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ domain }),
+    });
+  },
+
+  async verifySiteDomain(siteId: string | number, options?: { force?: boolean }) {
+    return this.fetchWithAuth(`${BASE_URL}/sites/${siteId}/domain/verify`, {
+      method: 'POST',
+      skipSite: true,
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(options || {}),
+    });
+  },
+
+  async getSiteBilling(siteId: string | number) {
+    return this.fetchWithAuth(`${BASE_URL}/sites/${siteId}/billing`, {
+      skipSite: true,
+      cache: 'no-store',
+    });
+  },
+
+  async updateSitePlan(
+    siteId: string | number,
+    data: { plan: string; planStatus?: string }
+  ) {
+    return this.fetchWithAuth(`${BASE_URL}/sites/${siteId}/billing/plan`, {
+      method: 'PUT',
+      skipSite: true,
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data),
+    });
   },
 
   // Templates
@@ -117,9 +339,48 @@ export const api = {
     });
   },
 
-  // Preview Data
-  async getPreviewPosts(limit: number = 3) {
-    const res = await fetch(`${BASE_URL}/preview/posts?limit=${limit}`, { cache: 'no-store' });
+  /**
+   * R2-1: Public resolve of published layout for a site (no JWT required).
+   * GET /templates/resolve?templateType=...&siteId=...
+   */
+  async resolveActiveLayout(
+    templateType: string,
+    categoryId?: string | null,
+    siteId?: number | null
+  ) {
+    const qs = new URLSearchParams();
+    qs.set('templateType', templateType);
+    if (categoryId) qs.set('categoryId', String(categoryId));
+    if (siteId != null) qs.set('siteId', String(siteId));
+
+    const headers: Record<string, string> = {};
+    if (siteId != null) headers['X-Site-Id'] = String(siteId);
+
+    const res = await fetch(`${BASE_URL}/templates/resolve?${qs.toString()}`, {
+      cache: 'no-store',
+      headers,
+    });
+
+    if (res.status === 404) return null;
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.error || 'Failed to resolve layout');
+    }
+    return res.json();
+  },
+
+  // Preview Data (optional site scope for multi-tenant)
+  async getPreviewPosts(limit: number = 3, siteId?: number | null) {
+    const headers: Record<string, string> = { ...getSiteHeader() };
+    if (siteId) headers['X-Site-Id'] = String(siteId);
+    const qs = new URLSearchParams({ limit: String(limit) });
+    if (siteId || headers['X-Site-Id']) {
+      qs.set('siteId', String(siteId || headers['X-Site-Id']));
+    }
+    const res = await fetch(`${BASE_URL}/preview/posts?${qs.toString()}`, {
+      cache: 'no-store',
+      headers,
+    });
     if (!res.ok) throw new Error('Failed to fetch preview posts');
     return res.json();
   },
@@ -130,61 +391,62 @@ export const api = {
     return res.json();
   },
 
-  // Posts Management
+  // Posts Management (site-scoped via X-Site-Id)
   async getPosts() {
-    const res = await fetch(`${BASE_URL}/posts`, {
-      headers: { ...getAuthHeader() }
-    });
-    if (!res.ok) throw new Error('Failed to fetch posts');
-    return res.json();
+    return this.fetchWithAuth(`${BASE_URL}/posts`);
   },
 
   async getPostById(id: string | number) {
-    const res = await fetch(`${BASE_URL}/posts/${id}`, {
-      headers: { ...getAuthHeader() }
-    });
-    if (!res.ok) throw new Error('Failed to fetch post');
-    return res.json();
+    return this.fetchWithAuth(`${BASE_URL}/posts/${id}`);
   },
 
   async updatePost(id: string | number, data: any) {
-    const res = await fetch(`${BASE_URL}/posts/${id}`, {
+    return this.fetchWithAuth(`${BASE_URL}/posts/${id}`, {
       method: 'PUT',
-      headers: {
-        'Content-Type': 'application/json',
-        ...getAuthHeader()
-      },
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(data)
     });
-    if (!res.ok) throw new Error('Failed to update post');
-    return res.json();
   },
 
   async createPost(data: any) {
-    const res = await fetch(`${BASE_URL}/posts`, {
+    return this.fetchWithAuth(`${BASE_URL}/posts`, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        ...getAuthHeader()
-      },
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(data)
     });
-    if (!res.ok) throw new Error('Failed to create post');
-    return res.json();
   },
 
   async deletePost(id: string | number) {
-    const res = await fetch(`${BASE_URL}/posts/${id}`, {
-      method: 'DELETE',
-      headers: { ...getAuthHeader() }
+    return this.fetchWithAuth(`${BASE_URL}/posts/${id}`, {
+      method: 'DELETE'
     });
-    if (!res.ok) throw new Error('Failed to delete post');
-    return res.json();
   },
 
-  async getPostBySlug(slug: string) {
-    const res = await fetch(`${BASE_URL}/posts/slug/${slug}`, {
-      cache: 'no-store'
+  /** T11: set post status to Published (public-visible) */
+  async publishPost(id: string | number) {
+    return this.fetchWithAuth(`${BASE_URL}/posts/${id}/publish`, {
+      method: 'PATCH',
+    });
+  },
+
+  /** T11: unpublish post (Draft by default; pass status: 'Unpublished' optional) */
+  async unpublishPost(id: string | number, status: 'Draft' | 'Unpublished' = 'Draft') {
+    return this.fetchWithAuth(`${BASE_URL}/posts/${id}/unpublish`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ status }),
+    });
+  },
+
+  async getPostBySlug(slug: string, siteId?: number | null) {
+    const headers: Record<string, string> = {};
+    const q = siteId ? `?siteId=${siteId}` : '';
+    if (siteId) headers['X-Site-Id'] = String(siteId);
+    else Object.assign(headers, getSiteHeader());
+
+    const res = await fetch(`${BASE_URL}/posts/slug/${slug}${q}`, {
+      cache: 'no-store',
+      headers,
     });
     if (!res.ok) {
       if (res.status === 404) return null;
@@ -193,24 +455,46 @@ export const api = {
     return res.json();
   },
 
-  async getPublicLayout(type: 'blog-loop' | 'single-post') {
+  /**
+   * R2-2: Prefer live resolve when siteId provided; else safe defaults (no fake DB).
+   */
+  async getPublicLayout(
+    type: 'blog-loop' | 'single-post',
+    siteId?: number | null
+  ) {
+    if (siteId != null) {
+      try {
+        const kind = type === 'blog-loop' ? 'Blog Archive' : 'Single Post';
+        const tpl = await this.resolveActiveLayout(kind, null, siteId);
+        if (tpl?.layoutJson) {
+          const blocks = Array.isArray(tpl.layoutJson)
+            ? tpl.layoutJson
+            : tpl.layoutJson.blocks;
+          if (blocks?.length) return { blocks, templateId: tpl.id, source: 'template' as const };
+        }
+      } catch {
+        /* fall through to defaults */
+      }
+    }
+
     if (type === 'blog-loop') {
       return {
         blocks: [
           { id: '1', type: 'Heading' as const, content: 'Latest Posts' },
           { id: '2', type: 'Collection List' as const, content: { limit: 6, category: '' } }
-        ]
-      };
-    } else {
-      return {
-         blocks: [
-           { id: '1', type: 'Image' as const, content: '', bindings: { content: 'featured_image' } },
-           { id: '2', type: 'Heading' as const, content: '', bindings: { content: 'title' } },
-           { id: '3', type: 'Paragraph' as const, content: '', bindings: { content: 'category' }, styles: { color: 'blue', textTransform: 'uppercase' } },
-           { id: '4', type: 'Paragraph' as const, content: '', bindings: { content: 'content' } }
-         ]
+        ],
+        source: 'default' as const,
       };
     }
+    return {
+      blocks: [
+        { id: '1', type: 'Image' as const, content: '', bindings: { content: 'post.coverImage' } },
+        { id: '2', type: 'Heading' as const, content: '', bindings: { content: 'post.title' } },
+        { id: '3', type: 'Paragraph' as const, content: '', bindings: { content: 'post.category' }, styles: { color: 'blue', textTransform: 'uppercase' } },
+        { id: '4', type: 'Paragraph' as const, content: '', bindings: { content: 'post.content' } }
+      ],
+      source: 'default' as const,
+    };
   },
 
   // Auth
@@ -280,6 +564,19 @@ export const api = {
     return res.json();
   },
 
+  async resendOtp(email: string) {
+    const res = await fetch(`${BASE_URL}/auth/resend-otp`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email })
+    });
+    if (!res.ok) {
+      const err = await res.json();
+      throw new Error(err.error || 'Failed to resend OTP');
+    }
+    return res.json();
+  },
+
   // Users
   async getUsers() {
     return this.fetchWithAuth(`${BASE_URL}/users`, { cache: 'no-store' });
@@ -309,222 +606,129 @@ export const api = {
 
   // Pages
   async getPages() {
-    const res = await fetch(`${BASE_URL}/pages`, {
-      headers: { ...getAuthHeader() }
-    });
-    if (!res.ok) throw new Error('Failed to fetch pages');
-    return res.json();
+    return this.fetchWithAuth(`${BASE_URL}/pages`);
   },
 
   async createPage(data: { name: string, slug: string, htmlContent: string, status: string }) {
-    const res = await fetch(`${BASE_URL}/pages`, {
+    return this.fetchWithAuth(`${BASE_URL}/pages`, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        ...getAuthHeader()
-      },
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(data)
     });
-    if (!res.ok) {
-      const err = await res.json();
-      throw new Error(err.message || 'Failed to create page');
-    }
-    return res.json();
   },
 
   async updatePage(id: string | number, data: { name?: string, slug?: string, htmlContent?: string, status?: string }) {
-    const res = await fetch(`${BASE_URL}/pages/${id}`, {
+    return this.fetchWithAuth(`${BASE_URL}/pages/${id}`, {
       method: 'PUT',
-      headers: {
-        'Content-Type': 'application/json',
-        ...getAuthHeader()
-      },
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(data)
     });
-    if (!res.ok) {
-      const err = await res.json();
-      throw new Error(err.message || 'Failed to update page');
-    }
-    return res.json();
   },
 
   async deletePage(id: string | number) {
-    const res = await fetch(`${BASE_URL}/pages/${id}`, {
-      method: 'DELETE',
-      headers: { ...getAuthHeader() }
+    return this.fetchWithAuth(`${BASE_URL}/pages/${id}`, {
+      method: 'DELETE'
     });
+  },
+
+  /** R3-1: public published page for a site */
+  async getPublicPage(siteId: number, pageSlug: string) {
+    const qs = new URLSearchParams({ siteId: String(siteId) });
+    const res = await fetch(
+      `${BASE_URL}/pages/public/${encodeURIComponent(pageSlug)}?${qs.toString()}`,
+      {
+        cache: 'no-store',
+        headers: { 'X-Site-Id': String(siteId) },
+      }
+    );
     if (!res.ok) {
-      const err = await res.json();
-      throw new Error(err.message || 'Failed to delete page');
+      if (res.status === 404) return null;
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.error || 'Failed to load page');
     }
     return res.json();
   },
 
-  // Categories
+  // Categories (site-scoped)
   async getCategories() {
-    const res = await fetch(`${BASE_URL}/categories`, {
-      headers: { ...getAuthHeader() }
-    });
-    if (!res.ok) throw new Error('Failed to fetch categories');
-    return res.json();
+    return this.fetchWithAuth(`${BASE_URL}/categories`);
   },
 
   async createCategory(data: { name: string, slug: string, description?: string }) {
-    const res = await fetch(`${BASE_URL}/categories`, {
+    return this.fetchWithAuth(`${BASE_URL}/categories`, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        ...getAuthHeader()
-      },
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(data)
     });
-    if (!res.ok) {
-      const err = await res.json();
-      throw new Error(err.message || 'Failed to create category');
-    }
-    return res.json();
   },
 
   async updateCategory(id: string | number, data: { name?: string, slug?: string, description?: string }) {
-    const res = await fetch(`${BASE_URL}/categories/${id}`, {
+    return this.fetchWithAuth(`${BASE_URL}/categories/${id}`, {
       method: 'PUT',
-      headers: {
-        'Content-Type': 'application/json',
-        ...getAuthHeader()
-      },
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(data)
     });
-    if (!res.ok) {
-      const err = await res.json();
-      throw new Error(err.message || 'Failed to update category');
-    }
-    return res.json();
   },
 
   async deleteCategory(id: string | number) {
-    const res = await fetch(`${BASE_URL}/categories/${id}`, {
-      method: 'DELETE',
-      headers: { ...getAuthHeader() }
+    return this.fetchWithAuth(`${BASE_URL}/categories/${id}`, {
+      method: 'DELETE'
     });
-    if (!res.ok) {
-      const err = await res.json();
-      throw new Error(err.message || 'Failed to delete category');
-    }
-    return res.json();
   },
 
-  // Settings
-  async getSetting(key: string) {
-    const res = await fetch(`${BASE_URL}/settings?key=${key}`, {
-      headers: { ...getAuthHeader() }
-    });
-    if (!res.ok) throw new Error('Failed to fetch setting');
-    const data = await res.json();
-    return data.setting?.value || null;
-  },
 
-  async updateSetting(key: string, value: any) {
-    const res = await fetch(`${BASE_URL}/settings/${key}`, {
-      method: 'PUT',
-      headers: {
-        'Content-Type': 'application/json',
-        ...getAuthHeader()
-      },
-      body: JSON.stringify({ value })
-    });
-    if (!res.ok) throw new Error('Failed to update setting');
-    return res.json();
-  },
-
-  // Media Library
+  // Media Library (site-scoped)
   async getMedia() {
-    const res = await fetch(`${BASE_URL}/media`, {
-      headers: { ...getAuthHeader() }
-    });
-    if (!res.ok) throw new Error('Failed to fetch media');
-    return res.json();
+    return this.fetchWithAuth(`${BASE_URL}/media`, { cache: 'no-store' });
   },
 
   async getTrash() {
-    const res = await fetch(`${BASE_URL}/media/trash`, {
-      headers: { ...getAuthHeader() }
-    });
-    if (!res.ok) throw new Error('Failed to fetch trash');
-    return res.json();
+    return this.fetchWithAuth(`${BASE_URL}/media/trash`, { cache: 'no-store' });
   },
 
   async uploadMedia(data: { name: string, type: string, size: string, base64Data: string }) {
-    const res = await fetch(`${BASE_URL}/media/upload`, {
+    return this.fetchWithAuth(`${BASE_URL}/media/upload`, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        ...getAuthHeader()
-      },
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(data)
     });
-    if (!res.ok) {
-      const err = await res.json();
-      throw new Error(err.error || 'Upload failed');
-    }
-    return res.json();
   },
 
   async moveToTrash(id: number | string) {
-    const res = await fetch(`${BASE_URL}/media/${id}/trash`, {
-      method: 'PATCH',
-      headers: { ...getAuthHeader() }
+    return this.fetchWithAuth(`${BASE_URL}/media/${id}/trash`, {
+      method: 'PATCH'
     });
-    if (!res.ok) throw new Error('Failed to move to trash');
-    return res.json();
   },
 
   async restoreFromTrash(id: number | string) {
-    const res = await fetch(`${BASE_URL}/media/${id}/restore`, {
-      method: 'PATCH',
-      headers: { ...getAuthHeader() }
+    return this.fetchWithAuth(`${BASE_URL}/media/${id}/restore`, {
+      method: 'PATCH'
     });
-    if (!res.ok) throw new Error('Failed to restore media');
-    return res.json();
   },
 
   async deleteMediaPermanently(id: number | string) {
-    const res = await fetch(`${BASE_URL}/media/${id}`, {
-      method: 'DELETE',
-      headers: { ...getAuthHeader() }
+    return this.fetchWithAuth(`${BASE_URL}/media/${id}`, {
+      method: 'DELETE'
     });
-    if (!res.ok) throw new Error('Failed to delete media permanently');
-    return res.json();
   },
 
   // Interactions / Comments
   async getComments() {
-    const res = await fetch(`${BASE_URL}/comments`, {
-      headers: { ...getAuthHeader() }
-    });
-    if (!res.ok) throw new Error('Failed to fetch comments');
-    return res.json();
+    return this.fetchWithAuth(`${BASE_URL}/comments`);
   },
 
   async updateComment(id: number | string, data: { status?: string, content?: string }) {
-    const res = await fetch(`${BASE_URL}/comments/${id}`, {
+    return this.fetchWithAuth(`${BASE_URL}/comments/${id}`, {
       method: 'PUT',
-      headers: {
-        'Content-Type': 'application/json',
-        ...getAuthHeader()
-      },
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(data)
     });
-    if (!res.ok) throw new Error('Failed to update comment');
-    return res.json();
   },
 
   async deleteComment(id: number | string) {
-    const res = await fetch(`${BASE_URL}/comments/${id}`, {
-      method: 'DELETE',
-      headers: { ...getAuthHeader() }
+    return this.fetchWithAuth(`${BASE_URL}/comments/${id}`, {
+      method: 'DELETE'
     });
-    if (!res.ok) throw new Error('Failed to delete comment');
-    return res.json();
   },
 
   // AI Layouts
@@ -540,38 +744,32 @@ export const api = {
     return this.fetchWithAuth(`${BASE_URL}/ai/history?limit=${limit}`);
   },
 
-  // Settings
+  // Settings (site-scoped)
   async getSetting(key: string) {
-    const res = await fetch(`${BASE_URL}/settings?key=${encodeURIComponent(key)}`, {
-      headers: { ...getAuthHeader() },
-      cache: 'no-store'
-    });
-    if (!res.ok) {
-      if (res.status === 404) return null;
-      throw new Error('Failed to fetch setting');
-    }
-    const data = await res.json();
-    // Backend returns { success, setting: { key, value } }
-    const rawValue = data?.setting?.value;
-    if (rawValue === undefined || rawValue === null) return null;
     try {
-      return typeof rawValue === 'string' ? JSON.parse(rawValue) : rawValue;
-    } catch {
-      return rawValue;
+      const data = await this.fetchWithAuth(
+        `${BASE_URL}/settings?key=${encodeURIComponent(key)}`,
+        { cache: 'no-store' }
+      );
+      const rawValue = data?.setting?.value;
+      if (rawValue === undefined || rawValue === null) return null;
+      try {
+        return typeof rawValue === 'string' ? JSON.parse(rawValue) : rawValue;
+      } catch {
+        return rawValue;
+      }
+    } catch (err: any) {
+      if (String(err?.message || '').includes('404')) return null;
+      throw err;
     }
   },
 
   async updateSetting(key: string, value: any) {
-    const res = await fetch(`${BASE_URL}/settings/${key}`, {
+    return this.fetchWithAuth(`${BASE_URL}/settings/${key}`, {
       method: 'PUT',
-      headers: {
-        'Content-Type': 'application/json',
-        ...getAuthHeader()
-      },
+      headers: { 'Content-Type': 'application/json' },
       // Backend stores value as a JSON string
       body: JSON.stringify({ value: typeof value === 'string' ? value : JSON.stringify(value) })
     });
-    if (!res.ok) throw new Error('Failed to update setting');
-    return res.json();
   }
 };

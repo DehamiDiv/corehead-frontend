@@ -1,89 +1,42 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
-import { CheckCircle2, Eye, Palette, Sparkles, RefreshCw, X, Settings2, Send, Plus, Upload, Loader2 } from "lucide-react";
+import { CheckCircle2, Eye, Palette, Sparkles, RefreshCw, X, Settings2, Send, Plus, Upload, Loader2, ExternalLink } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { api } from "@/lib/api";
 import Theme1Preview from "@/components/admin/Theme1Preview";
+import { getThemePreset } from "@/lib/themePresets";
+import {
+  DEFAULT_THEME_NAV_LINKS,
+  DEFAULT_THEME_FOOTER_LINKS,
+} from "@/lib/themeNav";
+import { useSite } from "@/components/admin/SiteContext";
+import Link from "next/link";
 
+/** One-by-one theme setup order (matches presets) */
 const THEMES = [
-  {
-    id: "default",
-    name: "Default",
-    description: "Clean white layout with featured post slider, category tabs.",
-    preview: "https://images.unsplash.com/photo-1499750310107-5fef28a66643?w=800&q=80",
-  },
-  {
-    id: "theme-1",
-    name: "Theme 1",
-    description: "Nature-inspired green hero with full-width banner, search bar.",
-    preview: "https://images.unsplash.com/photo-1441974231531-c6227db76b6e?w=800&q=80",
-  },
-  {
-    id: "theme-2",
-    name: "Theme 2",
-    description: "Bold mosaic hero grid with orange accents, featured articles.",
-    preview: "https://images.unsplash.com/photo-1550745165-9bc0b252726f?w=800&q=80",
-  },
-  {
-    id: "theme-3",
-    name: "Theme 3",
-    description: "Elegant white layout with red accents, emoji welcome banner.",
-    preview: "https://images.unsplash.com/photo-1497215728101-856f4ea42174?w=800&q=80",
-  },
-  {
-    id: "theme-4",
-    name: "Theme 4",
-    description: "Soft pink and beige theme with triple card slider, category filters.",
-    preview: "https://images.unsplash.com/photo-1486312338219-ce68d2c6f44d?w=800&q=80",
-  },
-  {
-    id: "theme-5",
-    name: "Theme 5",
-    description: "Travel blog style with dark teal hero, search bar and featured stories.",
-    preview: "https://images.unsplash.com/photo-1518770660439-4636190af475?w=800&q=80",
-  },
-  {
-    id: "theme-6",
-    name: "Theme 6",
-    description: "Dark fitness theme with bold green diagonal accents, hero section.",
-    preview: "https://images.unsplash.com/photo-1534438327276-14e5300c3a48?w=800&q=80",
-  },
-  {
-    id: "theme-7",
-    name: "Theme 7",
-    description: "Professional portfolio style with blue accents, personal introduction.",
-    preview: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=800&q=80",
-  },
-  {
-    id: "theme-8",
-    name: "Theme 8",
-    description: "Corporate consulting layout with red CTA buttons, hero banner.",
-    preview: "https://images.unsplash.com/photo-1556761175-5973dc0f32d7?w=800&q=80",
-  },
-  {
-    id: "theme-9",
-    name: "Theme 9",
-    description: "Clean white editorial layout with teal accents, category sections.",
-    preview: "https://images.unsplash.com/photo-1472289065668-ce650ac443d2?w=800&q=80",
-  },
-  {
-    id: "theme-10",
-    name: "Theme 10",
-    description: "Blue magazine-style layout with featured post slider, social icons.",
-    preview: "https://images.unsplash.com/photo-1504280336224-b5dd8491d90c?w=800&q=80",
-  },
-  {
-    id: "theme-11",
-    name: "Theme 11",
-    description: "Modern dark theme with red accents, floating navigation and hero.",
-    preview: "https://images.unsplash.com/photo-1519389950473-47ba0277781c?w=800&q=80",
-  }
+  { id: "default", name: "Default", description: "Clean blue & white — safe starting theme.", preview: "https://images.unsplash.com/photo-1499750310107-5fef28a66643?w=800&q=80" },
+  { id: "theme-1", name: "Theme 1 · Nature", description: "Green nature palette for growth / eco sites.", preview: "https://images.unsplash.com/photo-1441974231531-c6227db76b6e?w=800&q=80" },
+  { id: "theme-2", name: "Theme 2 · Mosaic", description: "Bold orange accents for energetic blogs.", preview: "https://images.unsplash.com/photo-1550745165-9bc0b252726f?w=800&q=80" },
+  { id: "theme-3", name: "Theme 3 · Elegant Red", description: "Editorial red on white.", preview: "https://images.unsplash.com/photo-1497215728101-856f4ea42174?w=800&q=80" },
+  { id: "theme-4", name: "Theme 4 · Soft Blush", description: "Pink lifestyle palette.", preview: "https://images.unsplash.com/photo-1486312338219-ce68d2c6f44d?w=800&q=80" },
+  { id: "theme-5", name: "Theme 5 · Travel Teal", description: "Dark teal travel / stories look.", preview: "https://images.unsplash.com/photo-1518770660439-4636190af475?w=800&q=80" },
+  { id: "theme-6", name: "Theme 6 · Fitness Dark", description: "Dark theme with green accents.", preview: "https://images.unsplash.com/photo-1534438327276-14e5300c3a48?w=800&q=80" },
+  { id: "theme-7", name: "Theme 7 · Portfolio Blue", description: "Professional blue portfolio (tech default).", preview: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=800&q=80" },
+  { id: "theme-8", name: "Theme 8 · Corporate", description: "Dark header + red CTA corporate.", preview: "https://images.unsplash.com/photo-1556761175-5973dc0f32d7?w=800&q=80" },
+  { id: "theme-9", name: "Theme 9 · Editorial Teal", description: "Clean teal editorial.", preview: "https://images.unsplash.com/photo-1472289065668-ce650ac443d2?w=800&q=80" },
+  { id: "theme-10", name: "Theme 10 · Magazine Blue", description: "Blue magazine layout.", preview: "https://images.unsplash.com/photo-1504280336224-b5dd8491d90c?w=800&q=80" },
+  { id: "theme-11", name: "Theme 11 · Modern Dark", description: "Near-black + red modern dark.", preview: "https://images.unsplash.com/photo-1519389950473-47ba0277781c?w=800&q=80" },
 ];
 
 export default function AppearancePage() {
+  const { currentSite } = useSite();
   const [activeTheme, setActiveTheme] = useState("default");
   const [isLoading, setIsLoading] = useState(true);
+  const [activating, setActivating] = useState(false);
+  const [setupThemeId, setSetupThemeId] = useState<string | null>(null);
+  /** Themes fully written for this site (one-by-one setup progress) */
+  const [setupDone, setSetupDone] = useState<Record<string, boolean>>({});
   const [previewImage, setPreviewImage] = useState<string | null>(null);
   const [previewThemeId, setPreviewThemeId] = useState<string | null>(null);
 
@@ -93,11 +46,7 @@ export default function AppearancePage() {
   const [headerFont, setHeaderFont] = useState("#000000");
   const [headerLogo, setHeaderLogo] = useState("https://seeklogo.com/images/C/corehead-logo-0A288E3E34-seeklogo.com.png");
   const [headerAlt, setHeaderAlt] = useState("header-logo");
-  const [navLinks, setNavLinks] = useState([
-    { id: 1, name: "Home", link: "/" },
-    { id: 2, name: "Contact", link: "/contact-us" },
-    { id: 3, name: "About", link: "/about-us" },
-  ]);
+  const [navLinks, setNavLinks] = useState(DEFAULT_THEME_NAV_LINKS);
   const [newNavName, setNewNavName] = useState("");
   const [newNavLink, setNewNavLink] = useState("");
   const [ctaText, setCtaText] = useState("Sign-In");
@@ -116,11 +65,7 @@ export default function AppearancePage() {
   const [footerLogo, setFooterLogo] = useState("https://seeklogo.com/images/C/corehead-logo-0A288E3E34-seeklogo.com.png");
   const [footerAlt, setFooterAlt] = useState("footer-logo");
   const [footerDescription, setFooterDescription] = useState("Blogs by CoreHead");
-  const [quickLinks, setQuickLinks] = useState([
-    { id: 1, name: "Home", link: "/" },
-    { id: 2, name: "Privacy Policy", link: "/privacy-policy" },
-    { id: 3, name: "Blog", link: "/blog" },
-  ]);
+  const [quickLinks, setQuickLinks] = useState(DEFAULT_THEME_FOOTER_LINKS);
   const [newQuickName, setNewQuickName] = useState("");
   const [newQuickLink, setNewQuickLink] = useState("");
   const [socialLinks, setSocialLinks] = useState([
@@ -162,6 +107,19 @@ export default function AppearancePage() {
         if (savedTheme && savedTheme.themeId) {
           setActiveTheme(savedTheme.themeId);
         }
+        // Mark which themes already have colours saved (setup progress)
+        const done: Record<string, boolean> = {};
+        await Promise.all(
+          THEMES.map(async (t) => {
+            try {
+              const c = await api.getSetting(`theme_${t.id}_colours`);
+              done[t.id] = !!(c && c.primary);
+            } catch {
+              done[t.id] = false;
+            }
+          }),
+        );
+        setSetupDone(done);
       } catch (error) {
         console.error("Failed to fetch theme:", error);
       } finally {
@@ -169,7 +127,73 @@ export default function AppearancePage() {
       }
     };
     fetchTheme();
-  }, []);
+  }, [currentSite?.id]);
+
+  /**
+   * Fully write one theme pack (colours + header + footer + font) for this site.
+   * force=true overwrites previous customizations for that theme.
+   */
+  const writeThemePack = async (
+    themeId: string,
+    options?: { makeActive?: boolean; force?: boolean },
+  ) => {
+    const preset = getThemePreset(themeId);
+    const force = options?.force !== false; // default force for one-by-one setup
+    const makeActive = options?.makeActive === true;
+
+    if (makeActive) {
+      await api.updateSetting("active_theme", { themeId });
+    }
+
+    const existingColours = force
+      ? null
+      : await api.getSetting(`theme_${themeId}_colours`);
+    if (force || !existingColours?.primary) {
+      await api.updateSetting(`theme_${themeId}_colours`, { ...preset.colours });
+    }
+
+    const existingHeader = force
+      ? null
+      : await api.getSetting(`theme_${themeId}_header`);
+    if (force || !existingHeader?.headerBg) {
+      await api.updateSetting(`theme_${themeId}_header`, {
+        headerBg: preset.header.headerBg,
+        headerFont: preset.header.headerFont,
+        ctaBg: preset.header.ctaBg,
+        ctaColor: preset.header.ctaColor,
+        ctaText: preset.header.ctaText,
+        ctaUrl: "/blog",
+        navLinks: DEFAULT_THEME_NAV_LINKS,
+        headerLogo: existingHeader?.headerLogo || headerLogo || currentSite?.logo || null,
+      });
+    }
+
+    const existingFooter = force
+      ? null
+      : await api.getSetting(`theme_${themeId}_footer`);
+    if (force || !existingFooter?.footerBg) {
+      await api.updateSetting(`theme_${themeId}_footer`, {
+        footerBg: preset.footer.footerBg,
+        footerFont: preset.footer.footerFont,
+        footerDescription:
+          preset.footer.footerDescription ||
+          `Stories and updates from ${currentSite?.name || "our site"}.`,
+        copyrightText: `© ${new Date().getFullYear()} ${currentSite?.name || "Site"}. All rights reserved.`,
+        quickLinks: DEFAULT_THEME_FOOTER_LINKS,
+        footerLogo: existingFooter?.footerLogo || footerLogo || currentSite?.logo || null,
+      });
+    }
+
+    const existingFont = force
+      ? null
+      : await api.getSetting(`theme_${themeId}_font`);
+    if (force || !existingFont?.font) {
+      await api.updateSetting(`theme_${themeId}_font`, { font: preset.font });
+    }
+
+    setSetupDone((prev) => ({ ...prev, [themeId]: true }));
+    return preset;
+  };
 
   // Fetch header & footer settings when activeTheme changes
   useEffect(() => {
@@ -182,16 +206,11 @@ export default function AppearancePage() {
           setHeaderFont(headerData.headerFont || (activeTheme === "theme-1" ? "#ffffff" : "#000000"));
           setHeaderLogo(headerData.headerLogo || "https://seeklogo.com/images/C/corehead-logo-0A288E3E34-seeklogo.com.png");
           setHeaderAlt(headerData.headerAlt || "header-logo");
-          setNavLinks(headerData.navLinks || (activeTheme === "theme-1" ? [
-            { id: 1, name: "home", link: "/" },
-            { id: 2, name: "About us", link: "/about-us" },
-            { id: 3, name: "Contact us", link: "/contact-us" },
-            { id: 4, name: "Sign-in", link: "/" },
-          ] : [
-            { id: 1, name: "Home", link: "/" },
-            { id: 2, name: "Contact", link: "/contact-us" },
-            { id: 3, name: "About", link: "/about-us" },
-          ]));
+          setNavLinks(
+            headerData.navLinks?.length
+              ? headerData.navLinks
+              : DEFAULT_THEME_NAV_LINKS,
+          );
           setCtaText(headerData.ctaText || "Sign-In");
           setCtaUrl(headerData.ctaUrl || "/");
           setCtaBg(headerData.ctaBg || "#156cab");
@@ -201,18 +220,9 @@ export default function AppearancePage() {
           setHeaderFont(activeTheme === "theme-1" ? "#ffffff" : "#000000");
           setHeaderLogo("https://seeklogo.com/images/C/corehead-logo-0A288E3E34-seeklogo.com.png");
           setHeaderAlt("header-logo");
-          setNavLinks(activeTheme === "theme-1" ? [
-            { id: 1, name: "home", link: "/" },
-            { id: 2, name: "About us", link: "/about-us" },
-            { id: 3, name: "Contact us", link: "/contact-us" },
-            { id: 4, name: "Sign-in", link: "/" },
-          ] : [
-            { id: 1, name: "Home", link: "/" },
-            { id: 2, name: "Contact", link: "/contact-us" },
-            { id: 3, name: "About", link: "/about-us" },
-          ]);
-          setCtaText("Sign-In");
-          setCtaUrl("/");
+          setNavLinks(DEFAULT_THEME_NAV_LINKS);
+          setCtaText("Latest posts");
+          setCtaUrl("/blog");
           setCtaBg("#156cab");
           setCtaColor("#ffffff");
         }
@@ -224,11 +234,11 @@ export default function AppearancePage() {
           setFooterLogo(footerData.footerLogo || "https://seeklogo.com/images/C/corehead-logo-0A288E3E34-seeklogo.com.png");
           setFooterAlt(footerData.footerAlt || "footer-logo");
           setFooterDescription(footerData.footerDescription || "Blogs by CoreHead");
-          setQuickLinks(footerData.quickLinks || [
-            { id: 1, name: "Home", link: "/" },
-            { id: 2, name: "Privacy Policy", link: "/privacy-policy" },
-            { id: 3, name: "Blog", link: "/blog" },
-          ]);
+          setQuickLinks(
+            footerData.quickLinks?.length
+              ? footerData.quickLinks
+              : DEFAULT_THEME_FOOTER_LINKS,
+          );
           setSocialLinks(footerData.socialLinks || [
             { id: 1, platform: "Facebook", url: "/" },
             { id: 2, platform: "Twitter", url: "/" },
@@ -296,13 +306,92 @@ export default function AppearancePage() {
     }
   };
 
+  /**
+   * R2-4: One-by-one — fully set up this theme pack AND make it active on public site.
+   */
   const handleActivateTheme = async (themeId: string) => {
+    setActivating(true);
+    setSetupThemeId(themeId);
     try {
-      await api.updateSetting("active_theme", { themeId });
+      const preset = await writeThemePack(themeId, {
+        makeActive: true,
+        force: true,
+      });
       setActiveTheme(themeId);
+      // Reload customizer fields for this theme
+      setHeaderBg(preset.header.headerBg);
+      setHeaderFont(preset.header.headerFont);
+      setCtaBg(preset.header.ctaBg);
+      setCtaColor(preset.header.ctaColor);
+      setCtaText(preset.header.ctaText);
+      setFooterBg(preset.footer.footerBg);
+      setFooterFont(preset.footer.footerFont);
+      setFooterDescription(preset.footer.footerDescription);
+      setColourPrimary(preset.colours.primary);
+      setColourBackground(preset.colours.background);
+      setColourForeground(preset.colours.foreground);
+      setColourAccent(preset.colours.accent);
+      setColourCard(preset.colours.card);
+      setColourCardForeground(preset.colours.cardForeground);
+      setSelectedFont(preset.font);
+
+      alert(
+        `✓ ${preset.name} set up & live${
+          currentSite?.slug ? ` on /s/${currentSite.slug}` : ""
+        }.\nOpen public site and hard-refresh (Ctrl+Shift+R).`,
+      );
     } catch (error) {
       console.error("Failed to update theme:", error);
-      alert("Failed to activate theme.");
+      alert("Failed to set up theme. Is a site selected?");
+    } finally {
+      setActivating(false);
+      setSetupThemeId(null);
+    }
+  };
+
+  /** Set up theme pack without switching active (prepare offline). */
+  const handleSetupOnly = async (themeId: string) => {
+    setSetupThemeId(themeId);
+    try {
+      const preset = await writeThemePack(themeId, {
+        makeActive: false,
+        force: true,
+      });
+      alert(`✓ ${preset.name} pack saved. Click Activate when you want it live.`);
+    } catch (error) {
+      console.error(error);
+      alert("Failed to set up theme pack.");
+    } finally {
+      setSetupThemeId(null);
+    }
+  };
+
+  /** Run all themes one-by-one in order (setup packs); leave current active as last activated optional */
+  const handleSetupAllOneByOne = async () => {
+    if (
+      !confirm(
+        `Set up all ${THEMES.length} theme packs for ${currentSite?.name || "this site"}? This overwrites each theme’s saved colours/header/footer.`,
+      )
+    ) {
+      return;
+    }
+    setActivating(true);
+    try {
+      for (const t of THEMES) {
+        setSetupThemeId(t.id);
+        await writeThemePack(t.id, { makeActive: false, force: true });
+      }
+      // Keep currently active theme fully applied & live
+      await writeThemePack(activeTheme, { makeActive: true, force: true });
+      alert(
+        `All ${THEMES.length} themes set up for ${currentSite?.name || "site"}. Active remains: ${activeTheme}`,
+      );
+    } catch (e) {
+      console.error(e);
+      alert("Setup stopped with an error. Check console / site context.");
+    } finally {
+      setActivating(false);
+      setSetupThemeId(null);
     }
   };
 
@@ -465,29 +554,71 @@ export default function AppearancePage() {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
+          <p className="text-xs font-bold uppercase tracking-widest text-blue-600 mb-1">
+            R2-4 · Public themes
+          </p>
           <h1 className="text-3xl font-bold text-gray-900">Appearance</h1>
-          <p className="text-gray-500 mt-1">Customize the look and feel of your blog</p>
+          <p className="text-gray-500 mt-1">
+            Themes apply to your public site shell (header, colours, footer, fonts).
+          </p>
         </div>
-        <button className="flex items-center justify-center gap-2 px-4 py-2 bg-white border border-gray-200 rounded-xl text-sm font-bold text-gray-700 hover:bg-gray-50 transition-all shadow-sm">
-          <RefreshCw className="w-4 h-4 text-gray-400" />
-          Update Themes
-        </button>
+        <div className="flex flex-wrap items-center gap-2">
+          {currentSite?.slug && (
+            <Link
+              href={`/s/${currentSite.slug}`}
+              target="_blank"
+              className="flex items-center justify-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-xl text-sm font-bold hover:bg-blue-700 transition-all shadow-sm"
+            >
+              <ExternalLink className="w-4 h-4" />
+              View public site
+            </Link>
+          )}
+          <button
+            type="button"
+            onClick={() => handleActivateTheme(activeTheme)}
+            disabled={activating}
+            className="flex items-center justify-center gap-2 px-4 py-2 bg-white border border-gray-200 rounded-xl text-sm font-bold text-gray-700 hover:bg-gray-50 transition-all shadow-sm disabled:opacity-50"
+          >
+            {activating ? (
+              <Loader2 className="w-4 h-4 animate-spin" />
+            ) : (
+              <RefreshCw className="w-4 h-4 text-gray-400" />
+            )}
+            Re-apply theme
+          </button>
+        </div>
       </div>
 
       {/* Currently Active Banner */}
-      <div className="bg-white p-6 rounded-3xl shadow-sm border border-gray-100 flex items-center justify-between group">
+      <div className="bg-white p-6 rounded-3xl shadow-sm border border-gray-100 flex flex-wrap items-center justify-between gap-4 group">
         <div className="flex items-center gap-6">
           <div className="w-14 h-14 rounded-2xl bg-blue-50 text-blue-600 flex items-center justify-center shadow-inner">
             <Palette className="w-7 h-7" />
           </div>
           <div>
-            <p className="text-xs font-bold text-gray-400 uppercase tracking-widest">Currently active</p>
+            <p className="text-xs font-bold text-gray-400 uppercase tracking-widest">Live on public site</p>
             <h2 className="text-xl font-black text-gray-900 mt-0.5">
               {activeThemeName}
             </h2>
+            <p className="text-xs text-gray-400 mt-1 font-medium">
+              {currentSite
+                ? `Site: ${currentSite.name} · /s/${currentSite.slug}`
+                : "Select a site to scope appearance settings"}
+            </p>
+            <p className="text-xs text-blue-600 font-bold mt-2">
+              Setup progress: {Object.values(setupDone).filter(Boolean).length} / {THEMES.length} themes
+            </p>
           </div>
         </div>
-        <div className="flex items-center gap-4">
+        <div className="flex flex-wrap items-center gap-3">
+          <button
+            type="button"
+            onClick={handleSetupAllOneByOne}
+            disabled={activating || !currentSite}
+            className="h-10 px-4 rounded-xl border border-slate-200 bg-white text-sm font-bold text-slate-700 hover:bg-slate-50 disabled:opacity-50"
+          >
+            Setup all (one-by-one)
+          </button>
            <span className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-xl text-sm font-bold shadow-lg shadow-blue-100">
              <CheckCircle2 className="w-4 h-4" />
              Active
@@ -495,16 +626,25 @@ export default function AppearancePage() {
         </div>
       </div>
 
+      <p className="text-sm text-slate-500 font-medium">
+        <strong className="text-slate-800">One by one:</strong> open a theme →{" "}
+        <strong>Setup pack</strong> (save colours/header/footer) →{" "}
+        <strong>Activate &amp; go live</strong> → check public site → next theme.
+      </p>
+
       {/* Theme Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-        {THEMES.map((theme) => {
+        {THEMES.map((theme, index) => {
           const isActive = theme.id === activeTheme;
+          const isSetup = !!setupDone[theme.id];
+          const isBusy = setupThemeId === theme.id;
+          const preset = getThemePreset(theme.id);
           return (
             <div 
               key={theme.id}
               className={cn(
                 "group relative bg-white rounded-[2.5rem] overflow-hidden border-2 transition-all duration-500",
-                isActive ? "border-blue-600 shadow-2xl shadow-blue-100" : "border-transparent shadow-xl shadow-gray-200/40 hover:border-blue-200"
+                isActive ? "border-blue-600 shadow-2xl shadow-blue-100" : isSetup ? "border-emerald-200 shadow-xl shadow-emerald-50" : "border-transparent shadow-xl shadow-gray-200/40 hover:border-blue-200"
               )}
             >
               {/* Preview Image */}
@@ -529,7 +669,8 @@ export default function AppearancePage() {
                   </button>
                   {!isActive && (
                     <button 
-                      onClick={() => handleActivateTheme(theme.id)}
+                      onClick={() => !activating && handleActivateTheme(theme.id)}
+                      disabled={activating}
                       className="flex items-center gap-2 px-5 py-2.5 bg-blue-600 rounded-xl text-sm font-bold text-white hover:bg-blue-700 transition-all transform translate-y-4 group-hover:translate-y-0 delay-75 duration-500 shadow-lg shadow-blue-900/20"
                     >
                       <Sparkles className="w-4 h-4" />
@@ -551,17 +692,42 @@ export default function AppearancePage() {
                   <Eye className="w-4 h-4" />
                 </button>
                 
-                {isActive && (
-                  <div className="absolute top-4 right-4 z-10">
-                    <div className="bg-blue-600 text-white p-1.5 rounded-full shadow-lg">
+                <div className="absolute top-4 right-4 z-10 flex flex-col items-end gap-1">
+                  {isActive && (
+                    <div className="bg-blue-600 text-white p-1.5 rounded-full shadow-lg" title="Live">
                       <CheckCircle2 className="w-4 h-4" />
                     </div>
-                  </div>
-                )}
+                  )}
+                  {isSetup && !isActive && (
+                    <span className="px-2 py-0.5 rounded-full bg-emerald-500 text-white text-[10px] font-black uppercase">
+                      Set up
+                    </span>
+                  )}
+                </div>
+                <span className="absolute bottom-3 left-3 z-10 px-2 py-0.5 rounded-lg bg-black/50 text-white text-[10px] font-bold">
+                  {index + 1} / {THEMES.length}
+                </span>
               </div>
 
               {/* Content */}
               <div className="p-8">
+                <div className="flex items-center gap-2 mb-3">
+                  <span
+                    className="w-4 h-4 rounded-full border border-black/10 shrink-0"
+                    style={{ background: preset.colours.primary }}
+                    title="Primary"
+                  />
+                  <span
+                    className="w-4 h-4 rounded-full border border-black/10 shrink-0"
+                    style={{ background: preset.header.headerBg }}
+                    title="Header"
+                  />
+                  <span
+                    className="w-4 h-4 rounded-full border border-black/10 shrink-0"
+                    style={{ background: preset.footer.footerBg }}
+                    title="Footer"
+                  />
+                </div>
                 <div className="flex items-center justify-between mb-2">
                   <h3 className="text-xl font-black text-gray-900">{theme.name}</h3>
                   {isActive && (
@@ -570,9 +736,42 @@ export default function AppearancePage() {
                     </span>
                   )}
                 </div>
-                <p className="text-sm text-gray-500 font-medium leading-relaxed">
+                <p className="text-sm text-gray-500 font-medium leading-relaxed mb-5">
                   {theme.description}
                 </p>
+                <div className="flex flex-col gap-2">
+                  <button
+                    type="button"
+                    disabled={!!setupThemeId || activating}
+                    onClick={() => handleSetupOnly(theme.id)}
+                    className="w-full h-10 rounded-xl border border-slate-200 text-sm font-bold text-slate-700 hover:bg-slate-50 disabled:opacity-50 flex items-center justify-center gap-2"
+                  >
+                    {isBusy ? (
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                    ) : isSetup ? (
+                      <CheckCircle2 className="w-4 h-4 text-emerald-500" />
+                    ) : null}
+                    {isBusy ? "Setting up…" : isSetup ? "Re-setup pack" : "1 · Setup pack"}
+                  </button>
+                  <button
+                    type="button"
+                    disabled={!!setupThemeId || activating}
+                    onClick={() => handleActivateTheme(theme.id)}
+                    className={cn(
+                      "w-full h-10 rounded-xl text-sm font-bold disabled:opacity-50 flex items-center justify-center gap-2",
+                      isActive
+                        ? "bg-slate-900 text-white"
+                        : "bg-blue-600 text-white hover:bg-blue-700",
+                    )}
+                  >
+                    {isBusy && isActive ? (
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                    ) : (
+                      <Sparkles className="w-4 h-4" />
+                    )}
+                    {isActive ? "Re-apply & go live" : "2 · Activate & go live"}
+                  </button>
+                </div>
               </div>
             </div>
           );

@@ -109,7 +109,7 @@ export default function AIHistoryPage() {
       }
       
       localStorage.setItem('ai_generated_layout', JSON.stringify(layoutData));
-      router.push('/builder');
+      router.push('/admin/builder');
     } catch (err) {
       alert('Failed to restore layout: ' + err.message);
     } finally {

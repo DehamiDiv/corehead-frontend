@@ -3,7 +3,11 @@ const BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api';
 const getAuthHeader = () => {
   if (typeof window !== 'undefined') {
     const token = localStorage.getItem('accessToken');
-    return token ? { 'Authorization': `Bearer ${token}` } : {};
+    if (!token) return {};
+    const headers = { 'Authorization': `Bearer ${token}` };
+    const siteId = localStorage.getItem('currentSiteId');
+    if (siteId) headers['X-Site-Id'] = siteId;
+    return headers;
   }
   return {};
 };

@@ -16,14 +16,18 @@ import {
   LayoutTemplate,
   Sparkles,
   PanelLeft,
+  Globe2,
+  UserPlus,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { isPlatformAdmin } from "@/lib/rbac";
 
 type NavItem = {
   label: string;
   href: string;
   Icon: any;
-  adminOnly?: boolean;
+  /** Platform super-admin only (not site owners) */
+  platformAdminOnly?: boolean;
 };
 
 export default function Sidebar({ isOpen = true }: { isOpen?: boolean }) {
@@ -44,21 +48,26 @@ export default function Sidebar({ isOpen = true }: { isOpen?: boolean }) {
 
   const navItems: NavItem[] = useMemo(
     () => {
-      const allItems = [
-        { label: "AI Generator",   href: "/ai-prompt",        Icon: Sparkles       },
-        { label: "Posts",         href: "/admin/posts",      Icon: FileText       },
-        { label: "Layouts",       href: "/admin/layouts",    Icon: LayoutTemplate },
-        { label: "Visual Builder",href: "/admin/builder",    Icon: PanelLeft      },
-        { label: "Categories",    href: "/admin/categories", Icon: Tags,           adminOnly: true },
-        { label: "Media Library", href: "/admin/media",      Icon: ImageIcon      },
-        { label: "Interactions",  href: "/admin/comments",   Icon: MessageSquare, adminOnly: true },
-        { label: "Users",         href: "/admin/users",      Icon: Users,          adminOnly: true },
-        { label: "Pages",         href: "/admin/pages",      Icon: File,           adminOnly: true },
+      // R1-1: site CMS menus available to all site operators (not only platform admin).
+      // R1-2: only Users is platformAdminOnly.
+      const allItems: NavItem[] = [
+        { label: "AI Generator",    href: "/ai-prompt",        Icon: Sparkles       },
+        { label: "My Sites",        href: "/admin/sites",      Icon: Globe2         },
+        { label: "Team",            href: "/admin/team",       Icon: UserPlus       },
+        { label: "Posts",           href: "/admin/posts",      Icon: FileText       },
+        { label: "Layouts",         href: "/admin/layouts",    Icon: LayoutTemplate },
+        { label: "Template Assign", href: "/admin/template-assignment", Icon: LayoutTemplate },
+        { label: "Visual Builder",  href: "/admin/builder",    Icon: PanelLeft      },
+        { label: "Categories",      href: "/admin/categories", Icon: Tags           },
+        { label: "Media Library",   href: "/admin/media",      Icon: ImageIcon      },
+        { label: "Interactions",    href: "/admin/comments",   Icon: MessageSquare  },
+        // R3-1: site-scoped custom HTML pages
+        { label: "Pages",           href: "/admin/pages",      Icon: File           },
+        { label: "Users",           href: "/admin/users",      Icon: Users,          platformAdminOnly: true },
       ];
 
-      const isAdmin = user?.role?.toLowerCase() === 'admin' || user?.role?.toLowerCase() === 'administrator';
-      if (!isAdmin) {
-        return allItems.filter(item => !item.adminOnly);
+      if (!isPlatformAdmin(user?.role)) {
+        return allItems.filter((item) => !item.platformAdminOnly);
       }
       return allItems;
     },

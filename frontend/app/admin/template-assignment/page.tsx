@@ -19,21 +19,38 @@ interface CategoryOverride {
     layoutType: string;
 }
 
-// ── Static category list (extend if backend has a categories API) ─────────────
-const CATEGORIES = [
-    { id: "tech", name: "Technology" },
-    { id: "design", name: "Design" },
-    { id: "lifestyle", name: "Lifestyle" },
-    { id: "news", name: "News" },
-    { id: "science", name: "Science" },
-    { id: "business", name: "Business" },
-];
+/** R2-5: Match builder / layouts UI type names */
+function isPublishedStatus(status?: string) {
+    return String(status || "").toLowerCase() === "published";
+}
+
+function isSingleType(type?: string) {
+    const t = String(type || "").toLowerCase();
+    return (
+        t.includes("single") ||
+        t === "blog" ||
+        t === "post" ||
+        t === "single_post" ||
+        t === "single-post"
+    );
+}
+
+function isArchiveType(type?: string) {
+    const t = String(type || "").toLowerCase();
+    return (
+        t.includes("archive") ||
+        t.includes("loop") ||
+        t.includes("collection") ||
+        t === "list"
+    );
+}
 
 export default function TemplateAssignmentPage() {
     // ── All layouts fetched from backend ──────────────────────────────────────
     const [allLayouts, setAllLayouts] = useState<LayoutOption[]>([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
+    const [categories, setCategories] = useState<{ id: string; name: string }[]>([]);
 
     // ── Global defaults state ─────────────────────────────────────────────────
     const [globalSingleId, setGlobalSingleId] = useState<string>("");
@@ -42,7 +59,7 @@ export default function TemplateAssignmentPage() {
     const [globalSuccess, setGlobalSuccess] = useState(false);
 
     // ── Category override form state ──────────────────────────────────────────
-    const [newCatId, setNewCatId] = useState("tech");
+    const [newCatId, setNewCatId] = useState("");
     const [newLayoutId, setNewLayoutId] = useState<string>("");
     const [savingOverride, setSavingOverride] = useState(false);
     const [overrideSuccess, setOverrideSuccess] = useState(false);
@@ -51,29 +68,60 @@ export default function TemplateAssignmentPage() {
     const [overrides, setOverrides] = useState<CategoryOverride[]>([]);
 
     // ── Derived layout lists ──────────────────────────────────────────────────
-    const publishedLayouts = allLayouts.filter(l => l.status === "published");
-    const singleLayouts = publishedLayouts.filter(l => l.type === "single_post" || l.type === "blog");
-    const archiveLayouts = publishedLayouts.filter(l => l.type === "archive");
+    const publishedLayouts = allLayouts.filter((l) => isPublishedStatus(l.status));
+    const singleLayouts = publishedLayouts.filter((l) => isSingleType(l.type));
+    const archiveLayouts = publishedLayouts.filter((l) => isArchiveType(l.type));
 
-    // ── Fetch all templates ───────────────────────────────────────────────────
+    // ── Fetch all templates + site categories ─────────────────────────────────
     const fetchLayouts = useCallback(async () => {
         setLoading(true);
         setError(null);
         try {
-            const data: LayoutOption[] = await api.getTemplates();
+            const [dataRaw, catsRaw] = await Promise.all([
+                api.getTemplates(),
+                api.getCategories().catch(() => ({ categories: [] })),
+            ]);
+            const data: LayoutOption[] = Array.isArray(dataRaw)
+                ? dataRaw
+                : (dataRaw as any)?.templates || [];
             setAllLayouts(data);
 
-            // Pre-select first available options for the dropdowns
-            const singles = data.filter(l => l.status === "published" && (l.type === "single_post" || l.type === "blog"));
-            const archives = data.filter(l => l.status === "published" && l.type === "archive");
-            if (singles.length > 0 && !globalSingleId) setGlobalSingleId(String(singles[0].id));
-            if (archives.length > 0 && !globalArchiveId) setGlobalArchiveId(String(archives[0].id));
-            if (data.filter(l => l.status === "published").length > 0 && !newLayoutId)
-                setNewLayoutId(String(data.filter(l => l.status === "published")[0].id));
+            const catList = (catsRaw?.categories || catsRaw || []).map((c: any) => ({
+                id: String(c.slug || c.id || c.name),
+                name: c.name || String(c.slug || c.id),
+            }));
+            setCategories(catList);
+            if (catList.length > 0 && !newCatId) setNewCatId(catList[0].id);
+
+            const singles = data.filter(
+                (l) => isPublishedStatus(l.status) && isSingleType(l.type)
+            );
+            const archives = data.filter(
+                (l) => isPublishedStatus(l.status) && isArchiveType(l.type)
+            );
+
+            // Prefer already-assigned global defaults
+            const globalSingle = singles.find((l: any) => l.category === "global_default");
+            const globalArchive = archives.find((l: any) => l.category === "global_default");
+            if (globalSingle) setGlobalSingleId(String(globalSingle.id));
+            else if (singles.length > 0 && !globalSingleId)
+                setGlobalSingleId(String(singles[0].id));
+            if (globalArchive) setGlobalArchiveId(String(globalArchive.id));
+            else if (archives.length > 0 && !globalArchiveId)
+                setGlobalArchiveId(String(archives[0].id));
+
+            const published = data.filter((l) => isPublishedStatus(l.status));
+            if (published.length > 0 && !newLayoutId)
+                setNewLayoutId(String(published[0].id));
 
             // Build overrides from assigned templates (category !== null && !== 'global_default')
             const assignedOverrides: CategoryOverride[] = data
-                .filter((l: any) => l.category && l.category !== "global_default" && l.status === "published")
+                .filter(
+                    (l: any) =>
+                        l.category &&
+                        l.category !== "global_default" &&
+                        isPublishedStatus(l.status)
+                )
                 .map((l: any) => ({
                     id: String(l.id),
                     categoryId: l.category,
@@ -128,7 +176,7 @@ export default function TemplateAssignmentPage() {
         }
     };
 
-    const getCategoryName = (id: string) => CATEGORIES.find(c => c.id === id)?.name || id;
+    const getCategoryName = (id: string) => categories.find(c => c.id === id)?.name || id;
     const getLayoutName = (id: number) => allLayouts.find(l => l.id === id)?.name || String(id);
 
     if (loading) {
@@ -261,9 +309,15 @@ export default function TemplateAssignmentPage() {
                                         onChange={(e) => setNewCatId(e.target.value)}
                                         className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm bg-white"
                                     >
-                                        {CATEGORIES.map(c => (
-                                            <option key={c.id} value={c.id}>{c.name}</option>
-                                        ))}
+                                        {categories.length === 0 ? (
+                                            <option value="">No categories — create some first</option>
+                                        ) : (
+                                            categories.map((c) => (
+                                                <option key={c.id} value={c.id}>
+                                                    {c.name}
+                                                </option>
+                                            ))
+                                        )}
                                     </select>
                                 </div>
                                 {/* Layout Selector */}

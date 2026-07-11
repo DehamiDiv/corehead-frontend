@@ -1,14 +1,16 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, Suspense } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import Image from "next/image";
 import { Eye, EyeOff, LayoutGrid, BookOpen, Settings, AlertCircle, Loader2 } from "lucide-react";
 import { api } from "@/lib/api";
 
-export default function SignupPage() {
+function SignupForm() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const callback = searchParams.get("callback") || "";
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
@@ -57,12 +59,46 @@ export default function SignupPage() {
         password: formData.password,
       });
 
-      setSuccess("Account created successfully! We've sent an OTP to your email.");
-      
-      // Redirect to verification page
+      const realMail =
+        data.emailSent === true && data.emailRealDelivery !== false;
+      if (realMail) {
+        setSuccess("Account created! We've sent a verification code to your email.");
+      } else {
+        setSuccess(
+          data.message ||
+            "Account created. Email was not delivered to a real inbox — you'll see the OTP on the next screen (or check the backend console).",
+        );
+      }
+
+      // Redirect to verification page (preserve invite callback for post-login)
+      const verifyQs = new URLSearchParams({ email: formData.email });
+      if (callback.startsWith("/")) {
+        verifyQs.set("callback", callback);
+      }
+      // Pass dev OTP via sessionStorage so it is not left in the URL bar
+      if (data.devOtp) {
+        try {
+          sessionStorage.setItem(
+            `corehead_dev_otp:${formData.email.toLowerCase()}`,
+            String(data.devOtp),
+          );
+        } catch {
+          /* ignore */
+        }
+      }
+      if (data.emailError) {
+        try {
+          sessionStorage.setItem(
+            `corehead_email_error:${formData.email.toLowerCase()}`,
+            String(data.emailError),
+          );
+        } catch {
+          /* ignore */
+        }
+      }
       setTimeout(() => {
-        router.push(`/verify-email?email=${encodeURIComponent(formData.email)}`);
-      }, 2000);
+        router.push(`/verify-email?${verifyQs.toString()}`);
+      }, realMail ? 1500 : 1200);
     } catch (err: any) {
       setError(err.message || "Registration failed. Please try again.");
     } finally {
@@ -245,7 +281,11 @@ export default function SignupPage() {
             <p className="text-center text-sm text-slate-600 mt-2">
               Already have an account?{" "}
               <Link
-                href="/login"
+                href={
+                  callback.startsWith("/")
+                    ? `/login?callback=${encodeURIComponent(callback)}`
+                    : "/login"
+                }
                 className="font-semibold text-blue-700 hover:text-blue-800 transition-colors"
               >
                 Sign In
@@ -255,5 +295,19 @@ export default function SignupPage() {
         </div>
       </main>
     </div>
+  );
+}
+
+export default function SignupPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="min-h-screen flex items-center justify-center bg-blue-100">
+          <Loader2 className="w-8 h-8 animate-spin text-blue-600" />
+        </div>
+      }
+    >
+      <SignupForm />
+    </Suspense>
   );
 }

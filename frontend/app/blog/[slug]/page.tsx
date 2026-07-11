@@ -94,10 +94,14 @@ export default async function SinglePostPage({ params }: SinglePostPageProps) {
             <div className="flex items-center gap-2">
               <div className="w-8 h-8 rounded-full bg-blue-50 flex items-center justify-center overflow-hidden border border-blue-100">
                 {post.author?.avatar && post.author.avatar.length > 1 ? (
-                  <img src={post.author.avatar} alt="Author" className="w-full h-full object-cover" />
+                  <img 
+                    src={post.author.avatar.startsWith('http') ? post.author.avatar : `http://localhost:5000${post.author.avatar}`} 
+                    alt="Author" 
+                    className="w-full h-full object-cover" 
+                  />
                 ) : (
                   <span className="text-[12px] font-bold text-blue-600">
-                    {post.author?.avatar || post.author?.name?.charAt(0) || "U"}
+                    {post.author?.name?.charAt(0) || "U"}
                   </span>
                 )}
               </div>

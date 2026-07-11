@@ -1,145 +1,184 @@
 "use client";
 
 import Link from "next/link";
+import { useEffect, useState } from "react";
 import {
   CheckCircle,
   ArrowLeft,
-  Image as ImageIcon,
-  Globe,
   Calendar,
   Clock,
+  LayoutTemplate,
+  FileEdit,
 } from "lucide-react";
 
+const SAVE_META_KEY = "corehead_builder_save_meta";
+const LAYOUT_KEY = "corehead_builder_layout";
+
+type SaveMeta = {
+  id?: string | number | null;
+  name?: string;
+  type?: string;
+  status?: string;
+  savedAt?: string;
+  siteSlug?: string | null;
+  siteName?: string | null;
+  blockCount?: number;
+};
+
+/**
+ * R4-2: Draft save confirmation — shows real template meta from last save.
+ */
 export default function SaveDraftPage() {
+  const [meta, setMeta] = useState<SaveMeta | null>(null);
+  const [layoutPreview, setLayoutPreview] = useState("[]");
+
+  useEffect(() => {
+    try {
+      const raw = sessionStorage.getItem(SAVE_META_KEY);
+      if (raw) setMeta(JSON.parse(raw));
+    } catch {
+      /* ignore */
+    }
+    try {
+      setLayoutPreview(localStorage.getItem(LAYOUT_KEY) || "[]");
+    } catch {
+      setLayoutPreview("[]");
+    }
+  }, []);
+
+  const name = meta?.name || "Untitled layout";
+  const type = meta?.type || "Layout";
+  const savedAt = meta?.savedAt
+    ? new Date(meta.savedAt).toLocaleString()
+    : "Just now";
+  const editorHref = meta?.id
+    ? `/admin/builder?id=${encodeURIComponent(String(meta.id))}`
+    : "/admin/builder";
+
+  let prettyJson = layoutPreview;
+  try {
+    prettyJson = JSON.stringify(JSON.parse(layoutPreview), null, 2);
+  } catch {
+    /* keep raw */
+  }
+
   return (
     <div className="min-h-screen bg-slate-50 flex items-center justify-center p-6">
       <div className="max-w-2xl w-full space-y-8">
-        {/* Success Header */}
         <div className="text-center space-y-4">
           <div className="w-16 h-16 bg-green-100 text-green-600 rounded-full flex items-center justify-center mx-auto">
             <CheckCircle className="w-8 h-8" />
           </div>
           <h1 className="text-3xl font-bold text-slate-800">
-            Draft Saved Successfully!
+            Draft saved successfully
           </h1>
           <p className="text-slate-500 text-lg">
-            Your progress has been saved. You can safely close this window or
-            configure post settings below.
+            <span className="font-semibold text-slate-700">&ldquo;{name}&rdquo;</span>{" "}
+            is stored as a draft template
+            {meta?.siteName ? (
+              <>
+                {" "}
+                for <span className="font-medium">{meta.siteName}</span>
+              </>
+            ) : null}
+            . It is not live on the public site until you publish.
           </p>
         </div>
 
-        {/* Post Settings Card */}
         <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
           <div className="p-6 border-b border-slate-100 flex items-center justify-between">
-            <h2 className="text-lg font-semibold text-slate-800">
-              Post Settings
+            <h2 className="text-lg font-semibold text-slate-800 flex items-center gap-2">
+              <LayoutTemplate className="w-5 h-5 text-blue-500" />
+              Template details
             </h2>
             <span className="px-3 py-1 bg-yellow-50 text-yellow-700 text-xs font-medium rounded-full border border-yellow-200">
-              Draft Status
+              Draft
             </span>
           </div>
 
-          <div className="p-6 space-y-6">
-            {/* Slug / URL */}
-            <div className="space-y-2">
-              <label className="text-sm font-medium text-slate-700 flex items-center gap-2">
-                <Globe className="w-4 h-4 text-slate-400" />
-                URL Slug
-              </label>
-              <div className="flex rounded-md shadow-sm">
-                <span className="inline-flex items-center px-3 rounded-l-md border border-r-0 border-slate-300 bg-slate-50 text-slate-500 text-sm">
-                  corehead.app/blog/
-                </span>
-                <input
-                  type="text"
-                  defaultValue="future-of-ai-web-development"
-                  className="flex-1 min-w-0 block w-full px-3 py-2 rounded-none rounded-r-md border border-slate-300 focus:ring-blue-500 focus:border-blue-500 sm:text-sm text-slate-700 placeholder:text-slate-400 font-medium"
-                />
+          <div className="p-6 space-y-4 text-sm">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div>
+                <p className="text-xs font-bold uppercase tracking-wider text-slate-400 mb-1">
+                  Name
+                </p>
+                <p className="font-semibold text-slate-800">{name}</p>
               </div>
-            </div>
-
-            {/* Featured Image */}
-            <div className="space-y-2">
-              <label className="text-sm font-medium text-slate-700 flex items-center gap-2">
-                <ImageIcon className="w-4 h-4 text-slate-400" />
-                Featured Image
-              </label>
-              <div className="border-2 border-dashed border-slate-300 rounded-lg p-8 flex flex-col items-center justify-center text-center hover:bg-slate-50 transition-colors cursor-pointer group">
-                <div className="w-10 h-10 bg-blue-50 text-blue-500 rounded-full flex items-center justify-center mb-3 group-hover:bg-blue-100 transition-colors">
-                  <ImageIcon className="w-5 h-5" />
-                </div>
-                <div className="text-sm text-slate-600 font-medium">
-                  Click to upload image
-                </div>
-                <div className="text-xs text-slate-400 mt-1">
-                  SVG, PNG, JPG or GIF (max. 2MB)
-                </div>
+              <div>
+                <p className="text-xs font-bold uppercase tracking-wider text-slate-400 mb-1">
+                  Type
+                </p>
+                <p className="font-semibold text-slate-800">{type}</p>
               </div>
-            </div>
-
-            {/* Meta Description */}
-            <div className="space-y-2">
-              <label className="text-sm font-medium text-slate-700">
-                Meta Description (SEO)
-              </label>
-              <textarea
-                rows={3}
-                className="w-full px-3 py-2 border border-slate-300 rounded-md focus:ring-blue-500 focus:border-blue-500 text-sm text-slate-700 placeholder:text-slate-400"
-                placeholder="Brief summary of your post for search engines..."
-                defaultValue="Explore the transformative impact of Artificial Intelligence on modern web development workflows and future trends."
-              />
-              <div className="text-xs text-right text-slate-400">
-                115 / 160 characters
-              </div>
+              {meta?.id != null && (
+                <div>
+                  <p className="text-xs font-bold uppercase tracking-wider text-slate-400 mb-1">
+                    Template ID
+                  </p>
+                  <p className="font-mono text-slate-700">{String(meta.id)}</p>
+                </div>
+              )}
+              {meta?.blockCount != null && (
+                <div>
+                  <p className="text-xs font-bold uppercase tracking-wider text-slate-400 mb-1">
+                    Blocks
+                  </p>
+                  <p className="font-semibold text-slate-800">{meta.blockCount}</p>
+                </div>
+              )}
             </div>
           </div>
 
-          {/* Serialized JSON Viewer for Verification */}
           <div className="bg-slate-50 px-6 py-4 border-t border-slate-100">
             <div className="flex items-center justify-between mb-2">
               <h3 className="text-sm font-semibold text-slate-700">
-                Serialized Layout (JSON)
+                Layout JSON (local canvas)
               </h3>
-              <span className="text-xs text-slate-400">Canvas → JSON</span>
+              <span className="text-xs text-slate-400">Canvas snapshot</span>
             </div>
             <pre className="bg-slate-800 text-slate-300 p-4 rounded-lg text-xs overflow-x-auto max-h-48">
-              {typeof window !== "undefined"
-                ? localStorage.getItem("corehead_builder_layout") || "[]"
-                : "[]"}
+              {prettyJson}
             </pre>
           </div>
 
-          {/* Footer Info */}
-          <div className="bg-slate-50 px-6 py-4 border-t border-slate-100 flex items-center gap-6 text-xs text-slate-500">
+          <div className="bg-slate-50 px-6 py-4 border-t border-slate-100 flex flex-wrap items-center gap-6 text-xs text-slate-500">
             <div className="flex items-center gap-1.5">
               <Calendar className="w-3.5 h-3.5" />
-              Created: Oct 24, 2024
+              Status: draft
             </div>
             <div className="flex items-center gap-1.5">
               <Clock className="w-3.5 h-3.5" />
-              Last Saved: Just now
+              Last saved: {savedAt}
             </div>
           </div>
         </div>
 
-        {/* Actions */}
-        <div className="flex items-center justify-between pt-4">
+        <div className="flex flex-wrap items-center justify-between gap-4 pt-2">
           <Link
-            href="/admin/builder"
+            href={editorHref}
             className="flex items-center gap-2 text-slate-600 hover:text-slate-900 font-medium transition-colors"
           >
             <ArrowLeft className="w-4 h-4" />
             Back to Editor
           </Link>
-          <div className="flex gap-3">
-            <Link href="/admin/posts">
-              <button className="px-5 py-2.5 bg-white border border-slate-300 text-slate-700 rounded-lg font-medium hover:bg-slate-50 transition-colors shadow-sm">
-                View All Posts
+          <div className="flex flex-wrap gap-3">
+            <Link href="/admin/layouts">
+              <button
+                type="button"
+                className="px-5 py-2.5 bg-white border border-slate-300 text-slate-700 rounded-lg font-medium hover:bg-slate-50 transition-colors shadow-sm"
+              >
+                All layouts
               </button>
             </Link>
-            <button className="px-5 py-2.5 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition-colors shadow-sm shadow-blue-200">
-              Save Settings
-            </button>
+            <Link href={editorHref}>
+              <button
+                type="button"
+                className="inline-flex items-center gap-2 px-5 py-2.5 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition-colors shadow-sm shadow-blue-200"
+              >
+                <FileEdit className="w-4 h-4" />
+                Continue editing
+              </button>
+            </Link>
           </div>
         </div>
       </div>

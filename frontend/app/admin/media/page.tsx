@@ -20,6 +20,7 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { api } from "@/lib/api";
+import EmptyState from "@/components/ui/EmptyState";
 
 interface MediaItem {
   id: number | string;
@@ -328,17 +329,42 @@ export default function MediaPage() {
         )}
 
         {!isLoading && filteredItems.length === 0 && (
-          <div className="py-20 flex flex-col items-center text-center">
-            <div className="w-20 h-20 bg-slate-50 rounded-full flex items-center justify-center mb-6">
-              {searchQuery ? <Search className="w-8 h-8 text-slate-200" /> : <FileImage className="w-8 h-8 text-slate-200" />}
-            </div>
-            <h3 className="text-xl font-bold text-slate-900">
-              {searchQuery ? "No results found" : activeTab === "Library" ? "No media files yet" : "Trash is empty"}
-            </h3>
-            <p className="text-slate-500 max-w-xs mt-2 font-medium">
-              {searchQuery ? "We couldn't find any images matching your search" : activeTab === "Library" ? "Upload your first image to start building your library" : "Items you delete will show up here for 30 days"}
-            </p>
-          </div>
+          <EmptyState
+            className="my-8"
+            icon={searchQuery ? Search : FileImage}
+            title={
+              searchQuery
+                ? "No results found"
+                : activeTab === "Library"
+                  ? "No media files yet"
+                  : "Trash is empty"
+            }
+            description={
+              searchQuery
+                ? "We couldn't find any files matching your search on this site."
+                : activeTab === "Library"
+                  ? "Upload images for posts and pages. Files stay scoped to the current site."
+                  : "Items you move to trash will appear here until you restore or delete them permanently."
+            }
+            actions={
+              !searchQuery && activeTab === "Library"
+                ? [
+                    {
+                      label: "Upload media",
+                      onClick: () => fileInputRef.current?.click(),
+                    },
+                  ]
+                : searchQuery
+                  ? [
+                      {
+                        label: "Clear search",
+                        variant: "secondary",
+                        onClick: () => setSearchQuery(""),
+                      },
+                    ]
+                  : []
+            }
+          />
         )}
       </div>
     </div>
