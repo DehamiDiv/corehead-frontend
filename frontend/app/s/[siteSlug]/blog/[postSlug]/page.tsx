@@ -8,7 +8,12 @@ import {
   siteHomePath,
 } from "@/lib/publicSite";
 import { resolveMediaUrl } from "@/lib/siteMedia";
-import { ArrowLeft } from "lucide-react";
+import {
+  formatPostDate,
+  postCategory,
+  readingTimeMinutes,
+} from "@/lib/publicSiteCopy";
+import { ArrowLeft, Calendar, Clock, Tag } from "lucide-react";
 import { PublicPageRenderer } from "@/components/Renderer/PublicPageRenderer";
 import { postToBindData, resolveTenantLayout } from "@/lib/tenantLayout";
 import CommentsSection from "@/components/blog/CommentsSection";
@@ -88,32 +93,100 @@ export default async function PublicSitePostPage({ params }: Props) {
     bindData.post.imageUrl = coverSrc;
   }
 
+  // Market chrome already renders title / meta / cover for default layouts —
+  // strip duplicate blocks so the article doesn't repeat itself.
+  const rawBlocks = layout.blocks || [];
+  const blocksForRender =
+    layout.source === "default"
+      ? rawBlocks.filter((b: any) => {
+          const t = String(b?.type || "").toLowerCase();
+          const bind = String(b?.bindings?.content || "");
+          if (t === "image" || bind.includes("coverImage") || bind.includes("featured_image")) {
+            return false;
+          }
+          if (bind.includes("post.title") || bind === "title") return false;
+          if (bind.includes("category")) return false;
+          if (bind.includes("excerpt")) return false;
+          return true;
+        })
+      : rawBlocks;
+
   // If published layout has no Image block, still show cover (common demo pain)
-  const layoutHasImage = (layout.blocks || []).some((b: any) => {
-    const t = String(b?.type || "").toLowerCase();
-    return t === "image" || t.includes("image");
-  });
+  const layoutHasImage =
+    layout.source !== "default" &&
+    rawBlocks.some((b: any) => {
+      const t = String(b?.type || "").toLowerCase();
+      return t === "image" || t.includes("image");
+    });
+
+  const category = postCategory(post);
+  const dateLabel = formatPostDate(
+    post.publishedAt || post.published_date || post.createdAt
+  );
+  const minutes = readingTimeMinutes(post.content || post.excerpt);
+  const authorName =
+    post.author?.name || post.authorName || site.name;
 
   return (
     <article className="w-full">
       <div className="max-w-3xl mx-auto px-4 sm:px-6 pt-8 pb-16">
         <Link
           href={siteBlogPath(site.slug)}
-          className="inline-flex items-center gap-2 text-sm font-bold text-slate-500 hover:text-[var(--site-primary,#2563eb)] transition-colors mb-8"
+          className="inline-flex items-center gap-2 text-sm font-bold opacity-70 hover:opacity-100 hover:text-[var(--site-primary,#2563eb)] transition-colors mb-8"
+          style={{ color: "var(--site-muted)" }}
         >
           <ArrowLeft className="w-4 h-4" />
-          Back to {site.name} blog
+          Back to journal
         </Link>
 
-        {layout.source === "template" && (
-          <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400 mb-4">
-            Layout: {layout.templateName || "Published template"}
-          </p>
-        )}
+        {/* Editorial meta — market-ready article chrome */}
+        <header className="mb-8">
+          {category && (
+            <p
+              className="inline-flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-[0.16em] mb-3"
+              style={{ color: "var(--site-primary)" }}
+            >
+              <Tag className="h-3.5 w-3.5" />
+              {category}
+            </p>
+          )}
+          <h1
+            className="text-3xl sm:text-4xl lg:text-[2.75rem] font-black tracking-tight leading-[1.15]"
+            style={{ color: "var(--site-ink)" }}
+          >
+            {post.title}
+          </h1>
+          {post.excerpt && (
+            <p
+              className="mt-4 text-base sm:text-lg leading-relaxed"
+              style={{ color: "var(--site-muted)" }}
+            >
+              {post.excerpt}
+            </p>
+          )}
+          <div
+            className="mt-5 flex flex-wrap items-center gap-x-4 gap-y-2 text-xs sm:text-sm font-medium"
+            style={{ color: "var(--site-muted)" }}
+          >
+            <span className="font-semibold" style={{ color: "var(--site-ink)" }}>
+              {authorName}
+            </span>
+            {dateLabel && (
+              <span className="inline-flex items-center gap-1.5">
+                <Calendar className="h-3.5 w-3.5" />
+                {dateLabel}
+              </span>
+            )}
+            <span className="inline-flex items-center gap-1.5">
+              <Clock className="h-3.5 w-3.5" />
+              {minutes} min read
+            </span>
+          </div>
+        </header>
 
         {/* Always show featured image when layout template omits an Image block */}
         {coverSrc && !layoutHasImage && (
-          <div className="relative w-full aspect-video mb-8 rounded-2xl overflow-hidden bg-slate-100 border border-black/5">
+          <div className="relative w-full aspect-[16/9] mb-10 rounded-2xl overflow-hidden bg-black/5 border border-black/5 shadow-lg shadow-black/5">
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
               src={coverSrc}
@@ -123,14 +196,16 @@ export default async function PublicSitePostPage({ params }: Props) {
           </div>
         )}
 
-        <PublicPageRenderer
-          layout={layout.blocks}
-          data={bindData}
-          siteBasePath={siteHomePath(site.slug)}
-        />
+        <div className="prose-public">
+          <PublicPageRenderer
+            layout={blocksForRender}
+            data={bindData}
+            siteBasePath={siteHomePath(site.slug)}
+          />
+        </div>
 
         {/* Reactions + comments on published posts */}
-        <div className="mt-12 pt-8 border-t border-slate-100 space-y-8">
+        <div className="mt-12 pt-8 border-t border-black/5 space-y-8">
           <PostReactions postId={post.id} siteId={site.id} />
           <CommentsSection
             postId={post.id}

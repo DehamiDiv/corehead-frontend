@@ -193,10 +193,23 @@ export default function Theme1Preview({
               <img src={logoUrl} alt="Logo" className="h-8 object-contain" />
             ) : (
               <>
-                <div className="w-8 h-8 rounded-full bg-white flex items-center justify-center">
-                  <span className="text-[#0e5c38] text-xs font-black">C</span>
+                <img
+                  src="/demo/verdura-logo-light.svg"
+                  alt="Verdura"
+                  className="h-8 object-contain"
+                  onError={(e) => {
+                    const el = e.currentTarget;
+                    el.style.display = "none";
+                    const fallback = el.nextElementSibling as HTMLElement | null;
+                    if (fallback) fallback.style.display = "flex";
+                  }}
+                />
+                <div className="items-center gap-2 hidden">
+                  <div className="w-8 h-8 rounded-full bg-white flex items-center justify-center">
+                    <span className="text-[#0e5c38] text-xs font-black">V</span>
+                  </div>
+                  <span className="font-extrabold text-white text-base tracking-wide">Verdura</span>
                 </div>
-                <span className="font-extrabold text-white text-base tracking-wide">CoreHead</span>
               </>
             )}
           </div>
@@ -927,15 +940,15 @@ export default function Theme1Preview({
                 ) : (
                   <>
                     <div className="w-8 h-8 rounded-full bg-[#0e5c38] flex items-center justify-center">
-                      <span className="text-white text-xs font-black">C</span>
+                      <span className="text-white text-xs font-black">V</span>
                     </div>
-                    <span className="font-bold text-gray-900 text-sm">CoreHead</span>
+                    <span className="font-bold text-gray-900 text-sm">Verdura</span>
                   </>
                 )}
               </div>
-              <p className="text-xs opacity-80 mb-1">Blogs By CoreHead</p>
-              <p className="text-xs opacity-80 mb-1">Email: support@gmail.com</p>
-              <p className="text-xs opacity-80">Phone: +94 451 455 454</p>
+              <p className="text-xs opacity-80 mb-1">Nature stories by Verdura</p>
+              <p className="text-xs opacity-80 mb-1">Email: hello@verdura.demo</p>
+              <p className="text-xs opacity-80">Phone: +94 11 234 5678</p>
             </div>
 
             {/* Quick Links */}
@@ -995,7 +1008,7 @@ export default function Theme1Preview({
           {/* Copyright */}
           <div className="border-t border-current opacity-60 pt-4 flex items-center justify-between">
             <p className="text-[10px]">
-              © 2026 <span className="font-bold">CoreHead</span> by SeekaHost Technologies Ltd. All rights reserved.
+              © 2026 <span className="font-bold">Verdura</span>. Powered by CoreHead. All rights reserved.
             </p>
             <div className="flex gap-4">
               <a href="#" className="text-[10px] hover:opacity-100 transition-opacity">Privacy Policy</a>
