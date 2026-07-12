@@ -1,0 +1,354 @@
+Member 04 – Frontend Contribution Code
+
+This file contains the frontend implementation for the AI Layout Generator, 
+CMS Fields Panel, and the Blog Loop (Collection List) logic.
+
+==================================================
+FILE 1: AIGenerateModal.jsx
+Path: frontend/components/builder/AIGenerateModal.jsx
+==================================================
+'use client';
+
+import { useState } from 'react';
+import { X, Sparkles } from 'lucide-react';
+import { aiApi } from '@/services/aiApi';
+
+const layoutTypes = [
+  { id: 'single-post',   label: 'Single Post' },
+  { id: 'blog-archive',  label: 'Blog Archive' },
+];
+
+const designStyles = [
+  { id: 'modern',      label: '✨ Modern' },
+  { id: 'editorial',   label: '📰 Editorial' },
+  { id: 'magazine',    label: '🗞️ Magazine' },
+  { id: 'minimalist',  label: '⬜ Minimalist' },
+];
+
+export default function AIGenerateModal({ isOpen, onClose, onGenerated }) {
+  const [prompt, setPrompt] = useState('');
+  const [layoutType, setLayoutType] = useState('single-post');
+  const [designStyle, setDesignStyle] = useState('modern');
+  const [features, setFeatures] = useState({
+    sidebar: true, toc: true, author: true,
+    related: false, comments: false, social: false
+  });
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
+
+  if (!isOpen) return null;
+
+  const handleGenerate = async () => {
+    if (!prompt.trim()) {
+      setError('Please enter a prompt first.');
+      return;
+    }
+
+    try {
+      setLoading(true);
+      setError(null);
+
+      const result = await aiApi.generateLayout({
+        prompt: prompt.trim(),
+        layoutType,
+        designStyle,
+        features,
+      });
+
+      if (result.layout?.cards) {
+        onGenerated(result.layout.cards);
+      } else {
+        onGenerated([{
+          id: Date.now(),
+          title: 'AI Generated: ' + prompt.slice(0, 40),
+          excerpt: 'Layout generated with style: ' + designStyle,
+          author: 'AI Author',
+          date: new Date().toISOString().split('T')[0],
+          image: 'https://picsum.photos/400/250?random=' + Math.floor(Math.random() * 100),
+          category: layoutType
+        }]);
+      }
+
+      onClose();
+      setPrompt('');
+
+    } catch (err) {
+      setError(err.message || 'Failed to generate. Please try again.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const toggleFeature = (key) => {
+    setFeatures(prev => ({ ...prev, [key]: !prev[key] }));
+  };
+
+  return (
+    <div style={{
+      position: 'fixed', inset: 0, zIndex: 2000,
+      background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(4px)',
+      display: 'flex', alignItems: 'center', justifyContent: 'center',
+      padding: '24px'
+    }}>
+      <div style={{
+        background: '#fff', borderRadius: '16px',
+        width: '100%', maxWidth: '520px',
+        maxHeight: '85vh', overflowY: 'auto',
+        boxShadow: '0 20px 60px rgba(0,0,0,0.3)'
+      }}>
+        {/* Header */}
+        <div style={{
+          padding: '20px 24px 16px',
+          borderBottom: '1px solid #f0f0f0',
+          display: 'flex', justifyContent: 'space-between', alignItems: 'center'
+        }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <Sparkles size={20} color="#4f46e5" />
+            <h2 style={{ fontSize: '18px', fontWeight: '700', margin: 0 }}>Generate with AI</h2>
+          </div>
+          <button onClick={onClose} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#888' }}><X size={20} /></button>
+        </div>
+
+        {/* Body */}
+        <div style={{ padding: '20px 24px' }}>
+          <div style={{ marginBottom: '18px' }}>
+            <label style={{ display: 'block', fontSize: '13px', fontWeight: '600', marginBottom: '6px' }}>✍️ Describe your layout</label>
+            <textarea
+              value={prompt}
+              onChange={e => { setPrompt(e.target.value); setError(null); }}
+              placeholder="e.g. Modern blog with full-width hero..."
+              rows={3}
+              style={{ width: '100%', padding: '10px 12px', border: '2px solid #e5e5e5', borderRadius: '8px', fontSize: '13px', outline: 'none' }}
+            />
+          </div>
+
+          <button
+            onClick={handleGenerate}
+            disabled={loading}
+            style={{
+              width: '100%', padding: '12px', background: loading ? '#a5b4fc' : '#4f46e5',
+              color: '#fff', border: 'none', borderRadius: '10px', cursor: 'pointer',
+              fontSize: '15px', fontWeight: '600', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px'
+            }}
+          >
+            <Sparkles size={18} />
+            {loading ? 'Generating...' : 'Generate Layout'}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+==================================================
+FILE 2: CMSFieldsPanel.jsx
+Path: frontend/components/builder/CMSFieldsPanel.jsx
+==================================================
+'use client';
+
+import { useState, useEffect } from 'react';
+import { ChevronDown, ChevronRight, Save } from 'lucide-react';
+
+export default function CMSFieldsPanel({ cmsFields, selectedCard, contentMode, onUpdateCard }) {
+  const [expandedSections, setExpandedSections] = useState({ post: true, author: false, seo: false });
+  const [editValues, setEditValues] = useState({});
+  const [saved, setSaved] = useState(false);
+  const [error, setError] = useState('');
+
+  const aiBlockTypes = ['Heading', 'Paragraph', 'Image', 'Quote', 'Divider', 'Button', 'Collection List'];
+  const isAIBlock = selectedCard?.type && aiBlockTypes.includes(selectedCard.type);
+
+  useEffect(() => {
+    if (selectedCard) {
+      const baseValues = {
+        title: selectedCard.title || '',
+        backgroundColor: selectedCard.styles?.backgroundColor || '',
+        excerpt: selectedCard.excerpt || '',
+        author: selectedCard.author || '',
+        category: selectedCard.category || '',
+        image: selectedCard.image || '',
+      };
+
+      if (selectedCard.type === 'Button') {
+        baseValues.buttonText = selectedCard.content?.text || '';
+        baseValues.buttonUrl = selectedCard.content?.url || '';
+      } else if (selectedCard.type === 'Collection List') {
+        baseValues.colCategory = selectedCard.content?.category || '';
+        baseValues.colLimit = selectedCard.content?.limit || 6;
+      } else {
+        baseValues.content = typeof selectedCard.content === 'string' ? selectedCard.content : '';
+      }
+
+      setEditValues(baseValues);
+    }
+  }, [selectedCard?.id]);
+
+  const handleSave = () => {
+    if (!selectedCard || !onUpdateCard) return;
+    const updateData = { ...editValues };
+
+    if (isAIBlock) {
+      updateData.styles = { ...selectedCard.styles, backgroundColor: editValues.backgroundColor };
+      if (selectedCard.type === 'Button') {
+        updateData.content = { text: editValues.buttonText, url: editValues.buttonUrl };
+      } else if (selectedCard.type === 'Collection List') {
+        updateData.content = { category: editValues.colCategory, limit: Number(editValues.colLimit) || 6 };
+      }
+    }
+
+    onUpdateCard(selectedCard.id, updateData);
+    setSaved(true);
+    setTimeout(() => setSaved(false), 2000);
+  };
+
+  return (
+    <aside style={{ width: '260px', background: '#fff', borderLeft: '1px solid #e2e8f0' }}>
+      <div style={{ padding: '16px', background: '#f8fafc' }}>
+        <h3 style={{ fontSize: '14px', fontWeight: '700' }}>🗄️ CMS Fields</h3>
+      </div>
+      {selectedCard && (
+        <div style={{ padding: '16px' }}>
+          <div style={{ marginBottom: '12px' }}>
+            <span style={{ fontSize: '11px', color: contentMode === 'dynamic' ? '#667eea' : '#10b981' }}>
+              {contentMode === 'dynamic' ? '⚡ Dynamic Mode' : '📌 Static Mode'}
+            </span>
+          </div>
+          {/* Fields Implementation ... */}
+          <button onClick={handleSave} style={{ width: '100%', padding: '10px', background: '#4f46e5', color: '#fff', borderRadius: '8px' }}>
+            {saved ? '✅ Applied!' : 'Apply Changes'}
+          </button>
+        </div>
+      )}
+    </aside>
+  );
+}
+
+==================================================
+FILE 3: BlogCard.jsx
+Path: frontend/components/builder/BlogCard.jsx
+==================================================
+'use client';
+
+import { Calendar, User, Clock } from 'lucide-react';
+import './BlogCard.css';
+
+export default function BlogCard({ post, isSelected, onClick, contentMode, settings, cardLayout = 'grid' }) {
+  const activePrimary = settings?.colors?.primary || '#667eea';
+  const activeGradient = settings?.colors?.gradient || 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)';
+
+  return (
+    <article className={`blog-card ${isSelected ? 'selected' : ''}`} onClick={onClick}>
+      <div className="card-image">
+        <img src={post.image} alt={post.title} />
+        <div className="card-category" style={{ background: activeGradient }}>{post.category}</div>
+      </div>
+      <div className="card-content">
+        <h3 className="card-title">{post.title}</h3>
+        <p className="card-excerpt">{post.excerpt}</p>
+        <div className="card-meta">
+          <div className="meta-item"><User size={14} /><span>{post.author}</span></div>
+          <div className="meta-item"><Clock size={14} /><span>{post.date}</span></div>
+        </div>
+      </div>
+    </article>
+  );
+}
+
+==================================================
+FILE 4: BlogCard.css
+Path: frontend/components/builder/BlogCard.css
+==================================================
+.blog-card {
+  background: #f9f9f9;
+  border: 2px solid #e0e0e0;
+  border-radius: 16px;
+  overflow: hidden;
+  transition: all 0.3s;
+  cursor: pointer;
+}
+.blog-card.selected { border-color: #4f46e5; box-shadow: 0 8px 25px rgba(79, 70, 229, 0.15); }
+.card-image { height: 180px; position: relative; }
+.card-image img { width: 100%; height: 100%; object-fit: cover; }
+.card-content { padding: 16px; }
+.card-title { font-size: 14px; font-weight: 700; margin-bottom: 8px; }
+.card-excerpt { font-size: 12px; color: #666; }
+
+==================================================
+FILE 5: BlockRenderer.jsx
+Path: frontend/components/builder/BlockRenderer.jsx
+==================================================
+'use client';
+
+export default function BlockRenderer({ block, isSelected, onClick, settings }) {
+  const { type, content, styles = {} } = block;
+  const activePrimary = settings?.colors?.primary || '#4f46e5';
+
+  const renderContent = () => {
+    switch (type) {
+      case 'Heading': return <h2 style={styles}>{content}</h2>;
+      case 'Paragraph': return <p style={styles}>{content}</p>;
+      case 'Collection List': 
+        return (
+          <div style={{ padding: '20px', background: '#f8fafc', border: '1px dashed #cbd5e1' }}>
+             🗂️ {content.category || 'All'} Posts (Limit: {content.limit || 6})
+          </div>
+        );
+      default: return <div>{content}</div>;
+    }
+  };
+
+  return <div onClick={onClick} style={{ border: isSelected ? `2px solid ${activePrimary}` : 'none' }}>{renderContent()}</div>;
+}
+
+==================================================
+FILE 6: LoopBlock.tsx
+Path: frontend/components/Renderer/blocks/LoopBlock.tsx
+==================================================
+import React from 'react';
+import { BindingResolver } from '../BindingResolver';
+
+export const LoopBlock = ({ block, data, isLoop }) => {
+  if (!isLoop || !Array.isArray(data)) return null;
+
+  return (
+    <div className="rendered-loop">
+      {data.map((item, i) => (
+        <div key={i} dangerouslySetInnerHTML={{ __html: BindingResolver(block.cardTemplate || '', item) }} />
+      ))}
+    </div>
+  );
+};
+
+==================================================
+FILE 7: PublicPageRenderer.tsx
+Path: frontend/components/Renderer/PublicPageRenderer.tsx
+==================================================
+"use client";
+
+import React from "react";
+import Image from "next/image";
+import Link from "next/link";
+
+export function PublicPageRenderer({ layout, data = {} }) {
+  const blocksArray = Array.isArray(layout) ? layout : layout?.blocks || [];
+
+  return (
+    <div className="public-renderer">
+      {blocksArray.map(block => {
+        if (block.type === 'Collection List') {
+          return (
+            <div key={block.id} className="grid grid-cols-3 gap-6">
+              {data.posts?.map(post => (
+                <Link href={`/posts/${post.slug}`} key={post.id} className="block border p-4">
+                  <h3 className="font-bold">{post.title}</h3>
+                </Link>
+              ))}
+            </div>
+          );
+        }
+        // ... Render other types ...
+        return <div key={block.id}>{block.content}</div>;
+      })}
+    </div>
+  );
+}

@@ -2,8 +2,8 @@
 
 import { useState, useEffect, useCallback, useRef } from "react";
 import { useRouter } from "next/navigation";
-import { 
-  ChevronDown, Star, Search, FileText, ImagePlus, X, Library, 
+import {
+  ChevronDown, Star, Search, FileText, ImagePlus, X, Library,
   Eye, Type, Bold, Italic, Underline, Strikethrough,
   List, ListOrdered, AlignLeft, AlignCenter, AlignRight, AlignJustify,
   Quote, Code, Link as LinkIcon, Image as ImageIcon, LayoutGrid, Minus, RemoveFormatting, Tag, Loader2,
@@ -14,11 +14,13 @@ import {
   Maximize2,
   Settings,
   Globe,
-  PlusCircle
+  PlusCircle,
+  Sparkles
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import MediaLibraryModal from "@/components/admin/MediaLibraryModal";
 import PostPreviewModal from "@/components/admin/PostPreviewModal";
+import AIBlogWriterModal from "@/components/admin/AIBlogWriterModal";
 import { api } from "@/lib/api";
 import dynamic from "next/dynamic";
 
@@ -52,7 +54,8 @@ const quillModules = {
 
 export default function CreatePostPage() {
   const router = useRouter();
-  
+
+
   const [formData, setFormData] = useState({
     title: "",
     slug: "",
@@ -82,9 +85,51 @@ export default function CreatePostPage() {
   const [error, setError] = useState<string | null>(null);
   const [isMediaModalOpen, setIsMediaModalOpen] = useState(false);
   const [showPreview, setShowPreview] = useState(false);
+  const [isAiModalOpen, setIsAiModalOpen] = useState(false);
   const [activeTab, setActiveTab] = useState("Content");
+  const [refining, setRefining] = useState(false);
   const [availableCategories, setAvailableCategories] = useState<string[]>([]);
 
+  const handleAiGenerate = (data: any) => {
+    setFormData(prev => ({
+      ...prev,
+      title: data.title || prev.title,
+      slug: (data.title || prev.title).toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)+/g, ''),
+      excerpt: data.excerpt || prev.excerpt,
+      content: data.content || prev.content,
+      metaTitle: data.seo?.metaTitle || prev.metaTitle,
+      metaDescription: data.seo?.metaDescription || prev.metaDescription,
+      keywords: data.seo?.keywords?.length ? data.seo.keywords : prev.keywords,
+    }));
+  };
+
+  const handleInlineRefine = async (action: "grammar" | "longer" | "summarize") => {
+    if (!formData.content) return;
+    setRefining(true);
+    setError(null);
+    try {
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api'}/ai/refine`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${localStorage.getItem('accessToken')}`
+        },
+        body: JSON.stringify({ content: formData.content, action }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        throw new Error(data.error || data.message || "Failed to refine content");
+      }
+      if (data.refined) {
+        setFormData(prev => ({ ...prev, content: data.refined }));
+      }
+    } catch (err: any) {
+      console.error(err);
+      setError("AI refinement failed: " + err.message);
+    } finally {
+      setRefining(false);
+    }
+  };
   const handleAddKeyword = () => {
     if (keywordInput.trim() && !formData.keywords.includes(keywordInput.trim())) {
       setFormData(prev => ({ ...prev, keywords: [...prev.keywords, keywordInput.trim()] }));
@@ -234,22 +279,34 @@ export default function CreatePostPage() {
     }
   };
 
+  const hasRealContent = formData.content.replace(/<[^>]*>/g, '').trim().length > 3;
+
   return (
     <div className="min-h-screen bg-[#F4F7FA] pb-32 pt-8 px-6">
       <div className="max-w-[1200px] mx-auto space-y-6">
-        
+
         {/* Top Header */}
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-[32px] font-bold text-[#1E293B]">Create New Post</h1>
             <p className="text-[15px] text-[#64748B] mt-1">Fill in the details below to create a new blog post</p>
           </div>
-          <span className={cn(
-            "px-4 py-1.5 text-white text-[13px] font-bold rounded-full transition-colors",
-            formData.status === "Published" ? "bg-emerald-600" : "bg-[#94A3B8]"
-          )}>
-            {formData.status}
-          </span>
+          <div className="flex items-center gap-3">
+            <button
+              type="button"
+              onClick={() => setIsAiModalOpen(true)}
+              className="px-4 py-2 flex items-center gap-2 bg-gradient-to-r from-blue-600 to-indigo-600 text-white text-[14px] font-bold rounded-full transition-transform hover:scale-105 shadow-md shadow-blue-200"
+            >
+              <Sparkles className="w-4 h-4" />
+              AI Assist
+            </button>
+            <span className={cn(
+              "px-4 py-1.5 text-white text-[13px] font-bold rounded-full transition-colors",
+              formData.status === "Published" ? "bg-emerald-600" : "bg-[#94A3B8]"
+            )}>
+              {formData.status}
+            </span>
+          </div>
         </div>
 
         {/* Progress Bar Card */}
@@ -259,8 +316,8 @@ export default function CreatePostPage() {
             <span className="text-[13px] font-bold text-[#94A3B8]">{completed}/{total} fields completed</span>
           </div>
           <div className="w-full h-2 bg-[#F1F5F9] rounded-full overflow-hidden">
-            <div 
-              className="h-full bg-[#2563EB] transition-all duration-500 ease-out" 
+            <div
+              className="h-full bg-[#2563EB] transition-all duration-500 ease-out"
               style={{ width: `${progressPercent}%` }}
             />
           </div>
@@ -274,8 +331,8 @@ export default function CreatePostPage() {
               onClick={() => setActiveTab(tab)}
               className={cn(
                 "flex-1 h-12 flex items-center justify-center gap-2 text-[14px] font-bold transition-all rounded-[12px]",
-                activeTab === tab 
-                  ? "bg-white text-[#2563EB] shadow-sm border border-[#E2E8F0]" 
+                activeTab === tab
+                  ? "bg-white text-[#2563EB] shadow-sm border border-[#E2E8F0]"
                   : "text-[#64748B] hover:text-[#475569]"
               )}
             >
@@ -297,7 +354,7 @@ export default function CreatePostPage() {
         {/* Main Form Content */}
         <div className="bg-white rounded-[24px] border border-[#E2E8F0] shadow-sm overflow-hidden">
           <div className="p-8">
-            
+
             {/* CONTENT TAB */}
             {activeTab === "Content" && (
               <div className="space-y-10 animate-in fade-in duration-300">
@@ -309,54 +366,54 @@ export default function CreatePostPage() {
 
                   <div className="space-y-2">
                     <label className="text-[14px] font-bold text-[#1E293B]">Post Title <span className="text-red-500">*</span></label>
-                    <input 
+                    <input
                       type="text"
                       placeholder="Enter an engaging title for your blog post"
                       className="w-full h-12 bg-white border border-[#E2E8F0] rounded-[10px] px-4 text-[14px] focus:outline-none focus:ring-2 focus:ring-blue-500/10 focus:border-blue-400 transition-all"
                       value={formData.title}
-                      onChange={e => setFormData({...formData, title: e.target.value, slug: e.target.value.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)+/g, '')})}
+                      onChange={e => setFormData({ ...formData, title: e.target.value, slug: e.target.value.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)+/g, '') })}
                     />
                   </div>
 
                   <div className="space-y-2">
                     <label className="text-[14px] font-bold text-[#1E293B]">URL Slug <span className="text-red-500">*</span></label>
-                    <input 
+                    <input
                       type="text"
                       placeholder="url-friendly-slug"
                       className="w-full h-12 bg-white border border-[#E2E8F0] rounded-[10px] px-4 text-[14px] focus:outline-none"
                       value={formData.slug}
-                      onChange={e => setFormData({...formData, slug: e.target.value})}
+                      onChange={e => setFormData({ ...formData, slug: e.target.value })}
                     />
                   </div>
 
                   <div className="space-y-2">
                     <label className="text-[14px] font-bold text-[#1E293B]">Excerpt <span className="text-red-500">*</span></label>
-                    <textarea 
+                    <textarea
                       rows={3}
                       placeholder="Write a compelling summary..."
                       className="w-full bg-white border border-[#E2E8F0] rounded-[10px] p-4 text-[14px] focus:outline-none"
                       value={formData.excerpt}
-                      onChange={e => setFormData({...formData, excerpt: e.target.value})}
+                      onChange={e => setFormData({ ...formData, excerpt: e.target.value })}
                     />
                   </div>
 
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div className="space-y-2">
                       <label className="text-[14px] font-bold text-[#1E293B]">Author <span className="text-red-500">*</span></label>
-                      <select 
+                      <select
                         className="w-full h-12 bg-white border border-[#E2E8F0] rounded-[10px] px-4 text-[14px] appearance-none"
                         value={formData.authorId}
-                        onChange={e => setFormData({...formData, authorId: e.target.value})}
+                        onChange={e => setFormData({ ...formData, authorId: e.target.value })}
                       >
                         {users.map(u => <option key={u.id} value={u.id}>{u.name || u.email}</option>)}
                       </select>
                     </div>
                     <div className="space-y-2">
                       <label className="text-[14px] font-bold text-[#1E293B]">Publish Status <span className="text-red-500">*</span></label>
-                      <select 
+                      <select
                         className="w-full h-12 bg-white border border-[#E2E8F0] rounded-[10px] px-4 text-[14px]"
                         value={formData.status}
-                        onChange={e => setFormData({...formData, status: e.target.value})}
+                        onChange={e => setFormData({ ...formData, status: e.target.value })}
                       >
                         <option value="Published">Published</option>
                         <option value="Draft">Draft</option>
@@ -372,9 +429,9 @@ export default function CreatePostPage() {
                         <button
                           key={cat}
                           onClick={() => setFormData({
-                            ...formData, 
-                            categories: formData.categories.includes(cat) 
-                              ? formData.categories.filter(c => c !== cat) 
+                            ...formData,
+                            categories: formData.categories.includes(cat)
+                              ? formData.categories.filter(c => c !== cat)
                               : [...formData.categories, cat]
                           })}
                           className={cn(
@@ -391,12 +448,12 @@ export default function CreatePostPage() {
                   </div>
 
                   <div className="p-4 border border-gray-100 rounded-xl bg-white flex items-start gap-4">
-                    <input 
-                      type="checkbox" 
+                    <input
+                      type="checkbox"
                       id="featured"
                       className="mt-1 w-4 h-4 text-blue-600 rounded border-gray-300 focus:ring-blue-500"
                       checked={formData.featured}
-                      onChange={(e) => setFormData({...formData, featured: e.target.checked})}
+                      onChange={(e) => setFormData({ ...formData, featured: e.target.checked })}
                     />
                     <div>
                       <label htmlFor="featured" className="text-sm font-bold text-gray-900 cursor-pointer block">Featured Post</label>
@@ -405,12 +462,12 @@ export default function CreatePostPage() {
                   </div>
 
                   <div className="p-4 border border-gray-100 rounded-xl bg-white flex items-start gap-4">
-                    <input 
-                      type="checkbox" 
+                    <input
+                      type="checkbox"
                       id="comments"
                       className="mt-1 w-4 h-4 text-blue-600 rounded border-gray-300 focus:ring-blue-500"
                       checked={formData.allowComments}
-                      onChange={(e) => setFormData({...formData, allowComments: e.target.checked})}
+                      onChange={(e) => setFormData({ ...formData, allowComments: e.target.checked })}
                     />
                     <div>
                       <label htmlFor="comments" className="text-sm font-bold text-gray-900 cursor-pointer block">Allow Comments</label>
@@ -422,19 +479,50 @@ export default function CreatePostPage() {
                 <div className="pt-4 border-t border-gray-50">
                   <label className="block text-sm font-bold text-gray-900 mb-2">Content <span className="text-red-500">*</span></label>
                   <p className="text-sm text-gray-500 mb-4 font-medium">Write your blog post content with rich formatting</p>
-                  
+
                   <div className="border border-gray-100 rounded-xl overflow-hidden bg-white shadow-sm">
-                    <ReactQuill 
+                    <ReactQuill
                       theme="snow"
                       value={formData.content}
-                      onChange={(val: string) => setFormData({...formData, content: val})}
+                      onChange={(val: string) => setFormData({ ...formData, content: val })}
                       modules={quillModules}
                       className="min-h-[400px] [&_.ql-editor]:min-h-[400px] [&_.ql-editor]:text-base [&_.ql-editor]:font-medium [&_.ql-container]:border-none [&_.ql-toolbar]:border-none [&_.ql-toolbar]:bg-[#fafafa] [&_.ql-toolbar]:border-b [&_.ql-toolbar]:border-gray-100"
                       placeholder="Write your blog post content here..."
                     />
-                    
-                    <div className="flex justify-between items-center px-4 py-3 border-t border-gray-100 bg-[#fafafa]">
-                      <div />
+
+                    <div className="flex justify-between items-center px-4 py-3 border-t border-gray-100 bg-[#fafafa] flex-wrap gap-3">
+                      <div className="flex items-center gap-1.5 flex-wrap">
+                        <span className="text-xs font-bold text-gray-400 mr-1 flex items-center gap-1">
+                          <Sparkles className="w-3.5 h-3.5 text-blue-500 animate-pulse" /> AI Assistant:
+                        </span>
+                        <button
+                          type="button"
+                          onClick={() => handleInlineRefine("grammar")}
+                          disabled={refining || !hasRealContent}
+                          className="px-3 py-1.5 text-xs font-bold text-gray-700 bg-white border border-gray-200 rounded-lg hover:bg-gray-100 hover:border-gray-300 transition-all flex items-center gap-1 shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                          Polish Grammar ✍️
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => handleInlineRefine("longer")}
+                          disabled={refining || !hasRealContent}
+                          className="px-3 py-1.5 text-xs font-bold text-gray-700 bg-white border border-gray-200 rounded-lg hover:bg-gray-100 hover:border-gray-300 transition-all flex items-center gap-1 shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                          Make Longer 📝
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => handleInlineRefine("summarize")}
+                          disabled={refining || !hasRealContent}
+                          className="px-3 py-1.5 text-xs font-bold text-gray-700 bg-white border border-gray-200 rounded-lg hover:bg-gray-100 hover:border-gray-300 transition-all flex items-center gap-1 shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                          Summarize Content 🔍
+                        </button>
+                        {refining && (
+                          <Loader2 className="w-3.5 h-3.5 text-blue-500 animate-spin ml-2" />
+                        )}
+                      </div>
                       <div className="flex items-center gap-2">
                         <span className="text-xs font-bold text-gray-500">
                           {formData.content.replace(/<[^>]*>?/gm, '').trim() ? formData.content.replace(/<[^>]*>?/gm, '').trim().split(/\s+/).length : 0} words | {formData.content.replace(/<[^>]*>?/gm, '').length} characters
@@ -458,11 +546,11 @@ export default function CreatePostPage() {
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">Thumbnail Image</label>
                   <p className="text-xs text-gray-500 mb-4">This image appears in blog listing pages and previews</p>
-                  
+
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div className="border-2 border-dashed border-gray-200 rounded-2xl p-10 flex flex-col items-center justify-center text-center hover:border-blue-400 hover:bg-blue-50/30 transition-all cursor-pointer group relative">
-                      <input 
-                        type="file" 
+                      <input
+                        type="file"
                         accept="image/*"
                         className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
                         onChange={handleImageUpload}
@@ -474,7 +562,7 @@ export default function CreatePostPage() {
                       <span className="text-[10px] text-gray-500 uppercase tracking-wider font-bold">Saves to backend /uploads (required for public posts)</span>
                     </div>
 
-                    <div 
+                    <div
                       onClick={() => setIsMediaModalOpen(true)}
                       className="border-2 border-dashed border-gray-200 rounded-2xl p-10 flex flex-col items-center justify-center text-center hover:border-blue-400 hover:bg-blue-50/30 transition-all cursor-pointer group"
                     >
@@ -495,8 +583,8 @@ export default function CreatePostPage() {
                         <p className="text-xs font-black text-gray-400 uppercase tracking-widest mb-1">Selected Thumbnail</p>
                         <p className="text-sm font-bold text-gray-900 truncate">{formData.thumbnailUrl}</p>
                       </div>
-                      <button 
-                        onClick={() => setFormData({...formData, thumbnailUrl: ""})}
+                      <button
+                        onClick={() => setFormData({ ...formData, thumbnailUrl: "" })}
                         className="p-3 bg-white hover:bg-red-50 text-gray-400 hover:text-red-500 rounded-xl transition-all shadow-sm"
                       >
                         <X className="w-5 h-5" />
@@ -504,10 +592,10 @@ export default function CreatePostPage() {
                     </div>
                   )}
 
-                  <MediaLibraryModal 
+                  <MediaLibraryModal
                     isOpen={isMediaModalOpen}
                     onClose={() => setIsMediaModalOpen(false)}
-                    onSelect={(url) => setFormData({...formData, thumbnailUrl: url})}
+                    onSelect={(url) => setFormData({ ...formData, thumbnailUrl: url })}
                   />
                 </div>
               </div>
@@ -525,7 +613,7 @@ export default function CreatePostPage() {
                 </div>
                 <h3 className="text-sm font-black text-gray-900 uppercase tracking-widest">Search Engine Preview</h3>
               </div>
-              
+
               <div className="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm max-w-2xl">
                 <p className="text-[#1a0dab] text-xl font-medium mb-1 truncate">
                   {formData.metaTitle || formData.title || "Post Title"}
@@ -543,10 +631,10 @@ export default function CreatePostPage() {
               <div className="space-y-6">
                 <div>
                   <label className="block text-sm font-bold text-gray-900 mb-2">Meta Title</label>
-                  <input 
-                    type="text" 
+                  <input
+                    type="text"
                     value={formData.metaTitle}
-                    onChange={(e) => setFormData({...formData, metaTitle: e.target.value})}
+                    onChange={(e) => setFormData({ ...formData, metaTitle: e.target.value })}
                     placeholder="Enter meta title..."
                     className="w-full px-5 py-3.5 bg-white border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all font-medium text-sm text-gray-900"
                   />
@@ -560,10 +648,10 @@ export default function CreatePostPage() {
 
                 <div>
                   <label className="block text-sm font-bold text-gray-900 mb-2">Meta Description</label>
-                  <textarea 
+                  <textarea
                     rows={4}
                     value={formData.metaDescription}
-                    onChange={(e) => setFormData({...formData, metaDescription: e.target.value})}
+                    onChange={(e) => setFormData({ ...formData, metaDescription: e.target.value })}
                     placeholder="Enter meta description..."
                     className="w-full px-5 py-3.5 bg-white border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all font-medium text-sm text-gray-900 resize-none"
                   />
@@ -579,10 +667,10 @@ export default function CreatePostPage() {
               <div className="space-y-6">
                 <div>
                   <label className="block text-sm font-bold text-gray-900 mb-2">Canonical URL</label>
-                  <input 
-                    type="url" 
+                  <input
+                    type="url"
                     value={formData.canonicalUrl}
-                    onChange={(e) => setFormData({...formData, canonicalUrl: e.target.value})}
+                    onChange={(e) => setFormData({ ...formData, canonicalUrl: e.target.value })}
                     placeholder="https://example.com/canonical-url"
                     className="w-full px-5 py-3.5 bg-white border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all font-medium text-sm text-gray-900"
                   />
@@ -599,15 +687,15 @@ export default function CreatePostPage() {
                     ))}
                   </div>
                   <div className="flex gap-2">
-                    <input 
-                      type="text" 
+                    <input
+                      type="text"
                       value={keywordInput}
                       onChange={(e) => setKeywordInput(e.target.value)}
                       onKeyDown={(e) => e.key === 'Enter' && (e.preventDefault(), handleAddKeyword())}
                       placeholder="Add focus keyword..."
                       className="flex-1 px-5 py-3.5 bg-white border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all font-medium text-sm text-gray-900"
                     />
-                    <button 
+                    <button
                       type="button"
                       onClick={handleAddKeyword}
                       className="px-6 py-3.5 bg-gray-900 text-white rounded-xl font-bold hover:bg-black transition-colors"
@@ -624,14 +712,14 @@ export default function CreatePostPage() {
 
       {/* Action Bar (Card instead of fixed bottom bar) */}
       <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 flex justify-between items-center">
-        <button 
+        <button
           onClick={() => router.push('/admin/posts')}
           className="px-6 py-3 text-sm font-bold text-gray-700 bg-white border border-gray-200 rounded-xl hover:bg-gray-50 transition-colors shadow-sm"
         >
           Cancel
         </button>
         <div className="flex items-center gap-3">
-          <button 
+          <button
             type="button"
             onClick={() => setShowPreview(true)}
             className="px-6 py-3 text-sm font-bold text-gray-700 bg-white border border-gray-200 rounded-xl hover:bg-gray-50 transition-colors flex items-center gap-2 shadow-sm"
@@ -639,15 +727,14 @@ export default function CreatePostPage() {
             <Eye className="w-4 h-4" />
             Preview
           </button>
-          <button 
+          <button
             onClick={() => handleCreatePost("Draft")}
             disabled={loading}
             className="px-6 py-3 text-sm font-bold text-gray-700 bg-gray-50 hover:bg-gray-100 rounded-xl transition-colors shadow-sm border border-gray-100 disabled:opacity-50"
           >
             {loading ? "Saving…" : "Save as Draft"}
           </button>
-        
-          <button 
+          <button
             onClick={() => handleCreatePost("Published")}
             disabled={loading}
             className="px-8 py-3 text-sm font-bold text-white bg-emerald-600 rounded-xl hover:bg-emerald-700 transition-colors shadow-md disabled:opacity-50"
@@ -667,11 +754,17 @@ export default function CreatePostPage() {
           <span>v1.0.0</span>
         </div>
       </div>
-      
-      <MediaLibraryModal 
+
+      <MediaLibraryModal
         isOpen={isMediaModalOpen}
         onClose={() => setIsMediaModalOpen(false)}
-        onSelect={(url) => setFormData({...formData, thumbnailUrl: url})}
+        onSelect={(url) => setFormData({ ...formData, thumbnailUrl: url })}
+      />
+
+      <AIBlogWriterModal
+        isOpen={isAiModalOpen}
+        onClose={() => setIsAiModalOpen(false)}
+        onGenerate={handleAiGenerate}
       />
 
       <PostPreviewModal

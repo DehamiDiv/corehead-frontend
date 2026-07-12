@@ -99,14 +99,16 @@ const componentBlocks = [
   }
 ];
 
-export default function ComponentsPanel({ onAddComponent }) {
+export default function ComponentsPanel({ onAddComponent, selectedCard }) {
   return (
     <div style={{ padding: '16px' }}>
       <h2 style={{ fontSize: '16px', fontWeight: '600', marginBottom: '4px' }}>
-        🧩 Components
+        🧩 Content Blocks
       </h2>
       <p style={{ fontSize: '13px', color: '#888', marginBottom: '16px' }}>
-        Click any block to add it to your canvas
+        {selectedCard 
+          ? `Click a block to REPLACE the selected item` 
+          : 'Click a block to ADD it to your template'}
       </p>
 
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
@@ -153,7 +155,7 @@ export default function ComponentsPanel({ onAddComponent }) {
         border: '1px dashed #ddd'
       }}>
         <p style={{ fontSize: '12px', color: '#888', textAlign: 'center', margin: 0 }}>
-          💡 Click any component above to instantly add it to your builder canvas
+          💡 Tip: Select a block on the canvas first to insert a new one exactly after it.
         </p>
       </div>
     </div>
