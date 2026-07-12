@@ -20,6 +20,7 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { api } from "@/lib/api";
+import { resolveAdminMediaUrl } from "@/lib/apiOrigin";
 import {
   isPostLive,
   normalizePostStatus,
@@ -374,9 +375,7 @@ export default function PostsPage() {
                               let src = `https://api.dicebear.com/7.x/avataaars/svg?seed=${author?.name || post?.author_name || post?.id || "A"}`;
                               if (avatar && typeof avatar === "string") {
                                 src =
-                                  avatar.startsWith("http") || avatar.startsWith("data:")
-                                    ? avatar
-                                    : `http://localhost:5000${avatar.startsWith("/") ? "" : "/"}${avatar}`;
+                                  resolveAdminMediaUrl(avatar) || avatar;
                               }
                               return (
                                 <img

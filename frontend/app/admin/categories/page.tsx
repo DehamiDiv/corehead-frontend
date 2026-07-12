@@ -10,6 +10,7 @@ import { cn } from "@/lib/utils";
 import { api } from "@/lib/api";
 import MediaLibraryModal from "@/components/admin/MediaLibraryModal";
 import EmptyState from "@/components/ui/EmptyState";
+import { resolveAdminMediaUrl } from "@/lib/apiOrigin";
 
 export default function CategoriesPage() {
   const [searchQuery, setSearchQuery] = useState("");
@@ -108,7 +109,7 @@ export default function CategoriesPage() {
             base64Data,
           });
           const rawUrl = uploaded.media?.url || uploaded.url || "";
-          const fullUrl = rawUrl.startsWith("/") ? `http://localhost:5000${rawUrl}` : rawUrl;
+          const fullUrl = resolveAdminMediaUrl(rawUrl) || rawUrl;
           setImageUrl(fullUrl);
         } catch {
           // Fallback: use local object URL for preview only

@@ -8,8 +8,6 @@ import {
   mapThemeNavHref,
   DEFAULT_THEME_FOOTER_LINKS,
 } from "@/lib/themeNav";
-import { Mail, MapPin } from "lucide-react";
-
 export default function PublicSiteFooter({ site }: { site: PublicSite }) {
   const year = new Date().getFullYear();
   const branding = site.branding;
@@ -35,8 +33,6 @@ export default function PublicSiteFooter({ site }: { site: PublicSite }) {
     color: "var(--site-footer-fg, #94a3b8)",
   };
 
-  const isNature = branding?.homeStyle === "nature";
-
   return (
     <footer className="mt-auto border-t border-black/10" style={footerStyle}>
       <div className="max-w-6xl mx-auto px-4 sm:px-6 py-14">
@@ -49,7 +45,9 @@ export default function PublicSiteFooter({ site }: { site: PublicSite }) {
                 <img
                   src={logo}
                   alt={site.name}
-                  className="h-9 w-auto max-w-[150px] object-contain"
+                  width={40}
+                  height={40}
+                  className="h-10 w-10 shrink-0 rounded-full object-contain bg-white border border-white/20 shadow-sm p-1"
                 />
               ) : (
                 <div
@@ -64,18 +62,6 @@ export default function PublicSiteFooter({ site }: { site: PublicSite }) {
               </p>
             </div>
             <p className="text-sm leading-relaxed opacity-90">{description}</p>
-            {isNature && (
-              <div className="mt-5 space-y-2 text-sm opacity-85">
-                <p className="inline-flex items-center gap-2">
-                  <Mail className="h-4 w-4 shrink-0 opacity-70" />
-                  hello@verdura.demo
-                </p>
-                <p className="inline-flex items-center gap-2">
-                  <MapPin className="h-4 w-4 shrink-0 opacity-70" />
-                  Colombo, Sri Lanka
-                </p>
-              </div>
-            )}
           </div>
 
           {/* Explore */}

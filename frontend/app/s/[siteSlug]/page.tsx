@@ -12,9 +12,18 @@ import { resolvePublicBranding } from "@/lib/siteBranding";
 import {
   siteEyebrow,
   siteTagline,
+  siteHomeCaptions,
+  siteHomeSections,
   postCategory,
 } from "@/lib/publicSiteCopy";
 import PublicPostCard from "@/components/public/PublicPostCard";
+import VerduraEditorialHero from "@/components/public/VerduraEditorialHero";
+import BloomHomeLayout from "@/components/public/BloomHomeLayout";
+import PortalsHomeLayout from "@/components/public/PortalsHomeLayout";
+import BentoHomeLayout from "@/components/public/BentoHomeLayout";
+import StudioHomeLayout from "@/components/public/StudioHomeLayout";
+import PaperHomeLayout from "@/components/public/PaperHomeLayout";
+import GlassHomeLayout from "@/components/public/GlassHomeLayout";
 import EmptyState from "@/components/ui/EmptyState";
 import {
   ArrowRight,
@@ -54,8 +63,8 @@ export async function generateMetadata({ params }: Props) {
 }
 
 /**
- * Market-ready public tenant home — magazine layout with featured story,
- * category highlights, value pillars, and CTA (theme-aware).
+ * Public tenant home — routes by Appearance homeStyle.
+ * Each style is a unique layout component (no duplicate designs).
  */
 export default async function PublicSiteHomePage({ params }: Props) {
   const { siteSlug } = await params;
@@ -68,7 +77,6 @@ export default async function PublicSiteHomePage({ params }: Props) {
   const branding = resolvePublicBranding(site.branding);
   const homeStyle = branding.homeStyle || "classic";
   const isNature = homeStyle === "nature";
-  const isDark = homeStyle === "dark";
   const tagline = siteTagline(site.name, branding);
   const eyebrow = siteEyebrow(branding);
   const blogHref = siteBlogPath(site.slug);
@@ -87,8 +95,7 @@ export default async function PublicSiteHomePage({ params }: Props) {
     console.error(`Home posts failed for ${site.slug}:`, err);
   }
 
-  const featured =
-    posts.find((p) => p.featured) || posts[0] || null;
+  const featured = posts.find((p) => p.featured) || posts[0] || null;
   const remaining = featured
     ? posts.filter((p) => p.id !== featured.id)
     : posts;
@@ -103,189 +110,253 @@ export default async function PublicSiteHomePage({ params }: Props) {
     )
   ).slice(0, 8);
 
+  const customHero = branding.home?.heroImage
+    ? resolveMediaUrl(branding.home.heroImage) || branding.home.heroImage
+    : null;
+
   const heroImage =
+    customHero ||
     resolveMediaUrl(
       featured?.coverImage ||
         featured?.thumbnailUrl ||
         featured?.featured_image
     ) ||
-    (isNature
-      ? "https://images.unsplash.com/photo-1441974231531-c6227db76b6e?w=1600&q=80"
-      : null);
+    null;
 
-  const pillars =
-    isNature
-      ? [
-          {
-            icon: Leaf,
-            title: "Grow greener",
-            body: "Practical gardening and eco-living guides you can use this weekend.",
-          },
-          {
-            icon: TreePine,
-            title: "Protect wildlife",
-            body: "Conservation stories and ethical ways to reconnect with the wild.",
-          },
-          {
-            icon: Camera,
-            title: "See the planet",
-            body: "Outdoor adventures and photography tips from the field.",
-          },
-        ]
-      : [
-          {
-            icon: BookOpen,
-            title: "Thoughtful stories",
-            body: "Clear writing on the topics that matter to your readers.",
-          },
-          {
-            icon: Sparkles,
-            title: "Fresh perspectives",
-            body: "Features and guides curated for a modern digital magazine.",
-          },
-          {
-            icon: Globe2,
-            title: "Built for your brand",
-            body: "A fully branded public site — your name, logo, and voice.",
-          },
-        ];
+  const captions = siteHomeCaptions(branding);
+  const sections = siteHomeSections(site.name, branding);
+
+  const shared = {
+    siteName: site.name,
+    siteSlug: site.slug,
+    eyebrow,
+    tagline,
+    heroImage,
+    ctaText: branding.header?.ctaText,
+    ctaBg: branding.header?.ctaBg,
+    ctaColor: branding.header?.ctaColor,
+    posts,
+    sections,
+  };
+
+  // Unique dedicated layouts
+  if (homeStyle === "bloom") {
+    return (
+      <div data-theme={branding.themeId} data-home-style="bloom">
+        <BloomHomeLayout {...shared} />
+      </div>
+    );
+  }
+  if (homeStyle === "portals") {
+    return (
+      <div data-theme={branding.themeId} data-home-style="portals">
+        <PortalsHomeLayout {...shared} />
+      </div>
+    );
+  }
+  if (homeStyle === "bento") {
+    return (
+      <div data-theme={branding.themeId} data-home-style="bento">
+        <BentoHomeLayout {...shared} />
+      </div>
+    );
+  }
+  if (homeStyle === "studio") {
+    return (
+      <div data-theme={branding.themeId} data-home-style="studio">
+        <StudioHomeLayout {...shared} />
+      </div>
+    );
+  }
+  if (homeStyle === "paper") {
+    return (
+      <div data-theme={branding.themeId} data-home-style="paper">
+        <PaperHomeLayout
+          siteName={shared.siteName}
+          siteSlug={shared.siteSlug}
+          eyebrow={shared.eyebrow}
+          tagline={shared.tagline}
+          heroImage={shared.heroImage}
+          ctaText={shared.ctaText}
+          posts={shared.posts}
+          sections={shared.sections}
+        />
+      </div>
+    );
+  }
+  if (homeStyle === "glass") {
+    return (
+      <div data-theme={branding.themeId} data-home-style="glass">
+        <GlassHomeLayout {...shared} />
+      </div>
+    );
+  }
+
+  // Classic (+ nature uses editorial hero inside)
+  const pillarIcons = isNature
+    ? [Leaf, TreePine, Camera]
+    : [BookOpen, Sparkles, Globe2];
+  const pillars = sections.pillars.slice(0, 3).map((p, i) => ({
+    icon: pillarIcons[i] || BookOpen,
+    title: p.title,
+    body: p.body,
+  }));
+  const isEditorialHome = homeStyle === "nature";
 
   return (
-    <main className="w-full" data-theme={branding.themeId}>
-      {/* ── Hero ─────────────────────────────────────────────── */}
-      <section className="relative overflow-hidden">
-        <div className="absolute inset-0">
-          {heroImage ? (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img
-              src={heroImage}
-              alt=""
-              className="h-full w-full object-cover scale-105"
-            />
-          ) : (
-            <div
-              className="h-full w-full"
-              style={{
-                background: isDark
-                  ? "linear-gradient(160deg, #0a0a0a 0%, #1e293b 100%)"
-                  : "linear-gradient(145deg, var(--site-primary-soft) 0%, var(--site-bg) 55%, var(--site-surface) 100%)",
-              }}
-            />
-          )}
-          <div
-            className={cn(
-              "absolute inset-0",
-              heroImage
-                ? "bg-gradient-to-r from-black/80 via-black/55 to-black/30"
-                : "bg-[var(--site-bg)]/40"
+    <main className="w-full" data-theme={branding.themeId} data-home-style={homeStyle}>
+      {isEditorialHome ? (
+        <VerduraEditorialHero
+          siteName={site.name}
+          siteSlug={site.slug}
+          eyebrow={eyebrow}
+          tagline={tagline}
+          heroImage={heroImage}
+          ctaText={branding.header?.ctaText}
+          ctaBg={branding.header?.ctaBg}
+          ctaColor={branding.header?.ctaColor}
+          categories={categories}
+          featuredSlug={featured?.slug || null}
+          captionLeft={captions.left}
+          captionRight={captions.right}
+        />
+      ) : (
+        <section className="relative overflow-hidden">
+          <div className="absolute inset-0">
+            {heroImage ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img
+                src={heroImage}
+                alt=""
+                className="h-full w-full object-cover scale-105"
+              />
+            ) : (
+              <div
+                className="h-full w-full"
+                style={{
+                  background:
+                    "linear-gradient(145deg, var(--site-primary-soft) 0%, var(--site-bg) 55%, var(--site-surface) 100%)",
+                }}
+              />
             )}
-          />
-        </div>
-
-        <div className="relative max-w-6xl mx-auto px-4 sm:px-6 py-16 sm:py-24 lg:py-28">
-          <div className="max-w-2xl">
-            <div className="mb-5 flex items-center gap-3">
-              {logo ? (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img
-                  src={logo}
-                  alt={site.name}
-                  className="h-12 w-12 rounded-2xl object-cover border border-white/20 shadow-lg bg-white/10 backdrop-blur"
-                />
-              ) : (
-                <div
-                  className="h-12 w-12 rounded-2xl flex items-center justify-center text-white text-xl font-black shadow-lg"
-                  style={{ background: "var(--site-primary)" }}
-                >
-                  {site.name.charAt(0).toUpperCase()}
-                </div>
+            <div
+              className={cn(
+                "absolute inset-0",
+                heroImage
+                  ? "bg-gradient-to-r from-black/80 via-black/55 to-black/30"
+                  : "bg-[var(--site-bg)]/40"
               )}
+            />
+          </div>
+
+          <div className="relative max-w-6xl mx-auto px-4 sm:px-6 py-16 sm:py-24 lg:py-28">
+            <div className="max-w-2xl">
+              <div className="mb-5 flex items-center gap-3">
+                {logo ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img
+                    src={logo}
+                    alt={site.name}
+                    className="h-12 w-12 rounded-2xl object-cover border border-white/20 shadow-lg bg-white/10 backdrop-blur"
+                  />
+                ) : (
+                  <div
+                    className="h-12 w-12 rounded-2xl flex items-center justify-center text-white text-xl font-black shadow-lg"
+                    style={{ background: "var(--site-primary)" }}
+                  >
+                    {site.name.charAt(0).toUpperCase()}
+                  </div>
+                )}
+                <p
+                  className={cn(
+                    "text-[11px] sm:text-xs font-bold uppercase tracking-[0.22em]",
+                    heroImage ? "text-emerald-200/90" : ""
+                  )}
+                  style={heroImage ? undefined : { color: "var(--site-primary)" }}
+                >
+                  {eyebrow}
+                </p>
+              </div>
+
+              <h1
+                className={cn(
+                  "font-black tracking-tight leading-[1.05]",
+                  "text-4xl sm:text-5xl lg:text-6xl",
+                  heroImage ? "text-white" : ""
+                )}
+                style={heroImage ? undefined : { color: "var(--site-ink)" }}
+              >
+                {site.name}
+              </h1>
+
               <p
                 className={cn(
-                  "text-[11px] sm:text-xs font-bold uppercase tracking-[0.22em]",
-                  heroImage ? "text-emerald-200/90" : ""
+                  "mt-5 text-base sm:text-lg leading-relaxed max-w-xl",
+                  heroImage ? "text-white/85" : ""
                 )}
-                style={heroImage ? undefined : { color: "var(--site-primary)" }}
+                style={heroImage ? undefined : { color: "var(--site-muted)" }}
               >
-                {eyebrow}
+                {tagline}
               </p>
-            </div>
 
-            <h1
-              className={cn(
-                "font-black tracking-tight leading-[1.05]",
-                "text-4xl sm:text-5xl lg:text-6xl",
-                heroImage ? "text-white" : ""
-              )}
-              style={heroImage ? undefined : { color: "var(--site-ink)" }}
-            >
-              {site.name}
-            </h1>
-
-            <p
-              className={cn(
-                "mt-5 text-base sm:text-lg leading-relaxed max-w-xl",
-                heroImage ? "text-white/85" : ""
-              )}
-              style={heroImage ? undefined : { color: "var(--site-muted)" }}
-            >
-              {tagline}
-            </p>
-
-            <div className="mt-8 flex flex-wrap items-center gap-3">
-              <Link
-                href={blogHref}
-                className="inline-flex items-center gap-2 rounded-full px-6 py-3 text-sm font-bold shadow-xl transition-transform hover:scale-[1.02] active:scale-[0.98]"
-                style={{
-                  background: branding.header?.ctaBg || "var(--site-accent, var(--site-primary))",
-                  color: branding.header?.ctaColor || "#052e16",
-                }}
-              >
-                <BookOpen className="h-4 w-4" />
-                {branding.header?.ctaText || "Read the journal"}
-                <ArrowRight className="h-4 w-4" />
-              </Link>
-              {featured && (
+              <div className="mt-8 flex flex-wrap items-center gap-3">
                 <Link
-                  href={sitePostPath(site.slug, featured.slug)}
-                  className={cn(
-                    "inline-flex items-center gap-2 rounded-full px-5 py-3 text-sm font-semibold border transition-colors",
-                    heroImage
-                      ? "border-white/30 text-white hover:bg-white/10"
-                      : "border-black/10 hover:bg-black/5"
-                  )}
-                  style={heroImage ? undefined : { color: "var(--site-ink)" }}
+                  href={blogHref}
+                  className="inline-flex items-center gap-2 rounded-full px-6 py-3 text-sm font-bold shadow-xl transition-transform hover:scale-[1.02] active:scale-[0.98]"
+                  style={{
+                    background:
+                      branding.header?.ctaBg ||
+                      "var(--site-cta-bg, var(--site-accent, var(--site-primary)))",
+                    color:
+                      branding.header?.ctaColor ||
+                      "var(--site-cta-color, var(--site-surface, #fff))",
+                  }}
                 >
-                  Featured story
-                  <ArrowRight className="h-4 w-4 opacity-70" />
+                  <BookOpen className="h-4 w-4" />
+                  {branding.header?.ctaText || "Read the journal"}
+                  <ArrowRight className="h-4 w-4" />
                 </Link>
-              )}
-            </div>
-
-            {categories.length > 0 && (
-              <div className="mt-8 flex flex-wrap gap-2">
-                {categories.map((cat) => (
+                {featured && (
                   <Link
-                    key={cat}
-                    href={blogHref}
+                    href={sitePostPath(site.slug, featured.slug)}
                     className={cn(
-                      "rounded-full px-3 py-1.5 text-[11px] font-semibold backdrop-blur transition-colors",
+                      "inline-flex items-center gap-2 rounded-full px-5 py-3 text-sm font-semibold border transition-colors",
                       heroImage
-                        ? "bg-white/15 text-white/95 border border-white/20 hover:bg-white/25"
-                        : "bg-[var(--site-surface)] border border-black/5 shadow-sm"
+                        ? "border-white/30 text-white hover:bg-white/10"
+                        : "border-black/10 hover:bg-black/5"
                     )}
                     style={heroImage ? undefined : { color: "var(--site-ink)" }}
                   >
-                    {cat}
+                    Featured story
+                    <ArrowRight className="h-4 w-4 opacity-70" />
                   </Link>
-                ))}
+                )}
               </div>
-            )}
-          </div>
-        </div>
-      </section>
 
-      {/* ── Featured + side rail ─────────────────────────────── */}
+              {categories.length > 0 && (
+                <div className="mt-8 flex flex-wrap gap-2">
+                  {categories.map((cat) => (
+                    <Link
+                      key={cat}
+                      href={blogHref}
+                      className={cn(
+                        "rounded-full px-3 py-1.5 text-[11px] font-semibold backdrop-blur transition-colors",
+                        heroImage
+                          ? "bg-white/15 text-white/95 border border-white/20 hover:bg-white/25"
+                          : "bg-[var(--site-surface)] border border-black/5 shadow-sm"
+                      )}
+                      style={heroImage ? undefined : { color: "var(--site-ink)" }}
+                    >
+                      {cat}
+                    </Link>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+        </section>
+      )}
+
       {posts.length > 0 ? (
         <section className="max-w-6xl mx-auto px-4 sm:px-6 py-14 sm:py-16">
           <div className="flex items-end justify-between gap-4 mb-8">
@@ -294,13 +365,13 @@ export default async function PublicSiteHomePage({ params }: Props) {
                 className="text-xs font-bold uppercase tracking-[0.2em] mb-1"
                 style={{ color: "var(--site-primary)" }}
               >
-                This week
+                {sections.featuredEyebrow}
               </p>
               <h2
                 className="text-2xl sm:text-3xl font-black tracking-tight"
                 style={{ color: "var(--site-ink)" }}
               >
-                Featured stories
+                {sections.featuredTitle}
               </h2>
             </div>
             <Link
@@ -328,7 +399,7 @@ export default async function PublicSiteHomePage({ params }: Props) {
                 className="text-[11px] font-bold uppercase tracking-wider mb-1"
                 style={{ color: "var(--site-muted)" }}
               >
-                More to explore
+                {sections.sideRailLabel}
               </p>
               {sideStories.map((post) => (
                 <PublicPostCard
@@ -357,7 +428,6 @@ export default async function PublicSiteHomePage({ params }: Props) {
         </section>
       )}
 
-      {/* ── Value pillars ────────────────────────────────────── */}
       <section
         id="features"
         className="scroll-mt-24 border-y border-black/5"
@@ -369,18 +439,22 @@ export default async function PublicSiteHomePage({ params }: Props) {
               className="text-xs font-bold uppercase tracking-[0.2em] mb-2"
               style={{ color: "var(--site-primary)" }}
             >
-              Why {site.name}
+              {sections.pillarsEyebrow}
             </p>
             <h2
               className="text-2xl sm:text-3xl font-black tracking-tight"
               style={{ color: "var(--site-ink)" }}
             >
-              A magazine built for modern readers
+              {sections.pillarsTitle}
             </h2>
-            <p className="mt-3 text-sm sm:text-base leading-relaxed" style={{ color: "var(--site-muted)" }}>
-              Beautiful public pages, published stories only, and branding that
-              feels like your own product — not a template dump.
-            </p>
+            {sections.pillarsBody ? (
+              <p
+                className="mt-3 text-sm sm:text-base leading-relaxed"
+                style={{ color: "var(--site-muted)" }}
+              >
+                {sections.pillarsBody}
+              </p>
+            ) : null}
           </div>
           <ul className="grid gap-5 sm:grid-cols-3">
             {pillars.map(({ icon: Icon, title, body }) => (
@@ -400,7 +474,10 @@ export default async function PublicSiteHomePage({ params }: Props) {
                 >
                   {title}
                 </h3>
-                <p className="text-sm leading-relaxed" style={{ color: "var(--site-muted)" }}>
+                <p
+                  className="text-sm leading-relaxed"
+                  style={{ color: "var(--site-muted)" }}
+                >
                   {body}
                 </p>
               </li>
@@ -409,7 +486,6 @@ export default async function PublicSiteHomePage({ params }: Props) {
         </div>
       </section>
 
-      {/* ── Latest grid ──────────────────────────────────────── */}
       {gridStories.length > 0 && (
         <section className="max-w-6xl mx-auto px-4 sm:px-6 py-14 sm:py-16">
           <div className="flex items-end justify-between gap-4 mb-8">
@@ -418,13 +494,13 @@ export default async function PublicSiteHomePage({ params }: Props) {
                 className="text-xs font-bold uppercase tracking-[0.2em] mb-1"
                 style={{ color: "var(--site-primary)" }}
               >
-                Latest
+                {sections.latestEyebrow}
               </p>
               <h2
                 className="text-2xl sm:text-3xl font-black tracking-tight"
                 style={{ color: "var(--site-ink)" }}
               >
-                From the journal
+                {sections.latestTitle}
               </h2>
             </div>
             <Link
@@ -446,45 +522,38 @@ export default async function PublicSiteHomePage({ params }: Props) {
         </section>
       )}
 
-      {/* ── Bottom CTA ───────────────────────────────────────── */}
       <section className="max-w-6xl mx-auto px-4 sm:px-6 pb-16 sm:pb-20">
         <div
           className="relative overflow-hidden rounded-3xl px-6 py-12 sm:px-12 sm:py-14 text-center shadow-xl"
           style={{
             background:
-              homeStyle === "nature"
-                ? "linear-gradient(135deg, #14532d 0%, #166534 45%, #052e16 100%)"
-                : "linear-gradient(135deg, var(--site-primary) 0%, var(--site-accent, var(--site-primary)) 100%)",
+              "linear-gradient(135deg, var(--site-primary) 0%, var(--site-accent, var(--site-primary)) 100%)",
           }}
         >
-          <div className="absolute inset-0 opacity-20 pointer-events-none">
-            <div className="absolute -top-10 -right-10 h-40 w-40 rounded-full bg-white blur-3xl" />
-            <div className="absolute -bottom-16 -left-10 h-48 w-48 rounded-full bg-emerald-300 blur-3xl" />
-          </div>
           <div className="relative">
             <p className="text-xs font-bold uppercase tracking-[0.25em] text-white/70 mb-3">
-              Start reading
+              {sections.ctaEyebrow}
             </p>
             <h2 className="text-2xl sm:text-4xl font-black text-white tracking-tight max-w-xl mx-auto">
-              {isNature
-                ? "Grow something good today"
-                : `Stay with ${site.name}`}
+              {sections.ctaTitle}
             </h2>
             <p className="mt-3 text-sm sm:text-base text-white/80 max-w-lg mx-auto leading-relaxed">
-              Browse the full archive of published stories, guides, and field notes.
+              {sections.ctaBody}
             </p>
             <Link
               href={blogHref}
-              className="mt-8 inline-flex items-center gap-2 rounded-full bg-white px-7 py-3.5 text-sm font-bold shadow-lg transition-transform hover:scale-[1.02] active:scale-[0.98]"
-              style={{ color: isNature ? "#14532d" : "var(--site-primary)" }}
+              className="mt-8 inline-flex items-center gap-2 rounded-full px-7 py-3.5 text-sm font-bold shadow-lg transition-transform hover:scale-[1.02] active:scale-[0.98]"
+              style={{
+                background: "var(--site-surface, #fff)",
+                color: "var(--site-primary)",
+              }}
             >
-              Explore all posts
+              {sections.ctaButton}
               <ArrowRight className="h-4 w-4" />
             </Link>
           </div>
         </div>
       </section>
-
     </main>
   );
 }

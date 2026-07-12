@@ -178,7 +178,7 @@ export default function PublicSiteHeader({ site }: { site: PublicSite }) {
       className="sticky top-0 z-40 w-full border-b border-black/10 shadow-sm backdrop-blur-xl"
       style={{
         ...headerStyle,
-        background: `color-mix(in srgb, var(--site-header-bg, #14532d) 92%, transparent)`,
+        background: `color-mix(in srgb, var(--site-header-bg, var(--site-surface, #fff)) 92%, transparent)`,
       }}
     >
       <div className="max-w-6xl mx-auto px-3 sm:px-6 h-[70px] flex items-center justify-between gap-3">
@@ -191,25 +191,21 @@ export default function PublicSiteHeader({ site }: { site: PublicSite }) {
             <img
               src={logo}
               alt={site.name}
-              className="h-9 sm:h-10 w-auto max-w-[160px] object-contain drop-shadow-sm"
+              width={44}
+              height={44}
+              className="h-11 w-11 shrink-0 rounded-full object-contain bg-white border border-white/80 shadow-md p-1"
             />
           ) : (
             <div
-              className="h-10 w-10 rounded-xl text-white flex items-center justify-center text-sm font-black shadow-md"
+              className="h-11 w-11 rounded-full text-white flex items-center justify-center text-sm font-black shadow-md shrink-0"
               style={{ background: "var(--site-primary, #2563eb)" }}
             >
               {site.name.charAt(0).toUpperCase()}
             </div>
           )}
-          {/* Show name only when logo is missing or is a square icon-only mark */}
-          {!logo && (
-            <span className="font-bold truncate text-base sm:text-lg leading-tight">
-              {site.name}
-            </span>
-          )}
-          {logo && (
-            <span className="sr-only">{site.name}</span>
-          )}
+          <span className="font-bold truncate text-base sm:text-lg leading-tight">
+            {site.name}
+          </span>
         </Link>
 
         <nav className="hidden md:flex items-center gap-0.5">

@@ -28,9 +28,332 @@ export type ThemePreset = {
     footerDescription: string;
   };
   font: string;
-  /** Public home layout hint */
-  homeStyle: "classic" | "dark" | "magazine" | "minimal" | "nature";
+  /**
+   * Public home layout — each option is a unique structure:
+   * classic | nature | bloom | portals | bento | studio | paper | glass
+   * (legacy: dark→studio, magazine→paper, minimal→glass, agents→portals)
+   */
+  homeStyle:
+    | "classic"
+    | "nature"
+    | "bloom"
+    | "portals"
+    | "bento"
+    | "studio"
+    | "paper"
+    | "glass"
+    /** @deprecated legacy aliases — normalized in mergeBrandingWithPreset */
+    | "dark"
+    | "magazine"
+    | "minimal"
+    | "agents";
 };
+
+/** Options shown in Appearance → Public home layout (unique designs only) */
+export const HOME_LAYOUT_OPTIONS: Array<{
+  id: ThemePreset["homeStyle"];
+  name: string;
+  description: string;
+}> = [
+  {
+    id: "classic",
+    name: "Classic",
+    description: "Gradient hero, featured + side rail, pillars, latest grid, bottom CTA.",
+  },
+  {
+    id: "nature",
+    name: "Layout 1 · Editorial",
+    description: "Magazine cover board — oversized masthead + framed art plate.",
+  },
+  {
+    id: "bloom",
+    name: "Layout 2 · Wellness",
+    description: "Soft clinic home — calm hero, service cards, gentle journal.",
+  },
+  {
+    id: "portals",
+    name: "Layout 3 · Portals 3D",
+    description: "Black product landing — purple neon platforms, dual CTAs.",
+  },
+  {
+    id: "bento",
+    name: "Layout 4 · Bento",
+    description: "Asymmetric bento tile grid — modern SaaS / product mosaic.",
+  },
+  {
+    id: "studio",
+    name: "Layout 5 · Studio",
+    description: "Full-bleed photo portfolio — gallery hover, serif masthead.",
+  },
+  {
+    id: "paper",
+    name: "Layout 6 · Paper",
+    description: "Newspaper broadsheet — masthead, lead story, two columns.",
+  },
+  {
+    id: "glass",
+    name: "Layout 7 · Glass",
+    description: "Light glassmorphism — frosted cards, soft mesh, centered hero.",
+  },
+];
+
+/**
+ * When a home layout is selected, Appearance applies this palette so
+ * public chrome (header/footer/CSS vars) matches the layout look.
+ */
+export type HomeLayoutPalette = {
+  colours: ThemePreset["colours"];
+  header: Pick<
+    ThemePreset["header"],
+    "headerBg" | "headerFont" | "ctaBg" | "ctaColor"
+  >;
+  footer: Pick<ThemePreset["footer"], "footerBg" | "footerFont">;
+  font?: string;
+};
+
+export const HOME_LAYOUT_PALETTES: Record<
+  ThemePreset["homeStyle"],
+  HomeLayoutPalette
+> = {
+  classic: {
+    colours: {
+      primary: "#2563eb",
+      background: "#f8fafc",
+      foreground: "#0f172a",
+      accent: "#3b82f6",
+      card: "#ffffff",
+      cardForeground: "#0f172a",
+      muted: "#64748b",
+    },
+    header: {
+      headerBg: "#ffffff",
+      headerFont: "#0f172a",
+      ctaBg: "#2563eb",
+      ctaColor: "#ffffff",
+    },
+    footer: { footerBg: "#0f172a", footerFont: "#94a3b8" },
+    font: "dm-sans",
+  },
+  nature: {
+    colours: {
+      primary: "#1a3d2e",
+      background: "#f4f1ea",
+      foreground: "#1a3d2e",
+      accent: "#c5a572",
+      card: "#ffffff",
+      cardForeground: "#1a3d2e",
+      muted: "#5c6b5f",
+    },
+    header: {
+      headerBg: "#1a3d2e",
+      headerFont: "#f5f0e6",
+      ctaBg: "#f5f0e6",
+      ctaColor: "#1a3d2e",
+    },
+    footer: { footerBg: "#0f2e22", footerFont: "#c5d5c0" },
+    font: "georgia",
+  },
+  bloom: {
+    colours: {
+      primary: "#7B6B9A",
+      background: "#F8F6FA",
+      foreground: "#2C2835",
+      accent: "#C4A882",
+      card: "#ffffff",
+      cardForeground: "#2C2835",
+      muted: "#8A8496",
+    },
+    header: {
+      headerBg: "#F8F6FA",
+      headerFont: "#2C2835",
+      ctaBg: "#7B6B9A",
+      ctaColor: "#F8F6FA",
+    },
+    footer: { footerBg: "#2C2835", footerFont: "#D4CFE0" },
+    font: "dm-sans",
+  },
+  portals: {
+    colours: {
+      primary: "#7c3aed",
+      background: "#000000",
+      foreground: "#fafafa",
+      accent: "#a78bfa",
+      card: "#0a0a0a",
+      cardForeground: "#fafafa",
+      muted: "#a1a1aa",
+    },
+    header: {
+      headerBg: "#000000",
+      headerFont: "#fafafa",
+      ctaBg: "#7c3aed",
+      ctaColor: "#ffffff",
+    },
+    footer: { footerBg: "#000000", footerFont: "#71717a" },
+    font: "inter",
+  },
+  bento: {
+    colours: {
+      primary: "#4f46e5",
+      background: "#f8fafc",
+      foreground: "#0f172a",
+      accent: "#818cf8",
+      card: "#ffffff",
+      cardForeground: "#0f172a",
+      muted: "#64748b",
+    },
+    header: {
+      headerBg: "#ffffff",
+      headerFont: "#0f172a",
+      ctaBg: "#4f46e5",
+      ctaColor: "#ffffff",
+    },
+    footer: { footerBg: "#0f172a", footerFont: "#94a3b8" },
+    font: "dm-sans",
+  },
+  studio: {
+    colours: {
+      primary: "#e5e5e5",
+      background: "#0a0a0a",
+      foreground: "#fafafa",
+      accent: "#a3a3a3",
+      card: "#171717",
+      cardForeground: "#fafafa",
+      muted: "#a3a3a3",
+    },
+    header: {
+      headerBg: "#0a0a0a",
+      headerFont: "#fafafa",
+      ctaBg: "#fafafa",
+      ctaColor: "#0a0a0a",
+    },
+    footer: { footerBg: "#000000", footerFont: "#737373" },
+    font: "georgia",
+  },
+  paper: {
+    colours: {
+      primary: "#b91c1c",
+      background: "#f7f4ef",
+      foreground: "#1c1917",
+      accent: "#78716c",
+      card: "#fffcf7",
+      cardForeground: "#1c1917",
+      muted: "#78716c",
+    },
+    header: {
+      headerBg: "#f7f4ef",
+      headerFont: "#1c1917",
+      ctaBg: "#1c1917",
+      ctaColor: "#f7f4ef",
+    },
+    footer: { footerBg: "#1c1917", footerFont: "#a8a29e" },
+    font: "georgia",
+  },
+  glass: {
+    colours: {
+      primary: "#6366f1",
+      background: "#eef2ff",
+      foreground: "#1e1b4b",
+      accent: "#a5b4fc",
+      card: "#ffffff",
+      cardForeground: "#1e1b4b",
+      muted: "#64748b",
+    },
+    header: {
+      headerBg: "rgba(255,255,255,0.7)",
+      headerFont: "#1e1b4b",
+      ctaBg: "#6366f1",
+      ctaColor: "#ffffff",
+    },
+    footer: { footerBg: "#1e1b4b", footerFont: "#c7d2fe" },
+    font: "inter",
+  },
+  // Legacy aliases → same palette as their replacements
+  dark: {
+    colours: {
+      primary: "#e5e5e5",
+      background: "#0a0a0a",
+      foreground: "#fafafa",
+      accent: "#a3a3a3",
+      card: "#171717",
+      cardForeground: "#fafafa",
+      muted: "#a3a3a3",
+    },
+    header: {
+      headerBg: "#0a0a0a",
+      headerFont: "#fafafa",
+      ctaBg: "#fafafa",
+      ctaColor: "#0a0a0a",
+    },
+    footer: { footerBg: "#000000", footerFont: "#737373" },
+    font: "georgia",
+  },
+  magazine: {
+    colours: {
+      primary: "#b91c1c",
+      background: "#f7f4ef",
+      foreground: "#1c1917",
+      accent: "#78716c",
+      card: "#fffcf7",
+      cardForeground: "#1c1917",
+      muted: "#78716c",
+    },
+    header: {
+      headerBg: "#f7f4ef",
+      headerFont: "#1c1917",
+      ctaBg: "#1c1917",
+      ctaColor: "#f7f4ef",
+    },
+    footer: { footerBg: "#1c1917", footerFont: "#a8a29e" },
+    font: "georgia",
+  },
+  minimal: {
+    colours: {
+      primary: "#6366f1",
+      background: "#eef2ff",
+      foreground: "#1e1b4b",
+      accent: "#a5b4fc",
+      card: "#ffffff",
+      cardForeground: "#1e1b4b",
+      muted: "#64748b",
+    },
+    header: {
+      headerBg: "rgba(255,255,255,0.7)",
+      headerFont: "#1e1b4b",
+      ctaBg: "#6366f1",
+      ctaColor: "#ffffff",
+    },
+    footer: { footerBg: "#1e1b4b", footerFont: "#c7d2fe" },
+    font: "inter",
+  },
+  agents: {
+    colours: {
+      primary: "#7c3aed",
+      background: "#000000",
+      foreground: "#fafafa",
+      accent: "#a78bfa",
+      card: "#0a0a0a",
+      cardForeground: "#fafafa",
+      muted: "#a1a1aa",
+    },
+    header: {
+      headerBg: "#000000",
+      headerFont: "#fafafa",
+      ctaBg: "#7c3aed",
+      ctaColor: "#ffffff",
+    },
+    footer: { footerBg: "#000000", footerFont: "#71717a" },
+    font: "inter",
+  },
+};
+
+export function getHomeLayoutPalette(
+  homeStyle?: ThemePreset["homeStyle"] | null
+): HomeLayoutPalette {
+  if (homeStyle && HOME_LAYOUT_PALETTES[homeStyle]) {
+    return HOME_LAYOUT_PALETTES[homeStyle];
+  }
+  return HOME_LAYOUT_PALETTES.classic;
+}
 
 export const THEME_PRESETS: Record<string, ThemePreset> = {
   default: {
@@ -143,30 +466,35 @@ export const THEME_PRESETS: Record<string, ThemePreset> = {
   },
   "theme-4": {
     id: "theme-4",
-    name: "Soft Blush",
+    name: "Soft Bloom",
     colours: {
-      primary: "#db2777",
-      background: "#fdf2f8",
-      foreground: "#831843",
-      accent: "#f472b6",
-      card: "#ffffff",
-      cardForeground: "#9d174d",
-      muted: "#9d174d",
+      /**
+       * Calm meditation palette (no green):
+       * soft lavender primary, warm mist background, dusty amethyst accent.
+       */
+      primary: "#7B6B9A",
+      background: "#F8F6FA",
+      foreground: "#2C2835",
+      accent: "#C4A882",
+      card: "#FFFFFF",
+      cardForeground: "#2C2835",
+      muted: "#8A8496",
     },
     header: {
-      headerBg: "#ffffff",
-      headerFont: "#9d174d",
-      ctaBg: "#db2777",
-      ctaColor: "#ffffff",
-      ctaText: "Discover",
+      headerBg: "#F8F6FA",
+      headerFont: "#2C2835",
+      ctaBg: "#7B6B9A",
+      ctaColor: "#F8F6FA",
+      ctaText: "Start reading",
     },
     footer: {
-      footerBg: "#831843",
-      footerFont: "#fbcfe8",
-      footerDescription: "Soft tones for lifestyle & culture.",
+      footerBg: "#2C2835",
+      footerFont: "#D4CFE0",
+      footerDescription:
+        "A calm space for wellness, reflection, and stories that help you breathe.",
     },
     font: "dm-sans",
-    homeStyle: "classic",
+    homeStyle: "bloom",
   },
   "theme-5": {
     id: "theme-5",
@@ -371,17 +699,30 @@ export function mergeBrandingWithPreset(branding?: {
   header?: Record<string, any>;
   footer?: Record<string, any>;
   font?: string | null;
+  homeStyle?: ThemePreset["homeStyle"] | "editorial" | null;
 } | null) {
   const preset = getThemePreset(branding?.themeId);
+  // Colours / header / footer come from Appearance → Colours & Header (not forced by layout)
   const colours = { ...preset.colours, ...(branding?.colours || {}) };
   const header = { ...preset.header, ...(branding?.header || {}) };
   const footer = { ...preset.footer, ...(branding?.footer || {}) };
+  let homeStyle =
+    (branding?.homeStyle as ThemePreset["homeStyle"] | "editorial" | undefined) ||
+    (branding as any)?.home?.homeStyle ||
+    preset.homeStyle;
+  // Normalize legacy / duplicate layout ids → unique designs
+  if (homeStyle === ("editorial" as any)) homeStyle = "nature";
+  if (homeStyle === "agents") homeStyle = "portals";
+  if (homeStyle === "dark") homeStyle = "studio";
+  if (homeStyle === "magazine") homeStyle = "paper";
+  if (homeStyle === "minimal") homeStyle = "glass";
   return {
     themeId: branding?.themeId || preset.id,
     colours,
     header,
     footer,
     font: branding?.font || preset.font,
-    homeStyle: preset.homeStyle,
+    homeStyle,
+    home: (branding as any)?.home || null,
   };
 }

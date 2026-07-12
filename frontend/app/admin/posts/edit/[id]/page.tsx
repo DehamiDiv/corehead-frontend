@@ -20,6 +20,7 @@ import { cn } from "@/lib/utils";
 import MediaLibraryModal from "@/components/admin/MediaLibraryModal";
 import { api } from "@/lib/api";
 import PostPreviewModal from "@/components/admin/PostPreviewModal";
+import { resolveAdminMediaUrl } from "@/lib/apiOrigin";
 import dynamic from 'next/dynamic';
 import 'react-quill-new/dist/quill.snow.css';
 
@@ -535,7 +536,7 @@ export default function EditPostPage() {
                       >
                         {formData.thumbnailUrl ? (
                           <div className="relative w-full h-full flex items-center justify-center p-4">
-                            <img src={formData.thumbnailUrl.startsWith("/") ? `http://localhost:5000${formData.thumbnailUrl}` : formData.thumbnailUrl} className="max-h-[400px] w-auto object-contain rounded-[12px] shadow-sm" alt="Thumbnail" />
+                            <img src={resolveAdminMediaUrl(formData.thumbnailUrl) || formData.thumbnailUrl} className="max-h-[400px] w-auto object-contain rounded-[12px] shadow-sm" alt="Thumbnail" />
                             <button 
                               onClick={(e) => { e.stopPropagation(); setFormData({...formData, thumbnailUrl: ""}); }}
                               className="absolute top-6 right-6 p-2 bg-white/90 backdrop-blur-sm rounded-full text-red-500 shadow-md hover:bg-white transition-all"

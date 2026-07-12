@@ -2,6 +2,7 @@
 
 import Image from "next/image";
 import Link from "next/link";
+import { useEffect, useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import { LogOut, Home, FileText, ExternalLink } from "lucide-react";
 import SiteSwitcher from "@/components/admin/SiteSwitcher";
@@ -9,16 +10,37 @@ import { useOptionalSite } from "@/components/admin/SiteContext";
 import { siteHomePath } from "@/lib/publicSite";
 import { clearSession } from "@/lib/authSession";
 import { cn } from "@/lib/utils";
+import { resolveAdminMediaUrl } from "@/lib/apiOrigin";
 
 /**
  * Dashboard top navbar:
- * [ Logo (larger) + Dashboard ] ····· [ All Blogs centered ] ····· [ Site · Visit · Logout ]
+ * [ Logo (larger) + Dashboard ] ····· [ All Blogs centered ] ····· [ Site · Visit · Profile · Logout ]
  */
 export default function AdminNavbar() {
   const pathname = usePathname();
   const router = useRouter();
   const siteCtx = useOptionalSite();
   const slug = siteCtx?.currentSite?.slug;
+  const [user, setUser] = useState<{
+    name?: string;
+    username?: string;
+    avatar?: string;
+    image?: string;
+  } | null>(null);
+
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem("user");
+      if (raw) setUser(JSON.parse(raw));
+    } catch {
+      /* ignore */
+    }
+  }, []);
+
+  const displayName = user?.username || user?.name || "Admin";
+  const avatarSrc =
+    resolveAdminMediaUrl(user?.avatar || user?.image) ||
+    `https://ui-avatars.com/api/?name=${encodeURIComponent(displayName)}&background=2563eb&color=fff&bold=true&size=128`;
 
   const handleLogout = () => {
     clearSession();
@@ -107,6 +129,24 @@ export default function AdminNavbar() {
               <ExternalLink className="w-3.5 h-3.5" />
             </Link>
           ) : null}
+
+          {/* Profile — perfect circle */}
+          <Link
+            href="/admin/settings/profile"
+            title={displayName}
+            className={cn(
+              "relative h-10 w-10 shrink-0 rounded-full overflow-hidden",
+              "border-2 border-white ring-2 ring-slate-200/90 shadow-sm",
+              "bg-slate-100 hover:ring-blue-400 transition-all",
+            )}
+          >
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src={avatarSrc}
+              alt={displayName}
+              className="absolute inset-0 h-full w-full object-cover object-center"
+            />
+          </Link>
 
           <button
             type="button"

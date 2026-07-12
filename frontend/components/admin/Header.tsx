@@ -4,6 +4,7 @@ import { PanelLeft, Maximize, Minimize, Search } from "lucide-react";
 import { useEffect, useState } from "react";
 import SiteSwitcher from "@/components/admin/SiteSwitcher";
 import VisitPublicSiteButton from "@/components/admin/VisitPublicSiteButton";
+import { getApiBaseUrl, resolveAdminMediaUrl } from "@/lib/apiOrigin";
 
 export default function Header({ onToggleSidebar }: { onToggleSidebar: () => void }) {
   const [user, setUser] = useState<any>(null);
@@ -29,7 +30,8 @@ export default function Header({ onToggleSidebar }: { onToggleSidebar: () => voi
 
   useEffect(() => {
     const storedUser = localStorage.getItem("user");
-    const token = localStorage.getItem("token");
+    const token =
+      localStorage.getItem("accessToken") || localStorage.getItem("token");
 
     if (storedUser) {
       try {
@@ -37,8 +39,9 @@ export default function Header({ onToggleSidebar }: { onToggleSidebar: () => voi
         setUser(parsedUser);
         
         // If profile data is missing, fetch it from backend
-        if (!parsedUser.avatar || !parsedUser.name) {
-           fetch('http://localhost:5000/api/auth/me', {
+        if ((!parsedUser.avatar && !parsedUser.image) || !parsedUser.name) {
+           if (!token) return;
+           fetch(`${getApiBaseUrl()}/auth/me`, {
              headers: { 'Authorization': `Bearer ${token}` }
            })
            .then(res => res.json())
@@ -56,11 +59,10 @@ export default function Header({ onToggleSidebar }: { onToggleSidebar: () => voi
     }
   }, []);
 
-  const avatarSrc = user?.avatar || user?.image
-    ? (String(user.avatar || user.image).startsWith('http') || String(user.avatar || user.image).startsWith('data:') 
-        ? String(user.avatar || user.image) 
-        : `http://localhost:5000${String(user.avatar || user.image).startsWith('/') ? '' : '/'}${user.avatar || user.image}`)
-    : `https://ui-avatars.com/api/?name=${encodeURIComponent(user?.username || user?.name || 'Admin')}&background=random&color=fff`;
+  const displayName = user?.username || user?.name || "Admin";
+  const avatarSrc =
+    resolveAdminMediaUrl(user?.avatar || user?.image) ||
+    `https://ui-avatars.com/api/?name=${encodeURIComponent(displayName)}&background=2563eb&color=fff&bold=true&size=128`;
 
   return (
     <header className="h-[68px] bg-white border-b border-slate-100 flex items-center justify-between px-[24px] sticky top-0 z-40 max-w-[1700px] mx-auto w-full">
@@ -102,14 +104,19 @@ export default function Header({ onToggleSidebar }: { onToggleSidebar: () => voi
           {isFullscreen ? <Minimize className="w-5 h-5" /> : <Maximize className="w-5 h-5" />}
         </button>
 
-        {/* User Profile */}
-        <div className="w-9 h-9 rounded-full overflow-hidden border border-gray-200 cursor-pointer hover:border-blue-200 transition-colors">
+        {/* User Profile — perfect circle */}
+        <a
+          href="/admin/settings/profile"
+          title={displayName}
+          className="relative h-10 w-10 shrink-0 rounded-full overflow-hidden border-2 border-white ring-2 ring-slate-200/80 shadow-sm hover:ring-blue-400 transition-all bg-slate-100"
+        >
+          {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
             src={avatarSrc}
-            alt={user?.username || user?.name || "Admin User"}
-            className="w-full h-full object-cover"
+            alt={displayName}
+            className="absolute inset-0 h-full w-full object-cover object-center"
           />
-        </div>
+        </a>
       </div>
     </header>
   );

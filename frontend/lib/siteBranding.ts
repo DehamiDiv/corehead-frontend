@@ -37,7 +37,38 @@ export type SiteBranding = {
     copyrightText?: string | null;
   };
   font?: string | null;
+  /** Public home layout (from Appearance → home_layout or theme preset) */
   homeStyle?: ThemePreset["homeStyle"];
+  /**
+   * Editable home content (Appearance → Home page layout).
+   * Overrides default copy / hero image when set.
+   */
+  home?: {
+    homeStyle?: ThemePreset["homeStyle"];
+    /** Hero */
+    eyebrow?: string | null;
+    tagline?: string | null;
+    heroImage?: string | null;
+    captionLeft?: string | null;
+    captionRight?: string | null;
+    /** Featured + side rail */
+    featuredEyebrow?: string | null;
+    featuredTitle?: string | null;
+    sideRailLabel?: string | null;
+    /** Value pillars / services */
+    pillarsEyebrow?: string | null;
+    pillarsTitle?: string | null;
+    pillarsBody?: string | null;
+    pillars?: Array<{ title?: string | null; body?: string | null }> | null;
+    /** Latest / journal grid */
+    latestEyebrow?: string | null;
+    latestTitle?: string | null;
+    /** Bottom CTA */
+    ctaEyebrow?: string | null;
+    ctaTitle?: string | null;
+    ctaBody?: string | null;
+    ctaButton?: string | null;
+  } | null;
 };
 
 const FONT_MAP: Record<string, string> = {
@@ -85,6 +116,9 @@ export function brandingToCssVars(branding?: SiteBranding | null): Record<string
   const fontKey = full.font || "dm-sans";
   const fontFamily = FONT_MAP[fontKey] || FONT_MAP["dm-sans"];
 
+  const ctaBg = full.header?.ctaBg || c.accent || primary;
+  const ctaColor = full.header?.ctaColor || "#ffffff";
+
   return {
     "--site-primary": primary,
     "--site-primary-soft": softColor(primary, 0.12),
@@ -99,6 +133,9 @@ export function brandingToCssVars(branding?: SiteBranding | null): Record<string
     "--site-font": fontFamily,
     "--site-accent": c.accent || primary,
     "--site-card-fg": c.cardForeground || fg,
+    /** Header / newsletter CTA button colours (Appearance → Header → CTA) */
+    "--site-cta-bg": ctaBg,
+    "--site-cta-color": ctaColor,
   };
 }
 

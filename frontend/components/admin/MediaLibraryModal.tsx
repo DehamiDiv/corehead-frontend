@@ -4,8 +4,7 @@ import { useState, useEffect } from "react";
 import { X, Search, Check, Loader2, ImageOff } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { api } from "@/lib/api";
-
-const BACKEND_URL = "http://localhost:5000";
+import { resolveAdminMediaUrl } from "@/lib/apiOrigin";
 
 interface MediaItem {
   id: number | string;
@@ -37,10 +36,7 @@ export default function MediaLibraryModal({ isOpen, onClose, onSelect }: MediaLi
   if (!isOpen) return null;
 
   /** Display URL (absolute) for thumbnails in the modal */
-  const getFullUrl = (url: string) =>
-    url.startsWith("http") || url.startsWith("data:")
-      ? url
-      : `${BACKEND_URL}${url.startsWith("/") ? "" : "/"}${url}`;
+  const getFullUrl = (url: string) => resolveAdminMediaUrl(url) || url;
 
   /** Store relative /uploads/... on the post so public pages resolve via API origin */
   const toStoredUrl = (url: string) => {

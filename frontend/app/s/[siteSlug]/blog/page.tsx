@@ -3,9 +3,12 @@ import { api } from "@/lib/api";
 import {
   isPublishedPost,
   resolvePublicSite,
+  siteHomePath,
 } from "@/lib/publicSite";
 import { resolvePublicBranding } from "@/lib/siteBranding";
 import { siteTagline } from "@/lib/publicSiteCopy";
+import { resolveTenantLayout } from "@/lib/tenantLayout";
+import { PublicPageRenderer } from "@/components/Renderer/PublicPageRenderer";
 import PublicBlogGrid from "@/components/public/PublicBlogGrid";
 
 interface Props {
@@ -24,7 +27,8 @@ export async function generateMetadata({ params }: Props) {
 }
 
 /**
- * Public blog archive — market-ready magazine grid of published posts only.
+ * Public blog archive — prefers published Blog Archive template for the site;
+ * falls back to market-ready PublicBlogGrid.
  */
 export default async function PublicSiteBlogPage({ params }: Props) {
   const { siteSlug } = await params;
@@ -49,6 +53,23 @@ export default async function PublicSiteBlogPage({ params }: Props) {
     console.error(`Failed to load posts for site ${site.slug}:`, err);
   }
 
+  const layout = await resolveTenantLayout("blog-archive", site.id);
+
+  // Published site template → PublicPageRenderer (Verdura layouts, etc.)
+  if (layout.source === "template" && layout.blocks?.length) {
+    return (
+      <main className="w-full max-w-6xl mx-auto px-4 sm:px-6 py-12 sm:py-16">
+        <PublicPageRenderer
+          layout={layout.blocks}
+          data={{ posts, siteSlug: site.slug, site }}
+          isLoop
+          siteBasePath={siteHomePath(site.slug)}
+        />
+      </main>
+    );
+  }
+
+  // Fallback magazine grid when no published template
   return (
     <main className="w-full max-w-6xl mx-auto px-4 sm:px-6 py-12 sm:py-16">
       <PublicBlogGrid
@@ -56,7 +77,7 @@ export default async function PublicSiteBlogPage({ params }: Props) {
         siteSlug={site.slug}
         siteName={site.name}
         title={
-          site.slug === "verdura" || branding.homeStyle === "nature"
+          branding.homeStyle === "nature" || branding.homeStyle === "bloom"
             ? `${site.name} Journal`
             : "All stories"
         }

@@ -3,11 +3,10 @@
  *
  * - Absolute http(s)/data URLs → unchanged
  * - Frontend public assets under /demo/ → same-origin (Next.js `public/`)
- * - Everything else relative (/uploads/…) → API origin
+ * - /uploads/* → keep relative so next.config rewrite proxies to the API
+ *   (also works as direct API origin fallback when needed)
  */
-const API_ORIGIN =
-  process.env.NEXT_PUBLIC_API_URL?.replace(/\/api\/?$/, "") ||
-  "http://localhost:5000";
+import { getApiOrigin } from "@/lib/apiOrigin";
 
 export function resolveMediaUrl(path?: string | null): string | null {
   if (!path) return null;
@@ -22,10 +21,16 @@ export function resolveMediaUrl(path?: string | null): string | null {
     return value;
   }
 
-  // Next.js `public/demo/*` — do NOT prefix with API host
+  // Next.js `public/demo/*` — same origin
   if (value.startsWith("/demo/") || value.startsWith("demo/")) {
     return value.startsWith("/") ? value : `/${value}`;
   }
 
-  return `${API_ORIGIN}${value.startsWith("/") ? "" : "/"}${value}`;
+  // Prefer relative /uploads so Next rewrite → backend (avoids broken absolute hosts)
+  if (value.startsWith("/uploads/") || value.startsWith("uploads/")) {
+    return value.startsWith("/") ? value : `/${value}`;
+  }
+
+  const origin = getApiOrigin();
+  return `${origin}${value.startsWith("/") ? "" : "/"}${value}`;
 }

@@ -281,14 +281,24 @@ export function PublicPageRenderer({
             {isInternal ? (
               <Link
                 href={url}
-                className="inline-flex px-6 py-2 bg-blue-600 text-white rounded-md font-medium hover:bg-blue-700 transition"
+                className="inline-flex px-6 py-2 rounded-md font-medium transition-opacity hover:opacity-90"
+                style={{
+                  background:
+                    "var(--site-cta-bg, var(--site-primary, #2563eb))",
+                  color: "var(--site-cta-color, #ffffff)",
+                }}
               >
                 {text}
               </Link>
             ) : (
               <a
                 href={url}
-                className="inline-flex px-6 py-2 bg-blue-600 text-white rounded-md font-medium hover:bg-blue-700 transition"
+                className="inline-flex px-6 py-2 rounded-md font-medium transition-opacity hover:opacity-90"
+                style={{
+                  background:
+                    "var(--site-cta-bg, var(--site-primary, #2563eb))",
+                  color: "var(--site-cta-color, #ffffff)",
+                }}
                 target="_blank"
                 rel="noopener noreferrer"
               >
@@ -359,7 +369,10 @@ export function PublicPageRenderer({
                     />
                   </div>
                   <div className="p-5 flex flex-col flex-grow">
-                    <span className="text-xs font-semibold text-blue-600 mb-2 uppercase tracking-wider">
+                    <span
+                      className="text-xs font-semibold mb-2 uppercase tracking-wider"
+                      style={{ color: "var(--site-primary, #166534)" }}
+                    >
                       {post.category ||
                         (Array.isArray(post.categories)
                           ? post.categories[0]
@@ -410,7 +423,10 @@ export function PublicPageRenderer({
                   alt={featuredPost.title}
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-black/80 to-transparent flex flex-col justify-end p-8 md:p-12">
-                  <span className="text-blue-400 font-bold uppercase tracking-widest text-sm mb-4">
+                  <span
+                    className="font-bold uppercase tracking-widest text-sm mb-4"
+                    style={{ color: "var(--site-primary, #2563eb)" }}
+                  >
                     Featured Article
                   </span>
                   <h2 className="text-white text-2xl md:text-4xl font-extrabold max-w-2xl mb-4">
@@ -482,11 +498,17 @@ export function PublicPageRenderer({
               <input
                 type="email"
                 placeholder="Enter your email"
-                className="flex-1 bg-white/10 border border-white/20 rounded-xl px-4 py-3 outline-none focus:border-blue-500 text-white"
+                className="flex-1 bg-white/10 border border-white/20 rounded-xl px-4 py-3 outline-none text-white focus:border-[var(--site-cta-bg,var(--site-primary,#2563eb))]"
               />
               <button
                 type="submit"
-                className="bg-blue-600 hover:bg-blue-700 text-white font-bold px-8 py-3 rounded-xl transition-colors"
+                className="font-bold px-8 py-3 rounded-xl transition-opacity hover:opacity-90"
+                style={{
+                  // Appearance → Header → Call-to-Action Button colours
+                  background:
+                    "var(--site-cta-bg, var(--site-primary, #2563eb))",
+                  color: "var(--site-cta-color, #ffffff)",
+                }}
               >
                 {(typeof content === "object" && content?.buttonText) ||
                   block.content?.buttonText ||

@@ -21,6 +21,7 @@ import {
 import { cn } from "@/lib/utils";
 import { api } from "@/lib/api";
 import EmptyState from "@/components/ui/EmptyState";
+import { resolveAdminMediaUrl } from "@/lib/apiOrigin";
 
 interface MediaItem {
   id: number | string;
@@ -30,8 +31,6 @@ interface MediaItem {
   type?: string;
   createdAt: string;
 }
-
-const BACKEND_URL = 'http://localhost:5000';
 
 export default function MediaPage() {
   const [mediaItems, setMediaItems] = useState<MediaItem[]>([]);
@@ -151,8 +150,7 @@ export default function MediaPage() {
   );
 
   const getFullUrl = (url: string) => {
-    if (url.startsWith('http')) return url;
-    return `${BACKEND_URL}${url}`;
+    return resolveAdminMediaUrl(url) || url;
   };
 
   return (

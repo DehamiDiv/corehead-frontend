@@ -1,7 +1,9 @@
 import { getSiteHeader } from '@/lib/siteStorage';
 import { clearSession, persistAccessToken } from '@/lib/authSession';
 
-const BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api';
+import { getApiBaseUrl } from '@/lib/apiOrigin';
+
+const BASE_URL = getApiBaseUrl();
 
 export type SiteSummary = {
   id: number;

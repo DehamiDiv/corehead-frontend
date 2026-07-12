@@ -42,6 +42,7 @@ export async function generateMetadata({ params }: Props) {
 
 /**
  * R2-1: Public single post — uses published Single Post template when available.
+ * Template owns full article chrome; default layout uses market meta header.
  */
 export default async function PublicSitePostPage({ params }: Props) {
   const { siteSlug, postSlug } = await params;
@@ -76,7 +77,6 @@ export default async function PublicSitePostPage({ params }: Props) {
   );
 
   const bindData = postToBindData(post, site.slug);
-  // Absolute cover URL for bindings + guaranteed hero below
   const coverSrc =
     resolveMediaUrl(
       post.coverImage ||
@@ -93,31 +93,28 @@ export default async function PublicSitePostPage({ params }: Props) {
     bindData.post.imageUrl = coverSrc;
   }
 
-  // Market chrome already renders title / meta / cover for default layouts —
-  // strip duplicate blocks so the article doesn't repeat itself.
+  const useTemplateChrome = layout.source === "template";
   const rawBlocks = layout.blocks || [];
-  const blocksForRender =
-    layout.source === "default"
-      ? rawBlocks.filter((b: any) => {
-          const t = String(b?.type || "").toLowerCase();
-          const bind = String(b?.bindings?.content || "");
-          if (t === "image" || bind.includes("coverImage") || bind.includes("featured_image")) {
-            return false;
-          }
-          if (bind.includes("post.title") || bind === "title") return false;
-          if (bind.includes("category")) return false;
-          if (bind.includes("excerpt")) return false;
-          return true;
-        })
-      : rawBlocks;
 
-  // If published layout has no Image block, still show cover (common demo pain)
-  const layoutHasImage =
-    layout.source !== "default" &&
-    rawBlocks.some((b: any) => {
-      const t = String(b?.type || "").toLowerCase();
-      return t === "image" || t.includes("image");
-    });
+  // Default layout: market chrome already shows title/meta/cover — body only.
+  const blocksForRender = useTemplateChrome
+    ? rawBlocks
+    : rawBlocks.filter((b: any) => {
+        const t = String(b?.type || "").toLowerCase();
+        const bind = String(b?.bindings?.content || "");
+        if (t === "image" || bind.includes("coverImage") || bind.includes("featured_image")) {
+          return false;
+        }
+        if (bind.includes("post.title") || bind === "title") return false;
+        if (bind.includes("category")) return false;
+        if (bind.includes("excerpt")) return false;
+        return true;
+      });
+
+  const layoutHasImage = rawBlocks.some((b: any) => {
+    const t = String(b?.type || "").toLowerCase();
+    return t === "image" || t.includes("image");
+  });
 
   const category = postCategory(post);
   const dateLabel = formatPostDate(
@@ -139,33 +136,70 @@ export default async function PublicSitePostPage({ params }: Props) {
           Back to journal
         </Link>
 
-        {/* Editorial meta — market-ready article chrome */}
-        <header className="mb-8">
-          {category && (
-            <p
-              className="inline-flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-[0.16em] mb-3"
-              style={{ color: "var(--site-primary)" }}
-            >
-              <Tag className="h-3.5 w-3.5" />
-              {category}
-            </p>
-          )}
-          <h1
-            className="text-3xl sm:text-4xl lg:text-[2.75rem] font-black tracking-tight leading-[1.15]"
-            style={{ color: "var(--site-ink)" }}
-          >
-            {post.title}
-          </h1>
-          {post.excerpt && (
-            <p
-              className="mt-4 text-base sm:text-lg leading-relaxed"
-              style={{ color: "var(--site-muted)" }}
-            >
-              {post.excerpt}
-            </p>
-          )}
+        {/* Market chrome only when no published Single Post template */}
+        {!useTemplateChrome && (
+          <>
+            <header className="mb-8">
+              {category && (
+                <p
+                  className="inline-flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-[0.16em] mb-3"
+                  style={{ color: "var(--site-primary)" }}
+                >
+                  <Tag className="h-3.5 w-3.5" />
+                  {category}
+                </p>
+              )}
+              <h1
+                className="text-3xl sm:text-4xl lg:text-[2.75rem] font-black tracking-tight leading-[1.15]"
+                style={{ color: "var(--site-ink)" }}
+              >
+                {post.title}
+              </h1>
+              {post.excerpt && (
+                <p
+                  className="mt-4 text-base sm:text-lg leading-relaxed"
+                  style={{ color: "var(--site-muted)" }}
+                >
+                  {post.excerpt}
+                </p>
+              )}
+              <div
+                className="mt-5 flex flex-wrap items-center gap-x-4 gap-y-2 text-xs sm:text-sm font-medium"
+                style={{ color: "var(--site-muted)" }}
+              >
+                <span className="font-semibold" style={{ color: "var(--site-ink)" }}>
+                  {authorName}
+                </span>
+                {dateLabel && (
+                  <span className="inline-flex items-center gap-1.5">
+                    <Calendar className="h-3.5 w-3.5" />
+                    {dateLabel}
+                  </span>
+                )}
+                <span className="inline-flex items-center gap-1.5">
+                  <Clock className="h-3.5 w-3.5" />
+                  {minutes} min read
+                </span>
+              </div>
+            </header>
+
+            {coverSrc && !layoutHasImage && (
+              <div className="relative w-full aspect-[16/9] mb-10 rounded-2xl overflow-hidden bg-black/5 border border-black/5 shadow-lg shadow-black/5">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src={coverSrc}
+                  alt={post.title || "Cover"}
+                  className="absolute inset-0 w-full h-full object-cover"
+                />
+              </div>
+            )}
+          </>
+        )}
+
+        {/* Author line when template handles title but not meta */}
+        {useTemplateChrome && (
           <div
-            className="mt-5 flex flex-wrap items-center gap-x-4 gap-y-2 text-xs sm:text-sm font-medium"
+            className="mb-6 flex flex-wrap items-center gap-x-4 gap-y-2 text-xs sm:text-sm font-medium"
             style={{ color: "var(--site-muted)" }}
           >
             <span className="font-semibold" style={{ color: "var(--site-ink)" }}>
@@ -182,18 +216,6 @@ export default async function PublicSitePostPage({ params }: Props) {
               {minutes} min read
             </span>
           </div>
-        </header>
-
-        {/* Always show featured image when layout template omits an Image block */}
-        {coverSrc && !layoutHasImage && (
-          <div className="relative w-full aspect-[16/9] mb-10 rounded-2xl overflow-hidden bg-black/5 border border-black/5 shadow-lg shadow-black/5">
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
-              src={coverSrc}
-              alt={post.title || "Cover"}
-              className="absolute inset-0 w-full h-full object-cover"
-            />
-          </div>
         )}
 
         <div className="prose-public">
@@ -204,7 +226,6 @@ export default async function PublicSitePostPage({ params }: Props) {
           />
         </div>
 
-        {/* Reactions + comments on published posts */}
         <div className="mt-12 pt-8 border-t border-black/5 space-y-8">
           <PostReactions postId={post.id} siteId={site.id} />
           <CommentsSection

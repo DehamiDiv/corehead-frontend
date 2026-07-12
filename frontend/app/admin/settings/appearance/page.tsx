@@ -1,11 +1,16 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
-import { CheckCircle2, Eye, Palette, Sparkles, RefreshCw, X, Settings2, Send, Plus, Upload, Loader2, ExternalLink } from "lucide-react";
+import { CheckCircle2, Eye, Sparkles, RefreshCw, X, Settings2, Send, Plus, Upload, Loader2, ExternalLink, Pencil } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { api } from "@/lib/api";
 import Theme1Preview from "@/components/admin/Theme1Preview";
-import { getThemePreset } from "@/lib/themePresets";
+import {
+  getThemePreset,
+  HOME_LAYOUT_OPTIONS,
+  type ThemePreset,
+} from "@/lib/themePresets";
+import { resolveAdminMediaUrl } from "@/lib/apiOrigin";
 import {
   DEFAULT_THEME_NAV_LINKS,
   DEFAULT_THEME_FOOTER_LINKS,
@@ -19,7 +24,7 @@ const THEMES = [
   { id: "theme-1", name: "Theme 1 · Nature", description: "Green nature palette for growth / eco sites.", preview: "https://images.unsplash.com/photo-1441974231531-c6227db76b6e?w=800&q=80" },
   { id: "theme-2", name: "Theme 2 · Mosaic", description: "Bold orange accents for energetic blogs.", preview: "https://images.unsplash.com/photo-1550745165-9bc0b252726f?w=800&q=80" },
   { id: "theme-3", name: "Theme 3 · Elegant Red", description: "Editorial red on white.", preview: "https://images.unsplash.com/photo-1497215728101-856f4ea42174?w=800&q=80" },
-  { id: "theme-4", name: "Theme 4 · Soft Blush", description: "Pink lifestyle palette.", preview: "https://images.unsplash.com/photo-1486312338219-ce68d2c6f44d?w=800&q=80" },
+  { id: "theme-4", name: "Theme 4 · Soft Bloom", description: "Lavender mist meditation palette — calm, soft, no green.", preview: "https://images.unsplash.com/photo-1506126613408-eca07ce68773?w=800&q=80" },
   { id: "theme-5", name: "Theme 5 · Travel Teal", description: "Dark teal travel / stories look.", preview: "https://images.unsplash.com/photo-1518770660439-4636190af475?w=800&q=80" },
   { id: "theme-6", name: "Theme 6 · Fitness Dark", description: "Dark theme with green accents.", preview: "https://images.unsplash.com/photo-1534438327276-14e5300c3a48?w=800&q=80" },
   { id: "theme-7", name: "Theme 7 · Portfolio Blue", description: "Professional blue portfolio (tech default).", preview: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=800&q=80" },
@@ -79,6 +84,44 @@ export default function AppearancePage() {
   const [isSavingFooter, setIsSavingFooter] = useState(false);
   const [selectedFont, setSelectedFont] = useState("dm-sans");
   const [isSavingFonts, setIsSavingFonts] = useState(false);
+  /** Public home layout (site-level) — classic | nature | dark | magazine | minimal */
+  const [homeLayout, setHomeLayout] = useState<ThemePreset["homeStyle"]>("classic");
+  const [isSavingHomeLayout, setIsSavingHomeLayout] = useState(false);
+  const [homeLayoutMsg, setHomeLayoutMsg] = useState<string | null>(null);
+  // Editable home content (saved with home_layout)
+  const [homeEyebrow, setHomeEyebrow] = useState("");
+  const [homeTagline, setHomeTagline] = useState("");
+  const [homeHeroImage, setHomeHeroImage] = useState("");
+  const [homeCaptionLeft, setHomeCaptionLeft] = useState("");
+  const [homeCaptionRight, setHomeCaptionRight] = useState("");
+  // Featured + side rail
+  const [homeFeaturedEyebrow, setHomeFeaturedEyebrow] = useState("");
+  const [homeFeaturedTitle, setHomeFeaturedTitle] = useState("");
+  const [homeSideRailLabel, setHomeSideRailLabel] = useState("");
+  // Pillars section
+  const [homePillarsEyebrow, setHomePillarsEyebrow] = useState("");
+  const [homePillarsTitle, setHomePillarsTitle] = useState("");
+  const [homePillarsBody, setHomePillarsBody] = useState("");
+  const [homePillars, setHomePillars] = useState<
+    Array<{ title: string; body: string }>
+  >([
+    { title: "", body: "" },
+    { title: "", body: "" },
+    { title: "", body: "" },
+  ]);
+  // Latest grid
+  const [homeLatestEyebrow, setHomeLatestEyebrow] = useState("");
+  const [homeLatestTitle, setHomeLatestTitle] = useState("");
+  // Bottom CTA
+  const [homeCtaEyebrow, setHomeCtaEyebrow] = useState("");
+  const [homeCtaTitle, setHomeCtaTitle] = useState("");
+  const [homeCtaBody, setHomeCtaBody] = useState("");
+  const [homeCtaButton, setHomeCtaButton] = useState("");
+  const [isUploadingHomeHero, setIsUploadingHomeHero] = useState(false);
+  const homeHeroInputRef = useRef<HTMLInputElement>(null);
+  /** Edit window for home layout (theme-style modal) */
+  const [homeEditOpen, setHomeEditOpen] = useState(false);
+  const [editingHomeLayout, setEditingHomeLayout] = useState<ThemePreset["homeStyle"] | null>(null);
 
   // Colours State
   const [colourPrimary, setColourPrimary] = useState("#025e03");
@@ -107,6 +150,47 @@ export default function AppearancePage() {
         if (savedTheme && savedTheme.themeId) {
           setActiveTheme(savedTheme.themeId);
         }
+        // Site-level public home layout + editable fields
+        try {
+          const home = await api.getSetting("home_layout");
+          const style = home?.homeStyle || home?.layout;
+          if (
+            style &&
+            HOME_LAYOUT_OPTIONS.some((o) => o.id === style)
+          ) {
+            setHomeLayout(style);
+          } else if (savedTheme?.themeId) {
+            setHomeLayout(getThemePreset(savedTheme.themeId).homeStyle);
+          }
+          if (home && typeof home === "object") {
+            setHomeEyebrow(home.eyebrow || "");
+            setHomeTagline(home.tagline || "");
+            setHomeHeroImage(home.heroImage || "");
+            setHomeCaptionLeft(home.captionLeft || "");
+            setHomeCaptionRight(home.captionRight || "");
+            setHomeFeaturedEyebrow(home.featuredEyebrow || "");
+            setHomeFeaturedTitle(home.featuredTitle || "");
+            setHomeSideRailLabel(home.sideRailLabel || "");
+            setHomePillarsEyebrow(home.pillarsEyebrow || "");
+            setHomePillarsTitle(home.pillarsTitle || "");
+            setHomePillarsBody(home.pillarsBody || "");
+            if (Array.isArray(home.pillars) && home.pillars.length > 0) {
+              const next = [0, 1, 2].map((i) => ({
+                title: home.pillars[i]?.title || "",
+                body: home.pillars[i]?.body || "",
+              }));
+              setHomePillars(next);
+            }
+            setHomeLatestEyebrow(home.latestEyebrow || "");
+            setHomeLatestTitle(home.latestTitle || "");
+            setHomeCtaEyebrow(home.ctaEyebrow || "");
+            setHomeCtaTitle(home.ctaTitle || "");
+            setHomeCtaBody(home.ctaBody || "");
+            setHomeCtaButton(home.ctaButton || "");
+          }
+        } catch {
+          /* ignore */
+        }
         // Mark which themes already have colours saved (setup progress)
         const done: Record<string, boolean> = {};
         await Promise.all(
@@ -131,7 +215,8 @@ export default function AppearancePage() {
 
   /**
    * Fully write one theme pack (colours + header + footer + font) for this site.
-   * force=true overwrites previous customizations for that theme.
+   * force=true overwrites palette / chrome colours from the preset (keeps logos + nav).
+   * Also syncs home_layout.homeStyle when the preset defines one (e.g. theme-4 → bloom).
    */
   const writeThemePack = async (
     themeId: string,
@@ -145,50 +230,82 @@ export default function AppearancePage() {
       await api.updateSetting("active_theme", { themeId });
     }
 
-    const existingColours = force
-      ? null
-      : await api.getSetting(`theme_${themeId}_colours`);
+    const existingColours = await api.getSetting(`theme_${themeId}_colours`);
     if (force || !existingColours?.primary) {
       await api.updateSetting(`theme_${themeId}_colours`, { ...preset.colours });
     }
 
-    const existingHeader = force
-      ? null
-      : await api.getSetting(`theme_${themeId}_header`);
+    // Always load existing header so force can keep logo/nav while applying palette
+    const existingHeader = await api.getSetting(`theme_${themeId}_header`);
     if (force || !existingHeader?.headerBg) {
+      const siteSlug = currentSite?.slug;
+      const blogUrl = siteSlug ? `/s/${siteSlug}/blog` : "/blog";
       await api.updateSetting(`theme_${themeId}_header`, {
+        ...(existingHeader && typeof existingHeader === "object" ? existingHeader : {}),
         headerBg: preset.header.headerBg,
         headerFont: preset.header.headerFont,
         ctaBg: preset.header.ctaBg,
         ctaColor: preset.header.ctaColor,
-        ctaText: preset.header.ctaText,
-        ctaUrl: "/blog",
-        navLinks: DEFAULT_THEME_NAV_LINKS,
-        headerLogo: existingHeader?.headerLogo || headerLogo || currentSite?.logo || null,
+        ctaText: preset.header.ctaText || existingHeader?.ctaText || "Explore",
+        ctaUrl: existingHeader?.ctaUrl || blogUrl,
+        navLinks:
+          existingHeader?.navLinks?.length > 0
+            ? existingHeader.navLinks
+            : DEFAULT_THEME_NAV_LINKS,
+        headerLogo:
+          existingHeader?.headerLogo ||
+          headerLogo ||
+          currentSite?.logo ||
+          null,
+        headerAlt: existingHeader?.headerAlt || headerAlt || "header-logo",
       });
     }
 
-    const existingFooter = force
-      ? null
-      : await api.getSetting(`theme_${themeId}_footer`);
+    const existingFooter = await api.getSetting(`theme_${themeId}_footer`);
     if (force || !existingFooter?.footerBg) {
       await api.updateSetting(`theme_${themeId}_footer`, {
+        ...(existingFooter && typeof existingFooter === "object" ? existingFooter : {}),
         footerBg: preset.footer.footerBg,
         footerFont: preset.footer.footerFont,
         footerDescription:
           preset.footer.footerDescription ||
+          existingFooter?.footerDescription ||
           `Stories and updates from ${currentSite?.name || "our site"}.`,
-        copyrightText: `© ${new Date().getFullYear()} ${currentSite?.name || "Site"}. All rights reserved.`,
-        quickLinks: DEFAULT_THEME_FOOTER_LINKS,
-        footerLogo: existingFooter?.footerLogo || footerLogo || currentSite?.logo || null,
+        copyrightText:
+          existingFooter?.copyrightText ||
+          `© ${new Date().getFullYear()} ${currentSite?.name || "Site"}. All rights reserved.`,
+        quickLinks:
+          existingFooter?.quickLinks?.length > 0
+            ? existingFooter.quickLinks
+            : DEFAULT_THEME_FOOTER_LINKS,
+        socialLinks: existingFooter?.socialLinks || undefined,
+        footerLogo:
+          existingFooter?.footerLogo ||
+          footerLogo ||
+          currentSite?.logo ||
+          null,
+        footerAlt: existingFooter?.footerAlt || footerAlt || "footer-logo",
       });
     }
 
-    const existingFont = force
-      ? null
-      : await api.getSetting(`theme_${themeId}_font`);
+    const existingFont = await api.getSetting(`theme_${themeId}_font`);
     if (force || !existingFont?.font) {
       await api.updateSetting(`theme_${themeId}_font`, { font: preset.font });
+    }
+
+    // Theme packs that own a home layout (e.g. Soft Bloom → bloom home)
+    if (force && preset.homeStyle && makeActive) {
+      try {
+        const existingHome = await api.getSetting("home_layout");
+        const homePayload =
+          existingHome && typeof existingHome === "object"
+            ? { ...existingHome, homeStyle: preset.homeStyle }
+            : { homeStyle: preset.homeStyle };
+        await api.updateSetting("home_layout", homePayload);
+        setHomeLayout(preset.homeStyle);
+      } catch {
+        /* home_layout optional */
+      }
     }
 
     setSetupDone((prev) => ({ ...prev, [themeId]: true }));
@@ -318,7 +435,7 @@ export default function AppearancePage() {
         force: true,
       });
       setActiveTheme(themeId);
-      // Reload customizer fields for this theme
+      // Apply full Soft Bloom / theme pack into customizer UI (colours + header + footer)
       setHeaderBg(preset.header.headerBg);
       setHeaderFont(preset.header.headerFont);
       setCtaBg(preset.header.ctaBg);
@@ -333,12 +450,49 @@ export default function AppearancePage() {
       setColourAccent(preset.colours.accent);
       setColourCard(preset.colours.card);
       setColourCardForeground(preset.colours.cardForeground);
+      setColourDarkForeground(
+        preset.colours.background?.startsWith("#0") ||
+          preset.colours.background?.startsWith("#1") ||
+          preset.colours.background?.startsWith("#2")
+          ? preset.colours.foreground
+          : "#ffffff"
+      );
       setSelectedFont(preset.font);
+      if (preset.homeStyle) {
+        setHomeLayout(preset.homeStyle);
+      }
+
+      // Re-read saved pack so UI matches DB (nav/logo preserved)
+      try {
+        const [h, f, c] = await Promise.all([
+          api.getSetting(`theme_${themeId}_header`),
+          api.getSetting(`theme_${themeId}_footer`),
+          api.getSetting(`theme_${themeId}_colours`),
+        ]);
+        if (h?.headerLogo) setHeaderLogo(h.headerLogo);
+        if (h?.navLinks?.length) setNavLinks(h.navLinks);
+        if (h?.ctaUrl) setCtaUrl(h.ctaUrl);
+        if (f?.footerLogo) setFooterLogo(f.footerLogo);
+        if (f?.quickLinks?.length) setQuickLinks(f.quickLinks);
+        if (f?.copyrightText) setCopyrightText(f.copyrightText);
+        if (c?.primary) {
+          setColourPrimary(c.primary);
+          setColourBackground(c.background || preset.colours.background);
+          setColourForeground(c.foreground || preset.colours.foreground);
+          setColourAccent(c.accent || preset.colours.accent);
+          setColourCard(c.card || preset.colours.card);
+          setColourCardForeground(
+            c.cardForeground || preset.colours.cardForeground
+          );
+        }
+      } catch {
+        /* ignore */
+      }
 
       alert(
-        `✓ ${preset.name} set up & live${
+        `✓ ${preset.name} applied — colours, header & footer are live${
           currentSite?.slug ? ` on /s/${currentSite.slug}` : ""
-        }.\nOpen public site and hard-refresh (Ctrl+Shift+R).`,
+        }.\nHard-refresh the public site (Ctrl+Shift+R).`,
       );
     } catch (error) {
       console.error("Failed to update theme:", error);
@@ -362,35 +516,6 @@ export default function AppearancePage() {
       console.error(error);
       alert("Failed to set up theme pack.");
     } finally {
-      setSetupThemeId(null);
-    }
-  };
-
-  /** Run all themes one-by-one in order (setup packs); leave current active as last activated optional */
-  const handleSetupAllOneByOne = async () => {
-    if (
-      !confirm(
-        `Set up all ${THEMES.length} theme packs for ${currentSite?.name || "this site"}? This overwrites each theme’s saved colours/header/footer.`,
-      )
-    ) {
-      return;
-    }
-    setActivating(true);
-    try {
-      for (const t of THEMES) {
-        setSetupThemeId(t.id);
-        await writeThemePack(t.id, { makeActive: false, force: true });
-      }
-      // Keep currently active theme fully applied & live
-      await writeThemePack(activeTheme, { makeActive: true, force: true });
-      alert(
-        `All ${THEMES.length} themes set up for ${currentSite?.name || "site"}. Active remains: ${activeTheme}`,
-      );
-    } catch (e) {
-      console.error(e);
-      alert("Setup stopped with an error. Check console / site context.");
-    } finally {
-      setActivating(false);
       setSetupThemeId(null);
     }
   };
@@ -451,7 +576,7 @@ export default function AppearancePage() {
             base64Data,
           });
           const rawUrl = uploaded.media?.url || uploaded.url || "";
-          const fullUrl = rawUrl.startsWith("/") ? `http://localhost:5000${rawUrl}` : rawUrl;
+          const fullUrl = resolveAdminMediaUrl(rawUrl) || rawUrl;
           setHeaderLogo(fullUrl);
         } catch {
           // Fallback: use local object URL for preview only
@@ -487,7 +612,7 @@ export default function AppearancePage() {
             base64Data,
           });
           const rawUrl = uploaded.media?.url || uploaded.url || "";
-          const fullUrl = rawUrl.startsWith("/") ? `http://localhost:5000${rawUrl}` : rawUrl;
+          const fullUrl = resolveAdminMediaUrl(rawUrl) || rawUrl;
           setFooterLogo(fullUrl);
         } catch {
           // Fallback: use local object URL for preview only
@@ -527,6 +652,95 @@ export default function AppearancePage() {
     setSocialLinks(socialLinks.filter(n => n.id !== id));
   };
 
+  const saveHomeLayout = async (
+    next?: ThemePreset["homeStyle"],
+    options?: { silent?: boolean },
+  ) => {
+    const value = next || homeLayout;
+    setIsSavingHomeLayout(true);
+    setHomeLayoutMsg(null);
+    try {
+      setHomeLayout(value);
+      // Layout structure + copy only — does NOT change Colours / Header / Footer codes
+      const pillarsPayload = homePillars
+        .map((p) => ({
+          title: p.title.trim() || null,
+          body: p.body.trim() || null,
+        }))
+        .filter((p) => p.title || p.body);
+      await api.updateSetting("home_layout", {
+        homeStyle: value,
+        eyebrow: homeEyebrow.trim() || null,
+        tagline: homeTagline.trim() || null,
+        heroImage: homeHeroImage.trim() || null,
+        captionLeft: homeCaptionLeft.trim() || null,
+        captionRight: homeCaptionRight.trim() || null,
+        featuredEyebrow: homeFeaturedEyebrow.trim() || null,
+        featuredTitle: homeFeaturedTitle.trim() || null,
+        sideRailLabel: homeSideRailLabel.trim() || null,
+        pillarsEyebrow: homePillarsEyebrow.trim() || null,
+        pillarsTitle: homePillarsTitle.trim() || null,
+        pillarsBody: homePillarsBody.trim() || null,
+        pillars: pillarsPayload.length > 0 ? pillarsPayload : null,
+        latestEyebrow: homeLatestEyebrow.trim() || null,
+        latestTitle: homeLatestTitle.trim() || null,
+        ctaEyebrow: homeCtaEyebrow.trim() || null,
+        ctaTitle: homeCtaTitle.trim() || null,
+        ctaBody: homeCtaBody.trim() || null,
+        ctaButton: homeCtaButton.trim() || null,
+      });
+      const label =
+        HOME_LAYOUT_OPTIONS.find((o) => o.id === value)?.name || value;
+      const msg = `Saved: ${label}. Colours unchanged — edit in Colours / Header tabs.`;
+      setHomeLayoutMsg(msg);
+      if (!options?.silent) {
+        alert(msg);
+      }
+    } catch (error) {
+      console.error("Failed to save home layout:", error);
+      setHomeLayoutMsg("Failed to save. Select a site and try again.");
+      if (!options?.silent) {
+        alert("Failed to save home layout. Select a site and try again.");
+      }
+    } finally {
+      setIsSavingHomeLayout(false);
+    }
+  };
+
+  const handleHomeHeroUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (!file.type.startsWith("image/")) {
+      alert("Please choose an image file.");
+      return;
+    }
+    setIsUploadingHomeHero(true);
+    try {
+      const reader = new FileReader();
+      const base64Data: string = await new Promise((resolve, reject) => {
+        reader.onload = () => resolve(String(reader.result || ""));
+        reader.onerror = () => reject(new Error("Failed to read file"));
+        reader.readAsDataURL(file);
+      });
+      const uploaded = await api.uploadMedia({
+        name: file.name,
+        type: file.type,
+        size: String(file.size),
+        base64Data,
+      });
+      const url = uploaded?.media?.url || uploaded?.url || "";
+      if (!url) throw new Error("No URL returned from upload");
+      setHomeHeroImage(url);
+      setHomeLayoutMsg("Hero image uploaded — click Save home layout to apply.");
+    } catch (err: any) {
+      console.error(err);
+      alert(err?.message || "Hero image upload failed.");
+    } finally {
+      setIsUploadingHomeHero(false);
+      e.target.value = "";
+    }
+  };
+
   const saveFooterSettings = async () => {
     setIsSavingFooter(true);
     try {
@@ -554,12 +768,9 @@ export default function AppearancePage() {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <p className="text-xs font-bold uppercase tracking-widest text-blue-600 mb-1">
-            R2-4 · Public themes
-          </p>
           <h1 className="text-3xl font-bold text-gray-900">Appearance</h1>
           <p className="text-gray-500 mt-1">
-            Themes apply to your public site shell (header, colours, footer, fonts).
+            Themes, home layout, header, colours, footer, and fonts for your public site.
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
@@ -589,48 +800,405 @@ export default function AppearancePage() {
         </div>
       </div>
 
-      {/* Currently Active Banner */}
-      <div className="bg-white p-6 rounded-3xl shadow-sm border border-gray-100 flex flex-wrap items-center justify-between gap-4 group">
-        <div className="flex items-center gap-6">
-          <div className="w-14 h-14 rounded-2xl bg-blue-50 text-blue-600 flex items-center justify-center shadow-inner">
-            <Palette className="w-7 h-7" />
-          </div>
-          <div>
-            <p className="text-xs font-bold text-gray-400 uppercase tracking-widest">Live on public site</p>
-            <h2 className="text-xl font-black text-gray-900 mt-0.5">
-              {activeThemeName}
-            </h2>
-            <p className="text-xs text-gray-400 mt-1 font-medium">
-              {currentSite
-                ? `Site: ${currentSite.name} · /s/${currentSite.slug}`
-                : "Select a site to scope appearance settings"}
-            </p>
-            <p className="text-xs text-blue-600 font-bold mt-2">
-              Setup progress: {Object.values(setupDone).filter(Boolean).length} / {THEMES.length} themes
-            </p>
-          </div>
-        </div>
-        <div className="flex flex-wrap items-center gap-3">
-          <button
-            type="button"
-            onClick={handleSetupAllOneByOne}
-            disabled={activating || !currentSite}
-            className="h-10 px-4 rounded-xl border border-slate-200 bg-white text-sm font-bold text-slate-700 hover:bg-slate-50 disabled:opacity-50"
+      {/* Home layout Edit window */}
+      {homeEditOpen && (
+        <div
+          className="fixed inset-0 z-[120] flex items-center justify-center p-4 sm:p-8 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200"
+          onClick={() => !isSavingHomeLayout && setHomeEditOpen(false)}
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="home-edit-title"
+        >
+          <div
+            className="w-full max-w-3xl max-h-[90vh] overflow-y-auto bg-white rounded-[1.75rem] shadow-2xl border border-slate-100"
+            onClick={(e) => e.stopPropagation()}
           >
-            Setup all (one-by-one)
-          </button>
-           <span className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-xl text-sm font-bold shadow-lg shadow-blue-100">
-             <CheckCircle2 className="w-4 h-4" />
-             Active
-           </span>
-        </div>
-      </div>
+            <div className="sticky top-0 z-10 flex items-center justify-between gap-3 px-6 py-4 border-b border-slate-100 bg-white/95 backdrop-blur">
+              <div>
+                <p className="text-[10px] font-bold uppercase tracking-widest text-emerald-600">
+                  Edit home
+                </p>
+                <h3 id="home-edit-title" className="text-lg font-black text-slate-900">
+                  {HOME_LAYOUT_OPTIONS.find((o) => o.id === (editingHomeLayout || homeLayout))
+                    ?.name || "Home layout"}
+                </h3>
+              </div>
+              <button
+                type="button"
+                onClick={() => setHomeEditOpen(false)}
+                disabled={isSavingHomeLayout}
+                className="h-10 w-10 rounded-xl border border-slate-200 flex items-center justify-center text-slate-500 hover:bg-slate-50"
+                aria-label="Close"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
 
-      <p className="text-sm text-slate-500 font-medium">
-        <strong className="text-slate-800">One by one:</strong> open a theme →{" "}
-        <strong>Setup pack</strong> (save colours/header/footer) →{" "}
-        <strong>Activate &amp; go live</strong> → check public site → next theme.
-      </p>
+            <div className="p-6 space-y-6">
+              <p className="text-xs text-slate-500 leading-relaxed">
+                Leave a field empty to keep the layout default. Changes apply to the public home after Save.
+              </p>
+
+              {/* ── Hero ─────────────────────────────────────── */}
+              <section className="space-y-4">
+                <h4 className="text-[11px] font-bold uppercase tracking-[0.18em] text-emerald-700 border-b border-emerald-100 pb-2">
+                  Hero
+                </h4>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div className="sm:col-span-2">
+                    <label className="block text-sm font-bold text-slate-800 mb-1.5">
+                      Eyebrow / kicker
+                    </label>
+                    <input
+                      type="text"
+                      value={homeEyebrow}
+                      onChange={(e) => setHomeEyebrow(e.target.value)}
+                      placeholder="e.g. Nature · Beauty · Collections"
+                      className="w-full px-4 py-3 rounded-xl border border-slate-200 bg-white text-sm font-medium focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500"
+                    />
+                  </div>
+                  <div className="sm:col-span-2">
+                    <label className="block text-sm font-bold text-slate-800 mb-1.5">
+                      Tagline
+                    </label>
+                    <textarea
+                      rows={3}
+                      value={homeTagline}
+                      onChange={(e) => setHomeTagline(e.target.value)}
+                      placeholder="Short description on the home page"
+                      className="w-full px-4 py-3 rounded-xl border border-slate-200 bg-white text-sm font-medium focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 resize-none"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-bold text-slate-800 mb-1.5">
+                      Caption left
+                    </label>
+                    <textarea
+                      rows={2}
+                      value={homeCaptionLeft}
+                      onChange={(e) => setHomeCaptionLeft(e.target.value)}
+                      placeholder={"New stories with beauty\nNature collections"}
+                      className="w-full px-4 py-3 rounded-xl border border-slate-200 bg-white text-sm font-medium focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 resize-none"
+                    />
+                    <p className="text-[10px] text-slate-400 mt-1">New line = second line</p>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-bold text-slate-800 mb-1.5">
+                      Caption right
+                    </label>
+                    <textarea
+                      rows={2}
+                      value={homeCaptionRight}
+                      onChange={(e) => setHomeCaptionRight(e.target.value)}
+                      placeholder={"Verdura studio\n2026"}
+                      className="w-full px-4 py-3 rounded-xl border border-slate-200 bg-white text-sm font-medium focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 resize-none"
+                    />
+                  </div>
+                  <div className="sm:col-span-2">
+                    <label className="block text-sm font-bold text-slate-800 mb-1.5">
+                      Hero image URL
+                    </label>
+                    <input
+                      type="text"
+                      value={homeHeroImage}
+                      onChange={(e) => setHomeHeroImage(e.target.value)}
+                      placeholder="/demo/verdura-hero-editorial.png or /uploads/…"
+                      className="w-full px-4 py-3 rounded-xl border border-slate-200 bg-white text-sm font-medium focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500"
+                    />
+                  </div>
+                  <div className="sm:col-span-2 flex flex-wrap gap-2">
+                    <input
+                      ref={homeHeroInputRef}
+                      type="file"
+                      accept="image/*"
+                      className="hidden"
+                      onChange={handleHomeHeroUpload}
+                    />
+                    <button
+                      type="button"
+                      onClick={() => homeHeroInputRef.current?.click()}
+                      disabled={isUploadingHomeHero || !currentSite}
+                      className="inline-flex items-center gap-2 h-10 px-4 rounded-xl border border-slate-200 bg-white text-sm font-bold text-slate-700 hover:bg-slate-50 disabled:opacity-50"
+                    >
+                      {isUploadingHomeHero ? (
+                        <Loader2 className="w-4 h-4 animate-spin" />
+                      ) : (
+                        <Upload className="w-4 h-4" />
+                      )}
+                      Upload hero image
+                    </button>
+                    {homeHeroImage ? (
+                      <button
+                        type="button"
+                        onClick={() => setHomeHeroImage("")}
+                        className="h-10 px-4 rounded-xl border border-slate-200 text-sm font-bold text-slate-500 hover:bg-slate-50"
+                      >
+                        Clear image
+                      </button>
+                    ) : null}
+                  </div>
+                  <div className="sm:col-span-2 rounded-2xl border border-slate-100 bg-slate-50 overflow-hidden aspect-[16/10] flex items-center justify-center">
+                    {homeHeroImage ? (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img
+                        src={homeHeroImage}
+                        alt="Hero preview"
+                        className="max-h-full max-w-full object-contain p-4"
+                      />
+                    ) : (
+                      <p className="text-xs text-slate-400 font-medium px-4 text-center">
+                        No custom hero — default layout image will be used
+                      </p>
+                    )}
+                  </div>
+                </div>
+              </section>
+
+              {/* ── Featured ─────────────────────────────────── */}
+              <section className="space-y-4">
+                <h4 className="text-[11px] font-bold uppercase tracking-[0.18em] text-emerald-700 border-b border-emerald-100 pb-2">
+                  Featured stories
+                </h4>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-bold text-slate-800 mb-1.5">
+                      Section eyebrow
+                    </label>
+                    <input
+                      type="text"
+                      value={homeFeaturedEyebrow}
+                      onChange={(e) => setHomeFeaturedEyebrow(e.target.value)}
+                      placeholder="This week"
+                      className="w-full px-4 py-3 rounded-xl border border-slate-200 bg-white text-sm font-medium focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-bold text-slate-800 mb-1.5">
+                      Section title
+                    </label>
+                    <input
+                      type="text"
+                      value={homeFeaturedTitle}
+                      onChange={(e) => setHomeFeaturedTitle(e.target.value)}
+                      placeholder="Featured stories"
+                      className="w-full px-4 py-3 rounded-xl border border-slate-200 bg-white text-sm font-medium focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500"
+                    />
+                  </div>
+                  <div className="sm:col-span-2">
+                    <label className="block text-sm font-bold text-slate-800 mb-1.5">
+                      Side rail label
+                    </label>
+                    <input
+                      type="text"
+                      value={homeSideRailLabel}
+                      onChange={(e) => setHomeSideRailLabel(e.target.value)}
+                      placeholder="More to explore"
+                      className="w-full px-4 py-3 rounded-xl border border-slate-200 bg-white text-sm font-medium focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500"
+                    />
+                  </div>
+                </div>
+              </section>
+
+              {/* ── Pillars ──────────────────────────────────── */}
+              <section className="space-y-4">
+                <h4 className="text-[11px] font-bold uppercase tracking-[0.18em] text-emerald-700 border-b border-emerald-100 pb-2">
+                  Value pillars / services
+                </h4>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-bold text-slate-800 mb-1.5">
+                      Section eyebrow
+                    </label>
+                    <input
+                      type="text"
+                      value={homePillarsEyebrow}
+                      onChange={(e) => setHomePillarsEyebrow(e.target.value)}
+                      placeholder="Why your brand"
+                      className="w-full px-4 py-3 rounded-xl border border-slate-200 bg-white text-sm font-medium focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-bold text-slate-800 mb-1.5">
+                      Section title
+                    </label>
+                    <input
+                      type="text"
+                      value={homePillarsTitle}
+                      onChange={(e) => setHomePillarsTitle(e.target.value)}
+                      placeholder="A magazine built for modern readers"
+                      className="w-full px-4 py-3 rounded-xl border border-slate-200 bg-white text-sm font-medium focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500"
+                    />
+                  </div>
+                  <div className="sm:col-span-2">
+                    <label className="block text-sm font-bold text-slate-800 mb-1.5">
+                      Section intro
+                    </label>
+                    <textarea
+                      rows={2}
+                      value={homePillarsBody}
+                      onChange={(e) => setHomePillarsBody(e.target.value)}
+                      placeholder="Short intro under the pillars heading"
+                      className="w-full px-4 py-3 rounded-xl border border-slate-200 bg-white text-sm font-medium focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 resize-none"
+                    />
+                  </div>
+                </div>
+                <div className="space-y-3">
+                  {homePillars.map((pillar, idx) => (
+                    <div
+                      key={idx}
+                      className="rounded-2xl border border-slate-100 bg-slate-50/80 p-4 space-y-3"
+                    >
+                      <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
+                        Card {idx + 1}
+                      </p>
+                      <input
+                        type="text"
+                        value={pillar.title}
+                        onChange={(e) => {
+                          const next = [...homePillars];
+                          next[idx] = { ...next[idx], title: e.target.value };
+                          setHomePillars(next);
+                        }}
+                        placeholder={`Pillar ${idx + 1} title`}
+                        className="w-full px-4 py-2.5 rounded-xl border border-slate-200 bg-white text-sm font-medium focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500"
+                      />
+                      <textarea
+                        rows={2}
+                        value={pillar.body}
+                        onChange={(e) => {
+                          const next = [...homePillars];
+                          next[idx] = { ...next[idx], body: e.target.value };
+                          setHomePillars(next);
+                        }}
+                        placeholder={`Pillar ${idx + 1} description`}
+                        className="w-full px-4 py-2.5 rounded-xl border border-slate-200 bg-white text-sm font-medium focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 resize-none"
+                      />
+                    </div>
+                  ))}
+                </div>
+              </section>
+
+              {/* ── Latest ───────────────────────────────────── */}
+              <section className="space-y-4">
+                <h4 className="text-[11px] font-bold uppercase tracking-[0.18em] text-emerald-700 border-b border-emerald-100 pb-2">
+                  Latest posts
+                </h4>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-bold text-slate-800 mb-1.5">
+                      Section eyebrow
+                    </label>
+                    <input
+                      type="text"
+                      value={homeLatestEyebrow}
+                      onChange={(e) => setHomeLatestEyebrow(e.target.value)}
+                      placeholder="Latest"
+                      className="w-full px-4 py-3 rounded-xl border border-slate-200 bg-white text-sm font-medium focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-bold text-slate-800 mb-1.5">
+                      Section title
+                    </label>
+                    <input
+                      type="text"
+                      value={homeLatestTitle}
+                      onChange={(e) => setHomeLatestTitle(e.target.value)}
+                      placeholder="From the journal"
+                      className="w-full px-4 py-3 rounded-xl border border-slate-200 bg-white text-sm font-medium focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500"
+                    />
+                  </div>
+                </div>
+              </section>
+
+              {/* ── Bottom CTA ───────────────────────────────── */}
+              <section className="space-y-4">
+                <h4 className="text-[11px] font-bold uppercase tracking-[0.18em] text-emerald-700 border-b border-emerald-100 pb-2">
+                  Bottom CTA
+                </h4>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-bold text-slate-800 mb-1.5">
+                      Eyebrow
+                    </label>
+                    <input
+                      type="text"
+                      value={homeCtaEyebrow}
+                      onChange={(e) => setHomeCtaEyebrow(e.target.value)}
+                      placeholder="Start reading"
+                      className="w-full px-4 py-3 rounded-xl border border-slate-200 bg-white text-sm font-medium focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-bold text-slate-800 mb-1.5">
+                      Button label
+                    </label>
+                    <input
+                      type="text"
+                      value={homeCtaButton}
+                      onChange={(e) => setHomeCtaButton(e.target.value)}
+                      placeholder="Explore all posts"
+                      className="w-full px-4 py-3 rounded-xl border border-slate-200 bg-white text-sm font-medium focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500"
+                    />
+                  </div>
+                  <div className="sm:col-span-2">
+                    <label className="block text-sm font-bold text-slate-800 mb-1.5">
+                      Title
+                    </label>
+                    <input
+                      type="text"
+                      value={homeCtaTitle}
+                      onChange={(e) => setHomeCtaTitle(e.target.value)}
+                      placeholder="Grow something good today"
+                      className="w-full px-4 py-3 rounded-xl border border-slate-200 bg-white text-sm font-medium focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500"
+                    />
+                  </div>
+                  <div className="sm:col-span-2">
+                    <label className="block text-sm font-bold text-slate-800 mb-1.5">
+                      Body
+                    </label>
+                    <textarea
+                      rows={2}
+                      value={homeCtaBody}
+                      onChange={(e) => setHomeCtaBody(e.target.value)}
+                      placeholder="Browse the full archive of published stories…"
+                      className="w-full px-4 py-3 rounded-xl border border-slate-200 bg-white text-sm font-medium focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 resize-none"
+                    />
+                  </div>
+                </div>
+              </section>
+            </div>
+
+            <div className="sticky bottom-0 flex flex-col-reverse sm:flex-row sm:items-center sm:justify-end gap-2 px-6 py-4 border-t border-slate-100 bg-white/95 backdrop-blur">
+              <button
+                type="button"
+                onClick={() => setHomeEditOpen(false)}
+                disabled={isSavingHomeLayout}
+                className="h-11 px-5 rounded-xl border border-slate-200 text-sm font-bold text-slate-600 hover:bg-slate-50"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                disabled={isSavingHomeLayout || !currentSite}
+                onClick={async () => {
+                  const layoutId = editingHomeLayout || homeLayout;
+                  await saveHomeLayout(layoutId, { silent: true });
+                  setHomeEditOpen(false);
+                }}
+                className="h-11 px-6 rounded-xl bg-emerald-600 text-white text-sm font-bold hover:bg-emerald-700 disabled:opacity-50 inline-flex items-center justify-center gap-2"
+              >
+                {isSavingHomeLayout ? (
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                ) : (
+                  <CheckCircle2 className="w-4 h-4" />
+                )}
+                Save &amp; apply
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Theme Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
@@ -660,6 +1228,7 @@ export default function AppearancePage() {
                   <button 
                     onClick={() => {
                       if (!isActive) handleActivateTheme(theme.id);
+                      setActiveTab("homepage");
                       document.getElementById('theme-customizer')?.scrollIntoView({ behavior: 'smooth' });
                     }}
                     className="flex items-center gap-2 px-5 py-2.5 bg-white rounded-xl text-sm font-bold text-gray-900 hover:bg-gray-50 transition-all transform translate-y-4 group-hover:translate-y-0 duration-500"
@@ -787,7 +1356,9 @@ export default function AppearancePage() {
             </div>
             <div>
               <h2 className="text-xl font-bold text-gray-900">Customize: {activeThemeName}</h2>
-              <p className="text-sm text-gray-500 mt-1">Configure colours, header, footer, and homepage for this theme</p>
+              <p className="text-sm text-gray-500 mt-1">
+                Header, footer, colours, fonts, and <strong>Homepage layouts</strong> for your public site
+              </p>
             </div>
           </div>
           <div className="px-4 py-2 bg-blue-600 text-white rounded-2xl text-[11px] font-black uppercase tracking-wider shadow-lg shadow-blue-100">
@@ -1568,7 +2139,113 @@ export default function AppearancePage() {
             </div>
           )}
 
-          {activeTab !== "header" && activeTab !== "footer" && activeTab !== "fonts" && activeTab !== "colours" && (
+          {activeTab === "homepage" && (
+            <div className="space-y-6 animate-in fade-in duration-300">
+              <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
+                <div>
+                  <h3 className="text-2xl font-bold text-gray-900 mb-1">Home page layouts</h3>
+                  <p className="text-sm text-gray-500 max-w-xl">
+                    Choose how your public home looks. Layout only changes structure
+                    — your colour codes stay as set in Colours / Header. Use{" "}
+                    <strong>Edit</strong> for hero and section copy.
+                  </p>
+                </div>
+                {currentSite?.slug ? (
+                  <Link
+                    href={`/s/${currentSite.slug}`}
+                    target="_blank"
+                    className="inline-flex items-center gap-2 h-10 px-4 rounded-xl border border-slate-200 text-sm font-bold text-slate-700 hover:bg-slate-50"
+                  >
+                    <Eye className="w-4 h-4" />
+                    Preview home
+                  </Link>
+                ) : null}
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+                {HOME_LAYOUT_OPTIONS.map((opt) => {
+                  const selected = homeLayout === opt.id;
+                  return (
+                    <div
+                      key={opt.id}
+                      className={cn(
+                        "relative rounded-2xl border-2 p-5 transition-all bg-white",
+                        selected
+                          ? "border-emerald-600 shadow-md shadow-emerald-100"
+                          : "border-slate-100 hover:border-slate-200 shadow-sm"
+                      )}
+                    >
+                      {selected && (
+                        <span className="absolute top-3 right-3 inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-600 text-white text-[10px] font-bold uppercase tracking-wide">
+                          <CheckCircle2 className="w-3 h-3" />
+                          Active
+                        </span>
+                      )}
+                      <h4 className="font-bold text-slate-900 pr-16 mb-1">{opt.name}</h4>
+                      <p className="text-xs text-slate-500 leading-relaxed min-h-[2.5rem] mb-4">
+                        {opt.description}
+                      </p>
+                      <div className="flex items-center gap-2">
+                        <button
+                          type="button"
+                          disabled={!currentSite || isSavingHomeLayout}
+                          onClick={() => {
+                            setHomeLayout(opt.id);
+                            void saveHomeLayout(opt.id, { silent: true });
+                          }}
+                          className={cn(
+                            "flex-1 h-10 rounded-xl text-sm font-bold transition-colors disabled:opacity-50",
+                            selected
+                              ? "bg-emerald-50 text-emerald-800 border border-emerald-200"
+                              : "bg-slate-900 text-white hover:bg-slate-800"
+                          )}
+                        >
+                          {selected ? "Selected" : "Use layout"}
+                        </button>
+                        <button
+                          type="button"
+                          disabled={!currentSite}
+                          title="Edit home content"
+                          onClick={() => {
+                            setEditingHomeLayout(opt.id);
+                            setHomeLayout(opt.id);
+                            setHomeEditOpen(true);
+                          }}
+                          className="h-10 w-10 shrink-0 inline-flex items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-600 hover:bg-slate-50 hover:text-emerald-700 hover:border-emerald-200 transition-colors disabled:opacity-50"
+                        >
+                          <Pencil className="w-4 h-4" />
+                        </button>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+
+              {homeLayoutMsg ? (
+                <p className="text-xs font-semibold text-emerald-700">{homeLayoutMsg}</p>
+              ) : null}
+
+              <div className="flex justify-end pt-2">
+                <button
+                  type="button"
+                  onClick={() => saveHomeLayout()}
+                  disabled={isSavingHomeLayout || !currentSite}
+                  className={cn(
+                    "px-8 py-3 bg-blue-600 text-white rounded-xl text-sm font-bold shadow-lg shadow-blue-200 transition-all",
+                    isSavingHomeLayout ? "opacity-70 cursor-not-allowed" : "hover:bg-blue-700"
+                  )}
+                >
+                  {isSavingHomeLayout ? "Saving..." : "Save Homepage"}
+                </button>
+              </div>
+            </div>
+          )}
+
+          {activeTab !== "header" &&
+            activeTab !== "footer" &&
+            activeTab !== "fonts" &&
+            activeTab !== "colours" &&
+            activeTab !== "homepage" && (
             <div className="h-64 flex flex-col items-center justify-center text-center">
               <div className="w-16 h-16 bg-gray-50 rounded-2xl flex items-center justify-center mb-4 border border-gray-100">
                 <Settings2 className="w-8 h-8 text-gray-300" />

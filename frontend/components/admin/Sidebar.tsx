@@ -21,6 +21,7 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { isPlatformAdmin } from "@/lib/rbac";
+import { resolveAdminMediaUrl } from "@/lib/apiOrigin";
 
 type NavItem = {
   label: string;
@@ -33,7 +34,13 @@ type NavItem = {
 export default function Sidebar({ isOpen = true }: { isOpen?: boolean }) {
   const pathname = usePathname();
   const [settingsOpen, setSettingsOpen] = useState(true);
-  const [user, setUser] = useState<{ name?: string; role?: string; email?: string } | null>(null);
+  const [user, setUser] = useState<{
+    name?: string;
+    role?: string;
+    email?: string;
+    avatar?: string;
+    image?: string;
+  } | null>(null);
 
   useEffect(() => {
     const storedUser = localStorage.getItem('user');
@@ -45,6 +52,11 @@ export default function Sidebar({ isOpen = true }: { isOpen?: boolean }) {
       }
     }
   }, []);
+
+  const displayName = user?.name || user?.email || "Admin";
+  const avatarSrc =
+    resolveAdminMediaUrl(user?.avatar || user?.image) ||
+    `https://ui-avatars.com/api/?name=${encodeURIComponent(displayName)}&background=0f172a&color=fff&bold=true&size=128`;
 
   const navItems: NavItem[] = useMemo(
     () => {
@@ -180,11 +192,19 @@ export default function Sidebar({ isOpen = true }: { isOpen?: boolean }) {
         </div>
       </nav>
 
-      {/* Profile Footer */}
+      {/* Profile Footer — circular avatar */}
       <div className="p-6 border-t border-slate-50 mt-auto">
-        <div className="flex items-center gap-3 p-2 rounded-2xl hover:bg-slate-50 transition-colors cursor-pointer">
-          <div className="w-10 h-10 rounded-xl bg-slate-900 text-white flex items-center justify-center font-bold">
-            {user?.name?.charAt(0).toUpperCase() || user?.email?.charAt(0).toUpperCase() || "A"}
+        <Link
+          href="/admin/settings/profile"
+          className="flex items-center gap-3 p-2 rounded-2xl hover:bg-slate-50 transition-colors"
+        >
+          <div className="relative h-10 w-10 shrink-0 rounded-full overflow-hidden border-2 border-white ring-2 ring-slate-200 shadow-sm bg-slate-100">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src={avatarSrc}
+              alt={displayName}
+              className="absolute inset-0 h-full w-full object-cover object-center"
+            />
           </div>
           <div className="flex-1 min-w-0">
             <p className="text-sm font-bold text-slate-900 truncate">
@@ -194,7 +214,7 @@ export default function Sidebar({ isOpen = true }: { isOpen?: boolean }) {
               {user?.role || "Account"}
             </p>
           </div>
-        </div>
+        </Link>
       </div>
     </aside>
   );

@@ -22,6 +22,7 @@ import MediaLibraryModal from "@/components/admin/MediaLibraryModal";
 import PostPreviewModal from "@/components/admin/PostPreviewModal";
 import AIBlogWriterModal from "@/components/admin/AIBlogWriterModal";
 import { api } from "@/lib/api";
+import { getApiBaseUrl, resolveAdminMediaUrl } from "@/lib/apiOrigin";
 import dynamic from "next/dynamic";
 
 const ReactQuill = dynamic(() => import("react-quill-new"), { ssr: false });
@@ -108,7 +109,7 @@ export default function CreatePostPage() {
     setRefining(true);
     setError(null);
     try {
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api'}/ai/refine`, {
+      const res = await fetch(`${getApiBaseUrl()}/ai/refine`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -577,7 +578,7 @@ export default function CreatePostPage() {
                   {formData.thumbnailUrl && (
                     <div className="mt-8 p-4 bg-gray-50 rounded-3xl border border-gray-100 flex items-center gap-6 animate-in slide-in-from-bottom-4 duration-500">
                       <div className="w-24 h-24 rounded-2xl overflow-hidden border-2 border-white shadow-md shrink-0">
-                        <img src={formData.thumbnailUrl.startsWith("/") ? `http://localhost:5000${formData.thumbnailUrl}` : formData.thumbnailUrl} className="w-full h-full object-cover" alt="Preview" />
+                        <img src={resolveAdminMediaUrl(formData.thumbnailUrl) || formData.thumbnailUrl} className="w-full h-full object-cover" alt="Preview" />
                       </div>
                       <div className="flex-1 min-w-0">
                         <p className="text-xs font-black text-gray-400 uppercase tracking-widest mb-1">Selected Thumbnail</p>
