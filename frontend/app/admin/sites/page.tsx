@@ -100,7 +100,7 @@ export default function MySitesPage() {
           <p className="text-xs font-bold uppercase tracking-widest text-blue-600 mb-1">
             Workspaces
           </p>
-          <h1 className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight">
+          <h1 className="admin-title">
             My Sites
           </h1>
           <p className="mt-1 text-sm text-slate-500">

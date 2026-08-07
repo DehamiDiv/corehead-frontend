@@ -266,13 +266,31 @@ function renderBlockContent(block: BuilderBlock, isSelected: boolean) {
         </p>
       );
     case "Image":
+      const hasBinding = !!block.bindings?.content;
+      const imageSrc = typeof block.content === "string" && block.content.trim() !== "" 
+        ? block.content 
+        : null;
+
       return (
-        <div style={styleString}>
-          <img
-            src={block.content}
-            alt="Block"
-            className="w-full h-auto rounded-lg"
-          />
+        <div style={styleString} className="bg-slate-100 rounded-lg overflow-hidden min-h-[120px] flex items-center justify-center">
+          {imageSrc ? (
+            <img
+              src={imageSrc}
+              alt="Block"
+              className="w-full h-auto rounded-lg"
+            />
+          ) : hasBinding ? (
+            <div className="flex flex-col items-center justify-center text-blue-600 py-6 text-center">
+              <ImageIcon className="w-8 h-8 mb-1" />
+              <span className="text-xs font-medium">Bound image</span>
+              <span className="text-[10px] text-blue-500/70 mt-0.5">{`{${block.bindings.content}}`}</span>
+            </div>
+          ) : (
+            <div className="flex flex-col items-center justify-center text-slate-400 py-8">
+              <ImageIcon className="w-8 h-8 mb-2" />
+              <span className="text-xs">No image URL</span>
+            </div>
+          )}
         </div>
       );
     case "Quote":

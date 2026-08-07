@@ -6,6 +6,7 @@ import {
   mergeBrandingWithPreset,
   type ThemePreset,
 } from "@/lib/themePresets";
+import { usableLogoUrl } from "@/lib/siteMedia";
 
 export type SiteBranding = {
   themeId?: string;
@@ -48,6 +49,8 @@ export type SiteBranding = {
     /** Hero */
     eyebrow?: string | null;
     tagline?: string | null;
+    /** Main hero headline (Appearance Homepage edit) */
+    heroTitle?: string | null;
     heroImage?: string | null;
     captionLeft?: string | null;
     captionRight?: string | null;
@@ -68,6 +71,39 @@ export type SiteBranding = {
     ctaTitle?: string | null;
     ctaBody?: string | null;
     ctaButton?: string | null;
+    ctaBackgroundImage?: string | null;
+    /** Layout 6 · Paper / portfolio home pack */
+    socialLinks?: Array<{
+      id?: number | string;
+      platform?: string | null;
+      url?: string | null;
+    }> | null;
+    contactEmail?: string | null;
+    contactPhone?: string | null;
+    contactAddress?: string | null;
+    aboutTitle?: string | null;
+    aboutDescription?: string | null;
+    aboutImage?: string | null;
+    services?: Array<{
+      id?: number | string;
+      icon?: string | null;
+      title?: string | null;
+      description?: string | null;
+    }> | null;
+    videoUrl?: string | null;
+    videoThumbnail?: string | null;
+    testimonials?: Array<{
+      id?: number | string;
+      image?: string | null;
+      name?: string | null;
+      role?: string | null;
+      review?: string | null;
+    }> | null;
+    clients?: Array<{
+      id?: number | string;
+      logo?: string | null;
+      name?: string | null;
+    }> | null;
   } | null;
 };
 
@@ -155,16 +191,32 @@ export function brandingFontStylesheetUrl(
   return "https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;0,9..40,800;1,9..40,400&display=swap";
 }
 
+/**
+ * Header logo: Appearance headerLogo → site.logo → footer logo.
+ * Footer logo is included so a logo that already works in the footer
+ * still shows in the header when headerLogo was never set (or was a placeholder).
+ * Skips placeholder CoreHead URLs and blob: previews.
+ */
 export function resolveHeaderLogo(
   siteLogo?: string | null,
   branding?: SiteBranding | null
 ): string | null {
-  return branding?.header?.headerLogo || siteLogo || null;
+  return (
+    usableLogoUrl(branding?.header?.headerLogo) ||
+    usableLogoUrl(siteLogo) ||
+    usableLogoUrl(branding?.footer?.footerLogo) ||
+    null
+  );
 }
 
 export function resolveFooterLogo(
   siteLogo?: string | null,
   branding?: SiteBranding | null
 ): string | null {
-  return branding?.footer?.footerLogo || siteLogo || null;
+  return (
+    usableLogoUrl(branding?.footer?.footerLogo) ||
+    usableLogoUrl(siteLogo) ||
+    usableLogoUrl(branding?.header?.headerLogo) ||
+    null
+  );
 }

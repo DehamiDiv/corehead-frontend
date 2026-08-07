@@ -255,22 +255,22 @@ export default function PostsPage() {
         {/* Header */}
         <div className="h-[80px] flex items-center justify-between mb-3">
           <div>
-            <h1 className="text-[32px] font-bold text-slate-900 leading-none">Posts</h1>
-            <p className="text-[15px] text-slate-500 font-medium mt-2">
+            <h1 className="admin-title">Posts</h1>
+            <p className="admin-subtitle">
               Welcome back! Here&apos;s your Blog Posts.
             </p>
           </div>
           <div className="flex items-center gap-3">
             <button
               onClick={fetchPosts}
-              className="h-10 px-4 flex items-center gap-2.5 bg-white border border-slate-200 rounded-xl text-[14px] font-bold text-slate-700 hover:bg-slate-50 transition-all shadow-sm"
+              className="h-10 px-4 flex items-center gap-2.5 bg-white border border-slate-200 rounded-xl admin-btn-secondary text-slate-700 hover:bg-slate-50 transition-all shadow-sm"
             >
               <RotateCcw className={cn("w-[18px] h-[18px]", loading && "animate-spin")} />
               Refresh
             </button>
             <Link
               href="/admin/posts/create"
-              className="h-10 px-4 flex items-center gap-2.5 bg-blue-600 text-white rounded-xl text-[14px] font-bold hover:bg-blue-700 transition-all shadow-lg shadow-blue-500/20"
+              className="h-10 px-4 flex items-center gap-2.5 bg-blue-600 text-white rounded-xl admin-btn-primary hover:bg-blue-700 transition-all shadow-lg shadow-blue-500/20"
             >
               <Plus className="w-[18px] h-[18px]" />
               Create Blog
@@ -290,7 +290,7 @@ export default function PostsPage() {
                   placeholder="Search posts..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  className="w-full h-10 bg-slate-50 border border-slate-200 rounded-xl pl-11 pr-4 text-[14px] font-medium text-slate-700 placeholder:text-slate-400 outline-none focus:ring-2 focus:ring-blue-500/10 focus:border-blue-200 focus:bg-white transition-all"
+                  className="w-full h-10 bg-slate-50 border border-slate-200 rounded-xl pl-11 pr-4 admin-input text-slate-700 placeholder:text-slate-400 outline-none focus:ring-2 focus:ring-blue-500/10 focus:border-blue-200 focus:bg-white transition-all"
                 />
               </div>
 
@@ -339,13 +339,13 @@ export default function PostsPage() {
               <table className="w-full text-left border-separate border-spacing-0">
                 <thead>
                   <tr className="h-[52px]">
-                    <th className="px-4 text-[13px] font-bold text-slate-400 border-b border-slate-200 w-[80px]">ID</th>
-                    <th className="px-4 text-[13px] font-bold text-slate-400 border-b border-slate-200 w-[350px]">Title</th>
-                    <th className="px-4 text-[13px] font-bold text-slate-400 border-b border-slate-200">Author</th>
-                    <th className="px-4 text-[13px] font-bold text-slate-400 border-b border-slate-200">Categories</th>
-                    <th className="px-4 text-[13px] font-bold text-slate-400 border-b border-slate-200">Featured</th>
-                    <th className="px-4 text-[13px] font-bold text-slate-400 border-b border-slate-200">Status</th>
-                    <th className="px-4 text-[13px] font-bold text-slate-400 border-b border-slate-200 text-right">Actions</th>
+                    <th className="px-4 admin-table-th border-b border-slate-200 w-[80px]">ID</th>
+                    <th className="px-4 admin-table-th border-b border-slate-200 w-[350px]">Title</th>
+                    <th className="px-4 admin-table-th border-b border-slate-200">Author</th>
+                    <th className="px-4 admin-table-th border-b border-slate-200">Categories</th>
+                    <th className="px-4 admin-table-th border-b border-slate-200">Featured</th>
+                    <th className="px-4 admin-table-th border-b border-slate-200">Status</th>
+                    <th className="px-4 admin-table-th border-b border-slate-200 text-right">Actions</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -361,9 +361,9 @@ export default function PostsPage() {
                         key={post?.id || Math.random()}
                         className="h-[72px] hover:bg-slate-50/50 transition-colors group border-b border-slate-200 last:border-0"
                       >
-                        <td className="px-4 text-[14px] font-medium text-slate-900">{post?.id}</td>
+                        <td className="px-4 admin-table-td">{post?.id}</td>
                         <td className="px-4">
-                          <p className="text-[14px] font-bold text-slate-800 line-clamp-1">
+                          <p className="admin-table-td-bold line-clamp-1">
                             {post?.title || "Untitled"}
                           </p>
                         </td>
@@ -388,7 +388,7 @@ export default function PostsPage() {
                                 />
                               );
                             })()}
-                            <span className="text-[14px] font-medium text-slate-700 truncate max-w-[120px]">
+                            <span className="admin-table-td truncate max-w-[120px]">
                               {post?.author?.name || post?.author_name || "Unknown"}
                             </span>
                           </div>
@@ -409,7 +409,7 @@ export default function PostsPage() {
                               }
                               return cats.length > 0 ? (
                                 cats.slice(0, 2).map((cat, i) => (
-                                  <span key={i} className="h-[26px] px-3 flex items-center rounded-full text-[12px] font-bold bg-blue-50 text-blue-600 border border-blue-100">
+                                  <span key={i} className="h-[26px] px-3 flex items-center rounded-full admin-small bg-blue-50 text-blue-600 border border-blue-100">
                                     {cat}
                                   </span>
                                 ))
@@ -421,12 +421,12 @@ export default function PostsPage() {
                         </td>
                         <td className="px-4">
                           {post?.featured ? (
-                            <span className="h-[26px] px-3 inline-flex items-center gap-1.5 rounded-full text-[12px] font-bold bg-amber-50 text-amber-600 border border-amber-100">
+                            <span className="h-[26px] px-3 inline-flex items-center gap-1.5 rounded-full admin-small bg-amber-50 text-amber-600 border border-amber-100">
                               <Star className="w-3.5 h-3.5 fill-amber-600" />
                               Featured
                             </span>
                           ) : (
-                            <span className="h-[26px] px-3 inline-flex items-center rounded-full text-[12px] font-bold bg-slate-50 text-slate-400 border border-slate-100">
+                            <span className="h-[26px] px-3 inline-flex items-center rounded-full admin-small bg-slate-50 text-slate-400 border border-slate-100">
                               Regular
                             </span>
                           )}
@@ -560,7 +560,7 @@ export default function PostsPage() {
                     <select
                       value={rowsPerPage}
                       onChange={(e) => setRowsPerPage(Number(e.target.value))}
-                      className="bg-white border border-slate-200 rounded-lg pl-3 pr-8 py-1.5 text-[14px] font-medium text-slate-700 appearance-none outline-none focus:ring-2 focus:ring-blue-500/10"
+                      className="bg-white border border-slate-200 rounded-lg pl-3 pr-8 py-1.5 admin-input text-slate-700 appearance-none outline-none focus:ring-2 focus:ring-blue-500/10"
                     >
                       <option value={10}>10</option>
                       <option value={20}>20</option>
@@ -572,7 +572,7 @@ export default function PostsPage() {
               </div>
               <div className="flex items-center gap-2">
                 <button
-                  className="h-10 px-4 flex items-center gap-2 border border-slate-200 rounded-xl text-[14px] font-bold text-slate-600 hover:bg-slate-50 transition-all disabled:opacity-50"
+                  className="h-10 px-4 flex items-center gap-2 border border-slate-200 rounded-xl admin-btn-secondary text-slate-600 hover:bg-slate-50 transition-all disabled:opacity-50"
                   disabled
                 >
                   <ChevronLeft className="w-4 h-4" />
@@ -582,7 +582,7 @@ export default function PostsPage() {
                   1
                 </button>
                 <button
-                  className="h-10 px-4 flex items-center gap-2 border border-slate-200 rounded-xl text-[14px] font-bold text-slate-600 hover:bg-slate-50 transition-all disabled:opacity-50"
+                  className="h-10 px-4 flex items-center gap-2 border border-slate-200 rounded-xl admin-btn-secondary text-slate-600 hover:bg-slate-50 transition-all disabled:opacity-50"
                   disabled
                 >
                   Next

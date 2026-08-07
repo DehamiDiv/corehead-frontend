@@ -68,49 +68,22 @@ export default function BloomHomeLayout({
     { icon: MessageCircle },
     { icon: Sun },
   ];
-  const defaultServices = [
-    {
-      title: "Individual therapy",
-      body: "One-to-one sessions tailored to anxiety, stress, and life transitions.",
-    },
-    {
-      title: "Group support",
-      body: "Safe circles for connection, listening, and shared growth.",
-    },
-    {
-      title: "Guided journaling",
-      body: "Gentle prompts and reflective tools to meet yourself with kindness.",
-    },
-    {
-      title: "Mindful routines",
-      body: "Small daily practices that restore calm without overwhelm.",
-    },
-  ];
-  const pillarSource =
-    sections?.pillars?.length ? sections.pillars : defaultServices;
-  const services = pillarSource.slice(0, 4).map((p, i) => ({
+  // Appearance pillars only — no hard-coded demo services
+  const services = (sections?.pillars || []).slice(0, 4).map((p, i) => ({
     icon: serviceMeta[i]?.icon || Heart,
     title: p.title,
     body: p.body,
   }));
-
-  const steps = [
-    {
-      n: "01",
-      title: "Share how you feel",
-      body: "A short intake helps us understand your pace and goals.",
-    },
-    {
-      n: "02",
-      title: "Match with care",
-      body: "We pair you with the right support style for your needs.",
-    },
-    {
-      n: "03",
-      title: "Grow gently",
-      body: "Sessions, tools, and stories that meet you where you are.",
-    },
-  ];
+  const showPillars =
+    services.length > 0 ||
+    Boolean(sections?.pillarsEyebrow) ||
+    Boolean(sections?.pillarsTitle) ||
+    Boolean(sections?.pillarsBody);
+  const showCta =
+    Boolean(sections?.ctaEyebrow) ||
+    Boolean(sections?.ctaTitle) ||
+    Boolean(sections?.ctaBody) ||
+    Boolean(sections?.ctaButton);
 
   const btnBg = ctaBg || "var(--site-cta-bg, var(--site-primary))";
   const btnFg = ctaColor || "var(--site-cta-color, var(--site-surface, #fff))";
@@ -138,17 +111,20 @@ export default function BloomHomeLayout({
       <section className="relative max-w-6xl mx-auto px-4 sm:px-6 pt-12 sm:pt-16 pb-16 sm:pb-20">
         <div className="grid lg:grid-cols-2 gap-10 lg:gap-14 items-center">
           <div>
-            <span
-              className="inline-flex items-center gap-2 rounded-full px-3.5 py-1.5 text-[11px] font-bold uppercase tracking-[0.18em] shadow-sm border"
-              style={{
-                background: "var(--site-surface)",
-                borderColor: "color-mix(in srgb, var(--site-primary) 20%, transparent)",
-                color: "var(--site-primary)",
-              }}
-            >
-              <Leaf className="w-3.5 h-3.5" />
-              {eyebrow || "Gentle care · Mindful living"}
-            </span>
+            {(sections?.heroTitle || eyebrow) ? (
+              <span
+                className="inline-flex items-center gap-2 rounded-full px-3.5 py-1.5 text-[11px] font-bold uppercase tracking-[0.18em] shadow-sm border"
+                style={{
+                  background: "var(--site-surface)",
+                  borderColor:
+                    "color-mix(in srgb, var(--site-primary) 20%, transparent)",
+                  color: "var(--site-primary)",
+                }}
+              >
+                <Leaf className="w-3.5 h-3.5" />
+                {sections?.heroTitle || eyebrow}
+              </span>
+            ) : null}
             <h1
               className="mt-6 text-[clamp(2.4rem,5.5vw,3.75rem)] leading-[1.08] font-semibold tracking-tight"
               style={{
@@ -156,24 +132,23 @@ export default function BloomHomeLayout({
                 fontFamily: 'Georgia, "Times New Roman", serif',
               }}
             >
-              A softer place
-              <br />
-              <span style={{ color: "var(--site-primary)" }}>to begin again</span>
+              {siteName}
             </h1>
-            <p
-              className="mt-5 text-base sm:text-lg leading-relaxed max-w-md"
-              style={{ color: "var(--site-muted)" }}
-            >
-              {tagline ||
-                `${siteName} is a calm space for mental wellness, reflection, and stories that help you breathe.`}
-            </p>
+            {tagline ? (
+              <p
+                className="mt-5 text-base sm:text-lg leading-relaxed max-w-md"
+                style={{ color: "var(--site-muted)" }}
+              >
+                {tagline}
+              </p>
+            ) : null}
             <div className="mt-8 flex flex-wrap items-center gap-3">
               <Link
                 href={blogHref}
                 className="inline-flex items-center gap-2 rounded-full px-7 py-3.5 text-sm font-bold shadow-lg transition-transform hover:scale-[1.02] active:scale-[0.98]"
                 style={{ background: btnBg, color: btnFg }}
               >
-                {ctaText || "Start reading"}
+                {ctaText || "Blog"}
                 <ArrowRight className="w-4 h-4" />
               </Link>
               {featured?.slug ? (
@@ -181,27 +156,15 @@ export default function BloomHomeLayout({
                   href={sitePostPath(siteSlug, String(featured.slug))}
                   className="inline-flex items-center gap-2 rounded-full px-6 py-3.5 text-sm font-semibold border transition-colors"
                   style={{
-                    borderColor: "color-mix(in srgb, var(--site-primary) 25%, transparent)",
+                    borderColor:
+                      "color-mix(in srgb, var(--site-primary) 25%, transparent)",
                     background: "var(--site-surface)",
                     color: "var(--site-ink)",
                   }}
                 >
-                  Featured story
+                  {featured.title || "Featured"}
                 </Link>
               ) : null}
-            </div>
-            <div
-              className="mt-10 flex flex-wrap gap-6 text-xs font-semibold"
-              style={{ color: "var(--site-muted)" }}
-            >
-              <span className="inline-flex items-center gap-1.5">
-                <Shield className="w-4 h-4" style={{ color: "var(--site-primary)" }} />{" "}
-                Confidential & kind
-              </span>
-              <span className="inline-flex items-center gap-1.5">
-                <Sparkles className="w-4 h-4" style={{ color: "var(--site-accent)" }} />{" "}
-                Evidence-informed
-              </span>
             </div>
           </div>
 
@@ -236,40 +199,25 @@ export default function BloomHomeLayout({
                     />
                   </div>
                 )}
-                <div
-                  className="absolute bottom-4 left-4 right-4 rounded-2xl border p-4 shadow-lg backdrop-blur-md"
-                  style={{
-                    background: "color-mix(in srgb, var(--site-surface) 92%, transparent)",
-                    borderColor: "var(--site-surface)",
-                  }}
-                >
-                  <p
-                    className="text-[10px] font-bold uppercase tracking-wider mb-1"
-                    style={{ color: "var(--site-primary)" }}
-                  >
-                    Today&apos;s intention
-                  </p>
-                  <p
-                    className="text-sm font-medium leading-snug"
-                    style={{ color: "var(--site-ink)" }}
-                  >
-                    You don&apos;t have to be fully ready. You only have to begin.
-                  </p>
-                </div>
               </div>
             </div>
           </div>
         </div>
       </section>
 
+      {showPillars && (
       <section id="features" className="scroll-mt-24 max-w-6xl mx-auto px-4 sm:px-6 pb-16">
+        {(sections?.pillarsEyebrow || sections?.pillarsTitle || sections?.pillarsBody) && (
         <div className="text-center max-w-xl mx-auto mb-10">
+          {sections?.pillarsEyebrow ? (
           <p
             className="text-[11px] font-bold uppercase tracking-[0.2em] mb-2"
             style={{ color: "var(--site-primary)" }}
           >
-            {sections?.pillarsEyebrow || "How we help"}
+            {sections.pillarsEyebrow}
           </p>
+          ) : null}
+          {sections?.pillarsTitle ? (
           <h2
             className="text-2xl sm:text-3xl font-semibold"
             style={{
@@ -277,18 +225,21 @@ export default function BloomHomeLayout({
               fontFamily: 'Georgia, "Times New Roman", serif',
             }}
           >
-            {sections?.pillarsTitle || "Care that feels human"}
+            {sections.pillarsTitle}
           </h2>
+          ) : null}
           {sections?.pillarsBody ? (
             <p className="mt-3 text-sm leading-relaxed" style={{ color: "var(--site-muted)" }}>
               {sections.pillarsBody}
             </p>
           ) : null}
         </div>
+        )}
+        {services.length > 0 && (
         <ul className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
-          {services.map(({ icon: Icon, title, body }) => (
+          {services.map(({ icon: Icon, title, body }, idx) => (
             <li
-              key={title}
+              key={`${title}-${idx}`}
               className="rounded-[1.35rem] border p-6 shadow-sm hover:-translate-y-0.5 transition-transform"
               style={{
                 background: "var(--site-surface)",
@@ -301,63 +252,37 @@ export default function BloomHomeLayout({
               >
                 <Icon className="w-5 h-5" />
               </div>
+              {title ? (
               <h3 className="font-bold mb-2" style={{ color: "var(--site-ink)" }}>
                 {title}
               </h3>
+              ) : null}
+              {body ? (
               <p className="text-sm leading-relaxed" style={{ color: "var(--site-muted)" }}>
                 {body}
               </p>
+              ) : null}
             </li>
           ))}
         </ul>
+        )}
       </section>
-
-      <section className="max-w-6xl mx-auto px-4 sm:px-6 pb-16">
-        <div
-          className="rounded-[2rem] px-6 sm:px-10 py-12 sm:py-14"
-          style={{
-            background: "var(--site-ink)",
-            color: "var(--site-bg)",
-          }}
-        >
-          <p
-            className="text-[11px] font-bold uppercase tracking-[0.2em] mb-2 opacity-70"
-          >
-            Simple path
-          </p>
-          <h2
-            className="text-2xl sm:text-3xl font-semibold mb-10"
-            style={{ fontFamily: 'Georgia, "Times New Roman", serif' }}
-          >
-            Three gentle steps
-          </h2>
-          <ol className="grid md:grid-cols-3 gap-8">
-            {steps.map((s) => (
-              <li key={s.n}>
-                <p
-                  className="text-3xl font-light mb-3 opacity-50"
-                  style={{ fontFamily: "Georgia, serif" }}
-                >
-                  {s.n}
-                </p>
-                <h3 className="font-bold text-lg mb-2">{s.title}</h3>
-                <p className="text-sm leading-relaxed opacity-75">{s.body}</p>
-              </li>
-            ))}
-          </ol>
-        </div>
-      </section>
+      )}
 
       {posts.length > 0 && (
         <section className="max-w-6xl mx-auto px-4 sm:px-6 pb-16">
+          {(sections?.featuredEyebrow || sections?.featuredTitle) && (
           <div className="flex items-end justify-between gap-4 mb-8">
             <div>
+              {sections?.featuredEyebrow ? (
               <p
                 className="text-[11px] font-bold uppercase tracking-[0.2em] mb-2"
                 style={{ color: "var(--site-primary)" }}
               >
-                {sections?.featuredEyebrow || "Journal"}
+                {sections.featuredEyebrow}
               </p>
+              ) : null}
+              {sections?.featuredTitle ? (
               <h2
                 className="text-2xl sm:text-3xl font-semibold"
                 style={{
@@ -365,8 +290,9 @@ export default function BloomHomeLayout({
                   fontFamily: 'Georgia, "Times New Roman", serif',
                 }}
               >
-                {sections?.featuredTitle || "Stories for softer days"}
+                {sections.featuredTitle}
               </h2>
+              ) : null}
             </div>
             <Link
               href={blogHref}
@@ -377,6 +303,7 @@ export default function BloomHomeLayout({
               <ArrowRight className="w-4 h-4" />
             </Link>
           </div>
+          )}
 
           <div className="grid lg:grid-cols-5 gap-5">
             {featured && (
@@ -485,6 +412,7 @@ export default function BloomHomeLayout({
         </section>
       )}
 
+      {showCta && (
       <section className="max-w-6xl mx-auto px-4 sm:px-6 pb-20">
         <div
           className="relative overflow-hidden rounded-[2rem] px-6 sm:px-12 py-12 sm:py-14 text-center border"
@@ -495,12 +423,15 @@ export default function BloomHomeLayout({
           }}
         >
           <div className="relative">
+            {sections?.ctaEyebrow ? (
             <p
               className="text-[11px] font-bold uppercase tracking-[0.22em] mb-3"
               style={{ color: "var(--site-primary)" }}
             >
-              {sections?.ctaEyebrow || "You are welcome here"}
+              {sections.ctaEyebrow}
             </p>
+            ) : null}
+            {sections?.ctaTitle ? (
             <h2
               className="text-2xl sm:text-4xl font-semibold max-w-lg mx-auto leading-tight"
               style={{
@@ -508,26 +439,31 @@ export default function BloomHomeLayout({
                 fontFamily: 'Georgia, "Times New Roman", serif',
               }}
             >
-              {sections?.ctaTitle || "Small steps still count as progress"}
+              {sections.ctaTitle}
             </h2>
+            ) : null}
+            {sections?.ctaBody ? (
             <p
               className="mt-4 text-sm sm:text-base max-w-md mx-auto leading-relaxed"
               style={{ color: "var(--site-muted)" }}
             >
-              {sections?.ctaBody ||
-                `Explore gentle stories and tools from ${siteName} — written for real days, not perfect ones.`}
+              {sections.ctaBody}
             </p>
+            ) : null}
+            {sections?.ctaButton ? (
             <Link
               href={blogHref}
               className="mt-8 inline-flex items-center gap-2 rounded-full px-8 py-3.5 text-sm font-bold shadow-lg hover:scale-[1.02] active:scale-[0.98] transition-transform"
               style={{ background: btnBg, color: btnFg }}
             >
-              {sections?.ctaButton || "Explore the journal"}
+              {sections.ctaButton}
               <ArrowRight className="w-4 h-4" />
             </Link>
+            ) : null}
           </div>
         </div>
       </section>
+      )}
     </main>
   );
 }

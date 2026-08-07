@@ -79,7 +79,7 @@ export default function BentoHomeLayout({
               style={{ color: "var(--site-primary)" }}
             >
               <Sparkles className="w-3.5 h-3.5" />
-              {eyebrow || "Bento home"}
+              {eyebrow || ""}
             </p>
             <h1
               className="text-3xl sm:text-5xl font-black tracking-tight leading-[1.05]"
@@ -102,7 +102,7 @@ export default function BentoHomeLayout({
               color: ctaColor || "var(--site-cta-color, #fff)",
             }}
           >
-            {ctaText || "Explore"}
+            {sections?.ctaTitle || ctaText || "Subscribe for updates via newsletter"}
             <ArrowRight className="w-4 h-4" />
           </Link>
         </div>
@@ -121,7 +121,7 @@ export default function BentoHomeLayout({
             {(cover(p0) || heroImage) && (
               // eslint-disable-next-line @next/next/no-img-element
               <img
-                src={cover(p0) || heroImage || ""}
+                src={cover(p0) || heroImage || "https://placehold.co/800x400?text=No+image"}
                 alt=""
                 className="absolute inset-0 h-full w-full object-cover group-hover:scale-[1.03] transition-transform duration-500"
               />
@@ -155,7 +155,7 @@ export default function BentoHomeLayout({
             {cover(p1) && (
               // eslint-disable-next-line @next/next/no-img-element
               <img
-                src={cover(p1) || ""}
+                src={cover(p1) || "https://placehold.co/800x400?text=No+image"}
                 alt=""
                 className="absolute inset-0 h-full w-full object-cover opacity-90 group-hover:scale-105 transition-transform duration-500"
               />
@@ -196,7 +196,7 @@ export default function BentoHomeLayout({
             {cover(p2) && (
               // eslint-disable-next-line @next/next/no-img-element
               <img
-                src={cover(p2) || ""}
+                src={cover(p2) || "https://placehold.co/800x400?text=No+image"}
                 alt=""
                 className="absolute inset-0 h-full w-full object-cover group-hover:scale-105 transition-transform duration-500"
               />
@@ -237,7 +237,7 @@ export default function BentoHomeLayout({
             {cover(p4) ? (
               // eslint-disable-next-line @next/next/no-img-element
               <img
-                src={cover(p4) || ""}
+                src={cover(p4) || "https://placehold.co/800x400?text=No+image"}
                 alt=""
                 className="absolute inset-0 h-full w-full object-cover opacity-80"
               />

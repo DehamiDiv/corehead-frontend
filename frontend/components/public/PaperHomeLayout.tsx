@@ -77,7 +77,7 @@ export default function PaperHomeLayout({
             className="text-[10px] font-sans font-bold uppercase tracking-[0.35em] mb-2"
             style={{ color: "var(--site-muted)" }}
           >
-            {eyebrow || "The daily journal"}
+            {eyebrow || ""}
           </p>
           <h1
             className="text-[clamp(2.5rem,8vw,4.5rem)] font-black tracking-tight leading-none"
@@ -147,7 +147,7 @@ export default function PaperHomeLayout({
               {(cover(lead) || heroImage) && (
                 // eslint-disable-next-line @next/next/no-img-element
                 <img
-                  src={cover(lead) || heroImage || ""}
+                  src={cover(lead) || heroImage || "https://placehold.co/800x400?text=No+image"}
                   alt=""
                   className="w-full aspect-[4/3] object-cover border"
                   style={{ borderColor: "color-mix(in srgb, var(--site-ink) 15%, transparent)" }}

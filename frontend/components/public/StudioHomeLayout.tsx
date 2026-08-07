@@ -71,7 +71,7 @@ export default function StudioHomeLayout({
           {(covers[0]?.src || heroImage) && (
             // eslint-disable-next-line @next/next/no-img-element
             <img
-              src={covers[0]?.src || heroImage || ""}
+              src={covers[0]?.src || heroImage || "https://placehold.co/800x400?text=No+image"}
               alt=""
               className="h-full w-full object-cover"
             />
@@ -90,7 +90,7 @@ export default function StudioHomeLayout({
             className="text-[11px] font-medium uppercase tracking-[0.35em] mb-4 opacity-80"
             style={{ color: "var(--site-accent, var(--site-primary))" }}
           >
-            {eyebrow || "Studio"}
+            {eyebrow || ""}
           </p>
           <h1
             className="text-[clamp(2.8rem,8vw,5.5rem)] font-light tracking-tight leading-[0.95] max-w-3xl"

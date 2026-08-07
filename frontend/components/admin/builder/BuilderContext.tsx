@@ -390,7 +390,12 @@ function getDefaultContent(type: BlockType): any {
     case "Video":
       return "https://www.youtube.com/watch?v=dQw4w9WgXcQ";
     case "Newsletter":
-      return { title: "Subscribe to our newsletter", buttonText: "Subscribe", placeholder: "your@email.com" };
+      return {
+        title: "Subscribe to our newsletter",
+        description: "Get the latest stories delivered to your inbox. No spam.",
+        buttonText: "Subscribe",
+        placeholder: "your@email.com",
+      };
     case "Social Links":
       return ["facebook", "twitter", "instagram", "linkedin"];
     case "Spacer":

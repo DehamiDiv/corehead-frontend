@@ -83,3 +83,69 @@ body {
   background: #e8f0fe;
   color: #2563eb;
 }
+
+/* ============================================
+   Admin UI - Consistent Typography System
+   (Based on /admin/posts page style)
+   ============================================ */
+
+/* Page titles */
+.admin-title {
+  font-size: 32px;
+  font-weight: 700;
+  color: #0f172a;
+  line-height: 1;
+}
+
+/* Page subtitles */
+.admin-subtitle {
+  font-size: 15px;
+  color: #64748b;
+  font-weight: 500;
+  margin-top: 8px;
+}
+
+/* Primary action buttons (Create, etc.) */
+.admin-btn-primary {
+  font-size: 14px;
+  font-weight: 700;
+}
+
+/* Secondary buttons (Refresh, etc.) */
+.admin-btn-secondary {
+  font-size: 14px;
+  font-weight: 700;
+}
+
+/* Form inputs and selects */
+.admin-input {
+  font-size: 14px;
+  font-weight: 500;
+}
+
+/* Table header cells */
+.admin-table-th {
+  font-size: 13px;
+  font-weight: 700;
+  color: #64748b;
+}
+
+/* Table body cells - default */
+.admin-table-td {
+  font-size: 14px;
+  font-weight: 500;
+  color: #0f172a;
+}
+
+/* Table body cells - bold (titles, names) */
+.admin-table-td-bold {
+  font-size: 14px;
+  font-weight: 700;
+  color: #1e2937;
+}
+
+/* Small labels / badges */
+.admin-small {
+  font-size: 12px;
+  font-weight: 700;
+}

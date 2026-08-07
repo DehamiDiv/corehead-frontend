@@ -17,9 +17,14 @@ export async function generateMetadata({ params }: Props) {
   const site = await resolvePublicSite(siteSlug);
   if (!site) return { title: "Page not found | CoreHead" };
 
+  const slug = String(pageSlug || "")
+    .trim()
+    .replace(/^\//, "")
+    .toLowerCase();
+
   try {
-    const data = await api.getPublicPage(site.id, pageSlug);
-    const page = data?.page;
+    const data = await api.getPublicPage(site.id, slug);
+    const page = data?.page ?? (data?.name ? data : null);
     if (!page) return { title: `Page | ${site.name}` };
     return {
       title: `${page.name} | ${site.name}`,
@@ -35,10 +40,16 @@ export default async function PublicCustomPage({ params }: Props) {
   const site = await resolvePublicSite(siteSlug);
   if (!site) notFound();
 
+  // Normalize slug (about-us, /about-us)
+  const slug = String(pageSlug || "")
+    .trim()
+    .replace(/^\//, "")
+    .toLowerCase();
+
   let page: any = null;
   try {
-    const data = await api.getPublicPage(site.id, pageSlug);
-    page = data?.page || null;
+    const data = await api.getPublicPage(site.id, slug);
+    page = data?.page ?? (data?.id || data?.name ? data : null);
   } catch (err) {
     console.error("Public page fetch failed:", err);
   }
@@ -46,7 +57,7 @@ export default async function PublicCustomPage({ params }: Props) {
   if (!page) notFound();
 
   // Prefer body fragment if full document provided
-  let html = String(page.htmlContent || "");
+  let html = String(page.htmlContent || page.content || "");
   const bodyMatch = html.match(/<body[^>]*>([\s\S]*)<\/body>/i);
   if (bodyMatch) {
     html = bodyMatch[1];

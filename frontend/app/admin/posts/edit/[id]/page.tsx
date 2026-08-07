@@ -21,6 +21,7 @@ import MediaLibraryModal from "@/components/admin/MediaLibraryModal";
 import { api } from "@/lib/api";
 import PostPreviewModal from "@/components/admin/PostPreviewModal";
 import { resolveAdminMediaUrl } from "@/lib/apiOrigin";
+import { useSite } from "@/components/admin/SiteContext";
 import dynamic from 'next/dynamic';
 import 'react-quill-new/dist/quill.snow.css';
 
@@ -61,10 +62,40 @@ const quillFormats = [
   "link", "image", "video"
 ];
 
+function getLoggedInUser(): { id?: number | string; name?: string; email?: string } | null {
+  if (typeof window === "undefined") return null;
+  try {
+    const raw = localStorage.getItem("user");
+    if (!raw) return null;
+    return JSON.parse(raw);
+  } catch {
+    return null;
+  }
+}
+
+function mapSiteMembersToAuthors(members: any[]) {
+  const seen = new Set<string>();
+  const authors: { id: number | string; name: string; email?: string }[] = [];
+  for (const m of members) {
+    const id = m?.user?.id ?? m?.userId;
+    if (id == null || id === "") continue;
+    const key = String(id);
+    if (seen.has(key)) continue;
+    seen.add(key);
+    authors.push({
+      id,
+      name: m?.user?.name || m?.user?.email || `User #${id}`,
+      email: m?.user?.email,
+    });
+  }
+  return authors;
+}
+
 export default function EditPostPage() {
   const router = useRouter();
   const params = useParams();
   const postId = params.id as string;
+  const { currentSiteId } = useSite();
   
   const [formData, setFormData] = useState({
     title: "",
@@ -156,15 +187,50 @@ export default function EditPostPage() {
     setLoading(true);
     try {
       const postData = await api.getPostById(postId);
-      
-      const PREDEFINED_AUTHORS = [
-        { id: 1, name: "Pipuni Piyasooriya" },
-        { id: 2, name: "Dehami Divyanjalee" },
-        { id: 3, name: "Nimasha Dissanayaka" },
-        { id: 4, name: "Rashmi Sharaa" },
-        { id: 10, name: "Admin" }
-      ];
-      setUsers(PREDEFINED_AUTHORS);
+      const me = getLoggedInUser();
+      let authors: { id: number | string; name: string; email?: string }[] = [];
+
+      if (currentSiteId) {
+        try {
+          const res = await api.getSiteMembers(currentSiteId);
+          const members = Array.isArray(res?.members) ? res.members : [];
+          authors = mapSiteMembersToAuthors(members);
+        } catch (err) {
+          console.error("Failed to load site members for author list:", err);
+        }
+      }
+
+      // Keep existing post author visible even if no longer a member
+      const existingAuthorId = postData.authorId || postData.author?.id;
+      const existingAuthorName =
+        postData.author?.name || postData.author_name || postData.author?.email;
+      if (
+        existingAuthorId != null &&
+        existingAuthorId !== "" &&
+        !authors.some((a) => String(a.id) === String(existingAuthorId))
+      ) {
+        authors = [
+          {
+            id: existingAuthorId,
+            name: existingAuthorName || `User #${existingAuthorId}`,
+            email: postData.author?.email,
+          },
+          ...authors,
+        ];
+      }
+
+      if (me?.id != null && !authors.some((a) => String(a.id) === String(me.id))) {
+        authors = [
+          {
+            id: me.id,
+            name: me.name || me.email || `User #${me.id}`,
+            email: me.email,
+          },
+          ...authors,
+        ];
+      }
+
+      setUsers(authors);
       
       let cats: string[] = [];
       const rawCats = postData.categories || postData.category;
@@ -206,7 +272,7 @@ export default function EditPostPage() {
     } finally {
       setLoading(false);
     }
-  }, [postId]);
+  }, [postId, currentSiteId]);
 
   useEffect(() => {
     if (postId) fetchData();
@@ -438,7 +504,12 @@ export default function EditPostPage() {
                         value={formData.authorId}
                         onChange={e => setFormData({...formData, authorId: e.target.value})}
                       >
-                        {users.map(u => <option key={u.id} value={u.id}>{u.name || u.email}</option>)}
+                        {users.length === 0 && (
+                          <option value="">No authors for this site</option>
+                        )}
+                        {users.map(u => (
+                          <option key={u.id} value={u.id}>{u.name || u.email}</option>
+                        ))}
                       </select>
                     </div>
                     <div className="space-y-2">

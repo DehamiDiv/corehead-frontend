@@ -36,10 +36,13 @@ export default function VerduraEditorialHero({
   captionRight,
 }: Props) {
   const blogHref = siteBlogPath(siteSlug);
-  const leftLines = (captionLeft || "New stories with beauty\nNature collections").split(
-    "\n",
-  );
-  const rightLines = (captionRight || "Studio\n2026").split("\n");
+  // Appearance captions only — no hard-coded demo lines
+  const leftLines = captionLeft?.trim()
+    ? captionLeft.trim().split("\n")
+    : [];
+  const rightLines = captionRight?.trim()
+    ? captionRight.trim().split("\n")
+    : [];
 
   return (
     <section
@@ -140,7 +143,7 @@ export default function VerduraEditorialHero({
                 }}
               >
                 <BookOpen className="h-4 w-4" />
-                {ctaText || "Explore stories"}
+                {ctaText || "Blog"}
                 <ArrowRight className="h-4 w-4" />
               </Link>
               {featuredSlug ? (

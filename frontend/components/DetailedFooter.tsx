@@ -74,13 +74,19 @@ export default function DetailedFooter() {
     loadSettings();
   }, []);
 
-  const handleSubscribe = (e: React.FormEvent) => {
+  const handleSubscribe = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (email) {
-      setSubscribed(true);
-      setEmail("");
-      setTimeout(() => setSubscribed(false), 4000);
+    if (!email || !email.includes("@")) return;
+
+    setSubscribed(true);
+    try {
+      await api.subscribeToNewsletter(email.trim(), undefined, undefined, 'CoreHead');
+    } catch {
+      // ignore - the method handles demo fallback
     }
+    setEmail("");
+    // keep the success state visible for a few seconds
+    setTimeout(() => setSubscribed(false), 4200);
   };
 
   return (

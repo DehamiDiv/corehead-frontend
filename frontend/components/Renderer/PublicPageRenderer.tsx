@@ -1,6 +1,6 @@
 "use client";
 
-import React from "react";
+import React, { useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import ReactMarkdown from "react-markdown";
@@ -8,6 +8,7 @@ import remarkGfm from "remark-gfm";
 import { BuilderBlock, BlockType } from "../admin/builder/BuilderContext";
 import { looksLikeHtml, preparePostHtml } from "@/lib/htmlContent";
 import { resolveMediaUrl } from "@/lib/siteMedia";
+import { api } from "@/lib/api";
 
 /**
  * R2-3: Public Page Renderer — all builder BlockTypes supported.
@@ -133,6 +134,131 @@ function colClass(cols: number) {
   if (cols === 2) return "md:grid-cols-2";
   if (cols === 3) return "md:grid-cols-3";
   return "md:grid-cols-4";
+}
+
+/**
+ * Working Newsletter signup form used by the public site renderer.
+ * Used on tenant sites (e.g. Verdura) when a Newsletter block is placed via builder.
+ */
+function NewsletterForm({
+  content,
+  styleString,
+  siteSlug,
+  siteId,
+  siteName: propSiteName,
+}: {
+  content: any;
+  styleString?: React.CSSProperties;
+  siteSlug?: string;
+  siteId?: number | string;
+  siteName?: string;
+}) {
+  const [email, setEmail] = useState("");
+  const [status, setStatus] = useState<"idle" | "loading" | "success" | "error">("idle");
+  const [msg, setMsg] = useState("");
+
+  const title =
+    (typeof content === "object" && content?.title) ||
+    "Subscribe to our newsletter";
+  const buttonText =
+    (typeof content === "object" && content?.buttonText) || "Subscribe";
+  const placeholder =
+    (typeof content === "object" && content?.placeholder) || "Enter your email";
+  const description =
+    (typeof content === "object" && content?.description) ||
+    "Stay updated with our latest news and articles delivered straight to your inbox.";
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+
+    const trimmed = email.trim();
+    if (!trimmed || !trimmed.includes("@")) {
+      setStatus("error");
+      setMsg("Please enter a valid email address.");
+      return;
+    }
+
+    setStatus("loading");
+    setMsg("");
+
+    try {
+      const siteName = propSiteName;
+      await api.subscribeToNewsletter(trimmed, siteSlug, siteId, siteName);
+
+      setStatus("success");
+      setMsg("Thank you! Check your inbox to confirm your subscription.");
+      setEmail("");
+    } catch (err) {
+      // Should rarely hit because api method is resilient
+      setStatus("error");
+      setMsg("Could not subscribe right now. Please try again in a moment.");
+    }
+  };
+
+  if (status === "success") {
+    return (
+      <div
+        style={styleString}
+        className="my-8 bg-slate-900 rounded-3xl p-8 md:p-12 text-center text-white"
+      >
+        <div className="max-w-md mx-auto">
+          <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-emerald-500/20 text-3xl">
+            ✓
+          </div>
+          <h3 className="text-2xl md:text-3xl font-bold mb-3">You're in!</h3>
+          <p className="text-slate-300">{msg}</p>
+          <button
+            onClick={() => {
+              setStatus("idle");
+              setMsg("");
+            }}
+            className="mt-6 text-sm underline opacity-70 hover:opacity-100"
+          >
+            Subscribe another email
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div
+      style={styleString}
+      className="my-8 bg-slate-900 rounded-3xl p-8 md:p-12 text-center text-white"
+    >
+      <h3 className="text-2xl md:text-3xl font-bold mb-4">{title}</h3>
+      <p className="text-slate-400 mb-8 max-w-md mx-auto">{description}</p>
+
+      <form
+        onSubmit={handleSubmit}
+        className="flex flex-col md:flex-row gap-3 max-w-md mx-auto"
+      >
+        <input
+          type="email"
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+          placeholder={placeholder}
+          disabled={status === "loading"}
+          className="flex-1 bg-white/10 border border-white/20 rounded-xl px-4 py-3 outline-none text-white placeholder:text-white/50 focus:border-[var(--site-cta-bg,var(--site-primary,#2563eb))] disabled:opacity-60"
+        />
+        <button
+          type="submit"
+          disabled={status === "loading"}
+          className="font-bold px-8 py-3 rounded-xl transition-all hover:opacity-90 active:scale-[0.985] disabled:opacity-60"
+          style={{
+            background: "var(--site-cta-bg, var(--site-primary, #2563eb))",
+            color: "var(--site-cta-color, #ffffff)",
+          }}
+        >
+          {status === "loading" ? "Subscribing..." : buttonText}
+        </button>
+      </form>
+
+      {status === "error" && msg && (
+        <p className="mt-3 text-sm text-red-400">{msg}</p>
+      )}
+    </div>
+  );
 }
 
 export function PublicPageRenderer({
@@ -475,48 +601,21 @@ export function PublicPageRenderer({
         );
       }
 
-      case "Newsletter":
+      case "Newsletter": {
+        const siteSlugFromData = data?.siteSlug || data?.site?.slug;
+        const siteIdFromData = data?.site?.id || data?.siteId;
+        const siteNameFromData = data?.site?.name || data?.siteName;
         return (
-          <div
+          <NewsletterForm
             key={block.id}
-            style={styleString}
-            className="my-8 bg-slate-900 rounded-3xl p-8 md:p-12 text-center text-white"
-          >
-            <h3 className="text-2xl md:text-3xl font-bold mb-4">
-              {(typeof content === "object" && content?.title) ||
-                block.content?.title ||
-                "Newsletter"}
-            </h3>
-            <p className="text-slate-400 mb-8 max-w-md mx-auto">
-              {(typeof content === "object" && content?.description) ||
-                "Stay updated with our latest news and articles delivered straight to your inbox."}
-            </p>
-            <form
-              className="flex flex-col md:flex-row gap-3 max-w-md mx-auto"
-              onSubmit={(e) => e.preventDefault()}
-            >
-              <input
-                type="email"
-                placeholder="Enter your email"
-                className="flex-1 bg-white/10 border border-white/20 rounded-xl px-4 py-3 outline-none text-white focus:border-[var(--site-cta-bg,var(--site-primary,#2563eb))]"
-              />
-              <button
-                type="submit"
-                className="font-bold px-8 py-3 rounded-xl transition-opacity hover:opacity-90"
-                style={{
-                  // Appearance → Header → Call-to-Action Button colours
-                  background:
-                    "var(--site-cta-bg, var(--site-primary, #2563eb))",
-                  color: "var(--site-cta-color, #ffffff)",
-                }}
-              >
-                {(typeof content === "object" && content?.buttonText) ||
-                  block.content?.buttonText ||
-                  "Subscribe"}
-              </button>
-            </form>
-          </div>
+            content={content}
+            styleString={styleString}
+            siteSlug={siteSlugFromData}
+            siteId={siteIdFromData}
+            siteName={siteNameFromData}
+          />
         );
+      }
 
       case "Spacer": {
         const h =

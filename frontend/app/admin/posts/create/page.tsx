@@ -23,6 +23,7 @@ import PostPreviewModal from "@/components/admin/PostPreviewModal";
 import AIBlogWriterModal from "@/components/admin/AIBlogWriterModal";
 import { api } from "@/lib/api";
 import { getApiBaseUrl, resolveAdminMediaUrl } from "@/lib/apiOrigin";
+import { useSite } from "@/components/admin/SiteContext";
 import dynamic from "next/dynamic";
 
 const ReactQuill = dynamic(() => import("react-quill-new"), { ssr: false });
@@ -53,9 +54,38 @@ const quillModules = {
   },
 };
 
+function getLoggedInUser(): { id?: number | string; name?: string; email?: string } | null {
+  if (typeof window === "undefined") return null;
+  try {
+    const raw = localStorage.getItem("user");
+    if (!raw) return null;
+    return JSON.parse(raw);
+  } catch {
+    return null;
+  }
+}
+
+function mapSiteMembersToAuthors(members: any[]) {
+  const seen = new Set<string>();
+  const authors: { id: number | string; name: string; email?: string }[] = [];
+  for (const m of members) {
+    const id = m?.user?.id ?? m?.userId;
+    if (id == null || id === "") continue;
+    const key = String(id);
+    if (seen.has(key)) continue;
+    seen.add(key);
+    authors.push({
+      id,
+      name: m?.user?.name || m?.user?.email || `User #${id}`,
+      email: m?.user?.email,
+    });
+  }
+  return authors;
+}
+
 export default function CreatePostPage() {
   const router = useRouter();
-
+  const { currentSiteId } = useSite();
 
   const [formData, setFormData] = useState({
     title: "",
@@ -170,19 +200,50 @@ export default function CreatePostPage() {
     }
   };
 
+  // Authors = members of the current site (not main-site hardcoded list)
   const fetchUsers = useCallback(async () => {
-    const PREDEFINED_AUTHORS = [
-      { id: 1, name: "Pipuni Piyasooriya" },
-      { id: 2, name: "Dehami Divyanjalee" },
-      { id: 3, name: "Nimasha Dissanayaka" },
-      { id: 4, name: "Rashmi Sharaa" },
-      { id: 10, name: "Admin" }
-    ];
-    setUsers(PREDEFINED_AUTHORS);
-    if (!formData.authorId) {
-      setFormData(prev => ({ ...prev, authorId: "1" }));
+    const me = getLoggedInUser();
+    let authors: { id: number | string; name: string; email?: string }[] = [];
+
+    if (currentSiteId) {
+      try {
+        const res = await api.getSiteMembers(currentSiteId);
+        const members = Array.isArray(res?.members) ? res.members : [];
+        authors = mapSiteMembersToAuthors(members);
+      } catch (err) {
+        console.error("Failed to load site members for author list:", err);
+      }
     }
-  }, [formData.authorId]);
+
+    // Ensure logged-in user can always assign themselves as author
+    if (me?.id != null) {
+      const meId = String(me.id);
+      if (!authors.some((a) => String(a.id) === meId)) {
+        authors = [
+          {
+            id: me.id,
+            name: me.name || me.email || `User #${me.id}`,
+            email: me.email,
+          },
+          ...authors,
+        ];
+      }
+    }
+
+    setUsers(authors);
+
+    setFormData((prev) => {
+      if (prev.authorId && authors.some((a) => String(a.id) === String(prev.authorId))) {
+        return prev;
+      }
+      const preferred =
+        (me?.id != null && authors.find((a) => String(a.id) === String(me.id))) ||
+        authors[0];
+      return preferred
+        ? { ...prev, authorId: String(preferred.id) }
+        : { ...prev, authorId: "" };
+    });
+  }, [currentSiteId]);
 
   useEffect(() => {
     fetchUsers();
@@ -406,7 +467,12 @@ export default function CreatePostPage() {
                         value={formData.authorId}
                         onChange={e => setFormData({ ...formData, authorId: e.target.value })}
                       >
-                        {users.map(u => <option key={u.id} value={u.id}>{u.name || u.email}</option>)}
+                        {users.length === 0 && (
+                          <option value="">No authors for this site</option>
+                        )}
+                        {users.map(u => (
+                          <option key={u.id} value={u.id}>{u.name || u.email}</option>
+                        ))}
                       </select>
                     </div>
                     <div className="space-y-2">

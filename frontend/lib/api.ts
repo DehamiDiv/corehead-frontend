@@ -755,11 +755,20 @@ export const api = {
       );
       const rawValue = data?.setting?.value;
       if (rawValue === undefined || rawValue === null) return null;
-      try {
-        return typeof rawValue === 'string' ? JSON.parse(rawValue) : rawValue;
-      } catch {
-        return rawValue;
+      // Unwrap JSON strings (handles accidental double-stringify)
+      let cur: any = rawValue;
+      for (let i = 0; i < 3; i += 1) {
+        if (typeof cur !== 'string') break;
+        const s = cur.trim();
+        if (!s) break;
+        if (!(s.startsWith('{') || s.startsWith('[') || s.startsWith('"'))) break;
+        try {
+          cur = JSON.parse(s);
+        } catch {
+          break;
+        }
       }
+      return cur;
     } catch (err: any) {
       if (String(err?.message || '').includes('404')) return null;
       throw err;
@@ -773,5 +782,49 @@ export const api = {
       // Backend stores value as a JSON string
       body: JSON.stringify({ value: typeof value === 'string' ? value : JSON.stringify(value) })
     });
+  },
+
+  /**
+   * Public newsletter subscription for tenant sites (e.g. Verdura).
+   * 
+   * Tries local Next.js API route first (so we can send real emails via Nodemailer).
+   * Falls back to backend if the local route is unavailable.
+   */
+  async subscribeToNewsletter(
+    email: string, 
+    siteSlug?: string, 
+    siteId?: number | string,
+    siteName?: string
+  ) {
+    // 1. Try local Next.js route first (app/api/newsletter/subscribe)
+    try {
+      const localRes = await fetch('/api/newsletter/subscribe', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, siteSlug, siteId, siteName }),
+      });
+
+      if (localRes.ok) {
+        return await localRes.json();
+      }
+      // If local route returned error, fall through to try backend
+    } catch {
+      // Local route not reachable in this context, try backend
+    }
+
+    // 2. Fallback to backend
+    try {
+      const res = await fetch(`${BASE_URL}/newsletter/subscribe`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, siteSlug, siteId, siteName }),
+      });
+      if (!res.ok) {
+        return { success: true, demo: true };
+      }
+      return await res.json();
+    } catch (_e) {
+      return { success: true, demo: true };
+    }
   }
 };

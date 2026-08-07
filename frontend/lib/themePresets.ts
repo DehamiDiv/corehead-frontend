@@ -49,7 +49,7 @@ export type ThemePreset = {
     | "agents";
 };
 
-/** Options shown in Appearance → Public home layout (unique designs only) */
+/** Options shown in Appearance → Homepage */
 export const HOME_LAYOUT_OPTIONS: Array<{
   id: ThemePreset["homeStyle"];
   name: string;
@@ -62,44 +62,44 @@ export const HOME_LAYOUT_OPTIONS: Array<{
   },
   {
     id: "nature",
-    name: "Layout 1 · Editorial",
+    name: "Layout 1",
     description: "Magazine cover board — oversized masthead + framed art plate.",
   },
   {
     id: "bloom",
-    name: "Layout 2 · Wellness",
+    name: "Layout 2",
     description: "Soft clinic home — calm hero, service cards, gentle journal.",
   },
   {
     id: "portals",
-    name: "Layout 3 · Portals 3D",
+    name: "Layout 3",
     description: "Black product landing — purple neon platforms, dual CTAs.",
   },
   {
     id: "bento",
-    name: "Layout 4 · Bento",
+    name: "Layout 4",
     description: "Asymmetric bento tile grid — modern SaaS / product mosaic.",
   },
   {
     id: "studio",
-    name: "Layout 5 · Studio",
+    name: "Layout 5",
     description: "Full-bleed photo portfolio — gallery hover, serif masthead.",
   },
   {
     id: "paper",
-    name: "Layout 6 · Paper",
+    name: "Layout 6",
     description: "Newspaper broadsheet — masthead, lead story, two columns.",
   },
   {
     id: "glass",
-    name: "Layout 7 · Glass",
+    name: "Layout 7",
     description: "Light glassmorphism — frosted cards, soft mesh, centered hero.",
   },
 ];
 
 /**
- * When a home layout is selected, Appearance applies this palette so
- * public chrome (header/footer/CSS vars) matches the layout look.
+ * Preview swatches for Homepage layout cards only.
+ * Layout apply does NOT write these to the site — colours stay in Appearance → Colours.
  */
 export type HomeLayoutPalette = {
   colours: ThemePreset["colours"];
@@ -435,7 +435,7 @@ export const THEME_PRESETS: Record<string, ThemePreset> = {
       footerDescription: "Bold stories, bright ideas.",
     },
     font: "inter",
-    homeStyle: "magazine",
+    homeStyle: "bento",
   },
   "theme-3": {
     id: "theme-3",
@@ -462,7 +462,7 @@ export const THEME_PRESETS: Record<string, ThemePreset> = {
       footerDescription: "Elegant editorial for modern readers.",
     },
     font: "georgia",
-    homeStyle: "minimal",
+    homeStyle: "paper",
   },
   "theme-4": {
     id: "theme-4",
@@ -521,7 +521,7 @@ export const THEME_PRESETS: Record<string, ThemePreset> = {
       footerDescription: "Wanderlust and written journeys.",
     },
     font: "ibm-plex",
-    homeStyle: "magazine",
+    homeStyle: "classic",
   },
   "theme-6": {
     id: "theme-6",
@@ -548,7 +548,7 @@ export const THEME_PRESETS: Record<string, ThemePreset> = {
       footerDescription: "Strength, discipline, results.",
     },
     font: "inter",
-    homeStyle: "dark",
+    homeStyle: "studio",
   },
   "theme-7": {
     id: "theme-7",
@@ -575,7 +575,7 @@ export const THEME_PRESETS: Record<string, ThemePreset> = {
       footerDescription: "Professional portfolio & insights.",
     },
     font: "ibm-plex",
-    homeStyle: "minimal",
+    homeStyle: "studio",
   },
   "theme-8": {
     id: "theme-8",
@@ -629,7 +629,7 @@ export const THEME_PRESETS: Record<string, ThemePreset> = {
       footerDescription: "Clean editorial for curious minds.",
     },
     font: "georgia",
-    homeStyle: "minimal",
+    homeStyle: "paper",
   },
   "theme-10": {
     id: "theme-10",
@@ -656,7 +656,7 @@ export const THEME_PRESETS: Record<string, ThemePreset> = {
       footerDescription: "News, culture, and long reads.",
     },
     font: "dm-sans",
-    homeStyle: "magazine",
+    homeStyle: "paper",
   },
   "theme-11": {
     id: "theme-11",
@@ -683,7 +683,7 @@ export const THEME_PRESETS: Record<string, ThemePreset> = {
       footerDescription: "Modern dark experience.",
     },
     font: "inter",
-    homeStyle: "dark",
+    homeStyle: "glass",
   },
 };
 
@@ -706,10 +706,14 @@ export function mergeBrandingWithPreset(branding?: {
   const colours = { ...preset.colours, ...(branding?.colours || {}) };
   const header = { ...preset.header, ...(branding?.header || {}) };
   const footer = { ...preset.footer, ...(branding?.footer || {}) };
-  let homeStyle =
-    (branding?.homeStyle as ThemePreset["homeStyle"] | "editorial" | undefined) ||
+  // Prefer site home_layout (top-level or nested home) over theme preset default
+  const fromSite =
+    (branding?.homeStyle as ThemePreset["homeStyle"] | "editorial" | string | undefined) ||
     (branding as any)?.home?.homeStyle ||
-    preset.homeStyle;
+    (branding as any)?.home?.layout ||
+    null;
+  let homeStyle = (fromSite ||
+    preset.homeStyle) as ThemePreset["homeStyle"] | "editorial";
   // Normalize legacy / duplicate layout ids → unique designs
   if (homeStyle === ("editorial" as any)) homeStyle = "nature";
   if (homeStyle === "agents") homeStyle = "portals";

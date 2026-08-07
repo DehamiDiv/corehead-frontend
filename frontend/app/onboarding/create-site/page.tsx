@@ -17,6 +17,11 @@ import {
 import { api } from "@/lib/api";
 import { setCurrentSite } from "@/lib/siteStorage";
 import { isValidSiteSlug, slugifySiteName } from "@/lib/slugify";
+import {
+  extractUploadedMediaUrl,
+  normalizeMediaPath,
+} from "@/lib/siteMedia";
+import { seedNewSiteAppearance } from "@/lib/seedSiteAppearance";
 
 export default function CreateSitePage() {
   const router = useRouter();
@@ -127,7 +132,8 @@ export default function CreateSitePage() {
             size: String(logoFile.size),
             base64Data,
           });
-          logoUrl = uploaded?.url || uploaded?.path || null;
+          // API returns { media: { url } } — same shape as post/media uploads
+          logoUrl = normalizeMediaPath(extractUploadedMediaUrl(uploaded));
           if (logoUrl) {
             await api.updateSite(site.id, { logo: logoUrl });
           }
@@ -144,6 +150,16 @@ export default function CreateSitePage() {
         logo: logoUrl,
         ownerId: site.ownerId,
       });
+
+      // Same Appearance defaults for every new site (demo home + default theme)
+      try {
+        await seedNewSiteAppearance(site.name || name.trim());
+      } catch (seedErr) {
+        console.warn(
+          "Default Appearance seed failed (site still created):",
+          seedErr,
+        );
+      }
 
       setSuccess(
         `Site created! Public blog will be at /s/${site.slug}/blog — opening dashboard…`

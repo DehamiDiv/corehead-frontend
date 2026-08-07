@@ -3,6 +3,10 @@ import { notFound } from "next/navigation";
 import { resolvePublicSite } from "@/lib/publicSite";
 import PublicSiteShell from "@/components/public/PublicSiteShell";
 
+/** Always re-read branding (colours / theme) — no stale static shell */
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
+
 interface LayoutProps {
   children: ReactNode;
   params: Promise<{ siteSlug: string }>;

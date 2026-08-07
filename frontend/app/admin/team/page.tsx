@@ -206,10 +206,7 @@ export default function TeamPage() {
     <div className="max-w-4xl mx-auto space-y-8 pb-12">
       <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4">
         <div>
-          <p className="text-xs font-bold uppercase tracking-widest text-blue-600 mb-1">
-            R1-3 · Team
-          </p>
-          <h1 className="text-2xl font-black text-slate-900 tracking-tight">
+          <h1 className="admin-title">
             Team — {currentSite.name}
           </h1>
           <p className="text-sm text-slate-500 mt-1">

@@ -212,7 +212,7 @@ export default function UsersPage() {
       {/* Header */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
         <div>
-          <h1 className="text-[28px] font-bold text-slate-900 leading-tight">Users</h1>
+          <h1 className="admin-title">Users</h1>
           <p className="text-slate-500 mt-1 font-medium">Manage your team and permissions</p>
         </div>
         <div className="flex items-center gap-3">

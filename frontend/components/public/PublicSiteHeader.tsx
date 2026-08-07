@@ -1,7 +1,7 @@
 "use client";
 
 import type { CSSProperties } from "react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import type { PublicSite } from "@/lib/publicSite";
@@ -20,6 +20,11 @@ export default function PublicSiteHeader({ site }: { site: PublicSite }) {
   const [mobileOpen, setMobileOpen] = useState(false);
   const branding = site.branding;
   const logo = resolveMediaUrl(resolveHeaderLogo(site.logo, branding));
+  const [logoBroken, setLogoBroken] = useState(false);
+
+  useEffect(() => {
+    setLogoBroken(false);
+  }, [logo]);
   const homeHref = siteHomePath(site.slug);
   const blogHref = siteBlogPath(site.slug);
 
@@ -186,26 +191,30 @@ export default function PublicSiteHeader({ site }: { site: PublicSite }) {
           href={homeHref}
           className="flex items-center gap-2.5 min-w-0 group shrink-0"
         >
-          {logo ? (
+          {logo && !logoBroken ? (
+            // Logo image only — name text would double brand wordmarks (e.g. “Blocksy Blocksy”)
             // eslint-disable-next-line @next/next/no-img-element
             <img
               src={logo}
               alt={site.name}
-              width={44}
+              width={160}
               height={44}
-              className="h-11 w-11 shrink-0 rounded-full object-contain bg-white border border-white/80 shadow-md p-1"
+              className="h-10 sm:h-11 w-auto max-w-[180px] shrink-0 object-contain object-left"
+              onError={() => setLogoBroken(true)}
             />
           ) : (
-            <div
-              className="h-11 w-11 rounded-full text-white flex items-center justify-center text-sm font-black shadow-md shrink-0"
-              style={{ background: "var(--site-primary, #2563eb)" }}
-            >
-              {site.name.charAt(0).toUpperCase()}
-            </div>
+            <>
+              <div
+                className="h-10 w-10 rounded-xl text-white flex items-center justify-center text-sm font-black shadow-md shrink-0"
+                style={{ background: "var(--site-primary, #2563eb)" }}
+              >
+                {site.name.charAt(0).toUpperCase()}
+              </div>
+              <span className="font-bold truncate text-base sm:text-lg leading-tight">
+                {site.name}
+              </span>
+            </>
           )}
-          <span className="font-bold truncate text-base sm:text-lg leading-tight">
-            {site.name}
-          </span>
         </Link>
 
         <nav className="hidden md:flex items-center gap-0.5">
