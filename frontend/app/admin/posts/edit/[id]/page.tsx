@@ -2,8 +2,8 @@
 
 import { useState, useEffect, useCallback, useRef } from "react";
 import { useRouter, useParams } from "next/navigation";
-import { 
-  ChevronDown, Star, Search, FileText, ImagePlus, X, Library, 
+import {
+  ChevronDown, Star, Search, FileText, ImagePlus, X, Library,
   Eye, Type, Bold, Italic, Underline, Strikethrough,
   List, ListOrdered, AlignLeft, AlignCenter, AlignRight, AlignJustify,
   Quote, Code, Link as LinkIcon, Image as ImageIcon, LayoutGrid, Minus, RemoveFormatting, Tag, Loader2,
@@ -65,7 +65,7 @@ export default function EditPostPage() {
   const router = useRouter();
   const params = useParams();
   const postId = params.id as string;
-  
+
   const [formData, setFormData] = useState({
     title: "",
     slug: "",
@@ -124,6 +124,7 @@ export default function EditPostPage() {
     const file = e.target.files?.[0];
     if (!file) return;
 
+<<<<<<< Updated upstream
     // Upload to media API — never store huge base64 in coverImage (DB/API fails)
     try {
       setError(null);
@@ -150,13 +151,20 @@ export default function EditPostPage() {
     } finally {
       e.target.value = "";
     }
+=======
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      setFormData(prev => ({ ...prev, thumbnailUrl: event.target?.result as string }));
+    };
+    reader.readAsDataURL(file);
+>>>>>>> Stashed changes
   };
 
   const fetchData = useCallback(async () => {
     setLoading(true);
     try {
       const postData = await api.getPostById(postId);
-      
+
       const PREDEFINED_AUTHORS = [
         { id: 1, name: "Pipuni Piyasooriya" },
         { id: 2, name: "Dehami Divyanjalee" },
@@ -165,12 +173,12 @@ export default function EditPostPage() {
         { id: 10, name: "Admin" }
       ];
       setUsers(PREDEFINED_AUTHORS);
-      
+
       let cats: string[] = [];
       const rawCats = postData.categories || postData.category;
       if (Array.isArray(rawCats)) cats = rawCats.map(String);
       else if (typeof rawCats === 'string' && rawCats.trim()) {
-        try { cats = JSON.parse(rawCats); } catch(e) { cats = [rawCats]; }
+        try { cats = JSON.parse(rawCats); } catch (e) { cats = [rawCats]; }
       }
 
       setFormData({
@@ -194,12 +202,17 @@ export default function EditPostPage() {
             : [],
         useThumbnailAsFeatured: true,
         canonicalUrl: postData.canonicalUrl || "",
+<<<<<<< Updated upstream
         structuredData:
           typeof postData.structuredData === "string"
             ? postData.structuredData
             : postData.structuredData
               ? JSON.stringify(postData.structuredData, null, 2)
               : "",
+=======
+        structuredData: typeof postData.structuredData === 'string' ? postData.structuredData : JSON.stringify(postData.structuredData, null, 2),
+        useThumbnailAsFeatured: postData.useThumbnailAsFeatured !== false,
+>>>>>>> Stashed changes
       });
     } catch (err: any) {
       setError(err.message || "Failed to fetch post data");
@@ -262,8 +275,15 @@ export default function EditPostPage() {
       content: formData.content,
       status: nextStatus,
       category: formData.categories[0] || "General",
+<<<<<<< Updated upstream
       tags: formData.keywords,
       thumbnailUrl: cover || null,
+=======
+      categories: formData.categories,
+      tags: formData.keywords,
+      authorId: parseInt(formData.authorId),
+      thumbnailUrl: formData.thumbnailUrl,
+>>>>>>> Stashed changes
       featured: formData.featured,
       showToc: formData.showToc,
       allowComments: formData.allowComments,
@@ -322,11 +342,11 @@ export default function EditPostPage() {
   return (
     <div className="min-h-screen bg-[#F4F7FA] pb-32 pt-8 px-6">
       <div className="max-w-[1200px] mx-auto space-y-6">
-        
+
         {/* Top Header */}
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-4">
-            <button 
+            <button
               onClick={() => router.push('/admin/posts')}
               className="p-2 bg-white border border-[#E2E8F0] rounded-lg text-[#64748B] hover:text-[#1E293B] shadow-sm transition-all"
             >
@@ -352,8 +372,8 @@ export default function EditPostPage() {
             <span className="text-[13px] font-bold text-[#94A3B8]">{completed}/{total} fields completed</span>
           </div>
           <div className="w-full h-2 bg-[#F1F5F9] rounded-full overflow-hidden">
-            <div 
-              className="h-full bg-[#2563EB] transition-all duration-500 ease-out" 
+            <div
+              className="h-full bg-[#2563EB] transition-all duration-500 ease-out"
               style={{ width: `${progressPercent}%` }}
             />
           </div>
@@ -367,8 +387,8 @@ export default function EditPostPage() {
               onClick={() => setActiveTab(tab)}
               className={cn(
                 "flex-1 h-12 flex items-center justify-center gap-2 text-[14px] font-bold transition-all rounded-[12px]",
-                activeTab === tab 
-                  ? "bg-white text-[#2563EB] shadow-sm border border-[#E2E8F0]" 
+                activeTab === tab
+                  ? "bg-white text-[#2563EB] shadow-sm border border-[#E2E8F0]"
                   : "text-[#64748B] hover:text-[#475569]"
               )}
             >
@@ -390,7 +410,7 @@ export default function EditPostPage() {
         {/* Main Form Content */}
         <div className="bg-white rounded-[24px] border border-[#E2E8F0] shadow-sm overflow-hidden">
           <div className="p-8">
-            
+
             {/* CONTENT TAB */}
             {activeTab === "Content" && (
               <div className="space-y-10 animate-in fade-in duration-300">
@@ -402,51 +422,51 @@ export default function EditPostPage() {
 
                   <div className="space-y-2">
                     <label className="text-[14px] font-bold text-[#1E293B]">Post Title <span className="text-red-500">*</span></label>
-                    <input 
+                    <input
                       type="text"
                       className="w-full h-12 bg-white border border-[#E2E8F0] rounded-[10px] px-4 text-[14px] focus:outline-none"
                       value={formData.title}
-                      onChange={e => setFormData({...formData, title: e.target.value, slug: e.target.value.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)+/g, '')})}
+                      onChange={e => setFormData({ ...formData, title: e.target.value, slug: e.target.value.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)+/g, '') })}
                     />
                   </div>
 
                   <div className="space-y-2">
                     <label className="text-[14px] font-bold text-[#1E293B]">URL Slug <span className="text-red-500">*</span></label>
-                    <input 
+                    <input
                       type="text"
                       className="w-full h-12 bg-white border border-[#E2E8F0] rounded-[10px] px-4 text-[14px] focus:outline-none"
                       value={formData.slug}
-                      onChange={e => setFormData({...formData, slug: e.target.value})}
+                      onChange={e => setFormData({ ...formData, slug: e.target.value })}
                     />
                   </div>
 
                   <div className="space-y-2">
                     <label className="text-[14px] font-bold text-[#1E293B]">Excerpt <span className="text-red-500">*</span></label>
-                    <textarea 
+                    <textarea
                       rows={3}
                       className="w-full bg-white border border-[#E2E8F0] rounded-[10px] p-4 text-[14px] focus:outline-none"
                       value={formData.excerpt}
-                      onChange={e => setFormData({...formData, excerpt: e.target.value})}
+                      onChange={e => setFormData({ ...formData, excerpt: e.target.value })}
                     />
                   </div>
 
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div className="space-y-2">
                       <label className="text-[14px] font-bold text-[#1E293B]">Author <span className="text-red-500">*</span></label>
-                      <select 
+                      <select
                         className="w-full h-12 bg-white border border-[#E2E8F0] rounded-[10px] px-4 text-[14px] appearance-none"
                         value={formData.authorId}
-                        onChange={e => setFormData({...formData, authorId: e.target.value})}
+                        onChange={e => setFormData({ ...formData, authorId: e.target.value })}
                       >
                         {users.map(u => <option key={u.id} value={u.id}>{u.name || u.email}</option>)}
                       </select>
                     </div>
                     <div className="space-y-2">
                       <label className="text-[14px] font-bold text-[#1E293B]">Publish Status <span className="text-red-500">*</span></label>
-                      <select 
+                      <select
                         className="w-full h-12 bg-white border border-[#E2E8F0] rounded-[10px] px-4 text-[14px]"
                         value={formData.status}
-                        onChange={e => setFormData({...formData, status: e.target.value})}
+                        onChange={e => setFormData({ ...formData, status: e.target.value })}
                       >
                         <option value="Published">Published</option>
                         <option value="Draft">Draft</option>
@@ -461,15 +481,15 @@ export default function EditPostPage() {
                       {formData.categories.map(cat => (
                         <span key={cat} className="px-3 py-1 bg-blue-50 text-blue-600 border border-blue-100 rounded-full text-[12px] font-bold flex items-center gap-1.5">
                           {cat}
-                          <X className="w-3 h-3 cursor-pointer" onClick={() => setFormData({...formData, categories: formData.categories.filter(c => c !== cat)})} />
+                          <X className="w-3 h-3 cursor-pointer" onClick={() => setFormData({ ...formData, categories: formData.categories.filter(c => c !== cat) })} />
                         </span>
                       ))}
                     </div>
-                    <select 
+                    <select
                       className="w-full h-12 bg-white border border-[#E2E8F0] rounded-[10px] px-4 text-[14px]"
                       onChange={(e) => {
                         if (e.target.value && !formData.categories.includes(e.target.value)) {
-                          setFormData({...formData, categories: [...formData.categories, e.target.value]});
+                          setFormData({ ...formData, categories: [...formData.categories, e.target.value] });
                         }
                       }}
                       value=""
@@ -487,21 +507,21 @@ export default function EditPostPage() {
                         <p className="text-[12px] text-[#64748B]">Promote this post to the homepage</p>
                       </div>
                     </div>
-                    <input 
-                      type="checkbox" 
-                      className="w-5 h-5 rounded border-[#E2E8F0]" 
+                    <input
+                      type="checkbox"
+                      className="w-5 h-5 rounded border-[#E2E8F0]"
                       checked={formData.featured}
-                      onChange={e => setFormData({...formData, featured: e.target.checked})}
+                      onChange={e => setFormData({ ...formData, featured: e.target.checked })}
                     />
                   </div>
 
                   <div className="space-y-4 pt-4 border-t border-[#F1F5F9]">
                     <h2 className="text-[20px] font-bold text-[#1E293B]">Post Content <span className="text-red-500">*</span></h2>
                     <div className="border border-[#E2E8F0] rounded-[16px] overflow-hidden">
-                      <ReactQuill 
+                      <ReactQuill
                         theme="snow"
                         value={formData.content}
-                        onChange={(content) => setFormData({...formData, content})}
+                        onChange={(content) => setFormData({ ...formData, content })}
                         modules={quillModules}
                         formats={quillFormats}
                         className="bg-white"
@@ -522,11 +542,12 @@ export default function EditPostPage() {
                 </div>
 
                 <div className="space-y-6">
-                   <div>
-                      <h3 className="text-[16px] font-bold text-[#1E293B]">Thumbnail Image</h3>
-                      <p className="text-[13px] text-[#64748B] mt-0.5">This image appears in blog listing pages and previews</p>
-                   </div>
+                  <div>
+                    <h3 className="text-[16px] font-bold text-[#1E293B]">Thumbnail Image</h3>
+                    <p className="text-[13px] text-[#64748B] mt-0.5">This image appears in blog listing pages and previews</p>
+                  </div>
 
+<<<<<<< Updated upstream
                     <div className="relative group">
                       <div 
                         className={cn(
@@ -540,65 +561,80 @@ export default function EditPostPage() {
                             <button 
                               onClick={(e) => { e.stopPropagation(); setFormData({...formData, thumbnailUrl: ""}); }}
                               className="absolute top-6 right-6 p-2 bg-white/90 backdrop-blur-sm rounded-full text-red-500 shadow-md hover:bg-white transition-all"
+=======
+                  <div className="relative group">
+                    <div
+                      className={cn(
+                        "w-full min-h-[300px] border-2 border-dashed rounded-[20px] flex flex-col items-center justify-center gap-4 transition-all overflow-hidden bg-[#F8FAFC]",
+                        formData.thumbnailUrl ? "border-blue-200 bg-blue-50/10" : "border-[#E2E8F0] hover:bg-[#F1F5F9] hover:border-[#CBD5E1]"
+                      )}
+                    >
+                      {formData.thumbnailUrl ? (
+                        <div className="relative w-full h-full flex items-center justify-center p-4">
+                          <img src={formData.thumbnailUrl} className="max-h-[400px] w-auto object-contain rounded-[12px] shadow-sm" alt="Thumbnail" />
+                          <button
+                            onClick={(e) => { e.stopPropagation(); setFormData({ ...formData, thumbnailUrl: "" }); }}
+                            className="absolute top-6 right-6 p-2 bg-white/90 backdrop-blur-sm rounded-full text-red-500 shadow-md hover:bg-white transition-all"
+                          >
+                            <X className="w-5 h-5" />
+                          </button>
+                        </div>
+                      ) : (
+                        <>
+                          <div className="w-16 h-16 bg-white rounded-2xl shadow-sm border border-[#E2E8F0] flex items-center justify-center mb-1">
+                            <ImageIcon className="w-8 h-8 text-[#94A3B8]" />
+                          </div>
+                          <div className="text-center">
+                            <p className="text-[16px] font-bold text-[#1E293B]">Click to upload image</p>
+                            <p className="text-[13px] text-[#94A3B8] mt-1 font-medium">PNG, JPG, GIF up to 5MB</p>
+                          </div>
+                          <div className="flex items-center gap-3 mt-2">
+                            <button
+                              onClick={() => fileInputRef.current?.click()}
+                              className="h-10 px-5 bg-white border border-[#E2E8F0] rounded-xl text-[13px] font-bold text-[#1E293B] shadow-sm hover:bg-slate-50 transition-all flex items-center gap-2"
+>>>>>>> Stashed changes
                             >
-                              <X className="w-5 h-5" />
+                              <Upload className="w-4 h-4 text-[#64748B]" />
+                              Upload New
+                            </button>
+                            <button
+                              onClick={() => setIsMediaModalOpen(true)}
+                              className="h-10 px-5 bg-white border border-[#E2E8F0] rounded-xl text-[13px] font-bold text-[#1E293B] shadow-sm hover:bg-slate-50 transition-all flex items-center gap-2"
+                            >
+                              <Library className="w-4 h-4 text-[#64748B]" />
+                              Choose from Library
                             </button>
                           </div>
-                        ) : (
-                          <>
-                            <div className="w-16 h-16 bg-white rounded-2xl shadow-sm border border-[#E2E8F0] flex items-center justify-center mb-1">
-                              <ImageIcon className="w-8 h-8 text-[#94A3B8]" />
-                            </div>
-                            <div className="text-center">
-                              <p className="text-[16px] font-bold text-[#1E293B]">Click to upload image</p>
-                              <p className="text-[13px] text-[#94A3B8] mt-1 font-medium">PNG, JPG, GIF up to 5MB</p>
-                            </div>
-                            <div className="flex items-center gap-3 mt-2">
-                                <button 
-                                  onClick={() => fileInputRef.current?.click()}
-                                  className="h-10 px-5 bg-white border border-[#E2E8F0] rounded-xl text-[13px] font-bold text-[#1E293B] shadow-sm hover:bg-slate-50 transition-all flex items-center gap-2"
-                                >
-                                  <Upload className="w-4 h-4 text-[#64748B]" />
-                                  Upload New
-                                </button>
-                                <button 
-                                  onClick={() => setIsMediaModalOpen(true)}
-                                  className="h-10 px-5 bg-white border border-[#E2E8F0] rounded-xl text-[13px] font-bold text-[#1E293B] shadow-sm hover:bg-slate-50 transition-all flex items-center gap-2"
-                                >
-                                  <Library className="w-4 h-4 text-[#64748B]" />
-                                  Choose from Library
-                                </button>
-                            </div>
-                          </>
-                        )}
-                      </div>
-                      <input 
-                        ref={fileInputRef}
-                        type="file" 
-                        className="hidden" 
-                        accept="image/*"
-                        onChange={handleImageUpload}
-                      />
+                        </>
+                      )}
                     </div>
+                    <input
+                      ref={fileInputRef}
+                      type="file"
+                      className="hidden"
+                      accept="image/*"
+                      onChange={handleImageUpload}
+                    />
+                  </div>
 
-                    <div className={cn(
-                      "p-5 rounded-[16px] border flex items-center gap-4 transition-all",
-                      formData.useThumbnailAsFeatured ? "bg-white border-[#E2E8F0]" : "bg-white border-[#E2E8F0]"
-                    )}>
-                      <div 
-                        className={cn(
-                          "w-6 h-6 rounded-md border-2 flex items-center justify-center cursor-pointer transition-all",
-                          formData.useThumbnailAsFeatured ? "bg-[#2563EB] border-[#2563EB]" : "bg-white border-[#CBD5E1]"
-                        )}
-                        onClick={() => setFormData({...formData, useThumbnailAsFeatured: !formData.useThumbnailAsFeatured})}
-                      >
-                        {formData.useThumbnailAsFeatured && <Check className="w-4 h-4 text-white" />}
-                      </div>
-                      <div>
-                        <p className="text-[14px] font-bold text-[#1E293B]">Use thumbnail as featured image</p>
-                        <p className="text-[12px] text-[#64748B] mt-0.5">Uncheck to add a separate featured image or no featured image</p>
-                      </div>
+                  <div className={cn(
+                    "p-5 rounded-[16px] border flex items-center gap-4 transition-all",
+                    formData.useThumbnailAsFeatured ? "bg-white border-[#E2E8F0]" : "bg-white border-[#E2E8F0]"
+                  )}>
+                    <div
+                      className={cn(
+                        "w-6 h-6 rounded-md border-2 flex items-center justify-center cursor-pointer transition-all",
+                        formData.useThumbnailAsFeatured ? "bg-[#2563EB] border-[#2563EB]" : "bg-white border-[#CBD5E1]"
+                      )}
+                      onClick={() => setFormData({ ...formData, useThumbnailAsFeatured: !formData.useThumbnailAsFeatured })}
+                    >
+                      {formData.useThumbnailAsFeatured && <Check className="w-4 h-4 text-white" />}
                     </div>
+                    <div>
+                      <p className="text-[14px] font-bold text-[#1E293B]">Use thumbnail as featured image</p>
+                      <p className="text-[12px] text-[#64748B] mt-0.5">Uncheck to add a separate featured image or no featured image</p>
+                    </div>
+                  </div>
                 </div>
               </div>
             )}
@@ -621,12 +657,12 @@ export default function EditPostPage() {
                         formData.metaTitle.length > 60 ? "text-red-500" : "text-[#94A3B8]"
                       )}>{formData.metaTitle.length}/60</span>
                     </div>
-                    <input 
+                    <input
                       type="text"
                       className="w-full h-12 bg-white border border-[#E2E8F0] rounded-[12px] px-4 text-[14px] focus:outline-none focus:ring-2 focus:ring-blue-500/10 focus:border-blue-400 transition-all"
                       placeholder="SEO optimized title (leave empty to use post title)"
                       value={formData.metaTitle}
-                      onChange={e => setFormData({...formData, metaTitle: e.target.value})}
+                      onChange={e => setFormData({ ...formData, metaTitle: e.target.value })}
                     />
                     <p className="text-[12px] text-[#94A3B8] font-medium">Recommended: 50-60 characters</p>
                   </div>
@@ -640,12 +676,12 @@ export default function EditPostPage() {
                         formData.metaDescription.length > 160 ? "text-red-500" : "text-[#94A3B8]"
                       )}>{formData.metaDescription.length}/160</span>
                     </div>
-                    <textarea 
+                    <textarea
                       rows={3}
                       className="w-full bg-white border border-[#E2E8F0] rounded-[12px] p-4 text-[14px] focus:outline-none focus:ring-2 focus:ring-blue-500/10 focus:border-blue-400 transition-all resize-none leading-relaxed"
                       placeholder="Brief description for search engines (leave empty to use excerpt)"
                       value={formData.metaDescription}
-                      onChange={e => setFormData({...formData, metaDescription: e.target.value})}
+                      onChange={e => setFormData({ ...formData, metaDescription: e.target.value })}
                     />
                     <p className="text-[12px] text-[#94A3B8] font-medium">Recommended: 150-160 characters</p>
                   </div>
@@ -654,7 +690,7 @@ export default function EditPostPage() {
                   <div className="space-y-3">
                     <label className="text-[14px] font-bold text-[#1E293B]">Focus Keywords</label>
                     <div className="flex gap-2">
-                      <input 
+                      <input
                         type="text"
                         className="flex-1 h-12 bg-white border border-[#E2E8F0] rounded-[12px] px-4 text-[14px] focus:outline-none focus:ring-2 focus:ring-blue-500/10 focus:border-blue-400 transition-all"
                         placeholder="Type keyword and press Enter"
@@ -662,7 +698,7 @@ export default function EditPostPage() {
                         onChange={e => setKeywordInput(e.target.value)}
                         onKeyDown={e => e.key === 'Enter' && (e.preventDefault(), addKeyword())}
                       />
-                      <button 
+                      <button
                         type="button"
                         onClick={addKeyword}
                         className="h-12 px-6 bg-[#F8FAFC] border border-[#E2E8F0] rounded-[12px] text-[14px] font-bold text-[#64748B] hover:bg-slate-100 transition-all"
@@ -688,12 +724,12 @@ export default function EditPostPage() {
                   {/* Canonical URL */}
                   <div className="space-y-3">
                     <label className="text-[14px] font-bold text-[#1E293B]">Canonical URL</label>
-                    <input 
+                    <input
                       type="text"
                       className="w-full h-12 bg-white border border-[#E2E8F0] rounded-[12px] px-4 text-[14px] focus:outline-none focus:ring-2 focus:ring-blue-500/10 focus:border-blue-400 transition-all"
                       placeholder="https://example.com/blog/post-slug"
                       value={formData.canonicalUrl}
-                      onChange={e => setFormData({...formData, canonicalUrl: e.target.value})}
+                      onChange={e => setFormData({ ...formData, canonicalUrl: e.target.value })}
                     />
                     <p className="text-[12px] text-[#94A3B8] font-medium">Optional: Specify the preferred URL if this content exists elsewhere</p>
                   </div>
@@ -704,12 +740,12 @@ export default function EditPostPage() {
                       <h3 className="text-[16px] font-bold text-[#1E293B]">Structured Data (JSON-LD)</h3>
                       <p className="text-[13px] text-[#64748B] mt-0.5">Advanced: Add structured data for rich search results</p>
                     </div>
-                    <textarea 
+                    <textarea
                       rows={10}
                       className="w-full bg-white border border-[#E2E8F0] rounded-[12px] p-6 text-[14px] font-mono focus:outline-none focus:ring-2 focus:ring-blue-500/10 focus:border-blue-400 transition-all leading-relaxed"
                       placeholder={`{\n  "@context": "https://schema.org",\n  "@type": "Article",\n  "headline": "Article headline",\n  "description": "Article description",\n  "author": {\n    "@type": "Person",\n    "name": "Author Name"\n  }\n}`}
                       value={formData.structuredData}
-                      onChange={e => setFormData({...formData, structuredData: e.target.value})}
+                      onChange={e => setFormData({ ...formData, structuredData: e.target.value })}
                     />
                     <p className="text-[12px] text-[#94A3B8] font-medium">Optional: Valid JSON-LD markup for enhanced search appearance. Leave empty if not needed.</p>
                   </div>
@@ -722,7 +758,7 @@ export default function EditPostPage() {
 
         {/* Floating Action Bar */}
         <div className="bg-white rounded-[16px] border border-[#E2E8F0] p-4 shadow-xl flex items-center justify-between sticky bottom-6 z-40 gap-3 flex-wrap">
-          <button 
+          <button
             onClick={() => router.push('/admin/posts')}
             className="px-6 h-11 border border-[#E2E8F0] rounded-[10px] text-[14px] font-bold text-[#64748B] hover:bg-slate-50"
           >
@@ -755,7 +791,7 @@ export default function EditPostPage() {
                 "Publish"
               )}
             </button>
-            <button 
+            <button
               onClick={() => handleUpdatePost()}
               disabled={saving}
               className="h-11 px-8 bg-[#2563EB] text-white rounded-[10px] text-[14px] font-bold hover:bg-[#1D4ED8] shadow-lg shadow-blue-500/20 disabled:opacity-50 flex items-center gap-2"
@@ -777,11 +813,11 @@ export default function EditPostPage() {
         </div>
 
       </div>
-      
-      <MediaLibraryModal 
+
+      <MediaLibraryModal
         isOpen={isMediaModalOpen}
         onClose={() => setIsMediaModalOpen(false)}
-        onSelect={(url) => setFormData({...formData, thumbnailUrl: url})}
+        onSelect={(url) => setFormData({ ...formData, thumbnailUrl: url })}
       />
 
       <PostPreviewModal

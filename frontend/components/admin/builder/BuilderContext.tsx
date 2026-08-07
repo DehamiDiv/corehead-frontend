@@ -60,14 +60,14 @@ interface BuilderContextType {
   templateType: "Single Post" | "Blog Archive";
   setTemplateType: (type: "Single Post" | "Blog Archive") => void;
   templateId: string | null;
-  setTemplateId: (id: string | null) => void; 
+  setTemplateId: (id: string | null) => void;
   activeSidebar: "chat" | "blocks" | "settings";
   setActiveSidebar: (tab: "chat" | "blocks" | "settings") => void;
   deviceMode: "desktop" | "tablet" | "mobile";
   setDeviceMode: (mode: "desktop" | "tablet" | "mobile") => void;
   isAnalyzing: boolean;
   setIsAnalyzing: (analyzing: boolean) => void;
-  generateLayout: (prompt: string) => Promise<string | void>;
+  generateLayout: (prompt: string) => Promise<string | undefined>;
 }
 
 const BuilderContext = createContext<BuilderContextType | undefined>(undefined);
@@ -185,11 +185,11 @@ export function BuilderProvider({ children }: { children: ReactNode }) {
       prev.map((block) =>
         block.id === id
           ? {
-              ...block,
-              content,
-              styles: { ...block.styles, ...styles },
-              bindings: { ...block.bindings, ...bindings },
-            }
+            ...block,
+            content,
+            styles: { ...block.styles, ...styles },
+            bindings: { ...block.bindings, ...bindings },
+          }
           : block,
       ),
     );
@@ -301,7 +301,7 @@ export function BuilderProvider({ children }: { children: ReactNode }) {
         setBlocks(data.blocks);
         localStorage.setItem("corehead_builder_layout", JSON.stringify(data.blocks));
       }
-      
+
       // Return provider info so chat can show it
       return (data.provider as string) || "ai";
     } catch (error: any) {

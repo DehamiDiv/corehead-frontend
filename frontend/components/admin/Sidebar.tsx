@@ -34,6 +34,7 @@ type NavItem = {
 export default function Sidebar({ isOpen = true }: { isOpen?: boolean }) {
   const pathname = usePathname();
   const [settingsOpen, setSettingsOpen] = useState(true);
+<<<<<<< Updated upstream
   const [user, setUser] = useState<{
     name?: string;
     role?: string;
@@ -41,16 +42,58 @@ export default function Sidebar({ isOpen = true }: { isOpen?: boolean }) {
     avatar?: string;
     image?: string;
   } | null>(null);
+=======
+  const [user, setUser] = useState<{ name?: string; role?: string; email?: string } | null>(null);
+  const [credits, setCredits] = useState<{ total: number; used: number; status: string } | null>(null);
+>>>>>>> Stashed changes
 
   useEffect(() => {
-    const storedUser = localStorage.getItem('user');
-    if (storedUser) {
-      try {
-        setUser(JSON.parse(storedUser));
-      } catch (e) {
-        console.error("Error parsing stored user:", e);
+    const handleStorageChange = () => {
+      const stored = localStorage.getItem('user');
+      if (stored) {
+        try {
+          const parsed = JSON.parse(stored);
+          setUser(parsed);
+          setCredits({
+            total: parsed.ai_credits ?? 5,
+            used: parsed.ai_credits_used ?? 0,
+            status: parsed.subscription_status ?? "FREE"
+          });
+        } catch (e) {
+          console.error("Error parsing user inside Sidebar handler:", e);
+        }
       }
+    };
+
+    handleStorageChange();
+
+    const token = localStorage.getItem('accessToken') || localStorage.getItem('token');
+    if (token) {
+      fetch('http://localhost:5000/api/auth/me', {
+        headers: { 'Authorization': `Bearer ${token}` }
+      })
+        .then(res => res.json())
+        .then(data => {
+          if (data.user) {
+            setUser(data.user);
+            localStorage.setItem("user", JSON.stringify(data.user));
+            setCredits({
+              total: data.user.ai_credits ?? 5,
+              used: data.user.ai_credits_used ?? 0,
+              status: data.user.subscription_status ?? "FREE"
+            });
+          }
+        })
+        .catch(err => console.error("Error updating user info in Sidebar:", err));
     }
+
+    window.addEventListener('storage', handleStorageChange);
+    window.addEventListener('local-storage-update', handleStorageChange);
+
+    return () => {
+      window.removeEventListener('storage', handleStorageChange);
+      window.removeEventListener('local-storage-update', handleStorageChange);
+    };
   }, []);
 
   const displayName = user?.name || user?.email || "Admin";
@@ -63,19 +106,19 @@ export default function Sidebar({ isOpen = true }: { isOpen?: boolean }) {
       // R1-1: site CMS menus available to all site operators (not only platform admin).
       // R1-2: only Users is platformAdminOnly.
       const allItems: NavItem[] = [
-        { label: "AI Generator",    href: "/ai-prompt",        Icon: Sparkles       },
-        { label: "My Sites",        href: "/admin/sites",      Icon: Globe2         },
-        { label: "Team",            href: "/admin/team",       Icon: UserPlus       },
-        { label: "Posts",           href: "/admin/posts",      Icon: FileText       },
-        { label: "Layouts",         href: "/admin/layouts",    Icon: LayoutTemplate },
+        { label: "AI Generator", href: "/ai-prompt", Icon: Sparkles },
+        { label: "My Sites", href: "/admin/sites", Icon: Globe2 },
+        { label: "Team", href: "/admin/team", Icon: UserPlus },
+        { label: "Posts", href: "/admin/posts", Icon: FileText },
+        { label: "Layouts", href: "/admin/layouts", Icon: LayoutTemplate },
         { label: "Template Assign", href: "/admin/template-assignment", Icon: LayoutTemplate },
-        { label: "Visual Builder",  href: "/admin/builder",    Icon: PanelLeft      },
-        { label: "Categories",      href: "/admin/categories", Icon: Tags           },
-        { label: "Media Library",   href: "/admin/media",      Icon: ImageIcon      },
-        { label: "Interactions",    href: "/admin/comments",   Icon: MessageSquare  },
+        { label: "Visual Builder", href: "/admin/builder", Icon: PanelLeft },
+        { label: "Categories", href: "/admin/categories", Icon: Tags },
+        { label: "Media Library", href: "/admin/media", Icon: ImageIcon },
+        { label: "Interactions", href: "/admin/comments", Icon: MessageSquare },
         // R3-1: site-scoped custom HTML pages
-        { label: "Pages",           href: "/admin/pages",      Icon: File           },
-        { label: "Users",           href: "/admin/users",      Icon: Users,          platformAdminOnly: true },
+        { label: "Pages", href: "/admin/pages", Icon: File },
+        { label: "Users", href: "/admin/users", Icon: Users, platformAdminOnly: true },
       ];
 
       if (!isPlatformAdmin(user?.role)) {
@@ -168,7 +211,7 @@ export default function Sidebar({ isOpen = true }: { isOpen?: boolean }) {
               {[
                 { label: "Profile Settings", href: "/admin/settings/profile" },
                 { label: "Website Settings", href: "/admin/settings/website" },
-                { label: "Appearance",      href: "/admin/settings/appearance" },
+                { label: "Appearance", href: "/admin/settings/appearance" },
               ].map((subItem) => (
                 <Link
                   key={subItem.href}
@@ -192,30 +235,70 @@ export default function Sidebar({ isOpen = true }: { isOpen?: boolean }) {
         </div>
       </nav>
 
-      {/* Profile Footer — circular avatar */}
-      <div className="p-6 border-t border-slate-50 mt-auto">
-        <Link
-          href="/admin/settings/profile"
-          className="flex items-center gap-3 p-2 rounded-2xl hover:bg-slate-50 transition-colors"
-        >
-          <div className="relative h-10 w-10 shrink-0 rounded-full overflow-hidden border-2 border-white ring-2 ring-slate-200 shadow-sm bg-slate-100">
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
-              src={avatarSrc}
-              alt={displayName}
-              className="absolute inset-0 h-full w-full object-cover object-center"
-            />
+      {/* Credit & Plan Info */}
+      <div className="px-6 py-4 border-t border-slate-50">
+        <div className="bg-slate-50 rounded-2xl p-4 space-y-3.5 border border-slate-100/50">
+          <div className="flex items-center justify-between">
+            <span className="text-[12px] font-bold text-slate-500">Plan Option</span>
+            <span className={cn(
+              "text-[10px] font-extrabold px-2.5 py-0.5 rounded-full uppercase tracking-wider",
+              credits?.status === "PRO" ? "bg-amber-100 text-amber-700" : "bg-slate-200 text-slate-600"
+            )}>
+              {credits?.status || "FREE"}
+            </span>
           </div>
-          <div className="flex-1 min-w-0">
-            <p className="text-sm font-bold text-slate-900 truncate">
-              {user?.name || "Admin"}
+          {credits?.status !== "PRO" && (
+            <>
+              <div className="space-y-1.5Packed">
+                <div className="flex justify-between items-center text-[11px] font-bold text-slate-500">
+                  <span>AI Generations</span>
+                  <span>{credits?.used ?? 0} / {credits?.total ?? 5} used</span>
+                </div>
+                <div className="w-full h-1.5 bg-slate-200 rounded-full overflow-hidden">
+                  <div
+                    className="h-full bg-blue-600 transition-all duration-500 ease-out"
+                    style={{ width: `${Math.min(((credits?.used ?? 0) / (credits?.total ?? 5)) * 100, 100)}%` }}
+                  />
+                </div>
+              </div>
+              <Link
+                href="/pricing"
+                className="block text-center text-[12px] font-bold text-blue-600 hover:text-blue-700 hover:underline pt-0.5"
+              >
+                Upgrade to PRO 🚀
+              </Link>
+            </>
+          )}
+          {credits?.status === "PRO" && (
+            <p className="text-[11px] text-amber-700 font-bold flex items-center gap-1.5">
+              <Sparkles className="w-4 h-4 text-amber-500 animate-pulse" /> Unlimited AI Enabled
             </p>
-            <p className="text-[11px] text-slate-400 truncate uppercase tracking-tight font-semibold">
-              {user?.role || "Account"}
-            </p>
-          </div>
-        </Link>
+          )}
+        </div>
       </div>
-    </aside>
+  <div className="p-6 border-t border-slate-50 mt-auto">
+    <Link
+      href="/admin/settings/profile"
+      className="flex items-center gap-3 p-2 rounded-2xl hover:bg-slate-50 transition-colors"
+    >
+      <div className="relative h-10 w-10 shrink-0 rounded-full overflow-hidden border-2 border-white ring-2 ring-slate-200 shadow-sm bg-slate-100">
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img
+          src={avatarSrc}
+          alt={displayName}
+          className="absolute inset-0 h-full w-full object-cover object-center"
+        />
+      </div>
+      <div className="flex-1 min-w-0">
+        <p className="text-sm font-bold text-slate-900 truncate">
+          {user?.name || "Admin"}
+        </p>
+        <p className="text-[11px] text-slate-400 truncate uppercase tracking-tight font-semibold">
+          {user?.role || "Account"}
+        </p>
+      </div>
+    </Link>
+  </div>
+    </aside >
   );
 }

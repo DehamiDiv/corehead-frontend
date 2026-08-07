@@ -53,7 +53,7 @@ const handleResponse = async (res: Response, originalRequest: () => Promise<any>
   if (res.status === 401) {
     if (typeof window !== 'undefined') {
       const refreshToken = localStorage.getItem('refreshToken');
-      
+
       if (refreshToken) {
         try {
           // Attempt to get a new access token
@@ -67,6 +67,7 @@ const handleResponse = async (res: Response, originalRequest: () => Promise<any>
             const body = await refreshRes.json();
             const accessToken = body.accessToken;
             if (accessToken) {
+              localStorage.setItem('accessToken', accessToken);
               // R5-1: keep middleware cookie in sync with refreshed JWT
               persistAccessToken(accessToken);
               // Retry the original request
@@ -88,9 +89,13 @@ const handleResponse = async (res: Response, originalRequest: () => Promise<any>
   if (!res.ok) {
     try {
       const errData = await res.json();
-      throw new Error(errData.details || errData.error || errData.message || `Request failed with status ${res.status}`);
+      const errMsg = errData.details || errData.error || errData.message || `Request failed with status ${res.status}`;
+      const err = new Error(errMsg);
+      (err as any).status = res.status;
+      (err as any).data = errData;
+      throw err;
     } catch (e: any) {
-      if (e?.message && e.message !== `Request failed with status ${res.status}`) throw e;
+      if (e.status || (e?.message && e.message !== `Request failed with status ${res.status}`)) throw e;
       throw new Error(`Request failed with status ${res.status}`);
     }
   }
@@ -507,8 +512,8 @@ export const api = {
       body: JSON.stringify(credentials)
     });
     if (!res.ok) {
-        const err = await res.json();
-        throw new Error(err.error || 'Login failed');
+      const err = await res.json();
+      throw new Error(err.error || 'Login failed');
     }
     return res.json();
   },
@@ -520,8 +525,8 @@ export const api = {
       body: JSON.stringify(data)
     });
     if (!res.ok) {
-        const err = await res.json();
-        throw new Error(err.error || 'Registration failed');
+      const err = await res.json();
+      throw new Error(err.error || 'Registration failed');
     }
     return res.json();
   },
@@ -678,7 +683,6 @@ export const api = {
     });
   },
 
-
   // Media Library (site-scoped)
   async getMedia() {
     return this.fetchWithAuth(`${BASE_URL}/media`, { cache: 'no-store' });
@@ -739,6 +743,14 @@ export const api = {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(data)
+    });
+  },
+
+  async createCheckoutSession(mock: boolean = false) {
+    return this.fetchWithAuth(`${BASE_URL}/payment/checkout-session`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ mock })
     });
   },
 
