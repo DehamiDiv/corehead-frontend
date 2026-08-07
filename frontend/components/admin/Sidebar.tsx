@@ -248,7 +248,7 @@ export default function Sidebar({ isOpen = true }: { isOpen?: boolean }) {
               <div className="space-y-1.5Packed">
                 <div className="flex justify-between items-center text-[11px] font-bold text-slate-500">
                   <span>AI Generations</span>
-                  <span>{credits?.used ?? 0} / {credits?.total ?? 5} used</span>
+                  <span>{Math.min(credits?.used ?? 0, credits?.total ?? 5)} / {credits?.total ?? 5} used</span>
                 </div>
                 <div className="w-full h-1.5 bg-slate-200 rounded-full overflow-hidden">
                   <div
