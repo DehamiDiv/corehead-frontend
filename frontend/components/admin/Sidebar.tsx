@@ -34,7 +34,6 @@ type NavItem = {
 export default function Sidebar({ isOpen = true }: { isOpen?: boolean }) {
   const pathname = usePathname();
   const [settingsOpen, setSettingsOpen] = useState(true);
-<<<<<<< Updated upstream
   const [user, setUser] = useState<{
     name?: string;
     role?: string;
@@ -42,10 +41,7 @@ export default function Sidebar({ isOpen = true }: { isOpen?: boolean }) {
     avatar?: string;
     image?: string;
   } | null>(null);
-=======
-  const [user, setUser] = useState<{ name?: string; role?: string; email?: string } | null>(null);
   const [credits, setCredits] = useState<{ total: number; used: number; status: string } | null>(null);
->>>>>>> Stashed changes
 
   useEffect(() => {
     const handleStorageChange = () => {
@@ -276,29 +272,29 @@ export default function Sidebar({ isOpen = true }: { isOpen?: boolean }) {
           )}
         </div>
       </div>
-  <div className="p-6 border-t border-slate-50 mt-auto">
-    <Link
-      href="/admin/settings/profile"
-      className="flex items-center gap-3 p-2 rounded-2xl hover:bg-slate-50 transition-colors"
-    >
-      <div className="relative h-10 w-10 shrink-0 rounded-full overflow-hidden border-2 border-white ring-2 ring-slate-200 shadow-sm bg-slate-100">
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img
-          src={avatarSrc}
-          alt={displayName}
-          className="absolute inset-0 h-full w-full object-cover object-center"
-        />
+      <div className="p-6 border-t border-slate-50 mt-auto">
+        <Link
+          href="/admin/settings/profile"
+          className="flex items-center gap-3 p-2 rounded-2xl hover:bg-slate-50 transition-colors"
+        >
+          <div className="relative h-10 w-10 shrink-0 rounded-full overflow-hidden border-2 border-white ring-2 ring-slate-200 shadow-sm bg-slate-100">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src={avatarSrc}
+              alt={displayName}
+              className="absolute inset-0 h-full w-full object-cover object-center"
+            />
+          </div>
+          <div className="flex-1 min-w-0">
+            <p className="text-sm font-bold text-slate-900 truncate">
+              {user?.name || "Admin"}
+            </p>
+            <p className="text-[11px] text-slate-400 truncate uppercase tracking-tight font-semibold">
+              {user?.role || "Account"}
+            </p>
+          </div>
+        </Link>
       </div>
-      <div className="flex-1 min-w-0">
-        <p className="text-sm font-bold text-slate-900 truncate">
-          {user?.name || "Admin"}
-        </p>
-        <p className="text-[11px] text-slate-400 truncate uppercase tracking-tight font-semibold">
-          {user?.role || "Account"}
-        </p>
-      </div>
-    </Link>
-  </div>
     </aside >
   );
 }
