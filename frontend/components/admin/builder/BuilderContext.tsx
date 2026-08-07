@@ -286,8 +286,8 @@ export function BuilderProvider({ children }: { children: ReactNode }) {
   };
 
   // AI Layout Generation logic moved to context for global access
-  const generateLayout = async (prompt: string): Promise<string | void> => {
-    if (!prompt.trim() || isAnalyzing) return;
+  const generateLayout = async (prompt: string): Promise<string | undefined> => {
+    if (!prompt.trim() || isAnalyzing) return undefined;
 
     setIsAnalyzing(true);
     try {
