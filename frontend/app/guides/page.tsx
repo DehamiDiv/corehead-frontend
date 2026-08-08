@@ -24,7 +24,7 @@ const quickstartGuides = [
       "A complete guide on using generative AI to create dynamic blog layouts and landing pages with zero coding required.",
     tags: ["AI Builder", "Design", "Automation"],
     image: "https://images.unsplash.com/photo-1677442136019-21780ecad995?auto=format&fit=crop&w=800&q=80",
-    link: "/builder",
+    link: "/admin/builder",
   },
   {
     title: "Secure Auth with JWT & OTP",

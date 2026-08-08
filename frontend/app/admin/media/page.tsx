@@ -20,6 +20,8 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { api } from "@/lib/api";
+import EmptyState from "@/components/ui/EmptyState";
+import { resolveAdminMediaUrl } from "@/lib/apiOrigin";
 
 interface MediaItem {
   id: number | string;
@@ -30,8 +32,6 @@ interface MediaItem {
   createdAt: string;
 }
 
-const BACKEND_URL = 'http://localhost:5000';
-
 export default function MediaPage() {
   const [mediaItems, setMediaItems] = useState<MediaItem[]>([]);
   const [activeTab, setActiveTab] = useState("Library");
@@ -39,14 +39,14 @@ export default function MediaPage() {
   const [isDragging, setIsDragging] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
-  
+
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const fetchMedia = useCallback(async () => {
     setIsLoading(true);
     try {
-      const data = activeTab === "Library" 
-        ? await api.getMedia() 
+      const data = activeTab === "Library"
+        ? await api.getMedia()
         : await api.getTrash();
       setMediaItems(data);
     } catch (error) {
@@ -79,13 +79,13 @@ export default function MediaPage() {
 
   const handleFiles = async (files: FileList | null) => {
     if (!files || files.length === 0) return;
-    
+
     setIsUploading(true);
     try {
       for (let i = 0; i < files.length; i++) {
         const file = files[i];
         const base64Data = await fileToBase64(file);
-        
+
         await api.uploadMedia({
           name: file.name,
           type: file.type,
@@ -145,13 +145,12 @@ export default function MediaPage() {
     }
   };
 
-  const filteredItems = mediaItems.filter(item => 
+  const filteredItems = mediaItems.filter(item =>
     item.name.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
   const getFullUrl = (url: string) => {
-    if (url.startsWith('http')) return url;
-    return `${BACKEND_URL}${url}`;
+    return resolveAdminMediaUrl(url) || url;
   };
 
   return (
@@ -162,7 +161,7 @@ export default function MediaPage() {
           <h1 className="text-[28px] font-bold text-slate-900 leading-tight">Media Library</h1>
           <p className="text-slate-500 mt-1 font-medium">Manage all uploaded images in one place</p>
         </div>
-        <button 
+        <button
           onClick={fetchMedia}
           disabled={isLoading}
           className="flex items-center justify-center gap-2 px-5 py-2.5 bg-white border border-slate-200 rounded-xl text-[14px] font-bold text-slate-600 hover:bg-slate-50 transition-all shadow-sm disabled:opacity-50"
@@ -203,15 +202,15 @@ export default function MediaPage() {
       {/* Upload Box (Only show in Library tab) */}
       {activeTab === "Library" && (
         <div className="bg-white p-6 rounded-[24px] shadow-sm border border-slate-100 flex items-center gap-6 mb-8 transition-all hover:shadow-md">
-          <input 
-            type="file" 
-            ref={fileInputRef} 
-            className="hidden" 
-            multiple 
+          <input
+            type="file"
+            ref={fileInputRef}
+            className="hidden"
+            multiple
             accept="image/*"
             onChange={(e) => handleFiles(e.target.files)}
           />
-          <button 
+          <button
             onClick={() => fileInputRef.current?.click()}
             className="w-[60px] h-[60px] flex-shrink-0 bg-blue-50 hover:bg-blue-100 text-blue-600 rounded-[18px] flex items-center justify-center transition-all shadow-sm shadow-blue-500/5 group"
           >
@@ -221,7 +220,7 @@ export default function MediaPage() {
               <UploadCloud className="w-6 h-6 group-hover:scale-110 transition-transform" />
             )}
           </button>
-          <div 
+          <div
             onClick={() => fileInputRef.current?.click()}
             onDragOver={onDragOver}
             onDragLeave={onDragLeave}
@@ -273,19 +272,19 @@ export default function MediaPage() {
                     alt={item.name}
                     className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
                   />
-                  
+
                   {/* Hover overlay with actions */}
                   <div className="absolute inset-0 bg-slate-900/40 opacity-0 group-hover:opacity-100 transition-all duration-300 flex items-center justify-center gap-2.5 px-3">
                     {activeTab === "Library" ? (
                       <>
-                        <button 
+                        <button
                           onClick={(e) => { e.stopPropagation(); navigator.clipboard.writeText(getFullUrl(item.url)); }}
                           className="p-2.5 bg-white text-slate-700 rounded-xl shadow-lg hover:text-blue-600 hover:scale-110 transition-all"
                           title="Copy URL"
                         >
                           <Copy className="w-4 h-4" />
                         </button>
-                        <button 
+                        <button
                           onClick={(e) => { e.stopPropagation(); handleMoveToTrash(item.id); }}
                           className="p-2.5 bg-white text-red-500 rounded-xl shadow-lg hover:text-red-600 hover:scale-110 transition-all"
                           title="Move to Trash"
@@ -295,14 +294,14 @@ export default function MediaPage() {
                       </>
                     ) : (
                       <>
-                        <button 
+                        <button
                           onClick={(e) => { e.stopPropagation(); handleRestore(item.id); }}
                           className="p-2.5 bg-white text-emerald-600 rounded-xl shadow-lg hover:text-emerald-700 hover:scale-110 transition-all"
                           title="Restore"
                         >
                           <Undo2 className="w-4 h-4" />
                         </button>
-                        <button 
+                        <button
                           onClick={(e) => { e.stopPropagation(); handleDeletePermanent(item.id); }}
                           className="p-2.5 bg-white text-red-600 rounded-xl shadow-lg hover:text-red-700 hover:scale-110 transition-all"
                           title="Delete Permanently"
@@ -328,17 +327,42 @@ export default function MediaPage() {
         )}
 
         {!isLoading && filteredItems.length === 0 && (
-          <div className="py-20 flex flex-col items-center text-center">
-            <div className="w-20 h-20 bg-slate-50 rounded-full flex items-center justify-center mb-6">
-              {searchQuery ? <Search className="w-8 h-8 text-slate-200" /> : <FileImage className="w-8 h-8 text-slate-200" />}
-            </div>
-            <h3 className="text-xl font-bold text-slate-900">
-              {searchQuery ? "No results found" : activeTab === "Library" ? "No media files yet" : "Trash is empty"}
-            </h3>
-            <p className="text-slate-500 max-w-xs mt-2 font-medium">
-              {searchQuery ? "We couldn't find any images matching your search" : activeTab === "Library" ? "Upload your first image to start building your library" : "Items you delete will show up here for 30 days"}
-            </p>
-          </div>
+          <EmptyState
+            className="my-8"
+            icon={searchQuery ? Search : FileImage}
+            title={
+              searchQuery
+                ? "No results found"
+                : activeTab === "Library"
+                  ? "No media files yet"
+                  : "Trash is empty"
+            }
+            description={
+              searchQuery
+                ? "We couldn't find any files matching your search on this site."
+                : activeTab === "Library"
+                  ? "Upload images for posts and pages. Files stay scoped to the current site."
+                  : "Items you move to trash will appear here until you restore or delete them permanently."
+            }
+            actions={
+              !searchQuery && activeTab === "Library"
+                ? [
+                    {
+                      label: "Upload media",
+                      onClick: () => fileInputRef.current?.click(),
+                    },
+                  ]
+                : searchQuery
+                  ? [
+                      {
+                        label: "Clear search",
+                        variant: "secondary",
+                        onClick: () => setSearchQuery(""),
+                      },
+                    ]
+                  : []
+            }
+          />
         )}
       </div>
     </div>

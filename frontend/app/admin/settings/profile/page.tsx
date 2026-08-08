@@ -8,7 +8,7 @@ import { api } from "@/lib/api";
 export default function ProfileSettingsPage() {
   const [isEditing, setIsEditing] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
-  
+
   const [user, setUser] = useState({
     name: "Dehami Div",
     email: "admin@corehead.dev",
@@ -28,43 +28,46 @@ export default function ProfileSettingsPage() {
   useEffect(() => {
     const fetchUser = async () => {
       try {
-        const token = localStorage.getItem('token');
+        const token = localStorage.getItem('accessToken');
         if (!token) return;
         const payload = JSON.parse(atob(token.split('.')[1]));
         const currentUserId = payload.id;
         if (!currentUserId) return;
 
         const res = await api.getUsers();
-        if (res.success && res.users) {
-          const dbUser = res.users.find((u: any) => u.id === currentUserId);
-          if (dbUser) {
-             let bio = dbUser.bio || "No bio added yet.";
-             let avatar = dbUser.avatar || "";
-             
-             // Check localStorage for demo public profile overriding
-             const localDataRaw = localStorage.getItem('corehead_author_data_' + (dbUser.name || "Admin User"));
-             if (localDataRaw) {
-               try {
-                 const localData = JSON.parse(localDataRaw);
-                 if (localData.bio) bio = localData.bio;
-                 if (localData.avatar) avatar = localData.avatar;
-               } catch(e) {}
-             }
+        const usersList = Array.isArray(res) ? res : (res.users || []);
 
-             const userState = {
-                name: dbUser.name || "Admin User",
-                email: dbUser.email,
-                role: dbUser.role.toUpperCase(),
-                status: "Active",
-                designation: dbUser.designation || "Developer",
-                bio: bio,
-                userId: `#${dbUser.id}`,
-                accountCreated: new Date(dbUser.createdAt).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' }),
-                lastUpdated: new Date().toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' }),
-                avatar: avatar
-             };
-             setUser(userState);
-             setFormData(userState);
+        if (usersList.length > 0) {
+          const dbUser = usersList.find((u: any) => u.id === currentUserId);
+          if (dbUser) {
+            let bio = dbUser.bio || "No bio added yet.";
+            let avatar = dbUser.avatar || "";
+
+            // Check localStorage for demo public profile overriding
+            const localDataRaw = localStorage.getItem('corehead_author_data_' + (dbUser.name || "Admin User"));
+            if (localDataRaw) {
+              try {
+                const localData = JSON.parse(localDataRaw);
+                if (localData.bio) bio = localData.bio;
+                if (localData.avatar) avatar = localData.avatar;
+                if (localData.designation) dbUser.designation = localData.designation;
+              } catch (e) { }
+            }
+
+            const userState = {
+              name: dbUser.name || "Admin User",
+              email: dbUser.email,
+              role: dbUser.role.toUpperCase(),
+              status: "Active",
+              designation: dbUser.designation || "Developer",
+              bio: bio,
+              userId: `#${dbUser.id}`,
+              accountCreated: new Date(dbUser.createdAt).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' }),
+              lastUpdated: new Date().toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' }),
+              avatar: avatar
+            };
+            setUser(userState);
+            setFormData(userState);
           }
         }
       } catch (e) {
@@ -84,21 +87,22 @@ export default function ProfileSettingsPage() {
 
   const handleSave = async () => {
     try {
-      const token = localStorage.getItem('token');
+      const token = localStorage.getItem('accessToken');
       if (token) {
         const payload = JSON.parse(atob(token.split('.')[1]));
         const currentUserId = payload.id;
-        
+
         if (currentUserId) {
           // ALSO SAVE TO LOCALSTORAGE FOR DEMO PUBLIC PROFILE
           localStorage.setItem('corehead_author_data_' + formData.name, JSON.stringify({
             bio: formData.bio,
-            avatar: formData.avatar
+            avatar: formData.avatar,
+            designation: formData.designation
           }));
 
+          // Email is locked on profile — never send it on update
           await api.updateUser(currentUserId, {
             name: formData.name,
-            email: formData.email,
             designation: formData.designation,
             bio: formData.bio,
             avatar: formData.avatar
@@ -148,17 +152,17 @@ export default function ProfileSettingsPage() {
             <h2 className="text-lg font-bold text-gray-900">Profile Information</h2>
             <p className="text-sm text-gray-500 mt-0.5">Update your personal details and profile picture</p>
           </div>
-          
+
           <div className="flex gap-2">
             {isEditing ? (
               <>
-                <button 
+                <button
                   onClick={handleEditToggle}
                   className="flex items-center gap-2 px-4 py-2 bg-gray-50 hover:bg-gray-100 text-gray-700 rounded-xl text-sm font-bold border border-gray-100 transition-all"
                 >
                   <X className="w-4 h-4" /> Cancel
                 </button>
-                <button 
+                <button
                   onClick={handleSave}
                   className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-sm font-bold shadow-sm shadow-blue-200 transition-all"
                 >
@@ -166,7 +170,7 @@ export default function ProfileSettingsPage() {
                 </button>
               </>
             ) : (
-              <button 
+              <button
                 onClick={handleEditToggle}
                 className="flex items-center gap-2 px-4 py-2 bg-gray-50 hover:bg-gray-100 text-gray-900 rounded-xl text-sm font-bold border border-gray-100 transition-all"
               >
@@ -175,28 +179,28 @@ export default function ProfileSettingsPage() {
             )}
           </div>
         </div>
-        
+
         <div className="p-8 space-y-8">
           {/* Avatar Section */}
           <div className="flex items-center gap-6">
             <div className="relative group">
               <div className="w-24 h-24 rounded-full overflow-hidden border-4 border-white shadow-xl bg-gray-50">
-                <img 
-                  src={(isEditing ? formData.avatar : user.avatar) || `https://api.dicebear.com/7.x/initials/svg?seed=${isEditing ? formData.name : user.name}`} 
-                  alt="Avatar" 
+                <img
+                  src={(isEditing ? formData.avatar : user.avatar) || `https://api.dicebear.com/7.x/initials/svg?seed=${isEditing ? formData.name : user.name}`}
+                  alt="Avatar"
                   className="w-full h-full object-cover"
                 />
               </div>
               {isEditing && (
                 <>
-                  <input 
-                    type="file" 
-                    accept="image/*" 
-                    className="hidden" 
-                    ref={fileInputRef} 
-                    onChange={handleImageUpload} 
+                  <input
+                    type="file"
+                    accept="image/*"
+                    className="hidden"
+                    ref={fileInputRef}
+                    onChange={handleImageUpload}
                   />
-                  <button 
+                  <button
                     onClick={() => fileInputRef.current?.click()}
                     className="absolute bottom-0 right-0 p-2 bg-white rounded-full shadow-lg border border-gray-100 text-blue-600 hover:scale-110 transition-transform"
                     title="Upload new picture"
@@ -224,55 +228,54 @@ export default function ProfileSettingsPage() {
           <div className="grid grid-cols-1 gap-6">
             <div className="space-y-2">
               <label className="text-sm font-bold text-gray-700 ml-1">Full Name</label>
-              <input 
-                type="text" 
+              <input
+                type="text"
                 name="name"
                 value={isEditing ? formData.name : user.name}
                 onChange={handleChange}
                 readOnly={!isEditing}
                 className={cn(
                   "w-full px-5 py-3.5 rounded-2xl font-bold text-sm transition-all focus:outline-none",
-                  isEditing 
-                    ? "bg-white border-2 border-blue-100 text-gray-900 focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10" 
+                  isEditing
+                    ? "bg-white border-2 border-blue-100 text-gray-900 focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10"
                     : "bg-gray-50/50 border border-gray-100 text-gray-500"
                 )}
               />
             </div>
             <div className="space-y-2">
               <label className="text-sm font-bold text-gray-700 ml-1">Email Address</label>
-              <input 
-                type="email" 
+              <input
+                type="email"
                 name="email"
-                value={isEditing ? formData.email : user.email}
-                onChange={handleChange}
-                readOnly={!isEditing}
-                className={cn(
-                  "w-full px-5 py-3.5 rounded-2xl font-bold text-sm transition-all focus:outline-none",
-                  isEditing 
-                    ? "bg-white border-2 border-blue-100 text-gray-900 focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10" 
-                    : "bg-gray-50/50 border border-gray-100 text-gray-500"
-                )}
+                value={user.email}
+                readOnly
+                disabled
+                title="Email cannot be changed from profile"
+                className="w-full px-5 py-3.5 rounded-2xl font-bold text-sm bg-gray-50/80 border border-gray-100 text-gray-400 cursor-not-allowed focus:outline-none opacity-90"
               />
+              <p className="text-xs text-gray-400 font-medium ml-1">
+                Email cannot be edited from your profile.
+              </p>
             </div>
             <div className="space-y-2">
               <label className="text-sm font-bold text-gray-700 ml-1">Designation</label>
-              <input 
-                type="text" 
+              <input
+                type="text"
                 name="designation"
                 value={isEditing ? formData.designation : user.designation}
                 onChange={handleChange}
                 readOnly={!isEditing}
                 className={cn(
                   "w-full px-5 py-3.5 rounded-2xl font-bold text-sm transition-all focus:outline-none",
-                  isEditing 
-                    ? "bg-white border-2 border-blue-100 text-gray-900 focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10" 
+                  isEditing
+                    ? "bg-white border-2 border-blue-100 text-gray-900 focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10"
                     : "bg-gray-50/50 border border-gray-100 text-gray-500"
                 )}
               />
             </div>
             <div className="space-y-2">
               <label className="text-sm font-bold text-gray-700 ml-1">Bio</label>
-              <textarea 
+              <textarea
                 rows={4}
                 name="bio"
                 value={isEditing ? formData.bio : user.bio}
@@ -280,8 +283,8 @@ export default function ProfileSettingsPage() {
                 readOnly={!isEditing}
                 className={cn(
                   "w-full px-5 py-3.5 rounded-2xl font-bold text-sm leading-relaxed resize-none transition-all focus:outline-none",
-                  isEditing 
-                    ? "bg-white border-2 border-blue-100 text-gray-900 focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10" 
+                  isEditing
+                    ? "bg-white border-2 border-blue-100 text-gray-900 focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10"
                     : "bg-gray-50/50 border border-gray-100 text-gray-500"
                 )}
               />

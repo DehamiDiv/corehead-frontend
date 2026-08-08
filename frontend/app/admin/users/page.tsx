@@ -8,6 +8,7 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { api } from "@/lib/api";
+import { resolveMediaUrl } from "@/lib/siteMedia";
 import MediaLibraryModal from "@/components/admin/MediaLibraryModal";
 
 export default function UsersPage() {
@@ -32,16 +33,61 @@ export default function UsersPage() {
   });
   const [showPassword, setShowPassword] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isUploadingAvatar, setIsUploadingAvatar] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  /**
+   * Upload avatar to media library and store the short /uploads/... URL.
+   * (Previously base64 was written into users.avatar VarChar(500) → Prisma P2000.)
+   */
+  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (file) {
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setFormData(prev => ({ ...prev, avatar: reader.result as string }));
-      };
-      reader.readAsDataURL(file);
+    if (!file) return;
+
+    if (!file.type.startsWith("image/")) {
+      alert("Please choose an image file.");
+      e.target.value = "";
+      return;
+    }
+    // ~2MB client guard
+    if (file.size > 2 * 1024 * 1024) {
+      alert("Image must be smaller than 2MB.");
+      e.target.value = "";
+      return;
+    }
+
+    setIsUploadingAvatar(true);
+    try {
+      const base64Data = await new Promise<string>((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onloadend = () => resolve(String(reader.result || ""));
+        reader.onerror = () => reject(new Error("Failed to read file"));
+        reader.readAsDataURL(file);
+      });
+
+      const uploaded = await api.uploadMedia({
+        name: file.name,
+        type: file.type,
+        size: String(file.size),
+        base64Data,
+      });
+      const url =
+        uploaded?.url ||
+        uploaded?.media?.url ||
+        (typeof uploaded === "string" ? uploaded : "");
+      if (!url) {
+        throw new Error("Upload succeeded but no URL was returned.");
+      }
+      setFormData((prev) => ({ ...prev, avatar: url }));
+    } catch (err: any) {
+      console.error("Avatar upload failed", err);
+      alert(
+        err?.message ||
+          "Failed to upload avatar. Select a site first (media is site-scoped), or pick from Media Library.",
+      );
+    } finally {
+      setIsUploadingAvatar(false);
+      e.target.value = "";
     }
   };
 
@@ -105,7 +151,7 @@ export default function UsersPage() {
       nicename: user.nicename || displayName.toLowerCase().replace(/\s+/g, '-'),
       email: user.email || "",
       designation: user.designation || "",
-      description: user.description || "",
+      description: user.bio || user.description || "",
       password: "",
       role: user.role || "Author",
       avatar: user.avatar || "",
@@ -330,9 +376,17 @@ export default function UsersPage() {
                 <div className="space-y-4">
                   <label className="block text-[14px] font-bold text-slate-700">Profile Image</label>
                   <div className="flex items-center gap-6">
-                    <div className="w-24 h-24 rounded-full border-2 border-dashed border-slate-200 flex flex-col items-center justify-center bg-slate-50/50 text-slate-400 overflow-hidden">
-                      {formData.avatar ? (
-                        <img src={formData.avatar} alt="Avatar" className="w-full h-full object-cover" />
+                    <div className="w-24 h-24 rounded-full border-2 border-dashed border-slate-200 flex flex-col items-center justify-center bg-slate-50/50 text-slate-400 overflow-hidden relative">
+                      {isUploadingAvatar ? (
+                        <Loader2 className="w-8 h-8 animate-spin text-blue-500" />
+                      ) : formData.avatar ? (
+                        <img
+                          src={
+                            resolveMediaUrl(formData.avatar) || formData.avatar
+                          }
+                          alt="Avatar"
+                          className="w-full h-full object-cover"
+                        />
                       ) : (
                         <Upload className="w-8 h-8 opacity-40" />
                       )}
@@ -349,21 +403,29 @@ export default function UsersPage() {
                         <button 
                           type="button" 
                           onClick={() => fileInputRef.current?.click()}
-                          className="flex items-center gap-2 px-4 py-2 bg-white border border-slate-200 rounded-lg text-[13px] font-bold text-slate-700 hover:bg-slate-50 transition-all shadow-sm"
+                          disabled={isUploadingAvatar}
+                          className="flex items-center gap-2 px-4 py-2 bg-white border border-slate-200 rounded-lg text-[13px] font-bold text-slate-700 hover:bg-slate-50 transition-all shadow-sm disabled:opacity-50"
                         >
-                          <Upload className="w-4 h-4" />
-                          Upload
+                          {isUploadingAvatar ? (
+                            <Loader2 className="w-4 h-4 animate-spin" />
+                          ) : (
+                            <Upload className="w-4 h-4" />
+                          )}
+                          {isUploadingAvatar ? "Uploading…" : "Upload"}
                         </button>
                         <button 
                           type="button" 
                           onClick={() => setIsMediaModalOpen(true)}
-                          className="flex items-center gap-2 px-4 py-2 bg-white border border-slate-200 rounded-lg text-[13px] font-bold text-slate-700 hover:bg-slate-50 transition-all shadow-sm"
+                          disabled={isUploadingAvatar}
+                          className="flex items-center gap-2 px-4 py-2 bg-white border border-slate-200 rounded-lg text-[13px] font-bold text-slate-700 hover:bg-slate-50 transition-all shadow-sm disabled:opacity-50"
                         >
                           <FolderOpen className="w-4 h-4" />
                           Library
                         </button>
                       </div>
-                      <p className="text-[12px] text-slate-400 font-medium">Upload a profile image (max 1MB)</p>
+                      <p className="text-[12px] text-slate-400 font-medium">
+                        Upload or pick from Media Library (max 2MB). Images are stored as URLs, not embedded in the user record.
+                      </p>
                     </div>
                   </div>
                 </div>

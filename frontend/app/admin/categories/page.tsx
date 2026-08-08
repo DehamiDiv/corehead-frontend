@@ -9,6 +9,8 @@ import {
 import { cn } from "@/lib/utils";
 import { api } from "@/lib/api";
 import MediaLibraryModal from "@/components/admin/MediaLibraryModal";
+import EmptyState from "@/components/ui/EmptyState";
+import { resolveAdminMediaUrl } from "@/lib/apiOrigin";
 
 export default function CategoriesPage() {
   const [searchQuery, setSearchQuery] = useState("");
@@ -98,7 +100,7 @@ export default function CategoriesPage() {
     try {
       const reader = new FileReader();
       reader.onload = async () => {
-        const base64Data = (reader.result as string).split(",")[1];
+        const base64Data = reader.result as string;
         try {
           const uploaded = await api.uploadMedia({
             name: file.name,
@@ -106,7 +108,9 @@ export default function CategoriesPage() {
             size: String(file.size),
             base64Data,
           });
-          setImageUrl(uploaded.media?.url || uploaded.url || "");
+          const rawUrl = uploaded.media?.url || uploaded.url || "";
+          const fullUrl = resolveAdminMediaUrl(rawUrl) || rawUrl;
+          setImageUrl(fullUrl);
         } catch {
           // Fallback: use local object URL for preview only
           setImageUrl(URL.createObjectURL(file));
@@ -261,18 +265,43 @@ export default function CategoriesPage() {
                     </td>
                   </tr>
                 ))
-              ) : (
-                <tr>
-                  <td colSpan={5} className="py-20 text-center">
-                    <div className="p-6 bg-slate-50 rounded-full inline-block mb-4">
-                      <Tags className="w-10 h-10 text-slate-200" />
-                    </div>
-                    <p className="text-slate-400 font-bold text-lg">No categories found</p>
-                  </td>
-                </tr>
-              )}
+              ) : null}
             </tbody>
           </table>
+          {!isLoading && filteredCategories.length === 0 && (
+            <div className="p-6">
+              {categories.length === 0 ? (
+                <EmptyState
+                  icon={Tags}
+                  title="No categories yet"
+                  description="Organize posts with categories (e.g. News, Guides). Create one to start grouping content on this site."
+                  actions={[
+                    {
+                      label: "Create category",
+                      onClick: () => {
+                        setEditingId(null);
+                        setIsModalOpen(true);
+                      },
+                    },
+                  ]}
+                />
+              ) : (
+                <EmptyState
+                  compact
+                  icon={Search}
+                  title="No categories match your search"
+                  description="Try a different name, or clear search to see all categories on this site."
+                  actions={[
+                    {
+                      label: "Clear search",
+                      variant: "secondary",
+                      onClick: () => setSearchQuery(""),
+                    },
+                  ]}
+                />
+              )}
+            </div>
+          )}
         </div>
       </div>
 
@@ -391,8 +420,9 @@ export default function CategoriesPage() {
                 <input
                   type="text"
                   required
+                  disabled
                   placeholder="category-slug"
-                  className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-400 transition-all text-[14px] text-slate-500 font-medium"
+                  className="w-full px-4 py-3 bg-slate-100 border border-slate-200 rounded-xl focus:outline-none transition-all text-[14px] text-slate-400 font-medium cursor-not-allowed"
                   value={slug}
                   onChange={(e) => setSlug(e.target.value)}
                 />

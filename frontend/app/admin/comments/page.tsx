@@ -6,15 +6,13 @@ import {
   FileText,
   RotateCcw,
   ExternalLink,
-  Pencil,
   Trash2,
   Loader2,
-  X,
-  Check,
-  MoreVertical,
+  ChevronRight,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { api } from "@/lib/api";
+import EmptyState from "@/components/ui/EmptyState";
 
 interface Comment {
   id: number;
@@ -31,8 +29,6 @@ export default function CommentsPage() {
   const [comments, setComments] = useState<Comment[]>([]);
   const [activeTab, setActiveTab] = useState("Recent Comments");
   const [isLoading, setIsLoading] = useState(true);
-  const [editingComment, setEditingComment] = useState<Comment | null>(null);
-  const [editValue, setEditValue] = useState("");
 
   const fetchComments = useCallback(async () => {
     setIsLoading(true);
@@ -60,19 +56,7 @@ export default function CommentsPage() {
     }
   };
 
-  const handleUpdateStatus = async (id: number, status: string, content?: string) => {
-    try {
-      await api.updateComment(id, { status, content });
-      setComments((prev) =>
-        prev.map((c) =>
-          c.id === id ? { ...c, status, content: content || c.content } : c
-        )
-      );
-      setEditingComment(null);
-    } catch (error) {
-      console.error("Update failed:", error);
-    }
-  };
+  // Comment text is read-only in admin (view + delete only)
 
   const postInteractions = useMemo(() => {
     const groups: Record<string, { postTitle: string; count: number; latestDate: string }> = {};
@@ -87,11 +71,6 @@ export default function CommentsPage() {
     });
     return Object.values(groups).sort((a, b) => b.count - a.count);
   }, [comments]);
-
-  const startEditing = (comment: Comment) => {
-    setEditingComment(comment);
-    setEditValue(comment.content);
-  };
 
   const formatDate = (dateStr: string) => {
     const d = new Date(dateStr);
@@ -172,8 +151,20 @@ export default function CommentsPage() {
               <tbody className="divide-y divide-[#F1F5F9]">
                 {comments.length === 0 ? (
                   <tr>
-                    <td colSpan={5} className="py-20 text-center">
-                      <p className="text-[#94A3B8]">No interactions found</p>
+                    <td colSpan={5} className="p-6">
+                      <EmptyState
+                        compact
+                        icon={MessageSquare}
+                        title="No comments yet"
+                        description="When readers leave comments on this site’s published posts, they’ll show up here for moderation."
+                        actions={[
+                          {
+                            label: "View posts",
+                            href: "/admin/posts",
+                            variant: "secondary",
+                          },
+                        ]}
+                      />
                     </td>
                   </tr>
                 ) : (
@@ -206,38 +197,11 @@ export default function CommentsPage() {
                           </div>
                         </td>
 
-                        {/* Comment */}
+                        {/* Comment (read-only — no edit) */}
                         <td className="px-6 py-4 max-w-[280px]">
-                          {editingComment?.id === comment.id ? (
-                            <div className="flex flex-col gap-2">
-                              <textarea
-                                className="w-full p-2.5 text-[13px] border border-blue-200 rounded-lg focus:ring-2 focus:ring-blue-100 outline-none resize-none"
-                                value={editValue}
-                                onChange={(e) => setEditValue(e.target.value)}
-                                rows={2}
-                              />
-                              <div className="flex gap-2">
-                                <button
-                                  onClick={() =>
-                                    handleUpdateStatus(comment.id, comment.status, editValue)
-                                  }
-                                  className="px-3 py-1 bg-[#2563EB] text-white rounded-lg text-[12px] font-semibold flex items-center gap-1"
-                                >
-                                  <Check className="w-3 h-3" /> Save
-                                </button>
-                                <button
-                                  onClick={() => setEditingComment(null)}
-                                  className="px-3 py-1 bg-[#F1F5F9] text-[#64748B] rounded-lg text-[12px] font-semibold flex items-center gap-1"
-                                >
-                                  <X className="w-3 h-3" /> Cancel
-                                </button>
-                              </div>
-                            </div>
-                          ) : (
-                            <p className="text-[14px] text-[#475569] line-clamp-2">
-                              {comment.content}
-                            </p>
-                          )}
+                          <p className="text-[14px] text-[#475569] line-clamp-3">
+                            {comment.content}
+                          </p>
                         </td>
 
                         {/* Blog Post */}
@@ -264,13 +228,6 @@ export default function CommentsPage() {
                               title="View post"
                             >
                               <ExternalLink className="w-4 h-4" />
-                            </button>
-                            <button
-                              onClick={() => startEditing(comment)}
-                              className="p-2 text-[#94A3B8] hover:text-[#1E293B] hover:bg-slate-100 rounded-lg transition-all"
-                              title="Edit"
-                            >
-                              <Pencil className="w-4 h-4" />
                             </button>
                             <button
                               onClick={() => handleDelete(comment.id)}
@@ -340,7 +297,7 @@ export default function CommentsPage() {
                             onClick={() => setActiveTab("Recent Comments")}
                             className="text-[13px] font-semibold text-[#2563EB] hover:underline flex items-center justify-end gap-1 ml-auto"
                           >
-                            View Threads <MoreVertical className="w-3 h-3" />
+                            View Threads <ChevronRight className="w-3 h-3" />
                           </button>
                         </td>
                       </tr>

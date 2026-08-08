@@ -3,7 +3,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { LogOut, Home, FileText, Settings, Layout } from "lucide-react";
+import { LogOut, Home, FileText, Settings, Layout, CreditCard } from "lucide-react";
 
 export default function AdminNavbar() {
   const pathname = usePathname();
@@ -21,6 +21,7 @@ export default function AdminNavbar() {
     { label: "Dashboard", href: "/admin", icon: Home },
     { label: "Builder", href: "/admin/builder", icon: Layout },
     { label: "All Blogs", href: "/admin/posts", icon: FileText },
+    { label: "Pricing", href: "/pricing", icon: CreditCard },
     { label: "Settings", href: "/admin/settings", icon: Settings },
   ];
 
@@ -34,7 +35,7 @@ export default function AdminNavbar() {
             alt="CoreHead Logo" 
             width={210} 
             height={52} 
-            className="h-12 w-auto object-contain" 
+            className="h-12 w-auto object-contain"
             priority
           />
         </Link>
@@ -51,11 +52,10 @@ export default function AdminNavbar() {
               <Link
                 key={item.href}
                 href={item.href}
-                className={`flex items-center gap-2 px-5 py-2.5 rounded-full text-sm font-bold transition-all duration-300 ${
-                  isActive
+                className={`flex items-center gap-2 px-5 py-2.5 rounded-full text-sm font-bold transition-all duration-300 ${isActive
                     ? "bg-blue-600 text-white shadow-lg shadow-blue-200"
                     : "text-slate-600 hover:bg-slate-100 hover:text-slate-900"
-                }`}
+                  }`}
               >
                 <item.icon className="w-4 h-4" />
                 {item.label}
@@ -66,13 +66,13 @@ export default function AdminNavbar() {
 
         {/* Action Buttons */}
         <div className="flex items-center gap-3">
-          <Link 
+          <Link
             href="/"
             className="hidden sm:flex text-xs font-bold text-slate-500 hover:text-slate-900 transition-colors uppercase tracking-widest px-3"
           >
             Visit Site
           </Link>
-          <button 
+          <button
             onClick={handleLogout}
             className="p-2.5 text-slate-500 hover:text-red-600 hover:bg-red-50 rounded-full transition-all duration-300 border border-transparent hover:border-red-100"
             title="Logout"

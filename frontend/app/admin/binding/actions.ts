@@ -1,19 +1,24 @@
 "use server";
 
-const BASE_URL = 'http://localhost:5000/api';
+import { getApiBaseUrl } from "@/lib/apiOrigin";
 
-export async function saveBindings(mode: string, selected: Record<string, boolean>) {
+const BASE_URL = getApiBaseUrl();
+
+export async function saveBindings(
+  mode: string,
+  selected: Record<string, boolean>
+) {
   try {
     const res = await fetch(`${BASE_URL}/bindings`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ mode, selected })
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ mode, selected }),
     });
-    
+
     if (!res.ok) {
-        throw new Error('Failed to save bindings');
+      throw new Error("Failed to save bindings");
     }
-    
+
     return { success: true };
   } catch (error) {
     console.error("Failed to save bindings:", error);
@@ -23,9 +28,9 @@ export async function saveBindings(mode: string, selected: Record<string, boolea
 
 export async function getBindings() {
   try {
-    const res = await fetch(`${BASE_URL}/bindings`, { cache: 'no-store' });
+    const res = await fetch(`${BASE_URL}/bindings`, { cache: "no-store" });
     if (!res.ok) {
-        throw new Error('Failed to fetch bindings');
+      throw new Error("Failed to fetch bindings");
     }
     return await res.json();
   } catch (error) {

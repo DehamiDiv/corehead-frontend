@@ -1,16 +1,18 @@
 "use client";
 
-import { useState, Suspense, useEffect } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import Image from "next/image";
 import { Eye, EyeOff, LayoutGrid, BookOpen, Settings, AlertCircle, Loader2 } from "lucide-react";
 import { api } from "@/lib/api";
+import { resolvePostAuthDestination } from "@/lib/postAuthRedirect";
+import { persistSession } from "@/lib/authSession";
 
-function LoginForm() {
+export default function LoginPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const callbackUrl = searchParams.get('callback') || '/admin';
+  const callbackUrl = searchParams.get('callback');
 
   const [showPassword, setShowPassword] = useState(false);
   const [email, setEmail] = useState("");
@@ -122,42 +124,42 @@ function LoginForm() {
     e.preventDefault();
     setError(null);
     setSuccess(null);
+    setIsLoading(true);
 
     try {
       const data = await api.login({ email, password });
 
-      // PERSIST AUTH STATE
-      localStorage.setItem("accessToken", data.accessToken);
-      localStorage.setItem("refreshToken", data.refreshToken);
-      localStorage.setItem("user", JSON.stringify(data.user));
+      // PERSIST AUTH STATE (localStorage + middleware cookies) — R5-1
+      persistSession({
+        accessToken: data.accessToken,
+        refreshToken: data.refreshToken,
+        user: data.user,
+      });
 
-      // SET COOKIES for middleware
-      document.cookie = `auth_token=${data.accessToken}; path=/; max-age=86400; SameSite=Lax`;
-      document.cookie = `user_role=${data.user.role}; path=/; max-age=86400; SameSite=Lax`;
+      // T5: route by sites — no site → onboarding wizard; has site → admin
+      const destination = await resolvePostAuthDestination(data.user, callbackUrl);
+      const goingToOnboarding = destination.startsWith("/onboarding");
 
-      // ROLE-BASED REDIRECTION
-      const isAdmin = data.user.role?.toLowerCase() === 'admin' || data.user.role?.toLowerCase() === 'administrator';
-      if (isAdmin) {
-        setSuccess("Login successful! Redirecting to Admin Dashboard...");
-        setTimeout(() => {
-          router.push('/admin');
-        }, 1500);
-      } else {
-        // Regular users (Authors/Editors) go directly to Shara's blog page
-        setSuccess("Login successful! Redirecting to Blog Page...");
-        setTimeout(() => {
-          router.push('/blog'); 
-        }, 1500);
-      }
+      setSuccess(
+        goingToOnboarding
+          ? "Login successful! Let's create your site…"
+          : "Login successful! Redirecting…"
+      );
+
+      setTimeout(() => {
+        router.push(destination);
+      }, 900);
     } catch (err: any) {
-      setError(err.message || "An error occurred during login.");
+      // If the API responded with a JSON error payload, surface its message
+      const message = err?.response?.data?.error || err.message || "Login failed. Please check your credentials and try again.";
+      setError(message);
     } finally {
       setIsLoading(false);
     }
   };
 
   return (
-    <div className="min-h-screen w-full bg-gradient-to-br from-blue-100 via-blue-200 to-blue-400 flex flex-col font-sans">
+    <div className="min-h-screen w-full bg-gradient-to-br from-blue-200 via-blue-300 to-blue-400 flex flex-col font-sans">
       {/* Custom Navbar for Login Page */}
       <nav className="w-full px-6 py-4 flex items-center justify-between mx-auto max-w-7xl relative z-10">
         <Link href="/" className="flex items-center">
@@ -307,17 +309,5 @@ function LoginForm() {
         </div>
       </main>
     </div>
-  );
-}
-
-export default function LoginPage() {
-  return (
-    <Suspense fallback={
-      <div className="min-h-screen flex items-center justify-center bg-blue-200">
-        <Loader2 className="w-8 h-8 animate-spin text-blue-700" />
-      </div>
-    }>
-      <LoginForm />
-    </Suspense>
   );
 }

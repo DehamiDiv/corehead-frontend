@@ -22,7 +22,7 @@ function ResetPasswordForm() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
-    
+
     if (!token) {
       setError("Invalid or missing reset token.");
       return;
@@ -60,8 +60,8 @@ function ResetPasswordForm() {
           <AlertCircle className="w-12 h-12" />
           <h2 className="text-xl font-bold text-slate-900">Invalid Link</h2>
           <p className="text-sm text-slate-600">The password reset link is invalid or missing.</p>
-          <Link href="/forgot-password" size="sm" className="mt-4 px-6 py-2 bg-slate-900 text-white rounded-lg font-semibold">
-             Request New Link
+          <Link href="/forgot-password" className="mt-4 px-6 py-2 bg-slate-900 text-white rounded-lg font-semibold text-sm">
+            Request New Link
           </Link>
         </div>
       </div>

@@ -97,7 +97,15 @@ export default function LatestPosts() {
                   </span>
                   <span className="w-1 h-1 rounded-full bg-slate-300"></span>
                   <span className="flex items-center gap-1.5 text-slate-700">
-                    <User className="w-4 h-4" />
+                    {post.author?.avatar ? (
+                      <img 
+                        src={post.author.avatar.startsWith('http') ? post.author.avatar : `http://localhost:5000${post.author.avatar}`} 
+                        alt={post.author.name} 
+                        className="w-5 h-5 rounded-full object-cover" 
+                      />
+                    ) : (
+                      <User className="w-4 h-4" />
+                    )}
                     {post.author?.name || "Admin"}
                   </span>
                 </div>

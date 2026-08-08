@@ -1,11 +1,14 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Plus, RefreshCw, Edit, Trash2, Globe, FileCode2, ArrowLeft, Eye, Save } from "lucide-react";
+import Link from "next/link";
+import { Plus, RefreshCw, Edit, Trash2, Globe, FileCode2, ArrowLeft, Eye, Save, ExternalLink } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { api } from "@/lib/api";
+import { useSite } from "@/components/admin/SiteContext";
 
 export default function PagesManagementPage() {
+  const { currentSite } = useSite();
   const [pages, setPages] = useState<any[]>([]);
   const [isRefreshing, setIsRefreshing] = useState(false);
 
@@ -104,7 +107,16 @@ export default function PagesManagementPage() {
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
           <h1 className="text-3xl font-bold text-gray-900">Pages</h1>
-          <p className="text-gray-500 mt-1">Manage custom HTML pages and their routes.</p>
+          <p className="text-gray-500 mt-1">
+            Custom HTML pages for{" "}
+            <span className="font-semibold text-gray-700">
+              {currentSite?.name || "this site"}
+            </span>
+            . Public URL:{" "}
+            <code className="text-xs bg-gray-100 px-1.5 py-0.5 rounded">
+              /s/{currentSite?.slug || "…"}/p/&#123;slug&#125;
+            </code>
+          </p>
         </div>
         <div className="flex items-center gap-3">
           <button 
@@ -153,7 +165,7 @@ export default function PagesManagementPage() {
                     <div className="flex items-center gap-2">
                       <Globe className="w-4 h-4 text-gray-400" />
                       <span className="font-mono text-[13px] bg-gray-50/80 px-2 py-1 rounded text-gray-600 border border-gray-100/50 font-semibold">
-                        /{page.slug.replace(/^\//, '')}
+                        /s/{currentSite?.slug || "…"}/p/{page.slug.replace(/^\//, "")}
                       </span>
                     </div>
                   </td>
@@ -169,6 +181,16 @@ export default function PagesManagementPage() {
                   </td>
                   <td className="px-6 py-5 text-right">
                     <div className="flex items-center justify-end gap-3">
+                      {page.status === "Published" && currentSite?.slug && (
+                        <Link
+                          href={`/s/${currentSite.slug}/p/${page.slug}`}
+                          target="_blank"
+                          className="text-blue-500 hover:text-blue-700 transition-colors"
+                          title="Open public page"
+                        >
+                          <ExternalLink className="w-[18px] h-[18px]" />
+                        </Link>
+                      )}
                       <button 
                         onClick={() => handleEdit(page)}
                         className="text-gray-500 hover:text-gray-900 transition-colors"
@@ -236,7 +258,9 @@ export default function PagesManagementPage() {
               <div className="mb-6">
                 <label className="block text-sm font-bold text-gray-900 mb-2">Slug (Route) <span className="text-gray-900">*</span></label>
                 <div className="flex items-center border border-gray-200 rounded-lg overflow-hidden bg-white focus-within:ring-2 focus-within:ring-blue-500/20 focus-within:border-blue-500 transition-all">
-                  <span className="px-4 py-2.5 bg-gray-50/50 text-gray-500 border-r border-gray-200 text-sm">/</span>
+                  <span className="px-3 py-2.5 bg-gray-50/50 text-gray-500 border-r border-gray-200 text-xs font-mono whitespace-nowrap">
+                    /s/{currentSite?.slug || "site"}/p/
+                  </span>
                   <input 
                     type="text"
                     placeholder="about-us"
@@ -245,7 +269,9 @@ export default function PagesManagementPage() {
                     onChange={(e) => setPageSlug(e.target.value)}
                   />
                 </div>
-                <p className="text-[13px] text-gray-500 mt-2">The URL path for this page. Use lowercase letters, numbers, and hyphens only.</p>
+                <p className="text-[13px] text-gray-500 mt-2">
+                  Public only when status is Published. Use lowercase letters, numbers, and hyphens.
+                </p>
               </div>
 
               {/* HTML Content */}
