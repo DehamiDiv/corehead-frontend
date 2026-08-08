@@ -52,8 +52,14 @@ export default function TemplateAssignmentPage() {
 
     // ── Derived layout lists ──────────────────────────────────────────────────
     const publishedLayouts = allLayouts.filter(l => l.status === "published");
-    const singleLayouts = publishedLayouts.filter(l => l.type === "single_post" || l.type === "blog");
-    const archiveLayouts = publishedLayouts.filter(l => l.type === "archive");
+    const singleLayouts = publishedLayouts.filter(l => {
+        const typeLower = l.type?.toLowerCase().replace(/_/g, " ").trim();
+        return typeLower === "single post" || typeLower === "blog" || typeLower === "single_post";
+    });
+    const archiveLayouts = publishedLayouts.filter(l => {
+        const typeLower = l.type?.toLowerCase().replace(/_/g, " ").trim();
+        return typeLower === "archive" || typeLower === "blog archive" || typeLower === "blog_archive";
+    });
 
     // ── Fetch all templates ───────────────────────────────────────────────────
     const fetchLayouts = useCallback(async () => {
@@ -64,8 +70,14 @@ export default function TemplateAssignmentPage() {
             setAllLayouts(data);
 
             // Pre-select first available options for the dropdowns
-            const singles = data.filter(l => l.status === "published" && (l.type === "single_post" || l.type === "blog"));
-            const archives = data.filter(l => l.status === "published" && l.type === "archive");
+            const singles = data.filter(l => {
+                const typeLower = l.type?.toLowerCase().replace(/_/g, " ").trim();
+                return l.status === "published" && (typeLower === "single post" || typeLower === "blog" || typeLower === "single_post");
+            });
+            const archives = data.filter(l => {
+                const typeLower = l.type?.toLowerCase().replace(/_/g, " ").trim();
+                return l.status === "published" && (typeLower === "archive" || typeLower === "blog archive" || typeLower === "blog_archive");
+            });
             if (singles.length > 0 && !globalSingleId) setGlobalSingleId(String(singles[0].id));
             if (archives.length > 0 && !globalArchiveId) setGlobalArchiveId(String(archives[0].id));
             if (data.filter(l => l.status === "published").length > 0 && !newLayoutId)

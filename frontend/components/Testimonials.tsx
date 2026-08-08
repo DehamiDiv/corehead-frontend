@@ -270,7 +270,7 @@ function VideoCarousel() {
               onClick={(e) => e.stopPropagation()}
             >
               <iframe
-                src={`https://www.youtube.com/shorts/${playingVideo}`}
+                src={`https://www.youtube.com/embed/${playingVideo}?autoplay=1`}
                 className="w-full h-full border-0"
                 allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
                 allowFullScreen

@@ -26,21 +26,21 @@ export default function AdminNavbar() {
 
   return (
     <div className="w-full flex justify-center pt-8 px-6">
-      <nav className="w-full max-w-5xl bg-white/60 backdrop-blur-xl border border-white/40 rounded-full shadow-[0_8px_40px_rgba(0,0,0,0.04)] flex items-center justify-between px-8 py-3">
+      <nav className="w-full max-w-[1400px] bg-white/60 backdrop-blur-xl border border-white/40 rounded-full shadow-[0_8px_40px_rgba(0,0,0,0.04)] flex items-center justify-between px-8 py-3">
         {/* Logo */}
         <Link href="/admin" className="flex items-center">
           <Image 
             src="/logo.png" 
             alt="CoreHead Logo" 
-            width={140} 
-            height={36} 
-            className="h-10 w-auto object-contain" 
+            width={210} 
+            height={52} 
+            className="h-12 w-auto object-contain" 
             priority
           />
         </Link>
 
         {/* Navigation Links */}
-        <div className="hidden md:flex items-center gap-1">
+        <div className="hidden md:flex items-center gap-6">
           {navItems.map((item) => {
             const isActive =
               item.href === "/admin"

@@ -464,20 +464,38 @@ function FilterSelect({
   onChange: (v: string) => void;
   options: string[];
 }) {
+  const [isOpen, setIsOpen] = useState(false);
+
   return (
     <div className="relative w-52">
-      <select
-        value={value}
-        onChange={(e) => onChange(e.target.value)}
-        className="w-full h-10 bg-white border border-slate-200 rounded-xl px-4 text-[14px] font-medium text-slate-600 appearance-none outline-none focus:ring-2 focus:ring-blue-500/10 focus:border-blue-200 transition-all cursor-pointer"
+      <button
+        onClick={() => setIsOpen(!isOpen)}
+        onBlur={() => setTimeout(() => setIsOpen(false), 200)}
+        className="w-full h-10 bg-white border border-slate-200 rounded-xl px-4 flex items-center justify-between text-[14px] font-medium text-slate-600 hover:border-slate-300 transition-all cursor-pointer shadow-sm text-left"
       >
-        {options.map((opt, i) => (
-          <option key={i} value={opt}>
-            {opt}
-          </option>
-        ))}
-      </select>
-      <ChevronDown className="w-4 h-4 text-slate-400 absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none" />
+        <span className="truncate">{value || options[0]}</span>
+        <ChevronDown className={cn("w-4 h-4 text-slate-400 transition-transform duration-200 shrink-0 ml-2", isOpen && "rotate-180")} />
+      </button>
+
+      {isOpen && (
+        <div className="absolute top-full left-0 mt-2 w-full bg-white border border-slate-100 rounded-xl shadow-lg z-50 py-1 max-h-60 overflow-y-auto animate-in fade-in slide-in-from-top-2 duration-200">
+          {options.map((opt) => (
+            <button
+              key={opt}
+              onClick={() => {
+                onChange(opt);
+                setIsOpen(false);
+              }}
+              className={cn(
+                "w-full text-left px-4 py-2.5 text-[14px] transition-colors hover:bg-slate-50",
+                value === opt ? "font-bold text-blue-600 bg-blue-50/50" : "font-medium text-slate-600"
+              )}
+            >
+              {opt}
+            </button>
+          ))}
+        </div>
+      )}
     </div>
   );
 }

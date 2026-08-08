@@ -76,6 +76,26 @@ export default function FeatureCards() {
     indigo: "group-hover:bg-indigo-600",
   };
 
+  const borderHoverMap: any = {
+    blue: "group-hover:border-blue-200",
+    purple: "group-hover:border-purple-200",
+    emerald: "group-hover:border-emerald-200",
+    orange: "group-hover:border-orange-200",
+    slate: "group-hover:border-slate-200",
+    rose: "group-hover:border-rose-200",
+    indigo: "group-hover:border-indigo-200",
+  };
+
+  const gradientMap: any = {
+    blue: "from-blue-500/10 to-indigo-500/5",
+    purple: "from-purple-500/10 to-pink-500/5",
+    emerald: "from-emerald-500/10 to-teal-500/5",
+    orange: "from-orange-500/10 to-amber-500/5",
+    slate: "from-slate-500/10 to-slate-400/5",
+    rose: "from-rose-500/10 to-red-500/5",
+    indigo: "from-indigo-500/10 to-blue-500/5",
+  };
+
   return (
     <section className="px-8 pb-20">
       <div className="max-w-[1400px] mx-auto grid md:grid-cols-2 lg:grid-cols-3 gap-8">
@@ -86,12 +106,13 @@ export default function FeatureCards() {
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.2 + index * 0.1 }}
               className={cn(
-                "relative p-10 rounded-[32px] bg-white border border-slate-100 text-left flex flex-col hover:border-blue-100 transition-all duration-500 shadow-xl shadow-slate-900/5 h-full min-h-[320px] group-hover:shadow-2xl group-hover:shadow-blue-900/5 overflow-hidden",
-                feature.glow
+                "relative p-10 rounded-[32px] bg-white border border-slate-100 text-left flex flex-col transition-all duration-500 shadow-xl shadow-slate-900/5 h-full min-h-[320px] group-hover:shadow-2xl group-hover:shadow-blue-900/5 overflow-hidden",
+                feature.glow,
+                borderHoverMap[feature.color]
               )}
             >
               {/* Background Accent Gradient */}
-              <div className={`absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-transparent to-transparent rounded-full -mr-16 -mt-16 group-hover:scale-150 transition-transform duration-700`} />
+              <div className={`absolute top-0 right-0 w-36 h-36 bg-gradient-to-br ${gradientMap[feature.color]} rounded-full -mr-16 -mt-16 group-hover:scale-150 transition-transform duration-700`} />
 
               <div className="flex justify-between items-start mb-10 relative z-10">
                 <div className={cn(

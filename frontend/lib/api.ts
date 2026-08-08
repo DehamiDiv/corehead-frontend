@@ -227,6 +227,19 @@ export const api = {
     return res.json();
   },
 
+  async googleLogin(data: { credential: string }) {
+    const res = await fetch(`${BASE_URL}/auth/google`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data)
+    });
+    if (!res.ok) {
+        const err = await res.json();
+        throw new Error(err.error || 'Google Login failed');
+    }
+    return res.json();
+  },
+
   async register(data: { email: string, password: string, name?: string }) {
     const res = await fetch(`${BASE_URL}/auth/register`, {
       method: 'POST',

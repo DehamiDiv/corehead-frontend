@@ -50,7 +50,7 @@ export default function Navbar() {
             alt="CoreHead Logo"
             width={300}
             height={60}
-            className="h-14 w-auto object-contain"
+            className="h-16 w-auto object-contain"
             priority
           />
         </Link>

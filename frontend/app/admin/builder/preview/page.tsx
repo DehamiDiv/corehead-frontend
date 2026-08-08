@@ -179,7 +179,7 @@ export default function BlogPreviewPage() {
             <div className="my-8 aspect-video rounded-2xl overflow-hidden bg-slate-100" style={styleString}>
                <iframe 
                   className="w-full h-full"
-                  src={content.replace('watch?v=', 'embed/')} 
+                  src={content && typeof content === "string" ? content.replace('watch?v=', 'embed/') : ""} 
                   title="Video"
                   allowFullScreen
                ></iframe>

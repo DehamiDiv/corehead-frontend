@@ -3,8 +3,6 @@
 import {
   SendHorizontal,
   RotateCcw,
-  Settings,
-  Bell,
   User,
   Sparkles,
 } from "lucide-react";
@@ -16,7 +14,6 @@ import { useRouter } from "next/navigation";
 export default function BottomBar() {
   const { generateLayout, isAnalyzing, setActiveSidebar, blocks, removeBlock } = useBuilder();
   const [prompt, setPrompt] = useState("");
-  const [showNotif, setShowNotif] = useState(false);
   const router = useRouter();
 
   // Undo: remove the last added block
@@ -24,17 +21,6 @@ export default function BottomBar() {
     if (blocks.length === 0) return;
     const lastBlock = blocks[blocks.length - 1];
     removeBlock(lastBlock.id);
-  };
-
-  // Settings: open the settings sidebar
-  const handleSettings = () => {
-    setActiveSidebar("settings" as any);
-  };
-
-  // Bell: show a quick notification
-  const handleBell = () => {
-    setShowNotif(true);
-    setTimeout(() => setShowNotif(false), 3000);
   };
 
   // User: navigate to profile settings
@@ -80,22 +66,8 @@ export default function BottomBar() {
       </form>
 
       <div className="flex items-center gap-6 text-slate-400 relative">
-        {/* Notification toast */}
-        {showNotif && (
-          <div className="absolute bottom-16 right-0 bg-slate-900 text-white text-[12px] font-bold px-4 py-2.5 rounded-2xl shadow-2xl whitespace-nowrap animate-in fade-in slide-in-from-bottom-4 flex items-center gap-2">
-            <div className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-            Layout auto-saved successfully
-          </div>
-        )}
-
         <button onClick={handleUndo} className="p-2 hover:text-blue-600 hover:bg-blue-50 rounded-xl transition-all" title="Undo last block">
           <RotateCcw className="w-6 h-6" />
-        </button>
-        <button onClick={handleSettings} className="p-2 hover:text-blue-600 hover:bg-blue-50 rounded-xl transition-all" title="Builder Settings">
-          <Settings className="w-6 h-6" />
-        </button>
-        <button onClick={handleBell} className="p-2 hover:text-yellow-500 hover:bg-yellow-50 rounded-xl transition-all" title="Notifications">
-          <Bell className="w-6 h-6" />
         </button>
         <div className="w-px h-8 bg-slate-100 mx-1" />
         <button onClick={handleUser} className="w-10 h-10 rounded-2xl bg-slate-100 flex items-center justify-center hover:bg-blue-600 hover:text-white transition-all overflow-hidden border-2 border-transparent hover:border-blue-100" title="Profile Settings">
