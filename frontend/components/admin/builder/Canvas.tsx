@@ -22,14 +22,26 @@ import {
 } from "@/components/admin/builder/BuilderContext";
 
 export default function Canvas() {
-  const { blocks, addBlock, selectBlock, selectedBlockId, deviceMode, isAnalyzing, reorderBlocks } = useBuilder();
+  const {
+    blocks,
+    addBlock,
+    selectBlock,
+    selectedBlockId,
+    deviceMode,
+    isAnalyzing,
+    reorderBlocks,
+    compareMode,
+    aiBlocks,
+    acceptAiLayout,
+    discardAiLayout,
+  } = useBuilder();
   const [isDragging, setIsDragging] = useState(false);
 
   const handleDragOver = (e: React.DragEvent) => {
     e.preventDefault();
     const isSidebarDrag = e.dataTransfer.types.includes("application/react-dnd");
     const isInternalDrag = e.dataTransfer.types.includes("sourceblockid");
-    
+
     if (isSidebarDrag || isInternalDrag) {
       setIsDragging(true);
       e.dataTransfer.dropEffect = isSidebarDrag ? "copy" : "move";
@@ -37,7 +49,6 @@ export default function Canvas() {
   };
 
   const handleDragLeave = (e: React.DragEvent) => {
-    // Only reset if we are leaving the main canvas area
     const rect = e.currentTarget.getBoundingClientRect();
     if (
       e.clientX <= rect.left ||
@@ -71,8 +82,6 @@ export default function Canvas() {
   const handleBlockDragStart = (e: React.DragEvent, blockId: string) => {
     e.dataTransfer.setData("sourceBlockId", blockId);
     e.dataTransfer.effectAllowed = "move";
-    // We can't set state here easily because it's a different component sometimes, 
-    // but since it's in the same Canvas, it's fine.
     setTimeout(() => setIsDragging(true), 0);
   };
 
@@ -80,7 +89,7 @@ export default function Canvas() {
     e.preventDefault();
     e.stopPropagation();
     setIsDragging(false);
-    
+
     const sourceId = e.dataTransfer.getData("sourceBlockId");
     const type = e.dataTransfer.getData("application/react-dnd") as BlockType;
 
@@ -89,7 +98,7 @@ export default function Canvas() {
       const sourceIndex = blocks.findIndex(b => b.id === sourceId);
       const targetBlock = currentLevelBlocks[targetIndex];
       let globalTargetIndex = targetBlock ? blocks.findIndex(b => b.id === targetBlock.id) : blocks.length;
-      
+
       if (sourceIndex !== -1) {
         reorderBlocks(sourceIndex, globalTargetIndex);
       }
@@ -98,8 +107,8 @@ export default function Canvas() {
     }
   };
 
-  const renderBlockTree = (parentId?: string) => {
-    const levelBlocks = blocks.filter(
+  const renderBlockTree = (blocksList: BuilderBlock[], parentId?: string, isInteractive = true) => {
+    const levelBlocks = blocksList.filter(
       (b) => b.parentId === parentId || (!b.parentId && !parentId),
     );
 
@@ -111,49 +120,54 @@ export default function Canvas() {
           return (
             <div key={block.id} className="group/block">
               {/* Drop Zone Above */}
-              <div 
-                className={`h-4 transition-all flex items-center justify-center relative z-20 ${isDragging ? "bg-blue-50/50 border-y border-dashed border-blue-200 my-1" : "opacity-0 -my-2"}`}
-                onDragOver={handleDragOver}
-                onDrop={(e) => handleReorderDrop(e, index, parentId)}
-              >
-                {isDragging && <div className="w-12 h-1 bg-blue-400 rounded-full animate-pulse"></div>}
-              </div>
+              {isInteractive && (
+                <div
+                  className={`h-4 transition-all flex items-center justify-center relative z-20 ${isDragging ? "bg-blue-50/50 border-y border-dashed border-blue-200 my-1" : "opacity-0 -my-2"}`}
+                  onDragOver={handleDragOver}
+                  onDrop={(e) => handleReorderDrop(e, index, parentId)}
+                >
+                  {isDragging && <div className="w-12 h-1 bg-blue-400 rounded-full animate-pulse"></div>}
+                </div>
+              )}
 
               <div
-                draggable
-                onDragStart={(e) => handleBlockDragStart(e, block.id)}
+                draggable={isInteractive}
+                onDragStart={(e) => isInteractive && handleBlockDragStart(e, block.id)}
                 onDragEnd={() => setIsDragging(false)}
                 onClick={(e) => {
-                  e.stopPropagation();
-                  selectBlock(block.id);
+                  if (isInteractive) {
+                    e.stopPropagation();
+                    selectBlock(block.id);
+                  }
                 }}
-                className={`relative transition-all cursor-move ${
-                  isSelected
+                className={`relative transition-all ${isInteractive ? "cursor-move" : ""} ${isInteractive && isSelected
                     ? "ring-2 ring-blue-500 bg-blue-50/10 shadow-lg z-10"
-                    : "hover:ring-1 hover:ring-blue-200"
-                } ${block.type === "Container" || block.type === "Columns" ? "p-4 border-2 border-dashed border-slate-200 rounded-xl min-h-[120px]" : "p-6 rounded-xl border-2 border-transparent hover:bg-slate-50"}`}
+                    : isInteractive ? "hover:ring-1 hover:ring-blue-200" : ""
+                  } ${block.type === "Container" || block.type === "Columns" ? "p-4 border-2 border-dashed border-slate-200 rounded-xl min-h-[120px]" : "p-6 rounded-xl border-2 border-transparent hover:bg-slate-50"}`}
               >
                 {/* Drag Handle Indicator */}
-                <div className="absolute -left-10 top-1/2 -translate-y-1/2 opacity-0 group-hover/block:opacity-100 transition-opacity p-2 text-slate-300 hover:text-blue-500">
-                  <MoveVertical size={20} />
-                </div>
+                {isInteractive && (
+                  <div className="absolute -left-10 top-1/2 -translate-y-1/2 opacity-0 group-hover/block:opacity-100 transition-opacity p-2 text-slate-300 hover:text-blue-500">
+                    <MoveVertical size={20} />
+                  </div>
+                )}
 
-                {renderBlockContent(block, isSelected)}
+                {renderBlockContent(block, isInteractive && isSelected)}
 
                 {(block.type === "Container" || block.type === "Columns") && (
                   <div
                     className={`mt-6 p-6 min-h-[80px] bg-slate-50/50 rounded-xl gap-6 border-2 border-dashed border-slate-100 ${block.type === "Columns" ? "grid" : "flex flex-col"}`}
-                    style={block.type === "Columns" ? { 
-                      gridTemplateColumns: `repeat(${block.content || 2}, minmax(0, 1fr))` 
+                    style={block.type === "Columns" ? {
+                      gridTemplateColumns: `repeat(${block.content || 2}, minmax(0, 1fr))`
                     } : {}}
                     onDragOver={handleDragOver}
-                    onDrop={(e) => handleDropNested(e, block.id)}
+                    onDrop={(e) => isInteractive && handleDropNested(e, block.id)}
                   >
-                    {renderBlockTree(block.id)}
-                    {blocks.filter((b) => b.parentId === block.id).length === 0 && (
+                    {renderBlockTree(blocksList, block.id, isInteractive)}
+                    {blocksList.filter((b) => b.parentId === block.id).length === 0 && (
                       <div className="text-sm text-slate-400 text-center py-6 border-2 border-dashed border-slate-200 rounded-xl flex items-center justify-center gap-2">
                         <LayoutGrid size={16} />
-                        Drag content here
+                        Empty block
                       </div>
                     )}
                   </div>
@@ -161,8 +175,8 @@ export default function Canvas() {
               </div>
 
               {/* Drop Zone Below (only for last item) */}
-              {index === levelBlocks.length - 1 && (
-                <div 
+              {isInteractive && index === levelBlocks.length - 1 && (
+                <div
                   className={`h-4 transition-all flex items-center justify-center relative z-20 ${isDragging ? "bg-blue-50/50 border-y border-dashed border-blue-200 my-1" : "opacity-0 -my-2"}`}
                   onDragOver={handleDragOver}
                   onDrop={(e) => handleReorderDrop(e, index + 1, parentId)}
@@ -177,11 +191,11 @@ export default function Canvas() {
     );
   };
 
-  // Determine width based on deviceMode
-  const maxWidthClass = 
-    deviceMode === "mobile" ? "max-w-[375px]" :
-    deviceMode === "tablet" ? "max-w-[768px]" :
-    "max-w-6xl";
+  const maxWidthClass =
+    compareMode && aiBlocks.length > 0 ? "max-w-[95%]" :
+      deviceMode === "mobile" ? "max-w-[375px]" :
+        deviceMode === "tablet" ? "max-w-[768px]" :
+          "max-w-6xl";
 
   return (
     <div
@@ -195,19 +209,19 @@ export default function Canvas() {
       }}
     >
       <div className={`w-full ${maxWidthClass} bg-white min-h-[800px] h-fit transition-all duration-300 relative shadow-[0_0_80px_-15px_rgba(0,0,0,0.08)] my-8 rounded-3xl overflow-hidden border border-slate-100`}>
-        
+
         {/* Analyzing Overlay */}
         {isAnalyzing && (
           <div className="fixed inset-0 z-[100] bg-slate-900/90 flex flex-col items-center justify-center p-8 backdrop-blur-md">
             <div className="w-24 h-24 bg-white rounded-3xl flex items-center justify-center mb-8 shadow-2xl relative overflow-hidden animate-bounce">
-               <FileText size={40} className="text-slate-800" />
-               <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 mt-4 ml-4">
-                 <div className="bg-indigo-600 rounded-full p-1.5 border-4 border-white">
-                   <Search size={18} className="text-white" />
-                 </div>
-               </div>
+              <FileText size={40} className="text-slate-800" />
+              <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 mt-4 ml-4">
+                <div className="bg-indigo-600 rounded-full p-1.5 border-4 border-white">
+                  <Search size={18} className="text-white" />
+                </div>
+              </div>
             </div>
-            
+
             <h2 className="text-3xl font-bold text-white mb-3">Crafting your layout...</h2>
             <p className="text-slate-400 mb-8 text-center max-w-md">Our AI is analyzing your request to generate the most optimal design structure. This usually takes 2-3 minutes.</p>
 
@@ -219,18 +233,72 @@ export default function Canvas() {
           </div>
         )}
 
+        {/* Compare Mode Banner */}
+        {compareMode && aiBlocks.length > 0 && (
+          <div className="absolute top-0 left-0 right-0 z-30 bg-blue-50 border-b border-blue-150 px-8 py-4 flex items-center justify-between shadow-sm">
+            <div className="flex items-center gap-3">
+              <span className="relative flex h-2.5 w-2.5">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-blue-400 opacity-75"></span>
+                <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-blue-600"></span>
+              </span>
+              <span className="text-sm font-bold text-blue-900">
+                ⚡ Compare Mode — Current Layout vs AI Generation
+              </span>
+            </div>
+            <div className="flex items-center gap-3">
+              <button
+                onClick={acceptAiLayout}
+                className="px-4 py-2 bg-blue-600 text-white rounded-xl text-xs font-bold shadow-md shadow-blue-200 hover:bg-blue-700 transition"
+              >
+                ✅ Use AI Layout
+              </button>
+              <button
+                onClick={discardAiLayout}
+                className="px-4 py-2 bg-white border border-slate-200 text-slate-600 rounded-xl text-xs font-bold hover:bg-slate-50 transition"
+              >
+                Discard AI
+              </button>
+            </div>
+          </div>
+        )}
+
         {/* Builder Content */}
-        <div className="p-12 md:p-20">
-          {blocks.length === 0 ? (
-            <div className="flex flex-col items-center justify-center min-h-[600px] border-2 border-dashed border-slate-200 rounded-3xl bg-slate-50/50">
-               <div className="w-16 h-16 bg-white rounded-2xl shadow-sm border border-slate-100 flex items-center justify-center mb-6">
-                  <LayoutGrid className="w-8 h-8 text-slate-300" />
-               </div>
-               <h3 className="text-slate-800 font-bold text-xl mb-2">Your Canvas is Ready</h3>
-               <p className="text-slate-500 text-center max-w-xs">Start by dragging components from the sidebar or use the AI chat to build your page.</p>
+        <div className={`p-12 md:p-20 ${compareMode && aiBlocks.length > 0 ? "pt-24" : ""}`}>
+          {compareMode && aiBlocks.length > 0 ? (
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-10 divide-x divide-slate-100">
+              <div className="pr-2">
+                <div className="mb-4 text-xs font-bold text-slate-400 uppercase tracking-widest">
+                  📌 Current Layout
+                </div>
+                {blocks.length === 0 ? (
+                  <p className="text-sm text-slate-400 italic">Empty layout</p>
+                ) : (
+                  <div className="space-y-2">{renderBlockTree(blocks, undefined, true)}</div>
+                )}
+              </div>
+              <div className="pl-6 lg:pl-10">
+                <div className="mb-4 text-xs font-bold text-blue-600 uppercase tracking-widest">
+                  🤖 AI Generated Layout
+                </div>
+                {aiBlocks.length === 0 ? (
+                  <p className="text-sm text-slate-400 italic">AI generation empty</p>
+                ) : (
+                  <div className="space-y-2">{renderBlockTree(aiBlocks, undefined, false)}</div>
+                )}
+              </div>
             </div>
           ) : (
-            <div className="space-y-2">{renderBlockTree()}</div>
+            blocks.length === 0 ? (
+              <div className="flex flex-col items-center justify-center min-h-[600px] border-2 border-dashed border-slate-200 rounded-3xl bg-slate-50/50">
+                <div className="w-16 h-16 bg-white rounded-2xl shadow-sm border border-slate-100 flex items-center justify-center mb-6">
+                  <LayoutGrid className="w-8 h-8 text-slate-300" />
+                </div>
+                <h3 className="text-slate-800 font-bold text-xl mb-2">Your Canvas is Ready</h3>
+                <p className="text-slate-500 text-center max-w-xs">Start by dragging components from the sidebar or use the AI chat to build your page.</p>
+              </div>
+            ) : (
+              <div className="space-y-2">{renderBlockTree(blocks, undefined, true)}</div>
+            )
           )}
         </div>
       </div>
@@ -319,16 +387,16 @@ function renderBlockContent(block: BuilderBlock, isSelected: boolean) {
       return (
         <div style={styleString} className="border-2 border-blue-100 bg-blue-50/30 rounded-xl p-8 flex flex-col items-center justify-center text-center">
           <div className="w-12 h-12 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center mb-3">
-             <LayoutGrid className="w-6 h-6" />
+            <LayoutGrid className="w-6 h-6" />
           </div>
           <h4 className="text-blue-900 font-bold">Collection List (Blog Loop)</h4>
           <p className="text-blue-600/70 text-sm max-w-xs mt-1">
             Displaying up to <span className="font-bold">{block.content?.limit || 6}</span> posts from {block.content?.category || "all categories"}.
           </p>
           <div className="mt-4 flex gap-2">
-             {[1, 2, 3].map(i => (
-               <div key={i} className="w-24 h-2 bg-blue-200 rounded-full opacity-50"></div>
-             ))}
+            {[1, 2, 3].map(i => (
+              <div key={i} className="w-24 h-2 bg-blue-200 rounded-full opacity-50"></div>
+            ))}
           </div>
         </div>
       );
@@ -337,7 +405,7 @@ function renderBlockContent(block: BuilderBlock, isSelected: boolean) {
         <div style={styleString} className="border border-slate-200 bg-slate-800 rounded-3xl p-8 h-64 flex flex-col items-center justify-center text-center relative overflow-hidden">
           <div className="absolute inset-0 bg-gradient-to-t from-black/80 to-transparent"></div>
           <div className="relative z-10 w-12 h-12 bg-white/20 text-white rounded-full flex items-center justify-center mb-3 backdrop-blur-sm">
-             <ImageIcon className="w-6 h-6" />
+            <ImageIcon className="w-6 h-6" />
           </div>
           <h4 className="relative z-10 text-white font-bold text-xl">Featured Carousel Hero</h4>
           <p className="relative z-10 text-white/70 text-sm max-w-sm mt-1">
@@ -348,44 +416,44 @@ function renderBlockContent(block: BuilderBlock, isSelected: boolean) {
     case "Video":
       return (
         <div style={styleString} className="aspect-video bg-slate-100 rounded-xl flex flex-col items-center justify-center border-2 border-dashed border-slate-200">
-           <Video className="w-10 h-10 text-slate-400 mb-2" />
-           <span className="text-sm text-slate-500">Video Player: {block.content}</span>
+          <Video className="w-10 h-10 text-slate-400 mb-2" />
+          <span className="text-sm text-slate-500">Video Player: {block.content}</span>
         </div>
       );
     case "Newsletter":
       return (
         <div style={styleString} className="bg-blue-600 rounded-2xl p-8 text-center text-white">
-           <Mail className="w-8 h-8 mx-auto mb-4 opacity-80" />
-           <h4 className="text-xl font-bold mb-2">{block.content?.title || "Subscribe"}</h4>
-           <div className="flex gap-2 max-w-md mx-auto mt-6">
-              <div className="flex-1 bg-white/10 rounded-lg h-10 border border-white/20"></div>
-              <div className="w-24 bg-white text-blue-600 font-bold rounded-lg h-10 flex items-center justify-center text-sm">
-                 {block.content?.buttonText || "Join"}
-              </div>
-           </div>
+          <Mail className="w-8 h-8 mx-auto mb-4 opacity-80" />
+          <h4 className="text-xl font-bold mb-2">{block.content?.title || "Subscribe"}</h4>
+          <div className="flex gap-2 max-w-md mx-auto mt-6">
+            <div className="flex-1 bg-white/10 rounded-lg h-10 border border-white/20"></div>
+            <div className="w-24 bg-white text-blue-600 font-bold rounded-lg h-10 flex items-center justify-center text-sm">
+              {block.content?.buttonText || "Join"}
+            </div>
+          </div>
         </div>
       );
     case "Social Links":
       return (
         <div style={styleString} className="flex justify-center gap-4 py-4">
-           {["facebook", "twitter", "instagram", "linkedin"].map(social => (
-             <div key={social} className="w-10 h-10 bg-slate-100 rounded-full flex items-center justify-center text-slate-400">
-                <Share2 size={18} />
-             </div>
-           ))}
+          {["facebook", "twitter", "instagram", "linkedin"].map(social => (
+            <div key={social} className="w-10 h-10 bg-slate-100 rounded-full flex items-center justify-center text-slate-400">
+              <Share2 size={18} />
+            </div>
+          ))}
         </div>
       );
     case "Spacer":
       return (
         <div style={{ ...styleString, height: block.content || "40px" }} className="w-full flex items-center justify-center border-y border-dashed border-slate-100">
-           <MoveVertical size={14} className="text-slate-300" />
+          <MoveVertical size={14} className="text-slate-300" />
         </div>
       );
     case "Code Block":
       return (
         <div style={styleString} className="bg-slate-900 rounded-xl p-6 font-mono text-sm text-blue-300 relative overflow-hidden">
-           <div className="absolute top-0 right-0 p-2 text-[10px] text-slate-500 uppercase tracking-widest">{block.content?.language || "javascript"}</div>
-           <pre>{block.content?.code || "print('hello world')"}</pre>
+          <div className="absolute top-0 right-0 p-2 text-[10px] text-slate-500 uppercase tracking-widest">{block.content?.language || "javascript"}</div>
+          <pre>{block.content?.code || "print('hello world')"}</pre>
         </div>
       );
     default:
