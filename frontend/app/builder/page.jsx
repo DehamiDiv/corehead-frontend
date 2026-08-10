@@ -87,6 +87,68 @@ export default function BlogBuilderPage() {
 
           if (result.layout?.cards) {
             setBlogPosts(result.layout.cards);
+          } else if (result.blocks) {
+            // Map the layout blocks format to standard "blogPosts" cards for the playground view
+            const mappedCards = [];
+            let currentCard = null;
+            const category = options.layoutType || 'blog-archive';
+
+            result.blocks.forEach((block) => {
+              if (block.type === 'Heading') {
+                if (currentCard && currentCard.title) {
+                  mappedCards.push(currentCard);
+                  currentCard = null;
+                }
+                if (!currentCard) {
+                  currentCard = {
+                    id: block.id,
+                    title: block.content,
+                    excerpt: '',
+                    author: 'AI Author',
+                    date: new Date().toISOString().split('T')[0],
+                    image: '',
+                    category
+                  };
+                } else {
+                  currentCard.title = block.content;
+                }
+              } else if (block.type === 'Paragraph' || block.type === 'Quote') {
+                if (!currentCard) {
+                  currentCard = {
+                    id: block.id,
+                    title: 'Blog Excerpt',
+                    excerpt: block.content,
+                    author: 'AI Author',
+                    date: new Date().toISOString().split('T')[0],
+                    image: '',
+                    category
+                  };
+                } else {
+                  currentCard.excerpt = block.content;
+                }
+              } else if (block.type === 'Image') {
+                const imgUrl = typeof block.content === 'string' ? block.content : block.content?.url;
+                if (!currentCard) {
+                  currentCard = {
+                    id: block.id,
+                    title: 'Featured Image',
+                    excerpt: '',
+                    author: 'AI Author',
+                    date: new Date().toISOString().split('T')[0],
+                    image: imgUrl || '',
+                    category
+                  };
+                } else {
+                  currentCard.image = imgUrl || '';
+                }
+              }
+            });
+
+            if (currentCard) {
+              mappedCards.push(currentCard);
+            }
+
+            setBlogPosts(mappedCards);
           }
         } catch (err) {
           console.warn('AI Flow error:', err.message);
@@ -268,74 +330,87 @@ export default function BlogBuilderPage() {
 
           <button
             className="btn-primary"
-            disabled={blogPosts.length === 0}
+            disabled={blogPosts.length === 0 && aiPosts.length === 0}
             style={{
               background: 'linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%)',
               border: 'none',
               boxShadow: '0 4px 12px rgba(37,99,235,0.2)',
-              opacity: blogPosts.length === 0 ? 0.5 : 1,
-              cursor: blogPosts.length === 0 ? 'not-allowed' : 'pointer'
+              opacity: (blogPosts.length === 0 && aiPosts.length === 0) ? 0.5 : 1,
+              cursor: (blogPosts.length === 0 && aiPosts.length === 0) ? 'not-allowed' : 'pointer'
             }}
             onClick={() => {
-              const mainBuilderBlocks = blogPosts.map((post, idx) => ({
-                id: `card-${post.id}-${idx}`,
-                type: 'Container',
-                content: 'Card Container',
-                parentId: null,
-                styles: {
-                  padding: '24px',
-                  borderRadius: '16px',
-                  backgroundColor: '#ffffff',
-                  borderWidth: '1px',
-                  borderColor: '#e2e8f0',
-                  margin: '16px 0px',
-                  boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)'
-                },
-                bindings: {}
-              }));
+              const postsToSync = (compareMode && aiPosts.length > 0) ? aiPosts : blogPosts;
 
-              const childBlocks = [];
-              blogPosts.forEach((post, idx) => {
-                const parentId = `card-${post.id}-${idx}`;
+              // Check if the posts list already contains visual blocks (with type properties)
+              const isAlreadyBlocks = postsToSync.some(post => post.type && typeof post.type === 'string');
 
-                childBlocks.push({
-                  id: `img-${post.id}-${idx}`,
-                  type: 'Image',
-                  content: post.image || 'https://picsum.photos/400/250',
-                  parentId: parentId,
-                  styles: { borderRadius: '12px', margin: '0px 0px 16px 0px' },
-                  bindings: contentMode === 'dynamic' ? { content: 'post.featured_image' } : {}
+              let finalLayout = [];
+
+              if (isAlreadyBlocks) {
+                // If it is already a block structure, export directly
+                finalLayout = postsToSync;
+              } else {
+                // Otherwise wrap cards in container blocks
+                const mainBuilderBlocks = postsToSync.map((post, idx) => ({
+                  id: `card-${post.id}-${idx}`,
+                  type: 'Container',
+                  content: 'Card Container',
+                  parentId: null,
+                  styles: {
+                    padding: '24px',
+                    borderRadius: '16px',
+                    backgroundColor: '#ffffff',
+                    borderWidth: '1px',
+                    borderColor: '#e2e8f0',
+                    margin: '16px 0px',
+                    boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)'
+                  },
+                  bindings: {}
+                }));
+
+                const childBlocks = [];
+                postsToSync.forEach((post, idx) => {
+                  const parentId = `card-${post.id}-${idx}`;
+
+                  childBlocks.push({
+                    id: `img-${post.id}-${idx}`,
+                    type: 'Image',
+                    content: post.image || 'https://picsum.photos/400/250',
+                    parentId: parentId,
+                    styles: { borderRadius: '12px', margin: '0px 0px 16px 0px' },
+                    bindings: contentMode === 'dynamic' ? { content: 'post.featured_image' } : {}
+                  });
+
+                  childBlocks.push({
+                    id: `heading-${post.id}-${idx}`,
+                    type: 'Heading',
+                    content: post.title,
+                    parentId: parentId,
+                    styles: { fontSize: '20px', color: '#1e1e2e', margin: '0px 0px 8px 0px' },
+                    bindings: contentMode === 'dynamic' ? { content: 'post.title' } : {}
+                  });
+
+                  childBlocks.push({
+                    id: `excerpt-${post.id}-${idx}`,
+                    type: 'Paragraph',
+                    content: post.excerpt,
+                    parentId: parentId,
+                    styles: { fontSize: '14px', color: '#64748b', margin: '0px 0px 16px 0px' },
+                    bindings: contentMode === 'dynamic' ? { content: 'post.excerpt' } : {}
+                  });
+
+                  childBlocks.push({
+                    id: `author-${post.id}-${idx}`,
+                    type: 'Paragraph',
+                    content: `${post.author} • ${post.date}`,
+                    parentId: parentId,
+                    styles: { fontSize: '12px', color: '#94a3b8' },
+                    bindings: contentMode === 'dynamic' ? { content: 'post.author' } : {}
+                  });
                 });
 
-                childBlocks.push({
-                  id: `heading-${post.id}-${idx}`,
-                  type: 'Heading',
-                  content: post.title,
-                  parentId: parentId,
-                  styles: { fontSize: '20px', color: '#1e1e2e', margin: '0px 0px 8px 0px' },
-                  bindings: contentMode === 'dynamic' ? { content: 'post.title' } : {}
-                });
-
-                childBlocks.push({
-                  id: `excerpt-${post.id}-${idx}`,
-                  type: 'Paragraph',
-                  content: post.excerpt,
-                  parentId: parentId,
-                  styles: { fontSize: '14px', color: '#64748b', margin: '0px 0px 16px 0px' },
-                  bindings: contentMode === 'dynamic' ? { content: 'post.excerpt' } : {}
-                });
-
-                childBlocks.push({
-                  id: `author-${post.id}-${idx}`,
-                  type: 'Paragraph',
-                  content: `${post.author} • ${post.date}`,
-                  parentId: parentId,
-                  styles: { fontSize: '12px', color: '#94a3b8' },
-                  bindings: contentMode === 'dynamic' ? { content: 'post.author' } : {}
-                });
-              });
-
-              const finalLayout = [...mainBuilderBlocks, ...childBlocks];
+                finalLayout = [...mainBuilderBlocks, ...childBlocks];
+              }
 
               // Clear competing template keys to force loading from synced layout
               localStorage.removeItem("selected_template");
@@ -519,7 +594,7 @@ export default function BlogBuilderPage() {
           )}
 
           {activeTab === 'components' && (
-            <ComponentsPanel onAddComponent={handleAddComponent} />
+            <ComponentsPanel onAddComponent={handleAddComponent} isCanvasEmpty={blogPosts.length === 0} />
           )}
 
           {activeTab === 'cms' && (
@@ -528,9 +603,11 @@ export default function BlogBuilderPage() {
                 🗄️ CMS Fields
               </h2>
               <p style={{ fontSize: '13px', color: '#888', marginBottom: '16px' }}>
-                Click a card below to select and edit it in the right panel.
+                {blogPosts.some(post => post.type && typeof post.type === 'string')
+                  ? 'Your workspace contains a structured template. Please click the components on the canvas to customize them directly.'
+                  : 'Click a card below to select and edit it in the right panel.'}
               </p>
-              {blogPosts.map(post => (
+              {!blogPosts.some(post => post.type && typeof post.type === 'string') && blogPosts.map(post => (
                 <div
                   key={post.id}
                   onClick={() => { setSelectedCard(post); setActiveTab('builder'); }}
@@ -555,7 +632,7 @@ export default function BlogBuilderPage() {
           )}
 
           {activeTab === 'settings' && (
-            <SettingsPanel settings={settings} onSettingsChange={setSettings} />
+            <SettingsPanel settings={settings} onSettingsChange={setSettings} setActiveTab={setActiveTab} />
           )}
 
           {activeTab === 'preview' && (

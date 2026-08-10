@@ -525,8 +525,8 @@ export const api = {
       body: JSON.stringify(data)
     });
     if (!res.ok) {
-        const err = await res.json();
-        throw new Error(err.error || 'Google Login failed');
+      const err = await res.json();
+      throw new Error(err.error || 'Google Login failed');
     }
     return res.json();
   },
@@ -759,11 +759,19 @@ export const api = {
     });
   },
 
-  async createCheckoutSession(mock: boolean = false) {
+  async createCheckoutSession(mock: boolean = false, planType: string = "PRO") {
     return this.fetchWithAuth(`${BASE_URL}/payment/checkout-session`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ mock })
+      body: JSON.stringify({ mock, planType })
+    });
+  },
+
+  async requestDemo(data: { name: string, email: string, company?: string, message?: string }) {
+    return this.fetchWithAuth(`${BASE_URL}/payment/demo-request`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data)
     });
   },
 

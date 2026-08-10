@@ -99,43 +99,49 @@ const componentBlocks = [
   }
 ];
 
-export default function ComponentsPanel({ onAddComponent, selectedCard }) {
+export default function ComponentsPanel({ onAddComponent, selectedCard, isCanvasEmpty }) {
   return (
-    <div style={{ padding: '16px' }}>
+    <div style={{ padding: '16px', opacity: isCanvasEmpty ? 0.6 : 1, pointerEvents: isCanvasEmpty ? 'none' : 'auto' }}>
       <h2 style={{ fontSize: '16px', fontWeight: '600', marginBottom: '4px' }}>
         🧩 Content Blocks
       </h2>
       <p style={{ fontSize: '13px', color: '#888', marginBottom: '16px' }}>
-        {selectedCard 
-          ? `Click a block to REPLACE the selected item` 
-          : 'Click a block to ADD it to your template'}
+        {isCanvasEmpty
+          ? '🔒 Locked - Please generate or load a layout first'
+          : selectedCard
+            ? 'Click a block to REPLACE the selected item'
+            : 'Click a block to ADD it to your template'}
       </p>
 
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
         {componentBlocks.map(block => (
           <div
             key={block.id}
-            onClick={() => onAddComponent({ ...block.template, id: Date.now() })}
+            onClick={() => !isCanvasEmpty && onAddComponent({ ...block.template, id: Date.now() })}
             style={{
               border: '1px solid #e5e5e5',
               borderRadius: '10px',
               padding: '14px',
-              cursor: 'pointer',
+              cursor: isCanvasEmpty ? 'not-allowed' : 'pointer',
               background: '#fff',
               transition: 'all 0.2s',
               textAlign: 'center'
             }}
             onMouseEnter={e => {
-              e.currentTarget.style.borderColor = '#4f46e5';
-              e.currentTarget.style.background = '#f5f3ff';
-              e.currentTarget.style.transform = 'translateY(-2px)';
-              e.currentTarget.style.boxShadow = '0 4px 12px rgba(79,70,229,0.15)';
+              if (!isCanvasEmpty) {
+                e.currentTarget.style.borderColor = '#4f46e5';
+                e.currentTarget.style.background = '#f5f3ff';
+                e.currentTarget.style.transform = 'translateY(-2px)';
+                e.currentTarget.style.boxShadow = '0 4px 12px rgba(79,70,229,0.15)';
+              }
             }}
             onMouseLeave={e => {
-              e.currentTarget.style.borderColor = '#e5e5e5';
-              e.currentTarget.style.background = '#fff';
-              e.currentTarget.style.transform = 'translateY(0)';
-              e.currentTarget.style.boxShadow = 'none';
+              if (!isCanvasEmpty) {
+                e.currentTarget.style.borderColor = '#e5e5e5';
+                e.currentTarget.style.background = '#fff';
+                e.currentTarget.style.transform = 'translateY(0)';
+                e.currentTarget.style.boxShadow = 'none';
+              }
             }}
           >
             <div style={{ fontSize: '28px', marginBottom: '6px' }}>{block.icon}</div>
@@ -155,7 +161,9 @@ export default function ComponentsPanel({ onAddComponent, selectedCard }) {
         border: '1px dashed #ddd'
       }}>
         <p style={{ fontSize: '12px', color: '#888', textAlign: 'center', margin: 0 }}>
-          💡 Tip: Select a block on the canvas first to insert a new one exactly after it.
+          {isCanvasEmpty
+            ? '💡 Locked - Block editing is disabled when session layout is empty.'
+            : '💡 Tip: Select a block on the canvas first to insert a new one exactly after it.'}
         </p>
       </div>
     </div>

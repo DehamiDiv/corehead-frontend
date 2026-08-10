@@ -7,7 +7,6 @@ const tabs = [
   { id: 'components', icon: Grid, label: 'Blocks' },
   { id: 'cms', icon: Database, label: 'CMS' },
   { id: 'settings', icon: Settings, label: 'Settings' },
-  { id: 'ai-chat', icon: MessageSquare, label: 'AI Chat' },
   { id: 'preview', icon: Eye, label: 'Preview' },
 ];
 
@@ -26,7 +25,7 @@ export default function Sidebar({ activeTab, setActiveTab, isCanvasEmpty }) {
       borderRight: '1px solid rgba(255, 255, 255, 0.5)'
     }}>
       {tabs.map(({ id, icon: Icon, label }) => {
-        const isDisabled = isCanvasEmpty && ['cms', 'settings', 'ai-chat', 'preview'].includes(id);
+        const isDisabled = isCanvasEmpty && ['components', 'cms', 'settings', 'preview'].includes(id);
         return (
           <button
             key={id}
