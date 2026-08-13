@@ -88,67 +88,7 @@ export default function BlogBuilderPage() {
           if (result.layout?.cards) {
             setBlogPosts(result.layout.cards);
           } else if (result.blocks) {
-            // Map the layout blocks format to standard "blogPosts" cards for the playground view
-            const mappedCards = [];
-            let currentCard = null;
-            const category = options.layoutType || 'blog-archive';
-
-            result.blocks.forEach((block) => {
-              if (block.type === 'Heading') {
-                if (currentCard && currentCard.title) {
-                  mappedCards.push(currentCard);
-                  currentCard = null;
-                }
-                if (!currentCard) {
-                  currentCard = {
-                    id: block.id,
-                    title: block.content,
-                    excerpt: '',
-                    author: 'AI Author',
-                    date: new Date().toISOString().split('T')[0],
-                    image: '',
-                    category
-                  };
-                } else {
-                  currentCard.title = block.content;
-                }
-              } else if (block.type === 'Paragraph' || block.type === 'Quote') {
-                if (!currentCard) {
-                  currentCard = {
-                    id: block.id,
-                    title: 'Blog Excerpt',
-                    excerpt: block.content,
-                    author: 'AI Author',
-                    date: new Date().toISOString().split('T')[0],
-                    image: '',
-                    category
-                  };
-                } else {
-                  currentCard.excerpt = block.content;
-                }
-              } else if (block.type === 'Image') {
-                const imgUrl = typeof block.content === 'string' ? block.content : block.content?.url;
-                if (!currentCard) {
-                  currentCard = {
-                    id: block.id,
-                    title: 'Featured Image',
-                    excerpt: '',
-                    author: 'AI Author',
-                    date: new Date().toISOString().split('T')[0],
-                    image: imgUrl || '',
-                    category
-                  };
-                } else {
-                  currentCard.image = imgUrl || '';
-                }
-              }
-            });
-
-            if (currentCard) {
-              mappedCards.push(currentCard);
-            }
-
-            setBlogPosts(mappedCards);
+            setBlogPosts(result.blocks);
           }
         } catch (err) {
           console.warn('AI Flow error:', err.message);

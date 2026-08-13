@@ -50,65 +50,7 @@ export default function AIGenerateModal({ isOpen, onClose, onGenerated }) {
       if (result.layout?.cards) {
         onGenerated(result.layout.cards);
       } else if (result.blocks) {
-        // Map layout blocks to cards
-        const mappedCards = [];
-        let currentCard = null;
-
-        result.blocks.forEach((block) => {
-          if (block.type === 'Heading') {
-            if (currentCard && currentCard.title) {
-              mappedCards.push(currentCard);
-              currentCard = null;
-            }
-            if (!currentCard) {
-              currentCard = {
-                id: block.id,
-                title: block.content,
-                excerpt: '',
-                author: 'AI Author',
-                date: new Date().toISOString().split('T')[0],
-                image: '',
-                category: layoutType
-              };
-            } else {
-              currentCard.title = block.content;
-            }
-          } else if (block.type === 'Paragraph' || block.type === 'Quote') {
-            if (!currentCard) {
-              currentCard = {
-                id: block.id,
-                title: 'Blog Excerpt',
-                excerpt: block.content,
-                author: 'AI Author',
-                date: new Date().toISOString().split('T')[0],
-                image: '',
-                category: layoutType
-              };
-            } else {
-              currentCard.excerpt = block.content;
-            }
-          } else if (block.type === 'Image') {
-            const imgUrl = typeof block.content === 'string' ? block.content : block.content?.url;
-            if (!currentCard) {
-              currentCard = {
-                id: block.id,
-                title: 'Featured Image',
-                excerpt: '',
-                author: 'AI Author',
-                date: new Date().toISOString().split('T')[0],
-                image: imgUrl || '',
-                category: layoutType
-              };
-            } else {
-              currentCard.image = imgUrl || '';
-            }
-          }
-        });
-
-        if (currentCard) {
-          mappedCards.push(currentCard);
-        }
-        onGenerated(mappedCards);
+        onGenerated(result.blocks);
       } else {
         // Fallback — add a single AI post card
         onGenerated([{
