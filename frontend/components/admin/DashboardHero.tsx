@@ -32,7 +32,7 @@ export default function DashboardHero() {
         initial={{ opacity: 0, y: 30 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.8, ease: "easeOut" }}
-        className="max-w-4xl mx-auto"
+        className="max-w-6xl mx-auto"
       >
         <div className="inline-flex items-center gap-2 px-4 py-2 bg-white text-blue-600 rounded-full text-xs font-black uppercase tracking-[0.15em] mb-8 border border-slate-100 shadow-xl shadow-blue-900/5">
           <Sparkles className="w-3.5 h-3.5 fill-blue-600" />

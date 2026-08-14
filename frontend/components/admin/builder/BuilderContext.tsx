@@ -8,6 +8,7 @@ import React, {
   useEffect,
 } from "react";
 import { api } from "@/lib/api";
+import PaywallModal from "@/components/admin/PaywallModal";
 
 export type BlockType =
   | "Heading"
@@ -60,14 +61,20 @@ interface BuilderContextType {
   templateType: "Single Post" | "Blog Archive";
   setTemplateType: (type: "Single Post" | "Blog Archive") => void;
   templateId: string | null;
-  setTemplateId: (id: string | null) => void; 
-  activeSidebar: "chat" | "blocks" | "settings";
-  setActiveSidebar: (tab: "chat" | "blocks" | "settings") => void;
+  setTemplateId: (id: string | null) => void;
+  activeSidebar: "chat" | "blocks" | "settings" | "cms";
+  setActiveSidebar: (tab: "chat" | "blocks" | "settings" | "cms") => void;
   deviceMode: "desktop" | "tablet" | "mobile";
   setDeviceMode: (mode: "desktop" | "tablet" | "mobile") => void;
   isAnalyzing: boolean;
   setIsAnalyzing: (analyzing: boolean) => void;
-  generateLayout: (prompt: string) => Promise<string | void>;
+  generateLayout: (prompt: string, options?: any) => Promise<string | undefined>;
+  // Compare Mode
+  compareMode: boolean;
+  setCompareMode: (v: boolean) => void;
+  aiBlocks: BuilderBlock[];
+  acceptAiLayout: () => void;
+  discardAiLayout: () => void;
 }
 
 const BuilderContext = createContext<BuilderContextType | undefined>(undefined);
@@ -81,9 +88,29 @@ export function BuilderProvider({ children }: { children: ReactNode }) {
   const [templateName, setTemplateName] = useState("New Layout");
   const [templateType, setTemplateType] = useState<"Single Post" | "Blog Archive">("Single Post");
 
-  const [activeSidebar, setActiveSidebar] = useState<"chat" | "blocks" | "settings">("chat");
+  const [activeSidebar, setActiveSidebar] = useState<"chat" | "blocks" | "settings" | "cms">("chat");
   const [deviceMode, setDeviceMode] = useState<"desktop" | "tablet" | "mobile">("desktop");
   const [isAnalyzing, setIsAnalyzing] = useState(false);
+
+  // Compare Mode state
+  const [compareMode, setCompareMode] = useState(false);
+  const [aiBlocks, setAiBlocks] = useState<BuilderBlock[]>([]);
+  const [isPaywallOpen, setIsPaywallOpen] = useState(false);
+  const [paywallCooldown, setPaywallCooldown] = useState(0);
+
+  const acceptAiLayout = () => {
+    if (aiBlocks.length > 0) {
+      setBlocks(aiBlocks);
+      localStorage.setItem("corehead_builder_layout", JSON.stringify(aiBlocks));
+      setAiBlocks([]);
+      setCompareMode(false);
+    }
+  };
+
+  const discardAiLayout = () => {
+    setAiBlocks([]);
+    setCompareMode(false);
+  };
 
   const [isLoaded, setIsLoaded] = useState(false);
 
@@ -127,6 +154,47 @@ export function BuilderProvider({ children }: { children: ReactNode }) {
           console.error("Failed to fetch template by ID", error);
         }
       } else {
+        const selectedTemplateStr = localStorage.getItem("selected_template");
+        if (selectedTemplateStr) {
+          try {
+            const temp = JSON.parse(selectedTemplateStr);
+            const initialBlocks = getTemplateInitialBlocks(temp.id);
+            setBlocks(initialBlocks);
+            setTemplateName(temp.name);
+            const tType = temp.id === "card-grid" ? "Blog Archive" : "Single Post";
+            setTemplateType(tType);
+            persistMeta(temp.name, tType, null);
+            localStorage.setItem("corehead_builder_layout", JSON.stringify(initialBlocks));
+            localStorage.removeItem("selected_template");
+            setIsLoaded(true);
+            return;
+          } catch (e) {
+            console.error("Failed to parse selected template", e);
+          }
+        }
+
+        const aiPrompt = localStorage.getItem("ai_prompt");
+        const aiOptionsStr = localStorage.getItem("ai_options");
+        if (aiPrompt) {
+          try {
+            localStorage.removeItem("ai_prompt");
+            let optionsObj = undefined;
+            if (aiOptionsStr) {
+              try {
+                optionsObj = JSON.parse(aiOptionsStr);
+                localStorage.removeItem("ai_options");
+              } catch (e) {
+                console.error("Failed to parse AI options", e);
+              }
+            }
+            setIsLoaded(true);
+            generateLayout(aiPrompt, optionsObj);
+            return;
+          } catch (e) {
+            console.error("Failed to run initial AI prompt", e);
+          }
+        }
+
         const saved = localStorage.getItem("corehead_builder_layout");
         if (saved) {
           try {
@@ -158,6 +226,11 @@ export function BuilderProvider({ children }: { children: ReactNode }) {
   // Auto-save layout + meta after initial load (preview reads these keys)
   useEffect(() => {
     if (isLoaded) {
+      // Safety guard against React batching/hydration overwriting localStorage with empty array on initial mount
+      const localLayout = localStorage.getItem("corehead_builder_layout");
+      if (blocks.length === 0 && localLayout && localLayout !== '[]' && localLayout !== 'null') {
+        return;
+      }
       localStorage.setItem("corehead_builder_layout", JSON.stringify(blocks));
       persistMeta(templateName, templateType, templateId);
     }
@@ -185,11 +258,11 @@ export function BuilderProvider({ children }: { children: ReactNode }) {
       prev.map((block) =>
         block.id === id
           ? {
-              ...block,
-              content,
-              styles: { ...block.styles, ...styles },
-              bindings: { ...block.bindings, ...bindings },
-            }
+            ...block,
+            content,
+            styles: { ...block.styles, ...styles },
+            bindings: { ...block.bindings, ...bindings },
+          }
           : block,
       ),
     );
@@ -286,27 +359,43 @@ export function BuilderProvider({ children }: { children: ReactNode }) {
   };
 
   // AI Layout Generation logic moved to context for global access
-  const generateLayout = async (prompt: string): Promise<string | void> => {
-    if (!prompt.trim() || isAnalyzing) return;
+  const generateLayout = async (
+    prompt: string,
+    options?: {
+      layoutType?: string;
+      designStyle?: string;
+      features?: Record<string, boolean>;
+    }
+  ): Promise<string | undefined> => {
+    if (!prompt.trim() || isAnalyzing) return undefined;
 
     setIsAnalyzing(true);
     try {
+      const type = options?.layoutType || (templateType === "Blog Archive" ? "blog-archive" : "single-post");
+      const style = options?.designStyle || "modern";
+
       const data = await api.generateLayout({
         prompt,
-        layoutType: templateType === "Blog Archive" ? "blog-archive" : "single-post",
-        designStyle: "modern",
+        layoutType: type,
+        designStyle: style,
+        features: options?.features || {},
       });
 
       if (data.blocks) {
-        setBlocks(data.blocks);
-        localStorage.setItem("corehead_builder_layout", JSON.stringify(data.blocks));
+        setAiBlocks(data.blocks);
+        setCompareMode(true);
       }
-      
+
       // Return provider info so chat can show it
       return (data.provider as string) || "ai";
     } catch (error: any) {
       console.error("AI Generation error:", error);
-      alert("AI Generation failed: " + error.message);
+      if (error.message?.includes("LIMIT_EXCEEDED") || error.data?.error?.includes("LIMIT_EXCEEDED") || error.status === 402 || error.status === 429 || error.status === 403) {
+        setPaywallCooldown(error.data?.cooldown_remaining || error.data?.cooldownRemaining || 0);
+        setIsPaywallOpen(true);
+      } else {
+        alert("AI Generation failed: " + error.message);
+      }
       return;
     } finally {
       setIsAnalyzing(false);
@@ -339,9 +428,19 @@ export function BuilderProvider({ children }: { children: ReactNode }) {
         isAnalyzing,
         setIsAnalyzing,
         generateLayout,
+        compareMode,
+        setCompareMode,
+        aiBlocks,
+        acceptAiLayout,
+        discardAiLayout,
       }}
     >
       {children}
+      <PaywallModal
+        isOpen={isPaywallOpen}
+        onClose={() => setIsPaywallOpen(false)}
+        cooldownRemaining={paywallCooldown}
+      />
     </BuilderContext.Provider>
   );
 }
@@ -399,5 +498,243 @@ function getDefaultContent(type: BlockType): any {
       return { code: "console.log('Hello World');", language: "javascript" };
     default:
       return "";
+  }
+}
+
+function getTemplateInitialBlocks(templateId: string): BuilderBlock[] {
+  const containerId = crypto.randomUUID();
+  const headingId = crypto.randomUUID();
+  const paragraphId = crypto.randomUUID();
+  const quoteId = crypto.randomUUID();
+  const imageId = crypto.randomUUID();
+
+  switch (templateId) {
+    case "minimal-single":
+      return [
+        {
+          id: containerId,
+          type: "Container",
+          content: "",
+          styles: { padding: "40px", backgroundColor: "#ffffff" },
+        },
+        {
+          id: headingId,
+          type: "Heading",
+          content: "Minimal Single Post Layout",
+          styles: { fontSize: "32px", fontWeight: "bold", textAlign: "center", marginBottom: "20px" },
+          bindings: { content: "post.title" },
+          parentId: containerId,
+        },
+        {
+          id: imageId,
+          type: "Image",
+          content: "https://images.unsplash.com/photo-1542435503-956c469947f6?q=80&w=1000&auto=format&fit=crop",
+          styles: { width: "100%", height: "400px", objectFit: "cover", borderRadius: "8px", marginBottom: "30px" },
+          bindings: { src: "post.coverImage" },
+          parentId: containerId,
+        },
+        {
+          id: paragraphId,
+          type: "Paragraph",
+          content: "This is a clean, centered typography layout designed for readability. The main elements of your post like the title, featured image, and content body are placed sequentially without complex columns.",
+          styles: { fontSize: "18px", lineHeight: "1.8", color: "#334155", maxWidth: "700px", margin: "0 auto 20px auto" },
+          bindings: { content: "post.content" },
+          parentId: containerId,
+        },
+      ];
+    case "magazine":
+      const columnsId = crypto.randomUUID();
+      const colLeftId = crypto.randomUUID();
+      const colRightId = crypto.randomUUID();
+      const listId = crypto.randomUUID();
+      const newsId = crypto.randomUUID();
+      return [
+        {
+          id: containerId,
+          type: "Container",
+          content: "",
+          styles: { padding: "30px", backgroundColor: "#f8fafc" },
+        },
+        {
+          id: headingId,
+          type: "Heading",
+          content: "Magazine Layout (Featured Title)",
+          styles: { fontSize: "36px", fontWeight: "800", marginBottom: "30px" },
+          bindings: { content: "post.title" },
+          parentId: containerId,
+        },
+        {
+          id: columnsId,
+          type: "Columns",
+          content: 2,
+          styles: { display: "grid", gridTemplateColumns: "2fr 1fr", gap: "30px" },
+          parentId: containerId,
+        },
+        {
+          id: colLeftId,
+          type: "Container",
+          content: "",
+          styles: { padding: "0" },
+          parentId: columnsId,
+        },
+        {
+          id: imageId,
+          type: "Image",
+          content: "https://images.unsplash.com/photo-1504711434969-e33886168f5c?q=80&w=1000&auto=format&fit=crop",
+          styles: { width: "100%", height: "300px", objectFit: "cover", borderRadius: "12px", marginBottom: "20px" },
+          bindings: { src: "post.coverImage" },
+          parentId: colLeftId,
+        },
+        {
+          id: paragraphId,
+          type: "Paragraph",
+          content: "Magazine layouts combine rich editorial content on the left with widgets and discovery blocks on the right. This classic structure is standard for high-volume publishing sites.",
+          styles: { fontSize: "16px", lineHeight: "1.6", color: "#0f172a" },
+          bindings: { content: "post.content" },
+          parentId: colLeftId,
+        },
+        {
+          id: colRightId,
+          type: "Container",
+          content: "",
+          styles: { padding: "20px", backgroundColor: "#ffffff", borderRadius: "12px", boxShadow: "0 1px 3px rgba(0,0,0,0.05)" },
+          parentId: columnsId,
+        },
+        {
+          id: listId,
+          type: "Collection List",
+          content: { limit: 3, category: "" },
+          styles: { marginBottom: "25px" },
+          parentId: colRightId,
+        },
+        {
+          id: newsId,
+          type: "Newsletter",
+          content: { title: "Subscribe to our magazine feed", buttonText: "Keep Updated", placeholder: "your@email.com" },
+          styles: {},
+          parentId: colRightId,
+        },
+      ];
+    case "card-grid":
+      const listGridId = crypto.randomUUID();
+      return [
+        {
+          id: containerId,
+          type: "Container",
+          content: "",
+          styles: { padding: "40px", backgroundColor: "#ffffff" },
+        },
+        {
+          id: headingId,
+          type: "Heading",
+          content: "Card Grid Archive",
+          styles: { fontSize: "30px", fontWeight: "bold", textAlign: "center", marginBottom: "10px" },
+          parentId: containerId,
+        },
+        {
+          id: paragraphId,
+          type: "Paragraph",
+          content: "Browse our latest stories and articles in a modern grid view.",
+          styles: { fontSize: "16px", color: "#64748b", textAlign: "center", marginBottom: "40px" },
+          parentId: containerId,
+        },
+        {
+          id: listGridId,
+          type: "Collection List",
+          content: { limit: 6, category: "" },
+          styles: { display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "24px" },
+          parentId: containerId,
+        },
+      ];
+    case "long-form":
+      const quoteBlockId = crypto.randomUUID();
+      const bodyParaId = crypto.randomUUID();
+      return [
+        {
+          id: containerId,
+          type: "Container",
+          content: "",
+          styles: { padding: "50px 20px", backgroundColor: "#fcfbf7" },
+        },
+        {
+          id: headingId,
+          type: "Heading",
+          content: "Reading-Optimized Long-form Layout",
+          styles: { fontFamily: "Georgia, serif", fontSize: "40px", textAlign: "center", marginBottom: "15px", color: "#1c1917" },
+          bindings: { content: "post.title" },
+          parentId: containerId,
+        },
+        {
+          id: paragraphId,
+          type: "Paragraph",
+          content: "A layout built specifically for longer essays and research. Features high contrast, beautiful serif typography, and generous vertical margins.",
+          styles: { fontFamily: "Georgia, serif", fontSize: "20px", fontStyle: "italic", textAlign: "center", color: "#44403c", maxWidth: "800px", margin: "0 auto 40px auto" },
+          parentId: containerId,
+        },
+        {
+          id: quoteBlockId,
+          type: "Quote",
+          content: "This elegant pull-quote serves to break up long runs of text and showcase crucial takeaways from your writing.",
+          styles: { paddingLeft: "20px", borderLeft: "4px solid #b91c1c", fontSize: "22px", fontFamily: "Georgia, serif", fontStyle: "italic", margin: "40px auto", maxWidth: "650px", color: "#78716c" },
+          parentId: containerId,
+        },
+        {
+          id: bodyParaId,
+          type: "Paragraph",
+          content: "Continue your long-form publication content here. Use multiple paragraphs, subtitles, and headings to keep the reader engaged as they scroll down the single-column content area.",
+          styles: { fontFamily: "Georgia, serif", fontSize: "18px", lineHeight: "1.8", color: "#1c1917", maxWidth: "700px", margin: "0 auto" },
+          bindings: { content: "post.content" },
+          parentId: containerId,
+        },
+      ];
+    case "portfolio":
+      const imageGridId = crypto.randomUUID();
+      const p1 = crypto.randomUUID();
+      const p2 = crypto.randomUUID();
+      return [
+        {
+          id: containerId,
+          type: "Container",
+          content: "",
+          styles: { padding: "40px", backgroundColor: "#09090b" },
+        },
+        {
+          id: headingId,
+          type: "Heading",
+          content: "Portfolio Showcase",
+          styles: { fontSize: "36px", fontWeight: "bold", color: "#ffffff", marginBottom: "12px" },
+          parentId: containerId,
+        },
+        {
+          id: paragraphId,
+          type: "Paragraph",
+          content: "A modern design focused on high-quality visual presentation & media case studies.",
+          styles: { fontSize: "16px", color: "#a1a1aa", marginBottom: "30px" },
+          parentId: containerId,
+        },
+        {
+          id: imageGridId,
+          type: "Columns",
+          content: 2,
+          styles: { display: "grid", gridTemplateColumns: "1fr 1fr", gap: "20px", marginBottom: "20px" },
+          parentId: containerId,
+        },
+        {
+          id: p1,
+          type: "Image",
+          content: "https://images.unsplash.com/photo-1460661419201-fd4cecdf8a8b?q=80&w=800&auto=format&fit=crop",
+          styles: { width: "100%", height: "350px", objectFit: "cover", borderRadius: "8px" },
+          parentId: imageGridId,
+        },
+        {
+          id: p2,
+          type: "Image",
+          content: "https://images.unsplash.com/photo-1513364776144-60967b0f800f?q=80&w=800&auto=format&fit=crop",
+          styles: { width: "100%", height: "350px", objectFit: "cover", borderRadius: "8px" },
+          parentId: imageGridId,
+        },
+      ];
+    default:
+      return [];
   }
 }

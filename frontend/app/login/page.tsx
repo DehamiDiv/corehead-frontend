@@ -33,6 +33,93 @@ export default function LoginPage() {
     }
   }, [searchParams]);
 
+  useEffect(() => {
+    const id = "google-gsi-client";
+    const google = (window as any).google;
+
+    const initializeGoogleSignIn = () => {
+      const clientId = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID;
+      if (!clientId) {
+        console.warn("Google Client ID not configured.");
+        return;
+      }
+
+      try {
+        const gg = (window as any).google;
+        gg.accounts.id.initialize({
+          client_id: clientId,
+          callback: handleGoogleLoginCallback,
+        });
+
+        gg.accounts.id.renderButton(
+          document.getElementById("google-signin-btn"),
+          { 
+            type: "standard",
+            theme: "outline", 
+            size: "large", 
+            width: 382, // Matches the width of the input boxes
+            text: "signin_with",
+            shape: "rectangular"
+          }
+        );
+      } catch (err) {
+        console.error("Failed to initialize Google Sign-In:", err);
+      }
+    };
+
+    if (document.getElementById(id)) {
+      if (google) initializeGoogleSignIn();
+      return;
+    }
+
+    const script = document.createElement("script");
+    script.id = id;
+    script.src = "https://accounts.google.com/gsi/client";
+    script.async = true;
+    script.defer = true;
+    script.onload = () => {
+      initializeGoogleSignIn();
+    };
+    document.head.appendChild(script);
+  }, []);
+
+  const handleGoogleLoginCallback = async (response: any) => {
+    setError(null);
+    setSuccess(null);
+    setIsLoading(true);
+
+    try {
+      const { credential } = response;
+      const data = await api.googleLogin({ credential });
+
+      // PERSIST AUTH STATE
+      localStorage.setItem("accessToken", data.accessToken);
+      localStorage.setItem("refreshToken", data.refreshToken);
+      localStorage.setItem("user", JSON.stringify(data.user));
+
+      // SET COOKIES for middleware
+      document.cookie = `auth_token=${data.accessToken}; path=/; max-age=86400; SameSite=Lax`;
+      document.cookie = `user_role=${data.user.role}; path=/; max-age=86400; SameSite=Lax`;
+
+      // ROLE-BASED REDIRECTION
+      const isAdmin = data.user.role?.toLowerCase() === 'admin' || data.user.role?.toLowerCase() === 'administrator';
+      if (isAdmin) {
+        setSuccess("Login successful! Redirecting to Admin Dashboard...");
+        setTimeout(() => {
+          router.push('/admin');
+        }, 1500);
+      } else {
+        setSuccess("Login successful! Redirecting to Blog Page...");
+        setTimeout(() => {
+          router.push('/blog'); 
+        }, 1500);
+      }
+    } catch (err: any) {
+      setError(err.message || "Google Sign-In failed.");
+      setIsLoading(false);
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
@@ -79,9 +166,9 @@ export default function LoginPage() {
           <Image
             src="/logo.png"
             alt="CoreHead Logo"
-            width={160}
-            height={40}
-            className="h-14 w-auto object-contain"
+            width={220}
+            height={55}
+            className="h-16 w-auto object-contain"
             priority
           />
         </Link>
@@ -196,6 +283,18 @@ export default function LoginPage() {
                 "Login"
               )}
             </button>
+
+            {/* Divider */}
+            <div className="relative my-4 flex items-center">
+              <div className="flex-grow border-t border-slate-200"></div>
+              <span className="flex-shrink mx-4 text-xs font-semibold text-slate-400 uppercase">or</span>
+              <div className="flex-grow border-t border-slate-200"></div>
+            </div>
+
+            {/* Google Sign In Button */}
+            <div className="w-full flex justify-center">
+              <div id="google-signin-btn" className="w-full max-w-[382px]"></div>
+            </div>
 
             <p className="text-center text-sm text-slate-600 mt-2">
               Don&apos;t have an account?{" "}

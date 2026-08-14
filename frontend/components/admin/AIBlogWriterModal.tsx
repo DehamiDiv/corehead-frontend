@@ -38,10 +38,10 @@ export default function AIBlogWriterModal({ isOpen, onClose, onGenerate }: AIBlo
   const [topic, setTopic] = useState("");
   const [tone, setTone] = useState("professional");
   const [wordCount, setWordCount] = useState("1000 words");
-  
+
   const [keywordInput, setKeywordInput] = useState("");
   const [keywords, setKeywords] = useState<string[]>([]);
-  
+
   const [generating, setGenerating] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -78,7 +78,25 @@ export default function AIBlogWriterModal({ isOpen, onClose, onGenerate }: AIBlo
 
       onGenerate(result);
       onClose();
-      
+
+      // Refresh user credentials in background to sync credits with sidebar
+      const token = localStorage.getItem('accessToken') || localStorage.getItem('token');
+      if (token) {
+        fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api'}/auth/me`, {
+          headers: { 'Authorization': `Bearer ${token}` }
+        })
+          .then(res => res.json())
+          .then(data => {
+            if (data.user) {
+              localStorage.setItem("user", JSON.stringify(data.user));
+              // Dispatch events to update sidebar dynamically
+              window.dispatchEvent(new Event('storage'));
+              window.dispatchEvent(new Event('local-storage-update'));
+            }
+          })
+          .catch(e => console.warn('Failed to sync credits in AIBlogWriterModal:', e));
+      }
+
       // Reset state on success
       setTopic("");
       setKeywords([]);
@@ -93,7 +111,7 @@ export default function AIBlogWriterModal({ isOpen, onClose, onGenerate }: AIBlo
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm animate-in fade-in duration-300">
       <div className="bg-white w-full max-w-2xl rounded-3xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh] animate-in zoom-in-95 duration-300 border border-gray-100">
-        
+
         {/* Header */}
         <div className="p-6 border-b border-gray-100 flex items-center justify-between bg-white sticky top-0 z-10">
           <div className="flex items-center gap-2.5">
@@ -105,7 +123,7 @@ export default function AIBlogWriterModal({ isOpen, onClose, onGenerate }: AIBlo
               <p className="text-sm text-gray-500 mt-0.5">Let Gemini draft your post content and SEO fields</p>
             </div>
           </div>
-          <button 
+          <button
             onClick={onClose}
             disabled={generating}
             className="p-2 hover:bg-gray-100 rounded-full transition-colors text-gray-400 hover:text-gray-900 disabled:opacity-50"
@@ -231,7 +249,7 @@ export default function AIBlogWriterModal({ isOpen, onClose, onGenerate }: AIBlo
 
         {/* Footer */}
         <div className="p-6 border-t border-gray-100 flex justify-end gap-3 bg-gray-50/50">
-          <button 
+          <button
             type="button"
             onClick={onClose}
             disabled={generating}
@@ -239,7 +257,7 @@ export default function AIBlogWriterModal({ isOpen, onClose, onGenerate }: AIBlo
           >
             Cancel
           </button>
-          <button 
+          <button
             type="button"
             disabled={generating || !topic.trim()}
             onClick={handleGenerate}

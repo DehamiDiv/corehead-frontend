@@ -4,50 +4,55 @@ import { useState } from 'react';
 import { Save } from 'lucide-react';
 
 const fontOptions = [
-  { id: 'inter',    label: 'Inter',    style: 'Inter, sans-serif',         preview: 'Modern & Clean' },
-  { id: 'georgia',  label: 'Georgia',  style: 'Georgia, serif',            preview: 'Classic Editorial' },
-  { id: 'mono',     label: 'Mono',     style: 'monospace',                 preview: 'Code Style' },
+  { id: 'inter', label: 'Inter', style: 'Inter, sans-serif', preview: 'Modern & Clean' },
+  { id: 'georgia', label: 'Georgia', style: 'Georgia, serif', preview: 'Classic Editorial' },
+  { id: 'mono', label: 'Mono', style: 'monospace', preview: 'Code Style' },
   { id: 'playfair', label: 'Playfair', style: "'Playfair Display', serif", preview: 'Elegant & Bold' },
 ];
 
 const colorThemes = [
   { id: 'premium-indigo', label: 'Indigo Royale', primary: '#4f46e5', bg: '#ffffff', text: '#1e1e2e', gradient: 'linear-gradient(135deg, #4f46e5 0%, #3730a3 100%)' },
-  { id: 'midnight',       label: 'Midnight',      primary: '#38bdf8', bg: '#0f172a', text: '#f1f5f9', gradient: 'linear-gradient(135deg, #0f172a 0%, #1e293b 100%)' },
-  { id: 'sunset',         label: 'Sunset Ember',  primary: '#f43f5e', bg: '#fffafb', text: '#4c0519', gradient: 'linear-gradient(135deg, #f43f5e 0%, #fb923c 100%)' },
-  { id: 'oceanic',        label: 'Oceanic',       primary: '#06b6d4', bg: '#f0f9ff', text: '#083344', gradient: 'linear-gradient(135deg, #06b6d4 0%, #3b82f6 100%)' },
-  { id: 'emerald',        label: 'Emerald Aura',  primary: '#10b981', bg: '#f0fdf4', text: '#064e3b', gradient: 'linear-gradient(135deg, #10b981 0%, #3b82f6 100%)' },
-  { id: 'slate',          label: 'Slate Minimal', primary: '#64748b', bg: '#f8fafc', text: '#0f172a', gradient: 'linear-gradient(135deg, #64748b 0%, #334155 100%)' },
+  { id: 'midnight', label: 'Midnight', primary: '#38bdf8', bg: '#0f172a', text: '#f1f5f9', gradient: 'linear-gradient(135deg, #0f172a 0%, #1e293b 100%)' },
+  { id: 'sunset', label: 'Sunset Ember', primary: '#f43f5e', bg: '#fffafb', text: '#4c0519', gradient: 'linear-gradient(135deg, #f43f5e 0%, #fb923c 100%)' },
+  { id: 'oceanic', label: 'Oceanic', primary: '#06b6d4', bg: '#f0f9ff', text: '#083344', gradient: 'linear-gradient(135deg, #06b6d4 0%, #3b82f6 100%)' },
+  { id: 'emerald', label: 'Emerald Aura', primary: '#10b981', bg: '#f0fdf4', text: '#064e3b', gradient: 'linear-gradient(135deg, #10b981 0%, #3b82f6 100%)' },
+  { id: 'slate', label: 'Slate Minimal', primary: '#64748b', bg: '#f8fafc', text: '#0f172a', gradient: 'linear-gradient(135deg, #64748b 0%, #334155 100%)' },
 ];
 
 
 const spacingOptions = [
-  { id: 'compact',  label: 'Compact',  value: '8px' },
-  { id: 'normal',   label: 'Normal',   value: '16px' },
+  { id: 'compact', label: 'Compact', value: '8px' },
+  { id: 'normal', label: 'Normal', value: '16px' },
   { id: 'spacious', label: 'Spacious', value: '32px' },
 ];
 
 const radiusOptions = [
-  { id: 'none',   label: 'Sharp',    value: '0px' },
-  { id: 'small',  label: 'Small',    value: '4px' },
-  { id: 'medium', label: 'Medium',   value: '12px' },
-  { id: 'large',  label: 'Large',    value: '24px' },
-  { id: 'full',   label: 'Rounded',  value: '999px' },
+  { id: 'none', label: 'Sharp', value: '0px' },
+  { id: 'small', label: 'Small', value: '4px' },
+  { id: 'medium', label: 'Medium', value: '12px' },
+  { id: 'large', label: 'Large', value: '24px' },
+  { id: 'full', label: 'Rounded', value: '999px' },
 ];
 
-export default function SettingsPanel({ settings, onSettingsChange }) {
+export default function SettingsPanel({ settings, onSettingsChange, setActiveTab }) {
   const [applied, setApplied] = useState(false);
   const activePrimary = settings.colors?.primary || '#667eea';
   const activeGradient = settings.colors?.gradient || 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)';
 
   const handleApply = () => {
     setApplied(true);
-    setTimeout(() => setApplied(false), 2500);
+    setTimeout(() => {
+      setApplied(false);
+      if (setActiveTab) {
+        setActiveTab('builder');
+      }
+    }, 1500);
   };
 
   return (
     <div style={{ padding: '20px', overflowY: 'auto', maxHeight: '100%', background: '#fff' }}>
       <div style={{ marginBottom: '24px' }}>
-        <h2 style={{ 
+        <h2 style={{
           fontSize: '18px', fontWeight: '800', marginBottom: '6px',
           backgroundImage: activeGradient,
           WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent',
@@ -247,7 +252,7 @@ export default function SettingsPanel({ settings, onSettingsChange }) {
         onClick={handleApply}
         style={{
           width: '100%', padding: '14px',
-          background: applied ? '#10b981' : activeGradient, 
+          background: applied ? '#10b981' : activeGradient,
           color: '#fff',
           border: 'none', borderRadius: '12px',
           fontSize: '15px', fontWeight: '700', cursor: 'pointer',

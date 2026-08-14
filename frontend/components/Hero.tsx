@@ -48,12 +48,6 @@ export default function Hero() {
             Get Started Free
             <ArrowRight className="w-5 h-5 ml-2 transition-transform duration-300 group-hover:translate-x-1" />
           </Link>
-          <Link
-            href="/#features"
-            className="px-8 py-4 text-lg font-bold text-blue-900 transition-all duration-300 bg-white/20 backdrop-blur-md border border-white/40 rounded-full hover:bg-white/30 hover:-translate-y-1 shadow-lg shadow-black/5"
-          >
-            View Components
-          </Link>
         </div>
       </motion.div>
 

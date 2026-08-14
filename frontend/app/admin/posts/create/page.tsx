@@ -21,6 +21,7 @@ import { cn } from "@/lib/utils";
 import MediaLibraryModal from "@/components/admin/MediaLibraryModal";
 import PostPreviewModal from "@/components/admin/PostPreviewModal";
 import AIBlogWriterModal from "@/components/admin/AIBlogWriterModal";
+import PaywallModal from "@/components/admin/PaywallModal";
 import { api } from "@/lib/api";
 import { getApiBaseUrl, resolveAdminMediaUrl } from "@/lib/apiOrigin";
 import dynamic from "next/dynamic";
@@ -97,6 +98,7 @@ export default function CreatePostPage() {
   const [isMediaModalOpen, setIsMediaModalOpen] = useState(false);
   const [showPreview, setShowPreview] = useState(false);
   const [isAiModalOpen, setIsAiModalOpen] = useState(false);
+  const [isPaywallOpen, setIsPaywallOpen] = useState(false);
   const [activeTab, setActiveTab] = useState("Content");
   const [refining, setRefining] = useState(false);
   const [availableCategories, setAvailableCategories] = useState<string[]>([]);
@@ -136,7 +138,11 @@ export default function CreatePostPage() {
       }
     } catch (err: any) {
       console.error(err);
-      setError("AI refinement failed: " + err.message);
+      if (err.message?.includes('LIMIT_EXCEEDED') || err.message?.includes('exceeded') || err.message?.includes('402')) {
+        setIsPaywallOpen(true);
+      } else {
+        setError("AI refinement failed: " + err.message);
+      }
     } finally {
       setRefining(false);
     }
@@ -844,6 +850,11 @@ export default function CreatePostPage() {
             users.find((u) => String(u.id) === String(formData.authorId))?.name ||
             undefined,
         }}
+      />
+
+      <PaywallModal
+        isOpen={isPaywallOpen}
+        onClose={() => setIsPaywallOpen(false)}
       />
     </div>
   );

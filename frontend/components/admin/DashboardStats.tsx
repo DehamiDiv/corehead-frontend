@@ -157,7 +157,7 @@ export default function DashboardStats() {
   }
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 px-8 relative z-20 pb-8 max-w-5xl mx-auto">
+    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 px-8 relative z-20 pb-8 max-w-[1400px] mx-auto">
       {cards.map((card, idx) => (
         <div key={idx} className="group relative">
           <div className="relative bg-white/40 backdrop-blur-md p-5 rounded-[2rem] border border-white/50 shadow-sm flex flex-col gap-4 hover:-translate-y-1 transition-all duration-500">
