@@ -12,8 +12,10 @@ export default function Pricing() {
   const [user, setUser] = useState<any>(null);
   const [loading, setLoading] = useState<string | null>(null); // "PRO" | null
   const [billingPeriod, setBillingPeriod] = useState<"monthly" | "annually">("monthly");
+  const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
+    setMounted(true);
     if (typeof window !== "undefined") {
       setToken(localStorage.getItem("accessToken") || localStorage.getItem("token"));
       const stored = localStorage.getItem("user");
@@ -118,6 +120,14 @@ export default function Pricing() {
       <Check className="w-3.5 h-3.5 stroke-[3]" />
     </div>
   );
+
+  if (!mounted) {
+    return (
+      <section id="pricing" className="py-28 px-6 bg-slate-50/50 text-slate-800 relative overflow-hidden min-h-[600px] flex items-center justify-center">
+        <Loader2 className="w-8 h-8 animate-spin text-blue-600" />
+      </section>
+    );
+  }
 
   return (
     <section id="pricing" className="py-28 px-6 bg-slate-50/50 text-slate-800 relative overflow-hidden">
