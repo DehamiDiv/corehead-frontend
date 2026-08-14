@@ -62,6 +62,22 @@ export const aiApi = {
     return res.json();
   },
 
+  promoteHistory: async (id, name) => {
+    const res = await fetch(`${BASE_URL}/ai/history/${id}/promote`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        ...getAuthHeader()
+      },
+      body: JSON.stringify(name ? { name } : {}),
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.error || err.message || 'Failed to save layout to the library');
+    }
+    return res.json();
+  },
+
   generateBlogContent: async ({ topic, tone, keywords, wordCount }) => {
     const res = await fetch(`${BASE_URL}/ai/generate-blog`, {
       method: 'POST',

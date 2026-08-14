@@ -42,6 +42,9 @@ export default function PostsPage() {
   const [isLaunching, setIsLaunching] = useState(true);
   const [dbCategories, setDbCategories] = useState<string[]>([]);
   const [statusActionId, setStatusActionId] = useState<number | null>(null);
+  const [fetchError, setFetchError] = useState<string | null>(null);
+  const currentSiteId = siteCtx?.currentSiteId ?? null;
+  const siteLoading = siteCtx?.loading ?? false;
 
   useEffect(() => {
     // Premium launch delay to show animation
@@ -52,17 +55,28 @@ export default function PostsPage() {
   }, []);
 
   const fetchPosts = useCallback(async () => {
+    if (siteLoading) return;
+
+    if (!currentSiteId) {
+      setPosts([]);
+      setFetchError("Create or select a site before managing posts.");
+      setLoading(false);
+      return;
+    }
+
     setLoading(true);
+    setFetchError(null);
     try {
-      const data = await api.getPosts();
+      const data = await api.getPosts(currentSiteId);
       setPosts(Array.isArray(data) ? data : []);
-    } catch (err) {
+    } catch (err: any) {
       console.error("Failed to fetch posts:", err);
       setPosts([]);
+      setFetchError(err?.message || "Failed to fetch posts for the selected site.");
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [currentSiteId, siteLoading]);
 
   useEffect(() => {
     fetchPosts();
@@ -277,6 +291,19 @@ export default function PostsPage() {
             </Link>
           </div>
         </div>
+
+        {fetchError && (
+          <div className="mb-4 flex items-center justify-between gap-4 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-medium text-red-700">
+            <span>{fetchError}</span>
+            <button
+              type="button"
+              onClick={fetchPosts}
+              className="rounded-lg border border-red-200 bg-white px-3 py-1.5 font-bold hover:bg-red-100"
+            >
+              Retry
+            </button>
+          </div>
+        )}
 
         {/* Main Content Card */}
         <div className="bg-white rounded-[14px] shadow-sm border border-slate-100 overflow-hidden">

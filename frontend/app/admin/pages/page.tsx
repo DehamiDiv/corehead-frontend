@@ -17,7 +17,12 @@ import {
 import { cn } from "@/lib/utils";
 import { api } from "@/lib/api";
 import { useSite } from "@/components/admin/SiteContext";
-import { DEFAULT_THEME_NAV_LINKS } from "@/lib/themeNav";
+import {
+  DEFAULT_THEME_FOOTER_LINKS,
+  DEFAULT_THEME_NAV_LINKS,
+} from "@/lib/themeNav";
+
+type PageMenuLocation = "header" | "footer" | "both" | "none";
 
 function slugifyPageName(name: string): string {
   return name
@@ -39,63 +44,110 @@ function normalizePageSlug(slug: string): string {
     .replace(/^-+|-+$/g, "");
 }
 
-/**
- * Add a published page to the active theme header nav so it appears on the public site menu.
- */
-async function addPageToSiteNav(pageName: string, slug: string) {
+function upsertPageLink(
+  rawLinks: any[],
+  pageName: string,
+  href: string,
+  keepUtilitiesLast = false,
+) {
+  const normalizedHref = href.replace(/\/$/, "");
+  const nameLower = pageName.trim().toLowerCase();
+  const existing = rawLinks.map((link) => ({ ...link }));
+  const matchIndex = existing.findIndex((link: any) => {
+    const candidate = String(link?.link || "").replace(/\/$/, "");
+    return (
+      candidate === normalizedHref ||
+      candidate === normalizedHref.replace(/^\//, "") ||
+      candidate.endsWith(normalizedHref) ||
+      String(link?.name || "").trim().toLowerCase() === nameLower
+    );
+  });
+
+  const pageLink = {
+    id: matchIndex >= 0 ? existing[matchIndex]?.id || Date.now() : Date.now(),
+    name: pageName.trim() || "Page",
+    link: href,
+  };
+
+  if (matchIndex >= 0) {
+    existing[matchIndex] = pageLink;
+    return existing;
+  }
+
+  if (keepUtilitiesLast) {
+    const utilityIndex = existing.findIndex((link: any) => {
+      const name = String(link?.name || "").toLowerCase();
+      const candidate = String(link?.link || "");
+      return (
+        name === "dashboard" ||
+        name === "logout" ||
+        candidate === "/admin" ||
+        candidate.startsWith("/admin") ||
+        candidate === "/logout"
+      );
+    });
+    if (utilityIndex >= 0) {
+      existing.splice(utilityIndex, 0, pageLink);
+      return existing;
+    }
+  }
+
+  return [...existing, pageLink];
+}
+
+/** Keep canonical site chrome and the active theme pack in sync. */
+async function addPageToSiteNav(
+  pageName: string,
+  slug: string,
+  location: PageMenuLocation,
+) {
   const href = `/p/${normalizePageSlug(slug)}`;
   try {
     const active = await api.getSetting("active_theme");
     const themeId =
       (active && (active.themeId || active.id)) || "default";
-    const headerRaw = await api.getSetting(`theme_${themeId}_header`);
-    const header =
-      headerRaw && typeof headerRaw === "object" ? { ...headerRaw } : {};
-    const existing = Array.isArray(header.navLinks)
-      ? [...header.navLinks]
-      : [...DEFAULT_THEME_NAV_LINKS];
 
-    const nameLower = pageName.trim().toLowerCase();
-    const already = existing.some((l: any) => {
-      const link = String(l?.link || "").replace(/\/$/, "");
-      return (
-        link === href ||
-        link === href.replace(/^\//, "") ||
-        link.endsWith(href) ||
-        String(l?.name || "").trim().toLowerCase() === nameLower
-      );
-    });
-    if (already) return false;
-
-    const newLink = {
-      id: Date.now(),
-      name: pageName.trim() || "Page",
-      link: href,
-    };
-
-    // Keep Dashboard / Logout at the end (utility items)
-    const utilityIdx = existing.findIndex((l: any) => {
-      const n = String(l?.name || "").toLowerCase();
-      const link = String(l?.link || "");
-      return (
-        n === "dashboard" ||
-        n === "logout" ||
-        link === "/admin" ||
-        link.startsWith("/admin") ||
-        link === "/logout"
-      );
-    });
-
-    if (utilityIdx >= 0) {
-      existing.splice(utilityIdx, 0, newLink);
-    } else {
-      existing.push(newLink);
+    if (location === "header" || location === "both") {
+      const [siteRaw, themeRaw] = await Promise.all([
+        api.getSetting("site_header"),
+        api.getSetting(`theme_${themeId}_header`),
+      ]);
+      const siteHeader = siteRaw && typeof siteRaw === "object" ? { ...siteRaw } : {};
+      const themeHeader = themeRaw && typeof themeRaw === "object" ? { ...themeRaw } : {};
+      const baseLinks = Array.isArray((siteHeader as any).navLinks)
+        ? (siteHeader as any).navLinks
+        : Array.isArray((themeHeader as any).navLinks)
+          ? (themeHeader as any).navLinks
+          : DEFAULT_THEME_NAV_LINKS;
+      const navLinks = upsertPageLink(baseLinks, pageName, href, true);
+      await Promise.all([
+        api.updateSetting("site_header", { ...siteHeader, navLinks }),
+        api.updateSetting(`theme_${themeId}_header`, { ...themeHeader, navLinks }),
+      ]);
     }
 
-    await api.updateSetting(`theme_${themeId}_header`, {
-      ...header,
-      navLinks: existing,
-    });
+    if (location === "footer" || location === "both") {
+      const [siteRaw, themeRaw] = await Promise.all([
+        api.getSetting("site_footer"),
+        api.getSetting(`theme_${themeId}_footer`),
+      ]);
+      const siteFooter = siteRaw && typeof siteRaw === "object" ? { ...siteRaw } : {};
+      const themeFooter = themeRaw && typeof themeRaw === "object" ? { ...themeRaw } : {};
+      const baseLinks = Array.isArray((siteFooter as any).quickLinks)
+        ? (siteFooter as any).quickLinks
+        : Array.isArray((themeFooter as any).quickLinks)
+          ? (themeFooter as any).quickLinks
+          : DEFAULT_THEME_FOOTER_LINKS.filter((link) => {
+              const name = link.name.toLowerCase();
+              return name !== "dashboard" && name !== "logout";
+            });
+      const quickLinks = upsertPageLink(baseLinks, pageName, href);
+      await Promise.all([
+        api.updateSetting("site_footer", { ...siteFooter, quickLinks }),
+        api.updateSetting(`theme_${themeId}_footer`, { ...themeFooter, quickLinks }),
+      ]);
+    }
+
     return true;
   } catch (err) {
     console.warn("Could not add page to site navigation:", err);
@@ -116,8 +168,8 @@ export default function PagesManagementPage() {
   const [htmlContent, setHtmlContent] = useState("");
   /** New pages default Published so they are public immediately */
   const [isPublished, setIsPublished] = useState(true);
-  /** Add link to header nav when publishing */
-  const [addToMenu, setAddToMenu] = useState(true);
+  /** Where the published page link should appear on the public site. */
+  const [menuLocation, setMenuLocation] = useState<PageMenuLocation>("header");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isPreviewModalOpen, setIsPreviewModalOpen] = useState(false);
 
@@ -153,7 +205,7 @@ export default function PagesManagementPage() {
       "<!DOCTYPE html>\n<html>\n<head>\n  <title>About Us</title>\n</head>\n<body>\n  <h1>About Us</h1>\n  <p>Tell your story here.</p>\n</body>\n</html>"
     );
     setIsPublished(true);
-    setAddToMenu(true);
+    setMenuLocation("header");
     setIsCreateModalOpen(true);
   };
 
@@ -166,7 +218,7 @@ export default function PagesManagementPage() {
     setIsPublished(
       String(page.status || "").toLowerCase() === "published"
     );
-    setAddToMenu(true);
+    setMenuLocation("header");
     setIsCreateModalOpen(true);
   };
 
@@ -228,10 +280,18 @@ export default function PagesManagementPage() {
       }
 
       let navNote = "";
-      if (isPublished && addToMenu) {
-        const added = await addPageToSiteNav(pageName.trim(), formattedSlug);
+      if (isPublished && menuLocation !== "none") {
+        const added = await addPageToSiteNav(
+          pageName.trim(),
+          formattedSlug,
+          menuLocation,
+        );
+        const locationLabel =
+          menuLocation === "both"
+            ? "header and footer menus"
+            : `${menuLocation} menu`;
         navNote = added
-          ? "\n\n✓ Added to site header menu — hard-refresh the public site (Ctrl+Shift+R)."
+          ? `\n\n✓ Added to site ${locationLabel} — hard-refresh the public site (Ctrl+Shift+R).`
           : "\n\n(Page was already in the menu, or menu update was skipped.)";
       } else if (!isPublished) {
         navNote =
@@ -516,35 +576,28 @@ export default function PagesManagementPage() {
                   </button>
                 </div>
 
-                <div className="flex items-center justify-between p-5 border border-gray-100 rounded-xl bg-white shadow-sm">
+                <div className="flex flex-col gap-4 p-5 border border-gray-100 rounded-xl bg-white shadow-sm sm:flex-row sm:items-center sm:justify-between">
                   <div>
                     <h3 className="text-sm font-bold text-gray-900">
-                      Add to site menu
+                      Navigation location
                     </h3>
                     <p className="text-sm text-gray-500">
-                      Show this page in the public header navigation (so
-                      visitors can find About Us)
+                      Choose where visitors can discover this published page
                     </p>
                   </div>
-                  <button
-                    type="button"
+                  <select
                     disabled={!isPublished}
-                    onClick={() => setAddToMenu(!addToMenu)}
-                    className={cn(
-                      "relative inline-flex h-6 w-11 items-center rounded-full transition-colors",
-                      isPublished && addToMenu ? "bg-blue-600" : "bg-gray-200",
-                      !isPublished && "opacity-40 cursor-not-allowed"
-                    )}
+                    value={menuLocation}
+                    onChange={(event) =>
+                      setMenuLocation(event.target.value as PageMenuLocation)
+                    }
+                    className="min-w-44 rounded-xl border border-gray-200 bg-white px-4 py-2.5 text-sm font-bold text-gray-700 outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 disabled:cursor-not-allowed disabled:opacity-40"
                   >
-                    <span
-                      className={cn(
-                        "inline-block h-4 w-4 transform rounded-full bg-white transition-transform",
-                        isPublished && addToMenu
-                          ? "translate-x-6"
-                          : "translate-x-1"
-                      )}
-                    />
-                  </button>
+                    <option value="header">Header</option>
+                    <option value="footer">Footer</option>
+                    <option value="both">Header and Footer</option>
+                    <option value="none">Do not add to navigation</option>
+                  </select>
                 </div>
               </div>
             </div>

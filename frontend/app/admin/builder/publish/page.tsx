@@ -10,6 +10,7 @@ import {
   LayoutTemplate,
   ExternalLink,
 } from "lucide-react";
+import { api } from "@/lib/api";
 
 const SAVE_META_KEY = "corehead_builder_save_meta";
 
@@ -30,6 +31,9 @@ type SaveMeta = {
 export default function PublishPage() {
   const [copied, setCopied] = useState(false);
   const [meta, setMeta] = useState<SaveMeta | null>(null);
+  const [assigning, setAssigning] = useState(false);
+  const [assigned, setAssigned] = useState(false);
+  const [assignError, setAssignError] = useState<string | null>(null);
 
   useEffect(() => {
     try {
@@ -65,6 +69,20 @@ export default function PublishPage() {
     setTimeout(() => setCopied(false), 2000);
   };
 
+  const handleAssignDefault = async () => {
+    if (meta?.id == null) return;
+    setAssigning(true);
+    setAssignError(null);
+    try {
+      await api.assignTemplate(String(meta.id), { isGlobalDefault: true });
+      setAssigned(true);
+    } catch (error: any) {
+      setAssignError(error?.message || "Failed to assign the template.");
+    } finally {
+      setAssigning(false);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-slate-50 flex items-center justify-center p-6">
       <div className="max-w-xl w-full text-center space-y-8">
@@ -86,7 +104,7 @@ export default function PublishPage() {
                 <span className="text-slate-400">({type})</span>
               </>
             ) : null}{" "}
-            is now live for{" "}
+            is published and ready to assign for{" "}
             {meta?.siteName ? (
               <span className="font-semibold text-slate-800">{meta.siteName}</span>
             ) : (
@@ -155,6 +173,25 @@ export default function PublishPage() {
                 : "Single Post layouts power /s/{slug}/blog/{post}."}
             </li>
           </ul>
+          {meta?.id != null && (
+            <div className="pt-3">
+              <button
+                type="button"
+                onClick={handleAssignDefault}
+                disabled={assigning || assigned}
+                className="w-full px-4 py-2.5 rounded-lg bg-emerald-600 text-white text-sm font-semibold hover:bg-emerald-700 disabled:opacity-60"
+              >
+                {assigned
+                  ? "Assigned as site default"
+                  : assigning
+                    ? "Assigning..."
+                    : `Assign as default ${type || "layout"}`}
+              </button>
+              {assignError && (
+                <p className="mt-2 text-xs text-red-600">{assignError}</p>
+              )}
+            </div>
+          )}
         </div>
 
         <div className="flex flex-wrap items-center justify-center gap-4 pt-4">

@@ -283,7 +283,7 @@ function renderBlockContent(block: BuilderBlock, isSelected: boolean) {
             <div className="flex flex-col items-center justify-center text-blue-600 py-6 text-center">
               <ImageIcon className="w-8 h-8 mb-1" />
               <span className="text-xs font-medium">Bound image</span>
-              <span className="text-[10px] text-blue-500/70 mt-0.5">{`{${block.bindings.content}}`}</span>
+              <span className="text-[10px] text-blue-500/70 mt-0.5">{`{${block.bindings?.content}}`}</span>
             </div>
           ) : (
             <div className="flex flex-col items-center justify-center text-slate-400 py-8">

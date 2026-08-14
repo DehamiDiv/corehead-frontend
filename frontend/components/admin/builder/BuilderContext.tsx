@@ -8,6 +8,8 @@ import React, {
   useEffect,
 } from "react";
 import { api } from "@/lib/api";
+import { normalizeLayoutDocumentV1 } from "@/lib/layoutContract";
+import { prepareLayoutForSave } from "@/lib/templateLayout";
 
 export type BlockType =
   | "Heading"
@@ -112,10 +114,12 @@ export function BuilderProvider({ children }: { children: ReactNode }) {
         try {
           const template = await api.getTemplateById(id);
           if (template && template.layoutJson) {
-            const layout = Array.isArray(template.layoutJson)
-              ? template.layoutJson
-              : template.layoutJson.blocks || [];
-            setBlocks(layout);
+            const normalized = normalizeLayoutDocumentV1(template.layoutJson, {
+              name: template.name,
+              kind: template.type,
+              origin: template.layoutJson?.metadata?.origin || "migrated",
+            });
+            setBlocks(normalized.document.blocks as BuilderBlock[]);
             setTemplateId(String(template.id));
             setTemplateName(template.name);
             const tType =
@@ -130,7 +134,11 @@ export function BuilderProvider({ children }: { children: ReactNode }) {
         const saved = localStorage.getItem("corehead_builder_layout");
         if (saved) {
           try {
-            setBlocks(JSON.parse(saved));
+            const normalized = normalizeLayoutDocumentV1(JSON.parse(saved), {
+              name: templateName,
+              kind: templateType,
+            });
+            setBlocks(normalized.document.blocks as BuilderBlock[]);
           } catch (e) {
             console.error("Failed to parse saved layout", e);
           }
@@ -158,7 +166,12 @@ export function BuilderProvider({ children }: { children: ReactNode }) {
   // Auto-save layout + meta after initial load (preview reads these keys)
   useEffect(() => {
     if (isLoaded) {
-      localStorage.setItem("corehead_builder_layout", JSON.stringify(blocks));
+      const normalized = normalizeLayoutDocumentV1(blocks, {
+        name: templateName,
+        kind: templateType,
+        origin: "manual",
+      });
+      localStorage.setItem("corehead_builder_layout", JSON.stringify(normalized.document));
       persistMeta(templateName, templateType, templateId);
     }
   }, [blocks, isLoaded, templateName, templateType, templateId]);
@@ -231,16 +244,24 @@ export function BuilderProvider({ children }: { children: ReactNode }) {
   };
 
   const serializeLayout = () => {
-    const json = JSON.stringify(blocks);
+    const normalized = normalizeLayoutDocumentV1(blocks, {
+      name: templateName,
+      kind: templateType,
+      origin: "manual",
+    });
+    const json = JSON.stringify(normalized.document);
     localStorage.setItem("corehead_builder_layout", json);
     return json;
   };
 
   const loadLayout = (json: string) => {
     try {
-      const parsed = JSON.parse(json);
-      setBlocks(parsed);
-      localStorage.setItem("corehead_builder_layout", json);
+      const normalized = normalizeLayoutDocumentV1(JSON.parse(json), {
+        name: templateName,
+        kind: templateType,
+      });
+      setBlocks(normalized.document.blocks as BuilderBlock[]);
+      localStorage.setItem("corehead_builder_layout", JSON.stringify(normalized.document));
     } catch (e) {
       console.error("Failed to parse layout string", e);
     }
@@ -258,10 +279,16 @@ export function BuilderProvider({ children }: { children: ReactNode }) {
     if (overrides?.name) setTemplateName(name);
     if (overrides?.type) setTemplateType(type);
 
+    const prepared = prepareLayoutForSave(blocks, {
+      name,
+      type,
+      status,
+      origin: "manual",
+    });
     const layoutData = {
       name,
       type,
-      layoutJson: blocks,
+      layoutJson: prepared.document,
       status,
     };
 
@@ -299,7 +326,13 @@ export function BuilderProvider({ children }: { children: ReactNode }) {
 
       if (data.blocks) {
         setBlocks(data.blocks);
-        localStorage.setItem("corehead_builder_layout", JSON.stringify(data.blocks));
+        const prepared = prepareLayoutForSave(data.blocks, {
+          name: templateName,
+          type: templateType,
+          status: "draft",
+          origin: "ai",
+        });
+        localStorage.setItem("corehead_builder_layout", JSON.stringify(prepared.document));
       }
       
       // Return provider info so chat can show it

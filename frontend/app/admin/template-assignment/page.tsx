@@ -3,46 +3,23 @@
 import React, { useState, useEffect, useCallback } from "react";
 import { Save, Plus, Trash2, Layers, Tag, RefreshCw, AlertCircle, CheckCircle2 } from "lucide-react";
 import { api } from "@/lib/api";
+import {
+    categoryLayoutOverrides,
+    globalLayoutFor,
+    groupContentLayouts,
+    normalizeTemplateList,
+    publishedContentLayouts,
+    type ContentLayoutOption,
+} from "@/lib/contentLayoutAssignments";
 
 // --- Types ---
-interface LayoutOption {
-    id: number;
-    name: string;
-    type: string;
-    status: string;
-}
+type LayoutOption = ContentLayoutOption;
 
 interface CategoryOverride {
     id: string;          // local UI id
     categoryId: string;
     layoutId: number;    // one layout per category override (matched by type from the same assign call)
     layoutType: string;
-}
-
-/** R2-5: Match builder / layouts UI type names */
-function isPublishedStatus(status?: string) {
-    return String(status || "").toLowerCase() === "published";
-}
-
-function isSingleType(type?: string) {
-    const t = String(type || "").toLowerCase();
-    return (
-        t.includes("single") ||
-        t === "blog" ||
-        t === "post" ||
-        t === "single_post" ||
-        t === "single-post"
-    );
-}
-
-function isArchiveType(type?: string) {
-    const t = String(type || "").toLowerCase();
-    return (
-        t.includes("archive") ||
-        t.includes("loop") ||
-        t.includes("collection") ||
-        t === "list"
-    );
 }
 
 export default function TemplateAssignmentPage() {
@@ -68,9 +45,10 @@ export default function TemplateAssignmentPage() {
     const [overrides, setOverrides] = useState<CategoryOverride[]>([]);
 
     // ── Derived layout lists ──────────────────────────────────────────────────
-    const publishedLayouts = allLayouts.filter((l) => isPublishedStatus(l.status));
-    const singleLayouts = publishedLayouts.filter((l) => isSingleType(l.type));
-    const archiveLayouts = publishedLayouts.filter((l) => isArchiveType(l.type));
+    const publishedLayouts = publishedContentLayouts(allLayouts);
+    const groupedLayouts = groupContentLayouts(publishedLayouts);
+    const singleLayouts = groupedLayouts["single-post"];
+    const archiveLayouts = groupedLayouts["blog-archive"];
 
     // ── Fetch all templates + site categories ─────────────────────────────────
     const fetchLayouts = useCallback(async () => {
@@ -81,9 +59,7 @@ export default function TemplateAssignmentPage() {
                 api.getTemplates(),
                 api.getCategories().catch(() => ({ categories: [] })),
             ]);
-            const data: LayoutOption[] = Array.isArray(dataRaw)
-                ? dataRaw
-                : (dataRaw as any)?.templates || [];
+            const data: LayoutOption[] = normalizeTemplateList(dataRaw);
             setAllLayouts(data);
 
             const catList = (catsRaw?.categories || catsRaw || []).map((c: any) => ({
@@ -93,16 +69,14 @@ export default function TemplateAssignmentPage() {
             setCategories(catList);
             if (catList.length > 0 && !newCatId) setNewCatId(catList[0].id);
 
-            const singles = data.filter(
-                (l) => isPublishedStatus(l.status) && isSingleType(l.type)
-            );
-            const archives = data.filter(
-                (l) => isPublishedStatus(l.status) && isArchiveType(l.type)
-            );
+            const published = publishedContentLayouts(data);
+            const grouped = groupContentLayouts(published);
+            const singles = grouped["single-post"];
+            const archives = grouped["blog-archive"];
 
             // Prefer already-assigned global defaults
-            const globalSingle = singles.find((l: any) => l.category === "global_default");
-            const globalArchive = archives.find((l: any) => l.category === "global_default");
+            const globalSingle = globalLayoutFor(singles, "single-post");
+            const globalArchive = globalLayoutFor(archives, "blog-archive");
             if (globalSingle) setGlobalSingleId(String(globalSingle.id));
             else if (singles.length > 0 && !globalSingleId)
                 setGlobalSingleId(String(singles[0].id));
@@ -110,19 +84,12 @@ export default function TemplateAssignmentPage() {
             else if (archives.length > 0 && !globalArchiveId)
                 setGlobalArchiveId(String(archives[0].id));
 
-            const published = data.filter((l) => isPublishedStatus(l.status));
             if (published.length > 0 && !newLayoutId)
                 setNewLayoutId(String(published[0].id));
 
             // Build overrides from assigned templates (category !== null && !== 'global_default')
-            const assignedOverrides: CategoryOverride[] = data
-                .filter(
-                    (l: any) =>
-                        l.category &&
-                        l.category !== "global_default" &&
-                        isPublishedStatus(l.status)
-                )
-                .map((l: any) => ({
+            const assignedOverrides: CategoryOverride[] = categoryLayoutOverrides(data)
+                .map((l) => ({
                     id: String(l.id),
                     categoryId: l.category,
                     layoutId: l.id,

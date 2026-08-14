@@ -56,22 +56,28 @@ export default function PortalsHomeLayout({
   const blogHref = siteBlogPath(siteSlug);
   const featured = posts[0];
   const rest = posts.slice(1, 3);
+  const postImage = (post?: PostLike | null) =>
+    post
+      ? resolveMediaUrl(
+          post.coverImage || post.thumbnailUrl || post.featured_image
+        )
+      : null;
 
   const pillars = (
     sections?.pillars?.length
       ? sections.pillars
       : [
           {
-            title: "Seamless swaps",
-            body: "Route complex flows in one action — less friction, more throughput.",
+            title: "Clear expertise",
+            body: `Present what ${siteName} does with a focused, credible message.`,
           },
           {
-            title: "Historical data",
-            body: "APIs and timelines that keep builders unblocked and informed.",
+            title: "Useful insights",
+            body: "Turn published knowledge into an accessible resource for visitors.",
           },
           {
-            title: "AI-ready stack",
-            body: "Integrate intelligence where it matters without slowing shipping.",
+            title: "Built for action",
+            body: "Guide readers from discovery to the next meaningful step.",
           },
         ]
   ).slice(0, 3);
@@ -89,8 +95,7 @@ export default function PortalsHomeLayout({
   // Headline: Appearance heroTitle → ctaTitle → default
   const headline =
     sections?.heroTitle?.trim() ||
-    sections?.ctaTitle?.trim() ||
-    `Simplifying ${siteName}'s\nMost Complex\nTransactions`;
+    `${siteName}\nIdeas, work and\nindustry insight`;
   const headlineLines = headline.split("\n");
   const ctaBgImage = sections?.ctaBackgroundImage
     ? resolveMediaUrl(sections.ctaBackgroundImage)
@@ -166,8 +171,7 @@ export default function PortalsHomeLayout({
               className="mt-6 text-[15px] sm:text-[16px] leading-[1.65] max-w-[26rem]"
               style={{ color: muted }}
             >
-              {tagline ||
-                `Powering seamless flows and integrations for ${siteName} — make complex work simpler and enable builders to ship faster.`}
+              {tagline || `Explore the latest thinking, practical guidance and published work from ${siteName}.`}
             </p>
 
             <div className="mt-10 flex flex-wrap items-center gap-3">
@@ -190,7 +194,7 @@ export default function PortalsHomeLayout({
                   color: "var(--site-surface, #ffffff)",
                 }}
               >
-                Book a demo
+                {featured?.title || "Featured insight"}
               </Link>
             </div>
           </div>
@@ -388,7 +392,7 @@ export default function PortalsHomeLayout({
                 className="text-2xl sm:text-3xl font-semibold tracking-tight"
                 style={{ color: ink }}
               >
-                {sections?.featuredTitle || "Latest from the lab"}
+                {sections?.featuredTitle || "Latest insights"}
               </h2>
             </div>
             <Link
@@ -409,18 +413,22 @@ export default function PortalsHomeLayout({
                 className="group rounded-2xl overflow-hidden border border-white/[0.07] bg-zinc-950 hover:border-violet-500/25 transition-colors"
               >
                 <div className="aspect-[16/10] relative bg-zinc-900 overflow-hidden">
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img
-                    src={
-                      resolveMediaUrl(
-                        post.coverImage ||
-                          post.thumbnailUrl ||
-                          post.featured_image
-                      ) || ""
-                    }
-                    alt=""
-                    className="absolute inset-0 h-full w-full object-cover opacity-80 group-hover:scale-[1.03] transition-transform duration-500"
-                  />
+                  {postImage(post) ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img
+                      src={postImage(post) || ""}
+                      alt=""
+                      className="absolute inset-0 h-full w-full object-cover opacity-80 group-hover:scale-[1.03] transition-transform duration-500"
+                    />
+                  ) : (
+                    <div
+                      className="absolute inset-0"
+                      style={{
+                        background:
+                          "radial-gradient(circle at top right, color-mix(in srgb, var(--site-primary) 35%, transparent), transparent 65%)",
+                      }}
+                    />
+                  )}
                   <div className="absolute inset-0 bg-gradient-to-t from-black/80 to-transparent" />
                 </div>
                 <div className="p-5">
@@ -488,13 +496,11 @@ export default function PortalsHomeLayout({
             >
               {sections?.ctaTitle && !sections.ctaTitle.includes("\n")
                 ? sections.ctaTitle
-                : sections?.ctaBody
-                  ? sections.ctaTitle || `Build with ${siteName}`
-                  : `Build with ${siteName}`}
+                : `Discover more from ${siteName}`}
             </h2>
             <p className="mt-3 text-sm max-w-sm mx-auto" style={{ color: muted }}>
               {sections?.ctaBody ||
-                "Ship faster with a stack built for complex workflows."}
+                "Explore the complete archive of published stories and practical insights."}
             </p>
             <Link
               href={blogHref}

@@ -1,15 +1,22 @@
 import { api } from "@/lib/api";
 import type { BuilderBlock } from "@/components/admin/builder/BuilderContext";
 import { resolveMediaUrl } from "@/lib/siteMedia";
+import {
+  normalizeLayoutDocumentV1,
+  prepareRenderableLayout,
+  type LayoutDocumentV1,
+} from "@/lib/layoutContract";
 
 export type TenantLayoutKind = "blog-archive" | "single-post";
 
 export type ResolvedTenantLayout = {
+  document: LayoutDocumentV1;
   blocks: BuilderBlock[];
   source: "template" | "default";
   templateId?: number;
   templateName?: string;
   templateType?: string;
+  issues?: Array<{ code: string; path: string; message: string; blockId?: string }>;
 };
 
 /** Default archive layout when no published template exists for the site. */
@@ -86,6 +93,44 @@ function extractBlocks(layoutJson: any): BuilderBlock[] {
   return [];
 }
 
+function preparePublicDocument(layoutJson: any, kind: TenantLayoutKind, name: string) {
+  return prepareRenderableLayout(layoutJson, {
+    name,
+    kind,
+    origin: layoutJson?.metadata?.origin || "migrated",
+    semantic: true,
+  });
+}
+
+function defaultDocument(kind: TenantLayoutKind): LayoutDocumentV1 {
+  return normalizeLayoutDocumentV1(
+    kind === "blog-archive" ? defaultArchiveLayout() : defaultSinglePostLayout(),
+    {
+      name: kind === "blog-archive" ? "Default Blog Archive" : "Default Single Post",
+      kind,
+      origin: "manual",
+    },
+  ).document;
+}
+
+function resolvedTemplate(tpl: any, kind: TenantLayoutKind): ResolvedTenantLayout | null {
+  if (!tpl?.layoutJson) return null;
+  const prepared = preparePublicDocument(tpl.layoutJson, kind, tpl.name || "Layout");
+  if (!prepared.valid) {
+    console.warn(`Template ${tpl.id ?? "unknown"} is invalid for ${kind}; using fallback.`, prepared.issues);
+    return null;
+  }
+  return {
+    document: prepared.document,
+    blocks: prepared.document.blocks as BuilderBlock[],
+    source: "template",
+    templateId: tpl.id,
+    templateName: tpl.name,
+    templateType: tpl.type,
+    issues: prepared.issues,
+  };
+}
+
 /**
  * R2-1: Resolve published layout for a tenant site.
  * Tries API resolve (site-scoped); falls back to safe defaults.
@@ -100,18 +145,8 @@ export async function resolveTenantLayout(
 
   try {
     const tpl = await api.resolveActiveLayout(typeParam, categoryId, siteId);
-    if (tpl) {
-      const blocks = extractBlocks(tpl.layoutJson);
-      if (blocks.length > 0) {
-        return {
-          blocks,
-          source: "template",
-          templateId: tpl.id,
-          templateName: tpl.name,
-          templateType: tpl.type,
-        };
-      }
-    }
+    const resolved = resolvedTemplate(tpl, kind);
+    if (resolved) return resolved;
   } catch (err) {
     console.warn("resolveTenantLayout API miss:", err);
   }
@@ -125,28 +160,17 @@ export async function resolveTenantLayout(
   for (const t of alt) {
     try {
       const tpl = await api.resolveActiveLayout(t, categoryId, siteId);
-      if (tpl) {
-        const blocks = extractBlocks(tpl.layoutJson);
-        if (blocks.length > 0) {
-          return {
-            blocks,
-            source: "template",
-            templateId: tpl.id,
-            templateName: tpl.name,
-            templateType: tpl.type,
-          };
-        }
-      }
+      const resolved = resolvedTemplate(tpl, kind);
+      if (resolved) return resolved;
     } catch {
       /* try next */
     }
   }
 
+  const document = defaultDocument(kind);
   return {
-    blocks:
-      kind === "blog-archive"
-        ? defaultArchiveLayout()
-        : defaultSinglePostLayout(),
+    document,
+    blocks: document.blocks as BuilderBlock[],
     source: "default",
   };
 }

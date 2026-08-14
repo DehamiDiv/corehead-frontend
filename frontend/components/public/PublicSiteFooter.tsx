@@ -28,7 +28,18 @@ export default function PublicSiteFooter({ site }: { site: PublicSite }) {
     branding?.footer?.copyrightText ||
     `© ${year} ${site.name}. All rights reserved.`;
   const quickLinksRaw =
-    branding?.footer?.quickLinks?.filter((l) => l?.name && l?.link) || null;
+    branding?.footer?.quickLinks?.filter((item) => {
+      if (!item?.name || !item?.link) return false;
+      const name = item.name.toLowerCase();
+      const link = item.link;
+      return (
+        name !== "dashboard" &&
+        name !== "logout" &&
+        link !== "/admin" &&
+        !link.startsWith("/admin") &&
+        link !== "/logout"
+      );
+    }) || null;
   const quickLinks =
     quickLinksRaw && quickLinksRaw.length > 0
       ? quickLinksRaw

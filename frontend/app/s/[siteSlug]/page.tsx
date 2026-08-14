@@ -23,12 +23,8 @@ import {
 } from "@/lib/publicSiteCopy";
 import PublicPostCard from "@/components/public/PublicPostCard";
 import VerduraEditorialHero from "@/components/public/VerduraEditorialHero";
-import BloomHomeLayout from "@/components/public/BloomHomeLayout";
-import PortalsHomeLayout from "@/components/public/PortalsHomeLayout";
-import BentoHomeLayout from "@/components/public/BentoHomeLayout";
-import StudioHomeLayout from "@/components/public/StudioHomeLayout";
-import PaperHomeLayout from "@/components/public/PaperHomeLayout";
-import GlassHomeLayout from "@/components/public/GlassHomeLayout";
+import { getDedicatedHomeRenderer } from "@/components/public/homeLayoutRegistry";
+import { normalizeHomeLayoutProps } from "@/components/public/homeLayoutTypes";
 import EmptyState from "@/components/ui/EmptyState";
 import {
   ArrowRight,
@@ -137,7 +133,7 @@ export default async function PublicSiteHomePage({ params }: Props) {
   const captions = siteHomeCaptions(branding, site.name);
   const sections = siteHomeSections(site.name, branding);
 
-  const shared = {
+  const shared = normalizeHomeLayoutProps({
     siteName: site.name,
     siteSlug: site.slug,
     eyebrow,
@@ -148,57 +144,13 @@ export default async function PublicSiteHomePage({ params }: Props) {
     ctaColor: branding.header?.ctaColor,
     posts,
     sections,
-  };
+  });
 
-  // Unique dedicated layouts
-  if (homeStyle === "bloom") {
+  const DedicatedHomeLayout = getDedicatedHomeRenderer(homeStyle);
+  if (DedicatedHomeLayout) {
     return (
-      <div data-theme={branding.themeId} data-home-style="bloom">
-        <BloomHomeLayout {...shared} />
-      </div>
-    );
-  }
-  if (homeStyle === "portals") {
-    return (
-      <div data-theme={branding.themeId} data-home-style="portals">
-        <PortalsHomeLayout {...shared} />
-      </div>
-    );
-  }
-  if (homeStyle === "bento") {
-    return (
-      <div data-theme={branding.themeId} data-home-style="bento">
-        <BentoHomeLayout {...shared} />
-      </div>
-    );
-  }
-  if (homeStyle === "studio") {
-    return (
-      <div data-theme={branding.themeId} data-home-style="studio">
-        <StudioHomeLayout {...shared} />
-      </div>
-    );
-  }
-  if (homeStyle === "paper") {
-    return (
-      <div data-theme={branding.themeId} data-home-style="paper">
-        <PaperHomeLayout
-          siteName={shared.siteName}
-          siteSlug={shared.siteSlug}
-          eyebrow={shared.eyebrow}
-          tagline={shared.tagline}
-          heroImage={shared.heroImage}
-          ctaText={shared.ctaText}
-          posts={shared.posts}
-          sections={shared.sections}
-        />
-      </div>
-    );
-  }
-  if (homeStyle === "glass") {
-    return (
-      <div data-theme={branding.themeId} data-home-style="glass">
-        <GlassHomeLayout {...shared} />
+      <div data-theme={branding.themeId} data-home-style={homeStyle}>
+        <DedicatedHomeLayout {...shared} />
       </div>
     );
   }
@@ -218,7 +170,7 @@ export default async function PublicSiteHomePage({ params }: Props) {
   const heroCtaLabel = branding.header?.ctaText?.trim() || "Blog";
 
   return (
-    <main className="w-full" data-theme={branding.themeId} data-home-style={homeStyle}>
+    <main className="w-full" data-theme={branding.themeId} data-home-style={homeStyle} data-home-layout={homeStyle}>
       {isEditorialHome ? (
         <VerduraEditorialHero
           siteName={site.name}

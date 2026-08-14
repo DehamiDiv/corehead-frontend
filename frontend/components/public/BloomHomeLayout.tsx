@@ -61,6 +61,12 @@ export default function BloomHomeLayout({
   const blogHref = siteBlogPath(siteSlug);
   const featured = posts[0];
   const rest = posts.slice(1, 4);
+  const postImage = (post?: PostLike | null) =>
+    post
+      ? resolveMediaUrl(
+          post.coverImage || post.thumbnailUrl || post.featured_image
+        )
+      : null;
 
   const serviceMeta = [
     { icon: Heart },
@@ -319,18 +325,14 @@ export default function BloomHomeLayout({
                   className="aspect-[16/10] relative overflow-hidden"
                   style={{ background: "var(--site-primary-soft)" }}
                 >
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img
-                    src={
-                      resolveMediaUrl(
-                        featured.coverImage ||
-                          featured.thumbnailUrl ||
-                          featured.featured_image
-                      ) || ""
-                    }
-                    alt=""
-                    className="absolute inset-0 h-full w-full object-cover group-hover:scale-[1.03] transition-transform duration-500"
-                  />
+                  {postImage(featured) ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img
+                      src={postImage(featured) || ""}
+                      alt=""
+                      className="absolute inset-0 h-full w-full object-cover group-hover:scale-[1.03] transition-transform duration-500"
+                    />
+                  ) : null}
                 </div>
                 <div className="p-6 sm:p-8">
                   {postCategory(featured) && (
@@ -373,16 +375,14 @@ export default function BloomHomeLayout({
                     className="relative h-24 w-28 shrink-0 rounded-xl overflow-hidden"
                     style={{ background: "var(--site-primary-soft)" }}
                   >
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img
-                      src={
-                        resolveMediaUrl(
-                          post.coverImage || post.thumbnailUrl || post.featured_image
-                        ) || ""
-                      }
-                      alt=""
-                      className="h-full w-full object-cover group-hover:scale-105 transition-transform duration-500"
-                    />
+                    {postImage(post) ? (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img
+                        src={postImage(post) || ""}
+                        alt=""
+                        className="h-full w-full object-cover group-hover:scale-105 transition-transform duration-500"
+                      />
+                    ) : null}
                   </div>
                   <div className="min-w-0 flex flex-col justify-center py-1">
                     {postCategory(post) && (

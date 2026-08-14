@@ -149,3 +149,136 @@ body {
   font-size: 12px;
   font-weight: 700;
 }
+
+/* Public single-post reading experience.
+   These rules intentionally override saved block colours only for the bound
+   article body, so every Appearance theme maintains accessible contrast. */
+.post-reading-surface {
+  width: 100%;
+  min-width: 0;
+}
+
+.post-reading-surface .public-renderer-wrapper {
+  width: 100%;
+  min-width: 0;
+  max-width: 100%;
+}
+
+.post-reading-surface .cms-post-body {
+  width: 100% !important;
+  min-width: 0 !important;
+  max-width: 46rem !important;
+  margin: 2rem auto 0 !important;
+  color: color-mix(
+    in srgb,
+    var(--site-ink, #0f172a) 82%,
+    var(--site-muted, #64748b)
+  ) !important;
+  font-size: clamp(1rem, 0.96rem + 0.2vw, 1.125rem);
+  font-weight: 450;
+  line-height: 1.85 !important;
+  letter-spacing: -0.005em;
+  overflow-wrap: anywhere;
+  word-break: normal;
+}
+
+.post-reading-surface .cms-post-body :where(p, ul, ol, blockquote, pre, table) {
+  margin-block: 0 1.35em;
+}
+
+.post-reading-surface .cms-post-body :where(p, li, figcaption) {
+  color: color-mix(
+    in srgb,
+    var(--site-ink, #0f172a) 82%,
+    var(--site-muted, #64748b)
+  ) !important;
+}
+
+.post-reading-surface .cms-post-body :where(h1, h2, h3, h4, h5, h6) {
+  margin-block: 1.65em 0.55em;
+  color: var(--site-ink, #0f172a) !important;
+  font-weight: 800;
+  line-height: 1.2;
+  letter-spacing: -0.025em;
+}
+
+.post-reading-surface .cms-post-body h1 {
+  font-size: clamp(2rem, 1.65rem + 1.5vw, 3rem);
+}
+
+.post-reading-surface .cms-post-body h2 {
+  font-size: clamp(1.5rem, 1.3rem + 0.8vw, 2rem);
+}
+
+.post-reading-surface .cms-post-body h3 {
+  font-size: clamp(1.2rem, 1.1rem + 0.45vw, 1.5rem);
+}
+
+.post-reading-surface .cms-post-body :where(ul, ol) {
+  padding-left: 1.5rem;
+}
+
+.post-reading-surface .cms-post-body ul {
+  list-style: disc;
+}
+
+.post-reading-surface .cms-post-body ol {
+  list-style: decimal;
+}
+
+.post-reading-surface .cms-post-body li {
+  margin-block: 0.45em;
+  padding-left: 0.25rem;
+}
+
+.post-reading-surface .cms-post-body :where(strong, b) {
+  color: var(--site-ink, #0f172a) !important;
+  font-weight: 750;
+}
+
+.post-reading-surface .cms-post-body a {
+  color: var(--site-primary, #2563eb) !important;
+  font-weight: 650;
+  text-decoration: underline;
+  text-decoration-thickness: 0.08em;
+  text-underline-offset: 0.18em;
+}
+
+.post-reading-surface .cms-post-body blockquote {
+  border-left: 4px solid var(--site-primary, #2563eb);
+  border-radius: 0 0.8rem 0.8rem 0;
+  background: color-mix(in srgb, var(--site-primary, #2563eb) 9%, transparent);
+  padding: 1rem 1.25rem;
+  color: var(--site-ink, #0f172a) !important;
+  font-style: italic;
+}
+
+.post-reading-surface .cms-post-body :where(img, video) {
+  display: block;
+  width: 100%;
+  height: auto;
+  margin-block: 2rem;
+  border-radius: 1rem;
+}
+
+.post-reading-surface .cms-post-body pre {
+  max-width: 100%;
+  overflow-x: auto;
+  border: 1px solid color-mix(in srgb, var(--site-ink, #0f172a) 14%, transparent);
+  border-radius: 0.9rem;
+  background: color-mix(in srgb, var(--site-ink, #0f172a) 8%, transparent);
+  padding: 1rem;
+}
+
+.post-reading-surface .cms-post-body :not(pre) > code {
+  border-radius: 0.35rem;
+  background: color-mix(in srgb, var(--site-ink, #0f172a) 9%, transparent);
+  padding: 0.12em 0.35em;
+  color: var(--site-ink, #0f172a) !important;
+  font-size: 0.9em;
+}
+
+.post-reading-surface .cms-post-body hr {
+  margin-block: 2.5rem;
+  border-color: color-mix(in srgb, var(--site-ink, #0f172a) 14%, transparent);
+}

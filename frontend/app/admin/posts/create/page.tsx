@@ -6,7 +6,7 @@ import {
   ChevronDown, Star, Search, FileText, ImagePlus, X, Library,
   Eye, Type, Bold, Italic, Underline, Strikethrough,
   List, ListOrdered, AlignLeft, AlignCenter, AlignRight, AlignJustify,
-  Quote, Code, Link as LinkIcon, Image as ImageIcon, LayoutGrid, Minus, RemoveFormatting, Tag, Loader2,
+  Quote, Code, Link as LinkIcon, Image as ImageIcon, LayoutGrid, Minus, RemoveFormatting, Tag,
   Upload,
   ChevronLeft,
   Check,
@@ -14,15 +14,13 @@ import {
   Maximize2,
   Settings,
   Globe,
-  PlusCircle,
-  Sparkles
+  PlusCircle
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import MediaLibraryModal from "@/components/admin/MediaLibraryModal";
 import PostPreviewModal from "@/components/admin/PostPreviewModal";
-import AIBlogWriterModal from "@/components/admin/AIBlogWriterModal";
 import { api } from "@/lib/api";
-import { getApiBaseUrl, resolveAdminMediaUrl } from "@/lib/apiOrigin";
+import { resolveAdminMediaUrl } from "@/lib/apiOrigin";
 import { useSite } from "@/components/admin/SiteContext";
 import dynamic from "next/dynamic";
 
@@ -85,7 +83,7 @@ function mapSiteMembersToAuthors(members: any[]) {
 
 export default function CreatePostPage() {
   const router = useRouter();
-  const { currentSiteId } = useSite();
+  const { currentSiteId, loading: siteLoading } = useSite();
 
   const [formData, setFormData] = useState({
     title: "",
@@ -116,51 +114,8 @@ export default function CreatePostPage() {
   const [error, setError] = useState<string | null>(null);
   const [isMediaModalOpen, setIsMediaModalOpen] = useState(false);
   const [showPreview, setShowPreview] = useState(false);
-  const [isAiModalOpen, setIsAiModalOpen] = useState(false);
   const [activeTab, setActiveTab] = useState("Content");
-  const [refining, setRefining] = useState(false);
   const [availableCategories, setAvailableCategories] = useState<string[]>([]);
-
-  const handleAiGenerate = (data: any) => {
-    setFormData(prev => ({
-      ...prev,
-      title: data.title || prev.title,
-      slug: (data.title || prev.title).toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)+/g, ''),
-      excerpt: data.excerpt || prev.excerpt,
-      content: data.content || prev.content,
-      metaTitle: data.seo?.metaTitle || prev.metaTitle,
-      metaDescription: data.seo?.metaDescription || prev.metaDescription,
-      keywords: data.seo?.keywords?.length ? data.seo.keywords : prev.keywords,
-    }));
-  };
-
-  const handleInlineRefine = async (action: "grammar" | "longer" | "summarize") => {
-    if (!formData.content) return;
-    setRefining(true);
-    setError(null);
-    try {
-      const res = await fetch(`${getApiBaseUrl()}/ai/refine`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "Authorization": `Bearer ${localStorage.getItem('accessToken')}`
-        },
-        body: JSON.stringify({ content: formData.content, action }),
-      });
-      const data = await res.json();
-      if (!res.ok) {
-        throw new Error(data.error || data.message || "Failed to refine content");
-      }
-      if (data.refined) {
-        setFormData(prev => ({ ...prev, content: data.refined }));
-      }
-    } catch (err: any) {
-      console.error(err);
-      setError("AI refinement failed: " + err.message);
-    } finally {
-      setRefining(false);
-    }
-  };
   const handleAddKeyword = () => {
     if (keywordInput.trim() && !formData.keywords.includes(keywordInput.trim())) {
       setFormData(prev => ({ ...prev, keywords: [...prev.keywords, keywordInput.trim()] }));
@@ -280,6 +235,16 @@ export default function CreatePostPage() {
   const progressPercent = (completed / total) * 100;
 
   const handleCreatePost = async (overrideStatus?: string) => {
+    if (siteLoading) {
+      setError("Please wait while your site workspace loads.");
+      return;
+    }
+
+    if (!currentSiteId) {
+      setError("Create or select a site before creating a post.");
+      return;
+    }
+
     if (!formData.title || !formData.content) {
       setError("Title and Content are required.");
       return;
@@ -320,8 +285,8 @@ export default function CreatePostPage() {
       authorId: parseInt(formData.authorId),
       thumbnailUrl: cover || null,
       featured: formData.featured,
-      meta_title: formData.metaTitle,
-      meta_description: formData.metaDescription,
+      metaTitle: formData.metaTitle,
+      metaDescription: formData.metaDescription,
       canonicalUrl: formData.canonicalUrl,
       structuredData: formData.structuredData,
       show_toc: formData.showToc,
@@ -332,7 +297,7 @@ export default function CreatePostPage() {
     };
 
     try {
-      await api.createPost(finalData);
+      await api.createPost(finalData, currentSiteId);
       router.push("/admin/posts");
     } catch (err: any) {
       setError(err.message || "Failed to create post");
@@ -340,8 +305,6 @@ export default function CreatePostPage() {
       setLoading(false);
     }
   };
-
-  const hasRealContent = formData.content.replace(/<[^>]*>/g, '').trim().length > 3;
 
   return (
     <div className="min-h-screen bg-[#F4F7FA] pb-32 pt-8 px-6">
@@ -354,14 +317,6 @@ export default function CreatePostPage() {
             <p className="text-[15px] text-[#64748B] mt-1">Fill in the details below to create a new blog post</p>
           </div>
           <div className="flex items-center gap-3">
-            <button
-              type="button"
-              onClick={() => setIsAiModalOpen(true)}
-              className="px-4 py-2 flex items-center gap-2 bg-gradient-to-r from-blue-600 to-indigo-600 text-white text-[14px] font-bold rounded-full transition-transform hover:scale-105 shadow-md shadow-blue-200"
-            >
-              <Sparkles className="w-4 h-4" />
-              AI Assist
-            </button>
             <span className={cn(
               "px-4 py-1.5 text-white text-[13px] font-bold rounded-full transition-colors",
               formData.status === "Published" ? "bg-emerald-600" : "bg-[#94A3B8]"
@@ -557,44 +512,10 @@ export default function CreatePostPage() {
                       placeholder="Write your blog post content here..."
                     />
 
-                    <div className="flex justify-between items-center px-4 py-3 border-t border-gray-100 bg-[#fafafa] flex-wrap gap-3">
-                      <div className="flex items-center gap-1.5 flex-wrap">
-                        <span className="text-xs font-bold text-gray-400 mr-1 flex items-center gap-1">
-                          <Sparkles className="w-3.5 h-3.5 text-blue-500 animate-pulse" /> AI Assistant:
-                        </span>
-                        <button
-                          type="button"
-                          onClick={() => handleInlineRefine("grammar")}
-                          disabled={refining || !hasRealContent}
-                          className="px-3 py-1.5 text-xs font-bold text-gray-700 bg-white border border-gray-200 rounded-lg hover:bg-gray-100 hover:border-gray-300 transition-all flex items-center gap-1 shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
-                        >
-                          Polish Grammar ✍️
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => handleInlineRefine("longer")}
-                          disabled={refining || !hasRealContent}
-                          className="px-3 py-1.5 text-xs font-bold text-gray-700 bg-white border border-gray-200 rounded-lg hover:bg-gray-100 hover:border-gray-300 transition-all flex items-center gap-1 shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
-                        >
-                          Make Longer 📝
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => handleInlineRefine("summarize")}
-                          disabled={refining || !hasRealContent}
-                          className="px-3 py-1.5 text-xs font-bold text-gray-700 bg-white border border-gray-200 rounded-lg hover:bg-gray-100 hover:border-gray-300 transition-all flex items-center gap-1 shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
-                        >
-                          Summarize Content 🔍
-                        </button>
-                        {refining && (
-                          <Loader2 className="w-3.5 h-3.5 text-blue-500 animate-spin ml-2" />
-                        )}
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <span className="text-xs font-bold text-gray-500">
-                          {formData.content.replace(/<[^>]*>?/gm, '').trim() ? formData.content.replace(/<[^>]*>?/gm, '').trim().split(/\s+/).length : 0} words | {formData.content.replace(/<[^>]*>?/gm, '').length} characters
-                        </span>
-                      </div>
+                    <div className="flex items-center justify-end border-t border-gray-100 bg-[#fafafa] px-4 py-3">
+                      <span className="text-xs font-bold text-gray-500">
+                        {formData.content.replace(/<[^>]*>?/gm, '').trim() ? formData.content.replace(/<[^>]*>?/gm, '').trim().split(/\s+/).length : 0} words | {formData.content.replace(/<[^>]*>?/gm, '').length} characters
+                      </span>
                     </div>
                   </div>
                 </div>
@@ -826,12 +747,6 @@ export default function CreatePostPage() {
         isOpen={isMediaModalOpen}
         onClose={() => setIsMediaModalOpen(false)}
         onSelect={(url) => setFormData({ ...formData, thumbnailUrl: url })}
-      />
-
-      <AIBlogWriterModal
-        isOpen={isAiModalOpen}
-        onClose={() => setIsAiModalOpen(false)}
-        onGenerate={handleAiGenerate}
       />
 
       <PostPreviewModal

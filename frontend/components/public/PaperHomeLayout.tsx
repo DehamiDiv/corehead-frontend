@@ -147,7 +147,7 @@ export default function PaperHomeLayout({
               {(cover(lead) || heroImage) && (
                 // eslint-disable-next-line @next/next/no-img-element
                 <img
-                  src={cover(lead) || heroImage || "https://placehold.co/800x400?text=No+image"}
+                  src={cover(lead) || heroImage || ""}
                   alt=""
                   className="w-full aspect-[4/3] object-cover border"
                   style={{ borderColor: "color-mix(in srgb, var(--site-ink) 15%, transparent)" }}
@@ -155,6 +155,20 @@ export default function PaperHomeLayout({
               )}
             </div>
           </article>
+        )}
+
+        {!lead && (
+          <div
+            className="border-y py-16 text-center"
+            style={{ borderColor: "color-mix(in srgb, var(--site-ink) 20%, transparent)" }}
+          >
+            <p className="font-sans text-xs font-bold uppercase tracking-[0.2em]" style={{ color: "var(--site-primary)" }}>
+              The next edition is being prepared
+            </p>
+            <p className="mt-3 text-sm" style={{ color: "var(--site-muted)" }}>
+              Published stories will appear on this front page.
+            </p>
+          </div>
         )}
 
         {/* Two columns of shorts */}

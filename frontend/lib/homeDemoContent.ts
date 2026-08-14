@@ -1,5 +1,5 @@
 /**
- * Demo home copy by layout style.
+ * Professional starter copy by layout style.
  * Used to:
  * 1) Pre-fill Appearance → Home edit form (so owners can edit what they see)
  * 2) Fall back on the public home when home_layout fields are still empty
@@ -42,7 +42,7 @@ function normalizeStyle(style: HomeStyle): string {
 }
 
 /**
- * Layout-specific demo strings (what the public home shows by default).
+ * Layout-specific starter strings (what the public home shows by default).
  * Edit these once — Appearance form + public site stay in sync.
  */
 export function getHomeDemoContent(
@@ -54,11 +54,10 @@ export function getHomeDemoContent(
 
   if (style === "nature") {
     return {
-      eyebrow: "Home > What We Do",
-      tagline:
-        "Nature Is Essential For The Survival Of All Life On Earth. But It's Diminishing, Fast.",
-      captionLeft: "New stories with beauty\nNature collections",
-      captionRight: "Studio\n2026",
+      eyebrow: "Field notes · People · Place",
+      tagline: `Immersive stories, considered perspectives and visual journeys from ${name}.`,
+      captionLeft: "Stories shaped by place\nPublished with purpose",
+      captionRight: "Journal\nField notes",
       featuredEyebrow: "This week",
       featuredTitle: "Featured stories",
       sideRailLabel: "More to explore",
@@ -83,19 +82,16 @@ export function getHomeDemoContent(
       latestEyebrow: "Latest",
       latestTitle: "From the journal",
       ctaEyebrow: "Start reading",
-      ctaTitle: "Home > What We Do",
-      ctaBody:
-        "Nature Is Essential For The Survival Of All Life On Earth. But It's Diminishing, Fast.",
+      ctaTitle: `Continue exploring ${name}`,
+      ctaBody: "Read the complete collection of features, field notes and visual essays.",
       ctaButton: "Explore all posts",
     };
   }
 
   if (style === "bloom") {
-    // Layout 2 · Wellness — hero content (Appearance edit window)
     return {
-      eyebrow: "Home > What We Do",
-      tagline:
-        "Nature Is Essential For The Survival Of All Life On Earth. But It's Diminishing, Fast.",
+      eyebrow: "Wellbeing · Guidance · Growth",
+      tagline: `Thoughtful guidance and practical ideas for living and working well, from ${name}.`,
       captionLeft: "",
       captionRight: "",
       featuredEyebrow: "Journal",
@@ -125,55 +121,52 @@ export function getHomeDemoContent(
       latestEyebrow: "Latest",
       latestTitle: "From the journal",
       ctaEyebrow: "You are welcome here",
-      // Used as Hero Title in the Layout 2 edit form
-      ctaTitle: "Home > What We Do",
-      ctaBody:
-        "Nature Is Essential For The Survival Of All Life On Earth. But It's Diminishing, Fast.",
+      ctaTitle: `Make space for what matters with ${name}`,
+      ctaBody: "Explore supportive resources, expert perspectives and practical next steps.",
       ctaButton: "Explore the journal",
     };
   }
 
   if (style === "portals") {
     return {
-      eyebrow: "Product · Platform · Builders",
-      tagline: `Powering seamless flows and integrations for ${name} — make complex work simpler and enable builders to ship faster.`,
+      eyebrow: "Expertise · Innovation · Insight",
+      tagline: `Ideas, practical guidance and industry perspectives from ${name}.`,
       captionLeft: "",
       captionRight: "",
       featuredEyebrow: "Insights",
-      featuredTitle: "Latest from the lab",
+      featuredTitle: "Latest insights",
       sideRailLabel: "More to explore",
       pillarsEyebrow: "Platform",
-      pillarsTitle: "Built for complex work",
+      pillarsTitle: "Designed to create impact",
       pillarsBody:
-        "Everything builders need to ship faster — without the operational drag.",
+        "A clear view of the capabilities, knowledge and outcomes behind the work.",
       pillars: [
         {
-          title: "Seamless swaps",
-          body: "Route complex flows in one action — less friction, more throughput.",
+          title: "Clear expertise",
+          body: "Present complex ideas in a focused and credible way.",
         },
         {
-          title: "Historical data",
-          body: "APIs and timelines that keep builders unblocked and informed.",
+          title: "Useful insights",
+          body: "Share practical knowledge that helps readers make better decisions.",
         },
         {
-          title: "AI-ready stack",
-          body: "Integrate intelligence where it matters without slowing shipping.",
+          title: "Meaningful outcomes",
+          body: "Connect every story to the value it creates for its audience.",
         },
       ],
       latestEyebrow: "Latest",
       latestTitle: "From the journal",
       ctaEyebrow: "Get started",
-      ctaTitle: `Simplifying ${name}'s most complex transactions`,
-      ctaBody: "Ship faster with a stack built for complex workflows.",
-      ctaButton: "Get started",
+      ctaTitle: `Discover more from ${name}`,
+      ctaBody: "Explore the complete archive of published stories and practical insights.",
+      ctaButton: "Explore insights",
     };
   }
 
   if (style === "bento") {
-    // Layout 4 · Bento — CTA-focused edit form
     return {
-      eyebrow: "Mosaic · Stories · Product",
-      tagline: `A modern mosaic of stories and product moments from ${name}.`,
+      eyebrow: "Ideas · Culture · Perspective",
+      tagline: `A dynamic collection of standout stories and fresh perspectives from ${name}.`,
       captionLeft: "",
       captionRight: "",
       featuredEyebrow: "Featured",
@@ -198,11 +191,11 @@ export function getHomeDemoContent(
       ],
       latestEyebrow: "Latest",
       latestTitle: "From the journal",
-      ctaEyebrow: "Newsletter",
-      ctaTitle: "Subscribe for updates via newsletter",
+      ctaEyebrow: "Explore",
+      ctaTitle: `Discover more from ${name}`,
       ctaBody:
         "Browse the full archive of published stories, guides, and field notes.",
-      ctaButton: "Subscribe",
+      ctaButton: "Explore all stories",
     };
   }
 
@@ -279,15 +272,15 @@ export function getHomeDemoContent(
 
   if (style === "glass") {
     return {
-      eyebrow: "Clear · Modern · Soft",
-      tagline: `Clear, modern publishing with a soft glass interface — ${name}.`,
+      eyebrow: "Ideas · Notes · Perspective",
+      tagline: `A clear, focused home for essays, updates and independent thinking from ${name}.`,
       captionLeft: "",
       captionRight: "",
       featuredEyebrow: "Featured",
       featuredTitle: "Latest",
       sideRailLabel: "More to explore",
       pillarsEyebrow: `Why ${name}`,
-      pillarsTitle: "A magazine built for modern readers",
+      pillarsTitle: "Publishing with clarity and purpose",
       pillarsBody:
         "Beautiful public pages, published stories only, and branding that feels like your own product.",
       pillars: [
@@ -307,7 +300,7 @@ export function getHomeDemoContent(
       latestEyebrow: "Latest",
       latestTitle: "From the journal",
       ctaEyebrow: "Start reading",
-      ctaTitle: `Stay with ${name}`,
+      ctaTitle: `Keep reading ${name}`,
       ctaBody:
         "Browse the full archive of published stories, guides, and field notes.",
       ctaButton: "Explore all posts",
@@ -324,9 +317,9 @@ export function getHomeDemoContent(
     featuredTitle: "Featured stories",
     sideRailLabel: "More to explore",
     pillarsEyebrow: `Why ${name}`,
-    pillarsTitle: "A magazine built for modern readers",
+    pillarsTitle: "Publishing with clarity and purpose",
     pillarsBody:
-      "Beautiful public pages, published stories only, and branding that feels like your own product — not a template dump.",
+      "A focused home for useful articles, original perspectives and the ideas behind your work.",
     pillars: [
       {
         title: "Thoughtful stories",

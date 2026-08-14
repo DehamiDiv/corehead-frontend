@@ -47,6 +47,7 @@ export default function VerduraEditorialHero({
   return (
     <section
       className="relative overflow-hidden py-8 sm:py-12"
+      data-home-layout="nature"
       style={{ background: "var(--site-bg)" }}
     >
       <div className="relative max-w-5xl mx-auto px-4 sm:px-6">
@@ -65,12 +66,11 @@ export default function VerduraEditorialHero({
               {eyebrow}
             </p>
             <h1
-              className="leading-[0.9] text-[clamp(3rem,12vw,6.25rem)] select-none"
+              className="break-words leading-[0.92] text-[clamp(2.25rem,10vw,6.25rem)] tracking-[0.06em] sm:tracking-[0.12em] select-none"
               style={{
                 color: "var(--site-cta-bg, var(--site-surface, #f5f0e6))",
                 fontFamily: "var(--site-font), Georgia, serif",
                 fontWeight: 400,
-                letterSpacing: "0.14em",
               }}
             >
               {siteName.toUpperCase()}
@@ -87,7 +87,7 @@ export default function VerduraEditorialHero({
                 <img
                   src={heroImage}
                   alt={`${siteName} illustration`}
-                  className="relative z-[1] h-[78%] w-auto max-w-[88%] object-contain drop-shadow-sm"
+                  className="absolute inset-0 z-[1] h-full w-full object-cover transition-transform duration-700 hover:scale-[1.02]"
                 />
               ) : (
                 <div
@@ -99,9 +99,17 @@ export default function VerduraEditorialHero({
                 />
               )}
 
+              {heroImage ? (
+                <div className="absolute inset-0 z-[1] bg-gradient-to-t from-black/60 via-black/5 to-transparent" />
+              ) : null}
+
               <div
                 className="absolute bottom-0 inset-x-0 z-[2] flex items-end justify-between gap-3 px-4 sm:px-6 py-4 sm:py-5 text-[8px] sm:text-[10px] font-semibold uppercase tracking-[0.2em]"
-                style={{ color: "var(--site-primary)" }}
+                style={{
+                  color: heroImage
+                    ? "rgba(255,255,255,0.9)"
+                    : "var(--site-primary)",
+                }}
               >
                 <span className="max-w-[48%] leading-[1.6] opacity-80">
                   {leftLines.map((line, i) => (

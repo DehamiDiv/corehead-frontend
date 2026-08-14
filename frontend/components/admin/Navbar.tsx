@@ -7,7 +7,7 @@ import { usePathname, useRouter } from "next/navigation";
 import { LogOut, Home, FileText, ExternalLink } from "lucide-react";
 import SiteSwitcher from "@/components/admin/SiteSwitcher";
 import { useOptionalSite } from "@/components/admin/SiteContext";
-import { siteHomePath } from "@/lib/publicSite";
+import { siteBlogPath, siteHomePath } from "@/lib/publicSite";
 import { clearSession } from "@/lib/authSession";
 import { cn } from "@/lib/utils";
 import { resolveAdminMediaUrl } from "@/lib/apiOrigin";
@@ -47,9 +47,9 @@ export default function AdminNavbar() {
     router.push("/login");
   };
 
+  const adminPanelPath = "/admin/posts";
+  const publicBlogsPath = slug ? siteBlogPath(slug) : "/admin/sites";
   const isDashboard = pathname === "/admin";
-  const isBlogs =
-    pathname === "/admin/posts" || pathname.startsWith("/admin/posts/");
 
   const navBtn = (active: boolean) =>
     cn(
@@ -88,7 +88,11 @@ export default function AdminNavbar() {
             />
           </Link>
 
-          <Link href="/admin" className={navBtn(isDashboard)}>
+          <Link
+            href={adminPanelPath}
+            className={navBtn(isDashboard)}
+            title="Open the admin content panel"
+          >
             <Home className="w-4 h-4 shrink-0" />
             <span>Dashboard</span>
           </Link>
@@ -97,8 +101,14 @@ export default function AdminNavbar() {
         {/* CENTER — All Blogs truly centered in the bar */}
         <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-10 pointer-events-none sm:pointer-events-auto">
           <Link
-            href="/admin/posts"
-            className={cn(navBtn(isBlogs), "pointer-events-auto")}
+            href={publicBlogsPath}
+            className={cn(navBtn(false), "pointer-events-auto")}
+            aria-disabled={!slug}
+            title={
+              slug
+                ? `View published posts for ${siteCtx?.currentSite?.name || slug}`
+                : "Select a site to view its published posts"
+            }
           >
             <FileText className="w-4 h-4 shrink-0" />
             <span>All Blogs</span>

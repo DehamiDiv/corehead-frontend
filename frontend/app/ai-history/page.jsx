@@ -4,11 +4,12 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import {
   Sparkles, Clock, Layers, Palette, RefreshCw,
-  Trash2, Search, Filter, RotateCcw, ArrowUpRight
+  Trash2, Search, Filter, RotateCcw, ArrowUpRight, Save
 } from 'lucide-react';
 import Link from 'next/link';
 import './page.css';
 import { aiApi } from '@/services/aiApi';
+import { normalizeLayoutDocumentV1 } from '@/lib/layoutContract';
 
 const BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api';
 
@@ -33,6 +34,7 @@ export default function AIHistoryPage() {
   const [editingId, setEditingId] = useState(null);
   const [editPromptValue, setEditPromptValue] = useState('');
   const [updatingId, setUpdatingId] = useState(null);
+  const [promotingId, setPromotingId] = useState(null);
   const [search, setSearch] = useState('');
   const [filterStyle, setFilterStyle] = useState('all');
   const [expandedId, setExpandedId] = useState(null);
@@ -88,6 +90,23 @@ export default function AIHistoryPage() {
     try {
       setLoadingId(item.id);
 
+      if (item.generated_layout?.blocks) {
+        const normalized = normalizeLayoutDocumentV1(item.generated_layout, {
+          name: item.generated_layout?.name || item.prompt?.slice(0, 80) || 'AI Layout',
+          kind: item.layout_type,
+          origin: 'ai',
+          designStyle: item.design_style,
+        });
+        localStorage.setItem('corehead_builder_layout', JSON.stringify(normalized.document));
+        localStorage.setItem('corehead_builder_meta', JSON.stringify({
+          name: normalized.document.name,
+          type: normalized.document.kind === 'blog-archive' ? 'Blog Archive' : 'Single Post',
+          id: null,
+        }));
+        router.push('/admin/builder');
+        return;
+      }
+
       // Use the actual generated layout if available, otherwise fallback
       let layoutData;
       if (item.generated_layout && (item.generated_layout.cards || item.generated_layout.layout_data?.cards)) {
@@ -118,6 +137,21 @@ export default function AIHistoryPage() {
       alert('Failed to restore layout: ' + err.message);
     } finally {
       setLoadingId(null);
+    }
+  };
+
+  const handlePromote = async (item) => {
+    try {
+      setPromotingId(item.id);
+      const name = item.generated_layout?.name || item.prompt?.slice(0, 80) || 'AI Layout';
+      const result = await aiApi.promoteHistory(item.id, name);
+      setHistory(prev => prev.map(entry => entry.id === item.id
+        ? { ...entry, promoted_template_id: result.template?.id }
+        : entry));
+    } catch (err) {
+      alert('Save to Layout Library failed: ' + err.message);
+    } finally {
+      setPromotingId(null);
     }
   };
 
@@ -535,6 +569,33 @@ export default function AIHistoryPage() {
                             : <><RotateCcw size={13} /> Restore in Builder</>
                           }
                         </button>
+                        {item.promoted_template_id ? (
+                          <Link
+                            href="/admin/layouts"
+                            style={{
+                              display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px',
+                              padding: '9px 16px', background: '#ecfdf5', color: '#047857',
+                              border: '2px solid #a7f3d0', borderRadius: '10px',
+                              fontSize: '12px', fontWeight: '700', textDecoration: 'none',
+                            }}
+                          >
+                            <ArrowUpRight size={13} /> Saved to Library
+                          </Link>
+                        ) : (
+                          <button
+                            onClick={() => handlePromote(item)}
+                            disabled={promotingId === item.id}
+                            style={{
+                              display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px',
+                              padding: '9px 16px', background: '#fff', color: '#047857',
+                              border: '2px solid #a7f3d0', borderRadius: '10px',
+                              fontSize: '12px', fontWeight: '700', cursor: 'pointer',
+                            }}
+                          >
+                            <Save size={13} />
+                            {promotingId === item.id ? 'Saving...' : 'Save to Layout Library'}
+                          </button>
+                        )}
                         <button
                           onClick={() => handleDelete(item.id)}
                           disabled={deletingId === item.id}

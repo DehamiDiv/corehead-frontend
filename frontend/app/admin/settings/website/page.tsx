@@ -1,20 +1,40 @@
 "use client";
 
 import React, { useState, useEffect, useRef } from "react";
-import { Check, Upload, Library, X, Plus, Code } from "lucide-react";
-import { cn } from "@/lib/utils";
+import { Check, Upload, Library, X, Plus, Code, Globe2, Loader2, Save } from "lucide-react";
 import MediaLibraryModal from "@/components/admin/MediaLibraryModal";
 import { api } from "@/lib/api";
+import { useSite } from "@/components/admin/SiteContext";
+import { siteHomePath } from "@/lib/publicSite";
+
+type WebsiteMetadata = {
+  websiteName: string;
+  pageTitle: string;
+  description: string;
+  favicon: string;
+  ogImage: string;
+  scripts: string[];
+};
+
+function metadataDefaults(siteName?: string | null): WebsiteMetadata {
+  const name = String(siteName || "").trim();
+  return {
+    websiteName: name,
+    pageTitle: name ? `${name} — Stories and updates` : "",
+    description: name ? `Stories, insights, and updates from ${name}.` : "",
+    favicon: "",
+    ogImage: "",
+    scripts: [],
+  };
+}
 
 export default function WebsiteSettingsPage() {
-  const [formData, setFormData] = useState({
-    websiteName: "SeekaHost.com",
-    pageTitle: "SeekaHost's Blog",
-    description: "Personal blog about web development and related topics.",
-    favicon: "",
-    ogImage: "https://images.unsplash.com/photo-1550745165-9bc0b252726f?w=1200&q=80",
-    scripts: [] as string[]
-  });
+  const { currentSite, currentSiteId, refreshSites } = useSite();
+  const [siteName, setSiteName] = useState("");
+  const [isSavingIdentity, setIsSavingIdentity] = useState(false);
+  const [identityMessage, setIdentityMessage] = useState<string | null>(null);
+  const [identityError, setIdentityError] = useState<string | null>(null);
+  const [formData, setFormData] = useState<WebsiteMetadata>(() => metadataDefaults());
   const [isLoading, setIsLoading] = useState(true);
 
   const [isMediaModalOpen, setIsMediaModalOpen] = useState(false);
@@ -24,20 +44,31 @@ export default function WebsiteSettingsPage() {
   const ogInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
+    setSiteName(currentSite?.name || "");
+    setIdentityMessage(null);
+    setIdentityError(null);
+  }, [currentSite?.id, currentSite?.name]);
+
+  useEffect(() => {
     const fetchSettings = async () => {
+      setIsLoading(true);
       try {
         const savedSettings = await api.getSetting("website_metadata");
-        if (savedSettings) {
-          setFormData(savedSettings);
-        }
+        const defaults = metadataDefaults(currentSite?.name);
+        setFormData({
+          ...defaults,
+          ...(savedSettings && typeof savedSettings === "object" ? savedSettings : {}),
+          scripts: Array.isArray(savedSettings?.scripts) ? savedSettings.scripts : [],
+        });
       } catch (error) {
         console.error("Failed to fetch settings:", error);
+        setFormData(metadataDefaults(currentSite?.name));
       } finally {
         setIsLoading(false);
       }
     };
     fetchSettings();
-  }, []);
+  }, [currentSiteId, currentSite?.name]);
 
   const handleChange = (field: string, value: string) => {
     setFormData(prev => ({ ...prev, [field]: value }));
@@ -75,6 +106,35 @@ export default function WebsiteSettingsPage() {
     }
   };
 
+  const handleIdentitySave = async () => {
+    const name = siteName.trim();
+    if (!currentSiteId) {
+      setIdentityError("Select a site before updating its details.");
+      return;
+    }
+    if (!name) {
+      setIdentityError("Site name is required.");
+      return;
+    }
+    if (name.length > 255) {
+      setIdentityError("Site name must be 255 characters or less.");
+      return;
+    }
+
+    setIsSavingIdentity(true);
+    setIdentityError(null);
+    setIdentityMessage(null);
+    try {
+      await api.updateSite(currentSiteId, { name });
+      await refreshSites();
+      setIdentityMessage("Site name updated successfully.");
+    } catch (error: any) {
+      setIdentityError(error?.message || "Failed to update the site name.");
+    } finally {
+      setIsSavingIdentity(false);
+    }
+  };
+
   if (isLoading) {
     return <div className="p-8 text-center text-gray-500 font-bold">Loading Settings...</div>;
   }
@@ -84,12 +144,90 @@ export default function WebsiteSettingsPage() {
       <div className="flex items-center justify-between mb-8">
         <div>
           <h1 className="text-3xl font-black text-gray-900 tracking-tight">Website Settings</h1>
-          <p className="text-gray-500 font-medium mt-1">Manage your website's metadata settings</p>
+          <p className="text-gray-500 font-medium mt-1">Manage the selected site's identity and metadata</p>
         </div>
         <div className="px-4 py-2 bg-blue-600 text-white rounded-2xl text-[11px] font-black uppercase tracking-wider shadow-lg shadow-blue-100 flex items-center gap-2">
            Configured
         </div>
       </div>
+
+      {/* Canonical tenant identity — updates the selected Site record. */}
+      <section className="overflow-hidden rounded-3xl border border-blue-100 bg-white shadow-sm">
+        <div className="flex flex-col gap-3 border-b border-blue-50 bg-blue-50/50 p-6 sm:flex-row sm:items-center sm:justify-between sm:p-8">
+          <div className="flex items-start gap-3">
+            <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-blue-600 text-white">
+              <Globe2 className="h-5 w-5" />
+            </div>
+            <div>
+              <h2 className="text-lg font-bold text-gray-900">Site Identity</h2>
+              <p className="mt-0.5 text-sm text-gray-500">
+                Update the name shown in the dashboard, public header, homepage, and site switcher.
+              </p>
+            </div>
+          </div>
+          {currentSite?.status ? (
+            <span className="self-start rounded-full border border-emerald-100 bg-emerald-50 px-3 py-1 text-[10px] font-black uppercase tracking-wider text-emerald-700 sm:self-auto">
+              {currentSite.status}
+            </span>
+          ) : null}
+        </div>
+
+        <div className="space-y-5 p-6 sm:p-8">
+          {identityMessage ? (
+            <p className="rounded-xl border border-emerald-100 bg-emerald-50 px-4 py-3 text-sm font-semibold text-emerald-700">
+              {identityMessage}
+            </p>
+          ) : null}
+          {identityError ? (
+            <p className="rounded-xl border border-red-100 bg-red-50 px-4 py-3 text-sm font-semibold text-red-700">
+              {identityError}
+            </p>
+          ) : null}
+
+          <div className="grid gap-5 md:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
+            <div className="space-y-2">
+              <label htmlFor="canonical-site-name" className="ml-1 text-sm font-bold text-gray-900">
+                Site Name
+              </label>
+              <input
+                id="canonical-site-name"
+                type="text"
+                maxLength={255}
+                value={siteName}
+                onChange={(event) => setSiteName(event.target.value)}
+                disabled={!currentSiteId || isSavingIdentity}
+                className="w-full rounded-2xl border border-gray-100 bg-gray-50/50 px-5 py-4 text-sm font-bold text-gray-900 outline-none transition-all focus:border-blue-600 focus:ring-2 focus:ring-blue-500/10 disabled:opacity-60"
+              />
+              <p className="text-[11px] font-semibold text-gray-400">{siteName.length}/255 characters</p>
+            </div>
+
+            <div className="space-y-2">
+              <span className="ml-1 block text-sm font-bold text-gray-900">Public Site URL</span>
+              <div className="flex min-h-[54px] items-center rounded-2xl border border-gray-100 bg-gray-50 px-5 py-3 font-mono text-xs text-gray-600">
+                {currentSite?.slug ? siteHomePath(currentSite.slug) : "No site selected"}
+              </div>
+              <p className="text-[11px] font-semibold text-gray-400">
+                The URL slug remains unchanged when the site name is updated.
+              </p>
+            </div>
+          </div>
+
+          <div className="flex flex-wrap items-center justify-between gap-3 border-t border-gray-100 pt-5">
+            <p className="text-xs text-gray-400">
+              Site ID: <span className="font-mono font-bold">{currentSiteId || "—"}</span>
+            </p>
+            <button
+              type="button"
+              onClick={handleIdentitySave}
+              disabled={!currentSiteId || isSavingIdentity || siteName.trim() === currentSite?.name}
+              className="inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-blue-600 px-5 text-sm font-bold text-white shadow-md shadow-blue-100 hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              {isSavingIdentity ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
+              {isSavingIdentity ? "Saving…" : "Save Site Name"}
+            </button>
+          </div>
+        </div>
+      </section>
 
       {/* Website Metadata Card */}
       <div className="bg-white rounded-3xl shadow-sm border border-gray-100 overflow-hidden">
@@ -100,7 +238,7 @@ export default function WebsiteSettingsPage() {
         
         <div className="p-8 space-y-8">
           <div className="space-y-2">
-            <label className="text-sm font-bold text-gray-900 ml-1">Website Name</label>
+            <label className="text-sm font-bold text-gray-900 ml-1">SEO Site Name</label>
             <input 
               type="text" 
               value={formData.websiteName}
@@ -111,6 +249,9 @@ export default function WebsiteSettingsPage() {
               <Check className="w-3.5 h-3.5" />
               Character count: {formData.websiteName.length}
             </div>
+            <p className="text-[11px] font-semibold text-gray-400">
+              Used in metadata and social previews. Change the public brand name in Site Identity above.
+            </p>
           </div>
 
           <div className="space-y-2">
@@ -193,19 +334,28 @@ export default function WebsiteSettingsPage() {
         </div>
         <div className="p-8">
            <div className="relative group">
-              <div className="w-full aspect-[2/1] rounded-[2rem] overflow-hidden border border-gray-100 shadow-sm">
-                 <img 
-                    src={formData.ogImage} 
-                    className="w-full h-full object-cover grayscale opacity-80 group-hover:grayscale-0 group-hover:opacity-100 transition-all duration-700" 
-                    alt="OG Preview"
-                 />
+              <div className="w-full aspect-[2/1] rounded-[2rem] overflow-hidden border border-gray-100 shadow-sm bg-gradient-to-br from-blue-50 via-white to-slate-100">
+                 {formData.ogImage ? (
+                   // eslint-disable-next-line @next/next/no-img-element
+                   <img
+                      src={formData.ogImage}
+                      className="w-full h-full object-cover grayscale opacity-80 group-hover:grayscale-0 group-hover:opacity-100 transition-all duration-700"
+                      alt="Open Graph preview"
+                   />
+                 ) : (
+                   <div className="absolute inset-0 flex items-end justify-center pb-6 text-xs font-bold uppercase tracking-[0.18em] text-slate-300">
+                     Add a social sharing image
+                   </div>
+                 )}
                  <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-                    <h1 className="text-4xl md:text-6xl font-black text-gray-900 tracking-tighter italic">{formData.websiteName}</h1>
+                    <h1 className="px-8 text-center text-3xl md:text-5xl font-black text-gray-900 tracking-tighter">{formData.websiteName || currentSite?.name}</h1>
                  </div>
               </div>
-              <button onClick={() => handleChange("ogImage", "https://images.unsplash.com/photo-1550745165-9bc0b252726f?w=1200&q=80")} className="absolute top-4 right-4 p-2.5 bg-red-600 text-white rounded-full shadow-xl hover:scale-110 transition-transform">
-                 <X className="w-5 h-5" />
-              </button>
+              {formData.ogImage ? (
+                <button onClick={() => handleChange("ogImage", "")} className="absolute top-4 right-4 p-2.5 bg-red-600 text-white rounded-full shadow-xl hover:scale-110 transition-transform" aria-label="Remove Open Graph image">
+                   <X className="w-5 h-5" />
+                </button>
+              ) : null}
            </div>
         </div>
       </div>
@@ -244,18 +394,9 @@ export default function WebsiteSettingsPage() {
          </button>
       </div>
 
-      {/* Footer */}
-      <div className="pt-10 flex flex-col items-center justify-center text-center gap-2 opacity-40 grayscale group pb-10">
-        <p className="text-[11px] font-black text-gray-900 uppercase tracking-[0.2em]">
-          Copyright © 2026 SeekaHost Technologies Ltd. All Rights Reserved.
-        </p>
-        <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">
-          Company Number: 16028964 | VAT Number: 485829729
-        </p>
-        <div className="mt-4 flex items-center gap-2">
-           <span className="text-[10px] font-black text-gray-300">v1.0.0</span>
-        </div>
-      </div>
+      <p className="pt-8 pb-10 text-center text-[10px] font-black uppercase tracking-[0.2em] text-gray-300">
+        CoreHead site configuration · {currentSite?.name || "No site selected"}
+      </p>
 
       <MediaLibraryModal 
         isOpen={isMediaModalOpen}

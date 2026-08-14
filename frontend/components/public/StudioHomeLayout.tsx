@@ -71,7 +71,7 @@ export default function StudioHomeLayout({
           {(covers[0]?.src || heroImage) && (
             // eslint-disable-next-line @next/next/no-img-element
             <img
-              src={covers[0]?.src || heroImage || "https://placehold.co/800x400?text=No+image"}
+              src={covers[0]?.src || heroImage || ""}
               alt=""
               className="h-full w-full object-cover"
             />
@@ -142,6 +142,7 @@ export default function StudioHomeLayout({
           </Link>
         </div>
 
+        {covers.length > 0 ? (
         <div className="grid grid-cols-12 gap-3 sm:gap-4">
           {covers.map(({ post, src }, i) => {
             const spans = [
@@ -179,6 +180,19 @@ export default function StudioHomeLayout({
             );
           })}
         </div>
+        ) : (
+          <div
+            className="min-h-64 border flex items-center justify-center px-6 text-center"
+            style={{
+              borderColor: "color-mix(in srgb, var(--site-ink) 18%, transparent)",
+              background: "color-mix(in srgb, var(--site-surface) 45%, transparent)",
+            }}
+          >
+            <p className="max-w-md text-sm leading-relaxed" style={{ color: "var(--site-muted)" }}>
+              Published stories and projects will appear here as a curated visual collection.
+            </p>
+          </div>
+        )}
       </section>
 
       <section className="max-w-6xl mx-auto px-4 sm:px-6 pb-20 text-center">

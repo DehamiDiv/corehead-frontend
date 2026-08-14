@@ -12,6 +12,7 @@ import { mapThemeNavHref, DEFAULT_THEME_NAV_LINKS } from "@/lib/themeNav";
 import { cn } from "@/lib/utils";
 import { clearSession } from "@/lib/authSession";
 import { setCurrentSite } from "@/lib/siteStorage";
+import { api, type SiteSummary } from "@/lib/api";
 import { Menu, X } from "lucide-react";
 
 export default function PublicSiteHeader({ site }: { site: PublicSite }) {
@@ -21,10 +22,33 @@ export default function PublicSiteHeader({ site }: { site: PublicSite }) {
   const branding = site.branding;
   const logo = resolveMediaUrl(resolveHeaderLogo(site.logo, branding));
   const [logoBroken, setLogoBroken] = useState(false);
+  const [hasSession, setHasSession] = useState(false);
+  const [manageableSite, setManageableSite] = useState<SiteSummary | null>(null);
 
   useEffect(() => {
     setLogoBroken(false);
   }, [logo]);
+
+  useEffect(() => {
+    let active = true;
+    const token = localStorage.getItem("accessToken");
+    setHasSession(Boolean(token));
+    setManageableSite(null);
+
+    if (!token) return () => { active = false; };
+
+    api.getManageableSite(site.id)
+      .then((matchedSite) => {
+        if (active && matchedSite && Number(matchedSite.id) === Number(site.id)) {
+          setManageableSite(matchedSite);
+        }
+      })
+      .catch(() => {
+        if (active) setManageableSite(null);
+      });
+
+    return () => { active = false; };
+  }, [site.id]);
   const homeHref = siteHomePath(site.slug);
   const blogHref = siteBlogPath(site.slug);
 
@@ -46,13 +70,12 @@ export default function PublicSiteHeader({ site }: { site: PublicSite }) {
   const utilityNav = navItems.filter((item) => {
     const name = String(item.name).toLowerCase();
     const link = String(item.link || "");
-    return (
-      name === "logout" ||
-      link === "/logout" ||
-      name === "dashboard" ||
-      link === "/admin" ||
-      link.startsWith("/admin")
-    );
+    const isLogout = name === "logout" || link === "/logout";
+    const isDashboard =
+      name === "dashboard" || link === "/admin" || link.startsWith("/admin");
+    if (isDashboard) return Boolean(manageableSite);
+    if (isLogout) return hasSession;
+    return false;
   });
 
   const headerStyle: CSSProperties = {
@@ -69,28 +92,17 @@ export default function PublicSiteHeader({ site }: { site: PublicSite }) {
 
   const openSiteDashboard = (e: React.MouseEvent) => {
     e.preventDefault();
+    if (!manageableSite) return;
+
     setCurrentSite({
-      id: site.id,
-      name: site.name,
-      slug: site.slug,
-      status: site.status,
-      logo: site.logo ?? null,
-      ownerId: site.ownerId,
+      id: manageableSite.id,
+      name: manageableSite.name,
+      slug: manageableSite.slug,
+      status: manageableSite.status,
+      logo: manageableSite.logo ?? null,
+      ownerId: manageableSite.ownerId,
     });
-
-    const token =
-      typeof window !== "undefined"
-        ? localStorage.getItem("accessToken")
-        : null;
-
-    if (!token) {
-      router.push(
-        `/login?callback=${encodeURIComponent(`/admin?site=${encodeURIComponent(site.slug)}`)}`
-      );
-      return;
-    }
-
-    router.push(`/admin?site=${encodeURIComponent(site.slug)}`);
+    router.push(`/admin/posts?site=${encodeURIComponent(manageableSite.slug)}`);
   };
 
   const handleLogout = (e: React.MouseEvent) => {
@@ -125,10 +137,10 @@ export default function PublicSiteHeader({ site }: { site: PublicSite }) {
         (href.includes("/blog") && pathname.includes("/blog")));
 
     const baseClass = cn(
-      "font-semibold transition-colors whitespace-nowrap",
+      "font-semibold leading-none transition-colors whitespace-nowrap",
       mobile
         ? "block w-full rounded-xl px-4 py-3 text-sm"
-        : "px-3 py-2 text-sm rounded-xl",
+        : "inline-flex h-10 items-center justify-center rounded-xl px-3 text-sm",
       active
         ? "opacity-100 bg-white/10 underline underline-offset-4"
         : "opacity-85 hover:opacity-100 hover:bg-white/5"
@@ -151,6 +163,7 @@ export default function PublicSiteHeader({ site }: { site: PublicSite }) {
     }
 
     if (isDashboard) {
+      if (!manageableSite) return null;
       return (
         <button
           key={`${item.name}-${item.link}`}
@@ -186,10 +199,10 @@ export default function PublicSiteHeader({ site }: { site: PublicSite }) {
         background: `color-mix(in srgb, var(--site-header-bg, var(--site-surface, #fff)) 92%, transparent)`,
       }}
     >
-      <div className="max-w-6xl mx-auto px-3 sm:px-6 h-[70px] flex items-center justify-between gap-3">
+      <div className="grid h-[72px] w-full grid-cols-[minmax(0,1fr)_auto] items-center gap-4 px-4 sm:px-6 lg:grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] lg:px-10 xl:px-14">
         <Link
           href={homeHref}
-          className="flex items-center gap-2.5 min-w-0 group shrink-0"
+          className="group flex h-12 min-w-0 items-center gap-2.5 justify-self-start"
         >
           {logo && !logoBroken ? (
             // Logo image only — name text would double brand wordmarks (e.g. “Blocksy Blocksy”)
@@ -199,7 +212,7 @@ export default function PublicSiteHeader({ site }: { site: PublicSite }) {
               alt={site.name}
               width={160}
               height={44}
-              className="h-10 sm:h-11 w-auto max-w-[180px] shrink-0 object-contain object-left"
+              className="block h-auto max-h-10 w-auto max-w-[180px] shrink-0 object-contain object-left"
               onError={() => setLogoBroken(true)}
             />
           ) : (
@@ -210,32 +223,35 @@ export default function PublicSiteHeader({ site }: { site: PublicSite }) {
               >
                 {site.name.charAt(0).toUpperCase()}
               </div>
-              <span className="font-bold truncate text-base sm:text-lg leading-tight">
+              <span className="truncate text-base font-bold leading-none sm:text-lg">
                 {site.name}
               </span>
             </>
           )}
         </Link>
 
-        <nav className="hidden md:flex items-center gap-0.5">
+        <nav className="hidden min-h-12 items-center justify-center gap-0.5 justify-self-center lg:flex">
           {primaryNav.map((item) => renderNavItem(item))}
+        </nav>
+
+        <div className="hidden min-h-12 items-center justify-end justify-self-end lg:flex">
           <Link
             href={ctaUrl}
-            className="ml-2 inline-flex px-4 py-2 text-sm font-bold rounded-full shadow-md transition-transform hover:scale-[1.02] active:scale-[0.98] shrink-0"
+            className="inline-flex h-10 shrink-0 items-center justify-center rounded-full px-4 text-sm font-bold leading-none shadow-md transition-transform hover:scale-[1.02] active:scale-[0.98]"
             style={{ background: ctaBg, color: ctaColor }}
           >
             {ctaText || "Explore"}
           </Link>
           {utilityNav.length > 0 && (
-            <div className="ml-1 pl-2 border-l border-white/15 flex items-center gap-0.5">
+            <div className="ml-1 flex h-10 items-center gap-0.5 border-l border-white/15 pl-2">
               {utilityNav.map((item) => renderNavItem(item))}
             </div>
           )}
-        </nav>
+        </div>
 
         <button
           type="button"
-          className="md:hidden inline-flex h-10 w-10 items-center justify-center rounded-xl border border-white/15 bg-white/5"
+          className="inline-flex h-10 w-10 items-center justify-center justify-self-end rounded-xl border border-white/15 bg-white/5 lg:hidden"
           aria-label={mobileOpen ? "Close menu" : "Open menu"}
           onClick={() => setMobileOpen((v) => !v)}
         >
@@ -245,7 +261,7 @@ export default function PublicSiteHeader({ site }: { site: PublicSite }) {
 
       {mobileOpen && (
         <div
-          className="md:hidden border-t border-white/10 px-3 pb-4 pt-2 space-y-1"
+          className="space-y-1 border-t border-white/10 px-3 pb-4 pt-2 lg:hidden"
           style={headerStyle}
         >
           {primaryNav.map((item) => renderNavItem(item, true))}

@@ -9,6 +9,7 @@ import { BuilderBlock, BlockType } from "../admin/builder/BuilderContext";
 import { looksLikeHtml, preparePostHtml } from "@/lib/htmlContent";
 import { resolveMediaUrl } from "@/lib/siteMedia";
 import { api } from "@/lib/api";
+import type { LayoutDocumentV1 } from "@/lib/layoutContract";
 
 /**
  * R2-3: Public Page Renderer — all builder BlockTypes supported.
@@ -16,7 +17,7 @@ import { api } from "@/lib/api";
  */
 
 interface PublicPageRendererProps {
-  layout: BuilderBlock[] | { blocks: BuilderBlock[] };
+  layout: BuilderBlock[] | { blocks: BuilderBlock[] } | LayoutDocumentV1;
   data?: Record<string, any>;
   isLoop?: boolean;
   bindings?: Record<string, any>;
@@ -328,7 +329,7 @@ export function PublicPageRenderer({
             <div
               key={block.id}
               style={styleString}
-              className="mb-4 text-gray-700 leading-relaxed prose prose-slate max-w-none prose-headings:font-bold"
+              className="cms-post-body mb-4 max-w-none leading-relaxed"
               dangerouslySetInnerHTML={{
                 __html: preparePostHtml(rawHtml),
               }}

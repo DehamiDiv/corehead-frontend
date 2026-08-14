@@ -137,6 +137,30 @@ export const api = {
     return this.fetchWithAuth(`${BASE_URL}/sites/${id}`, { skipSite: true });
   },
 
+  /**
+   * Silent membership check for public-site chrome.
+   * Unlike fetchWithAuth, a stale or unrelated session must not redirect a
+   * public reader away from the site. The protected site endpoint remains the
+   * authority and returns the site only to an owner/member/platform admin.
+   */
+  async getManageableSite(id: string | number): Promise<SiteSummary | null> {
+    const authHeaders = getAuthHeader();
+    if (!authHeaders.Authorization) return null;
+
+    const res = await fetch(`${BASE_URL}/sites/${id}`, {
+      cache: 'no-store',
+      headers: authHeaders,
+    });
+    if (res.status === 401 || res.status === 403 || res.status === 404) {
+      return null;
+    }
+    if (!res.ok) return null;
+
+    const data = await res.json().catch(() => null);
+    const site = data?.site ?? data;
+    return site?.id ? site : null;
+  },
+
   async getSiteBySlug(slug: string) {
     const res = await fetch(`${BASE_URL}/sites/by-slug/${encodeURIComponent(slug)}`, {
       cache: 'no-store',
@@ -394,8 +418,11 @@ export const api = {
   },
 
   // Posts Management (site-scoped via X-Site-Id)
-  async getPosts() {
-    return this.fetchWithAuth(`${BASE_URL}/posts`);
+  async getPosts(siteId?: number | null) {
+    return this.fetchWithAuth(`${BASE_URL}/posts`, {
+      cache: 'no-store',
+      headers: siteId ? { 'X-Site-Id': String(siteId) } : undefined,
+    });
   },
 
   async getPostById(id: string | number) {
@@ -410,10 +437,13 @@ export const api = {
     });
   },
 
-  async createPost(data: any) {
+  async createPost(data: any, siteId?: number | null) {
     return this.fetchWithAuth(`${BASE_URL}/posts`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: {
+        'Content-Type': 'application/json',
+        ...(siteId ? { 'X-Site-Id': String(siteId) } : {}),
+      },
       body: JSON.stringify(data)
     });
   },
@@ -781,6 +811,22 @@ export const api = {
       headers: { 'Content-Type': 'application/json' },
       // Backend stores value as a JSON string
       body: JSON.stringify({ value: typeof value === 'string' ? value : JSON.stringify(value) })
+    });
+  },
+
+  async saveAppearanceDraft(draft: Record<string, unknown>) {
+    return this.fetchWithAuth(`${BASE_URL}/settings/appearance/draft`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(draft),
+    });
+  },
+
+  async applyAppearanceDraft(draft: Record<string, unknown>) {
+    return this.fetchWithAuth(`${BASE_URL}/settings/appearance/apply`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(draft),
     });
   },
 

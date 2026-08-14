@@ -6,10 +6,14 @@ import { cn } from "@/lib/utils";
 import { api } from "@/lib/api";
 import Theme1Preview from "@/components/admin/Theme1Preview";
 import MediaLibraryModal from "@/components/admin/MediaLibraryModal";
+import AppearanceThemeGallery from "@/components/admin/appearance/AppearanceThemeGallery";
+import AppearanceHomeLayoutGallery from "@/components/admin/appearance/AppearanceHomeLayoutGallery";
+import AppearanceContentLayoutGallery from "@/components/admin/appearance/AppearanceContentLayoutGallery";
 import {
   getThemePreset,
   getHomeLayoutPalette,
   HOME_LAYOUT_OPTIONS,
+  THEME_OPTIONS,
   type ThemePreset,
 } from "@/lib/themePresets";
 import { resolveAdminMediaUrl } from "@/lib/apiOrigin";
@@ -29,12 +33,14 @@ import {
 } from "@/lib/themeNav";
 import { useSite } from "@/components/admin/SiteContext";
 import Link from "next/link";
+import { preserveHomeLayoutForThemeChange } from "@/lib/appearanceModel";
+import { toast } from "@/lib/toast";
 
 /**
  * Theme gallery — same 12 packs as dev.corehead.app Appearance.
  * Preview images show the intended homepage look for each pack.
  */
-const THEMES = [
+const LEGACY_THEME_GALLERY = [
   {
     id: "default",
     name: "Default",
@@ -132,6 +138,9 @@ const THEMES = [
       "https://images.unsplash.com/photo-1486312338219-ce68d2c6f44d?w=900&q=80",
   },
 ];
+
+// Task 2: the visible gallery consumes the shared, named theme registry.
+const THEMES = THEME_OPTIONS;
 
 export default function AppearancePage() {
   const { currentSite, currentSiteId } = useSite();
@@ -405,7 +414,7 @@ export default function AppearancePage() {
   /**
    * Fully write one theme pack (colours + header + footer + font) for this site.
    * force=true overwrites palette / chrome colours from the preset (keeps logos + nav).
-   * Also syncs home_layout.homeStyle when the preset defines one (e.g. theme-4 → bloom).
+   * Theme activation preserves the independently selected homepage layout.
    */
   const writeThemePack = async (
     themeId: string,
@@ -416,6 +425,14 @@ export default function AppearancePage() {
     const makeActive = options?.makeActive === true;
 
     if (makeActive) {
+      const existingHome = await api.getSetting("home_layout");
+      const preservedHome = preserveHomeLayoutForThemeChange(
+        existingHome,
+        homeLayout,
+      );
+      if (preservedHome.changed) {
+        await api.updateSetting("home_layout", preservedHome.value);
+      }
       await api.updateSetting("active_theme", { themeId });
     }
 
@@ -496,21 +513,6 @@ export default function AppearancePage() {
       const fontPayload = { font: preset.font };
       await api.updateSetting("site_font", fontPayload);
       await api.updateSetting(`theme_${themeId}_font`, fontPayload);
-    }
-
-    // Theme packs that own a home layout (e.g. Soft Bloom → bloom home)
-    if (force && preset.homeStyle && makeActive) {
-      try {
-        const existingHome = await api.getSetting("home_layout");
-        const homePayload =
-          existingHome && typeof existingHome === "object"
-            ? { ...existingHome, homeStyle: preset.homeStyle }
-            : { homeStyle: preset.homeStyle };
-        await api.updateSetting("home_layout", homePayload);
-        setHomeLayout(preset.homeStyle);
-      } catch {
-        /* home_layout optional */
-      }
     }
 
     setSetupDone((prev) => ({ ...prev, [themeId]: true }));
@@ -614,10 +616,10 @@ export default function AppearancePage() {
       const fontPayload = { font: selectedFont };
       await api.updateSetting("site_font", fontPayload);
       await api.updateSetting(`theme_${themeId}_font`, fontPayload);
-      alert("Font settings saved successfully!");
+      toast.success("Font settings saved successfully!");
     } catch (error) {
       console.error("Failed to save font settings:", error);
-      alert("Failed to save font settings.");
+      toast.error("Failed to save font settings.");
     } finally {
       setIsSavingFonts(false);
     }
@@ -625,7 +627,7 @@ export default function AppearancePage() {
 
   const saveColourSettings = async () => {
     if (!currentSite) {
-      alert("Select a site first (site switcher). Colours are saved per site.");
+      toast.warning("Select a site first (site switcher). Colours are saved per site.");
       return;
     }
     setIsSavingColours(true);
@@ -679,12 +681,12 @@ export default function AppearancePage() {
         console.warn("Colours saved; header CTA sync skipped:", headerErr);
       }
 
-      alert(
+      toast.success(
         "Colours saved and applied to the public site.\nHard-refresh the site (Ctrl+Shift+R) to see them.",
       );
     } catch (error) {
       console.error("Failed to save colour settings:", error);
-      alert(
+      toast.error(
         "Failed to save colour settings. Is a site selected and the API running?",
       );
     } finally {
@@ -727,9 +729,7 @@ export default function AppearancePage() {
           : "#ffffff"
       );
       setSelectedFont(preset.font);
-      if (preset.homeStyle) {
-        setHomeLayout(preset.homeStyle);
-      }
+      // Theme selection deliberately leaves the homepage layout unchanged.
 
       // Re-read saved pack so UI matches DB (nav/logo preserved)
       try {
@@ -758,51 +758,14 @@ export default function AppearancePage() {
         /* ignore */
       }
 
-      // Link home layout structure (keep theme colours — don't re-run layout palette)
-      if (preset.homeStyle) {
-        try {
-          setHomeLayout(preset.homeStyle);
-          const existingHome = await api.getSetting("home_layout");
-          const demo = getHomeDemoContent(preset.homeStyle, siteName);
-          const homePayload =
-            existingHome && typeof existingHome === "object"
-              ? { ...existingHome, homeStyle: preset.homeStyle }
-              : {
-                  homeStyle: preset.homeStyle,
-                  eyebrow: demo.eyebrow,
-                  tagline: demo.tagline,
-                  featuredEyebrow: demo.featuredEyebrow,
-                  featuredTitle: demo.featuredTitle,
-                  sideRailLabel: demo.sideRailLabel,
-                  pillarsEyebrow: demo.pillarsEyebrow,
-                  pillarsTitle: demo.pillarsTitle,
-                  pillarsBody: demo.pillarsBody,
-                  pillars: demo.pillars,
-                  latestEyebrow: demo.latestEyebrow,
-                  latestTitle: demo.latestTitle,
-                  ctaEyebrow: demo.ctaEyebrow,
-                  ctaTitle: demo.ctaTitle,
-                  ctaBody: demo.ctaBody,
-                  ctaButton: demo.ctaButton,
-                };
-          await api.updateSetting("home_layout", homePayload);
-          applyHomeDemoToForm(preset.homeStyle, {
-            force: false,
-            base: homePayload,
-          });
-        } catch {
-          /* home optional */
-        }
-      }
-
-      alert(
-        `✓ ${preset.name || themeId} applied — theme + home layout are live${
+      toast.success(
+        `${preset.name || themeId} applied — homepage layout unchanged${
           currentSite?.slug ? ` on /s/${currentSite.slug}` : ""
         }.\nHard-refresh the public site (Ctrl+Shift+R).`,
       );
     } catch (error) {
       console.error("Failed to update theme:", error);
-      alert("Failed to set up theme. Is a site selected?");
+      toast.error("Failed to set up theme. Is a site selected?");
     } finally {
       setActivating(false);
       setSetupThemeId(null);
@@ -817,10 +780,10 @@ export default function AppearancePage() {
         makeActive: false,
         force: true,
       });
-      alert(`✓ ${preset.name} pack saved. Click Activate when you want it live.`);
+      toast.success(`${preset.name} pack saved. Click Activate when you want it live.`);
     } catch (error) {
       console.error(error);
-      alert("Failed to set up theme pack.");
+      toast.error("Failed to set up theme pack.");
     } finally {
       setSetupThemeId(null);
     }
@@ -854,10 +817,10 @@ export default function AppearancePage() {
         }
       }
       if (logoPath) setHeaderLogo(logoPath);
-      alert("Header settings updated successfully!");
+      toast.success("Header settings updated successfully!");
     } catch (error) {
       console.error("Failed to save header settings:", error);
-      alert("Failed to save header settings.");
+      toast.error("Failed to save header settings.");
     } finally {
       setIsSavingHeader(false);
     }
@@ -879,7 +842,7 @@ export default function AppearancePage() {
     const file = e.target.files?.[0];
     if (!file) return;
     if (file.size > 2 * 1024 * 1024) {
-      alert("Logo file size must be less than 2MB");
+      toast.warning("Logo file size must be less than 2MB");
       return;
     }
     setIsUploadingLogo(true);
@@ -917,7 +880,7 @@ export default function AppearancePage() {
     const file = e.target.files?.[0];
     if (!file) return;
     if (file.size > 2 * 1024 * 1024) {
-      alert("Footer logo file size must be less than 2MB");
+      toast.warning("Footer logo file size must be less than 2MB");
       return;
     }
     setIsUploadingFooterLogo(true);
@@ -1114,13 +1077,13 @@ export default function AppearancePage() {
       const msg = `Saved: ${label}. Home copy is now editable anytime in this form.`;
       setHomeLayoutMsg(msg);
       if (!options?.silent) {
-        alert(msg);
+        toast.success(msg);
       }
     } catch (error) {
       console.error("Failed to save home layout:", error);
       setHomeLayoutMsg("Failed to save. Select a site and try again.");
       if (!options?.silent) {
-        alert("Failed to save home layout. Select a site and try again.");
+        toast.error("Failed to save home layout. Select a site and try again.");
       }
       // Always rethrow so applyLayout / callers know save failed
       throw error;
@@ -1134,11 +1097,11 @@ export default function AppearancePage() {
     target: "hero" | "cta",
   ): Promise<void> => {
     if (!file.type.startsWith("image/")) {
-      alert("Please choose an image file (PNG, JPG or WebP).");
+      toast.warning("Please choose an image file (PNG, JPG or WebP).");
       return;
     }
     if (file.size > 5 * 1024 * 1024) {
-      alert("Image must be max 5MB.");
+      toast.warning("Image must be max 5MB.");
       return;
     }
     if (target === "hero") setIsUploadingHomeHero(true);
@@ -1163,7 +1126,7 @@ export default function AppearancePage() {
       else setHomeCtaBgImage(url);
     } catch (err: any) {
       console.error(err);
-      alert(err?.message || "Image upload failed.");
+      toast.error(err?.message || "Image upload failed.");
     } finally {
       if (target === "hero") setIsUploadingHomeHero(false);
       else setIsUploadingCtaBg(false);
@@ -1187,11 +1150,11 @@ export default function AppearancePage() {
     target: "about" | "service" | "video" | "testimonial" | "client",
   ) => {
     if (!file.type.startsWith("image/")) {
-      alert("Please choose an image file (PNG, JPG or WebP).");
+      toast.warning("Please choose an image file (PNG, JPG or WebP).");
       return;
     }
     if (file.size > 5 * 1024 * 1024) {
-      alert("Image must be max 5MB.");
+      toast.warning("Image must be max 5MB.");
       return;
     }
     setIsUploadingLayout6(true);
@@ -1218,7 +1181,7 @@ export default function AppearancePage() {
       if (target === "client") setNewClientLogo(url);
     } catch (err: any) {
       console.error(err);
-      alert(err?.message || "Image upload failed.");
+      toast.error(err?.message || "Image upload failed.");
     } finally {
       setIsUploadingLayout6(false);
       setLayout6UploadTarget(null);
@@ -1261,10 +1224,10 @@ export default function AppearancePage() {
       await api.updateSetting("site_footer", footerSettings);
       await api.updateSetting(`theme_${themeId}_footer`, footerSettings);
       if (logoPath) setFooterLogo(logoPath);
-      alert("Footer settings updated successfully!");
+      toast.success("Footer settings updated successfully!");
     } catch (error) {
       console.error("Failed to save footer settings:", error);
-      alert("Failed to save footer settings.");
+      toast.error("Failed to save footer settings.");
     } finally {
       setIsSavingFooter(false);
     }
@@ -1404,7 +1367,7 @@ export default function AppearancePage() {
    */
   const applyLayout = async (opt: (typeof HOME_LAYOUT_OPTIONS)[number]) => {
     if (!currentSite) {
-      alert("Select a site first.");
+      toast.warning("Select a site first.");
       return;
     }
     setIsSavingHomeLayout(true);
@@ -1473,7 +1436,7 @@ export default function AppearancePage() {
           ? e.message
           : "Failed to apply layout. Is a site selected?";
       setHomeLayoutMsg(msg);
-      alert(msg);
+      toast.error(msg);
     } finally {
       setIsSavingHomeLayout(false);
     }
@@ -1712,7 +1675,7 @@ export default function AppearancePage() {
                       className={addBtnCls}
                       onClick={() => {
                         if (!homeNewSocialPlatform || !homeNewSocialUrl.trim()) {
-                          alert("Select a platform and enter a profile URL.");
+                          toast.warning("Select a platform and enter a profile URL.");
                           return;
                         }
                         setHomeSocialLinks((prev) => [
@@ -1836,7 +1799,7 @@ export default function AppearancePage() {
                       className={addBtnCls}
                       onClick={() => {
                         if (!newServiceTitle.trim()) {
-                          alert("Enter a service title.");
+                          toast.warning("Enter a service title.");
                           return;
                         }
                         setHomeServices((p) => [
@@ -1952,7 +1915,7 @@ export default function AppearancePage() {
                       className={addBtnCls}
                       onClick={() => {
                         if (!newTestName.trim() || !newTestReview.trim()) {
-                          alert("Enter name and review.");
+                          toast.warning("Enter name and review.");
                           return;
                         }
                         setHomeTestimonials((p) => [
@@ -2028,7 +1991,7 @@ export default function AppearancePage() {
                       className={addBtnCls}
                       onClick={() => {
                         if (!newClientName.trim()) {
-                          alert("Enter a client name.");
+                          toast.warning("Enter a client name.");
                           return;
                         }
                         setHomeClients((p) => [
@@ -2362,8 +2325,27 @@ export default function AppearancePage() {
         }}
       />
 
-      {/* ── Themes gallery (matches dev.corehead.app Appearance) ─ */}
-      <section className="space-y-5">
+      <AppearanceThemeGallery
+        activeTheme={activeTheme}
+        busyThemeId={setupThemeId}
+        disabled={activating || !currentSite}
+        onActivate={(themeId) => void handleActivateTheme(themeId)}
+        onCustomize={(themeId) => {
+          const openCustomizer = () => {
+            setActiveTab("colours");
+            requestAnimationFrame(() => {
+              document
+                .getElementById("theme-customizer")
+                ?.scrollIntoView({ behavior: "smooth", block: "start" });
+            });
+          };
+          if (themeId === activeTheme) openCustomizer();
+          else void handleActivateTheme(themeId).then(openCustomizer);
+        }}
+      />
+
+      {/* Legacy gallery retained temporarily for rollback; no longer rendered. */}
+      {false && <section className="space-y-5">
         <div>
           <h2 className="text-xl font-black text-slate-900">Themes</h2>
           <p className="text-sm text-slate-500 mt-0.5">
@@ -2559,7 +2541,7 @@ export default function AppearancePage() {
             })}
           </div>
         </div>
-      </section>
+      </section>}
 
       {/* ── Fine-tune customizer ──────────────────────────── */}
       <div id="theme-customizer" className="bg-white rounded-[2.5rem] shadow-sm border border-gray-100 overflow-hidden scroll-mt-24">
@@ -2573,7 +2555,7 @@ export default function AppearancePage() {
                 Fine-tune: {activeThemeName}
               </h2>
               <p className="text-sm text-gray-500 mt-1">
-                Header, colours, footer, fonts, and homepage layouts for{" "}
+                Theme styling and homepage structure are saved independently for{" "}
                 <strong>{currentSite?.name || "this site"}</strong>
               </p>
             </div>
@@ -2585,7 +2567,7 @@ export default function AppearancePage() {
 
         {/* Tabs */}
         <div className="px-8 pt-6 border-b border-gray-100 flex gap-2 sm:gap-4 overflow-x-auto">
-          {["Header", "Colours", "Footer", "Fonts", "Homepage"].map((tab) => (
+          {["Header", "Colours", "Footer", "Fonts", "Homepage", "Post Layouts"].map((tab) => (
             <button
               key={tab}
               onClick={() => setActiveTab(tab.toLowerCase())}
@@ -2658,13 +2640,13 @@ export default function AppearancePage() {
                     </div>
                   </div>
                   <nav 
-                    className="flex items-center justify-between px-6 py-4 transition-colors"
+                    className="grid min-h-16 grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center gap-4 px-6 py-3 transition-colors"
                     style={{ backgroundColor: headerBg, color: headerFont }}
                   >
                     {/* Logo Area */}
-                    <div className="flex items-center gap-2">
+                    <div className="flex min-w-0 items-center gap-2 justify-self-start">
                       {headerLogo ? (
-                        <img src={headerLogo} alt="Logo" className="h-6 object-contain" />
+                        <img src={headerLogo} alt="Logo" className="block h-auto max-h-7 w-auto max-w-[120px] object-contain object-left" />
                       ) : (
                         <>
                           <div className="w-6 h-6 rounded-full bg-white flex items-center justify-center">
@@ -2676,9 +2658,9 @@ export default function AppearancePage() {
                     </div>
                     
                     {/* Nav Links */}
-                    <div className="flex items-center gap-4 text-[10px] font-bold">
+                    <div className="flex items-center justify-center gap-4 justify-self-center text-[10px] font-bold leading-none">
                       {navLinks.map((item) => (
-                        <span key={item.id} className="opacity-80 hover:opacity-100 cursor-pointer">
+                        <span key={item.id} className="inline-flex h-8 items-center whitespace-nowrap opacity-80 hover:opacity-100 cursor-pointer">
                           {item.name}
                         </span>
                       ))}
@@ -2686,7 +2668,7 @@ export default function AppearancePage() {
 
                     {/* CTA Button */}
                     <button 
-                      className="text-[10px] px-3.5 py-1 rounded-full font-bold transition-all shadow-sm"
+                      className="inline-flex h-8 items-center justify-center justify-self-end rounded-full px-3.5 text-[10px] font-bold leading-none shadow-sm transition-all"
                       style={{ backgroundColor: ctaBg, color: ctaColor }}
                     >
                       {ctaText}
@@ -3426,7 +3408,15 @@ export default function AppearancePage() {
                 </p>
               ) : null}
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+              <AppearanceHomeLayoutGallery
+                activeLayout={homeLayout}
+                disabled={!currentSite || isSavingHomeLayout}
+                onSelect={(layout) => void applyLayout(layout)}
+                onEdit={(layoutId) => openHomeContentEditor(layoutId)}
+              />
+
+              {/* Legacy inline cards retained temporarily for rollback. */}
+              {false && <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
                 {HOME_LAYOUT_OPTIONS.map((opt) => {
                   const selected = homeLayout === opt.id;
                   const palette = getHomeLayoutPalette(opt.id);
@@ -3502,7 +3492,13 @@ export default function AppearancePage() {
                     </div>
                   );
                 })}
-              </div>
+              </div>}
+            </div>
+          )}
+
+          {activeTab === "post layouts" && (
+            <div className="animate-in fade-in duration-300">
+              <AppearanceContentLayoutGallery siteId={currentSiteId} />
             </div>
           )}
 
@@ -3510,7 +3506,8 @@ export default function AppearancePage() {
             activeTab !== "footer" &&
             activeTab !== "fonts" &&
             activeTab !== "colours" &&
-            activeTab !== "homepage" && (
+            activeTab !== "homepage" &&
+            activeTab !== "post layouts" && (
             <div className="h-64 flex flex-col items-center justify-center text-center">
               <div className="w-16 h-16 bg-gray-50 rounded-2xl flex items-center justify-center mb-4 border border-gray-100">
                 <Settings2 className="w-8 h-8 text-gray-300" />

@@ -38,6 +38,7 @@ export type SiteBranding = {
     copyrightText?: string | null;
   };
   font?: string | null;
+  tokens?: ThemePreset["tokens"];
   /** Public home layout (from Appearance → home_layout or theme preset) */
   homeStyle?: ThemePreset["homeStyle"];
   /**
@@ -169,6 +170,12 @@ export function brandingToCssVars(branding?: SiteBranding | null): Record<string
     "--site-font": fontFamily,
     "--site-accent": c.accent || primary,
     "--site-card-fg": c.cardForeground || fg,
+    "--site-radius": full.tokens?.radius || "1rem",
+    "--site-shadow": full.tokens?.shadow || "0 18px 45px rgba(15, 23, 42, 0.12)",
+    "--site-container": full.tokens?.containerWidth || "72rem",
+    "--site-section-space": full.tokens?.sectionSpacing || "4rem",
+    "--site-button-radius":
+      full.tokens?.buttonStyle === "square" ? "0.375rem" : "9999px",
     /** Header / newsletter CTA button colours (Appearance → Header → CTA) */
     "--site-cta-bg": ctaBg,
     "--site-cta-color": ctaColor,
