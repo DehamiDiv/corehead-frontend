@@ -333,3 +333,8 @@
   text-decoration: underline;
 }
 
+/* Scroll Offset for TOC headings */
+.post-content h2,
+.post-content h3 {
+  scroll-margin-top: 90px;
+}
