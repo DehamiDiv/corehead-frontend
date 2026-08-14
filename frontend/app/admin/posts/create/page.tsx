@@ -56,8 +56,18 @@ const quillModules = {
 
 export default function CreatePostPage() {
   const router = useRouter();
+  const [editId, setEditId] = useState<string | null>(() => {
+    if (typeof window !== "undefined") {
+      return sessionStorage.getItem("editPostId");
+    }
+    return null;
+  });
 
-
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      sessionStorage.removeItem("editPostId");
+    }
+  }, []);
   const [formData, setFormData] = useState({
     title: "",
     slug: "",
@@ -82,7 +92,7 @@ export default function CreatePostPage() {
 
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(!!editId);
   const [users, setUsers] = useState<any[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [isMediaModalOpen, setIsMediaModalOpen] = useState(false);
@@ -176,23 +186,59 @@ export default function CreatePostPage() {
     }
   };
 
-  const fetchUsers = useCallback(async () => {
-    const PREDEFINED_AUTHORS = [
-      { id: 1, name: "Pipuni Piyasooriya" },
-      { id: 2, name: "Dehami Divyanjalee" },
-      { id: 3, name: "Nimasha Dissanayaka" },
-      { id: 4, name: "Rashmi Sharaa" },
-      { id: 10, name: "Admin" }
-    ];
-    setUsers(PREDEFINED_AUTHORS);
-    if (!formData.authorId) {
-      setFormData(prev => ({ ...prev, authorId: "1" }));
+  const fetchData = useCallback(async () => {
+    setLoading(true);
+    try {
+      const [usersData, postData] = await Promise.all([
+        api.getUsers(),
+        editId ? api.getPostById(editId) : Promise.resolve(null)
+      ]);
+
+      const usersList = usersData.users && Array.isArray(usersData.users) ? usersData.users : [];
+      setUsers(usersList);
+
+      if (postData) {
+        let cats: string[] = [];
+        const rawCats = postData.categories || postData.category;
+        if (Array.isArray(rawCats)) cats = rawCats.map(String);
+        else if (typeof rawCats === 'string' && rawCats.trim()) {
+          try { cats = JSON.parse(rawCats); } catch(e) { cats = [rawCats]; }
+        }
+
+        setFormData({
+          title: postData.title || "",
+          slug: postData.slug || "",
+          excerpt: postData.excerpt || "",
+          authorId: String(postData.authorId || postData.author?.id || ""),
+          categories: cats,
+          status: postData.status || "Published",
+          featured: !!postData.featured,
+          content: postData.content || "",
+          showToc: !!postData.show_toc || !!postData.showToc,
+          allowComments: postData.allow_comments !== false && postData.allowComments !== false,
+          thumbnailUrl: postData.thumbnailUrl || postData.featured_image || "",
+          metaTitle: postData.meta_title || postData.metaTitle || "",
+          metaDescription: postData.meta_description || postData.metaDescription || "",
+          keywords: Array.isArray(postData.tags) ? postData.tags : (postData.tags ? postData.tags.split(',').map((t: string) => t.trim()) : []),
+          useThumbnailAsFeatured: true,
+          canonicalUrl: postData.canonicalUrl || "",
+          structuredData: typeof postData.structuredData === 'string' ? postData.structuredData : JSON.stringify(postData.structuredData, null, 2),
+        });
+      } else {
+        if (usersList.length > 0) {
+          setFormData(prev => ({ ...prev, authorId: String(usersList[0].id) }));
+        }
+      }
+    } catch (err: any) {
+      setError(err.message || "Failed to fetch data");
+    } finally {
+      setLoading(false);
     }
-  }, [formData.authorId]);
+  }, [editId]);
 
   useEffect(() => {
-    fetchUsers();
-  }, [fetchUsers]);
+    fetchData();
+  }, [fetchData]);
 
   // Fetch categories from DB
   useEffect(() => {
@@ -224,7 +270,7 @@ export default function CreatePostPage() {
   const { completed, total } = calculateProgress();
   const progressPercent = (completed / total) * 100;
 
-  const handleCreatePost = async (overrideStatus?: string) => {
+  const handleSavePost = async (overrideStatus?: string) => {
     if (!formData.title || !formData.content) {
       setError("Title and Content are required.");
       return;
@@ -253,7 +299,7 @@ export default function CreatePostPage() {
       }
     }
 
-    const finalData = {
+    const finalData: any = {
       title: formData.title,
       slug: formData.slug,
       excerpt: formData.excerpt,
@@ -271,22 +317,37 @@ export default function CreatePostPage() {
       structuredData: formData.structuredData,
       show_toc: formData.showToc,
       allow_comments: formData.allowComments,
-      ...(nextStatus === "Published"
-        ? { published_date: new Date().toISOString() }
-        : {}),
+
     };
 
+    if (!editId) {
+      finalData.published_date = new Date().toISOString();
+    }
+
     try {
-      await api.createPost(finalData);
-      router.push("/admin/posts");
+      if (editId) {
+        await api.updatePost(editId, finalData);
+      } else {
+        await api.createPost(finalData);
+      }
+      router.push('/admin/posts');
     } catch (err: any) {
-      setError(err.message || "Failed to create post");
+      setError(err.message || `Failed to ${editId ? "update" : "create"} post`);
     } finally {
       setLoading(false);
     }
   };
 
   const hasRealContent = formData.content.replace(/<[^>]*>/g, '').trim().length > 3;
+
+  if (loading && editId && !formData.title) {
+    return (
+      <div className="min-h-screen bg-[#F4F7FA] flex flex-col items-center justify-center">
+        <Loader2 className="w-12 h-12 text-[#2563EB] animate-spin mb-4" />
+        <p className="text-[#64748B] font-bold">Fetching post details...</p>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-[#F4F7FA] pb-32 pt-8 px-6">
@@ -295,8 +356,8 @@ export default function CreatePostPage() {
         {/* Top Header */}
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-[32px] font-bold text-[#1E293B]">Create New Post</h1>
-            <p className="text-[15px] text-[#64748B] mt-1">Fill in the details below to create a new blog post</p>
+            <h1 className="text-[32px] font-bold text-[#1E293B]">{editId ? "Edit Post" : "Create New Post"}</h1>
+            <p className="text-[15px] text-[#64748B] mt-1">{editId ? "Make changes to your existing blog post" : "Fill in the details below to create a new blog post"}</p>
           </div>
           <div className="flex items-center gap-3">
             <button
@@ -387,9 +448,9 @@ export default function CreatePostPage() {
                     <input
                       type="text"
                       placeholder="url-friendly-slug"
-                      className="w-full h-12 bg-white border border-[#E2E8F0] rounded-[10px] px-4 text-[14px] focus:outline-none"
+                      className="w-full h-12 bg-[#F1F5F9] border border-[#E2E8F0] rounded-[10px] px-4 text-[14px] text-gray-500 cursor-not-allowed outline-none"
                       value={formData.slug}
-                      onChange={e => setFormData({ ...formData, slug: e.target.value })}
+                      readOnly
                     />
                   </div>
 
@@ -734,19 +795,19 @@ export default function CreatePostPage() {
             <Eye className="w-4 h-4" />
             Preview
           </button>
-          <button
-            onClick={() => handleCreatePost("Draft")}
+          <button 
+            onClick={() => handleSavePost("Draft")}
             disabled={loading}
             className="px-6 py-3 text-sm font-bold text-gray-700 bg-gray-50 hover:bg-gray-100 rounded-xl transition-colors shadow-sm border border-gray-100 disabled:opacity-50"
           >
             {loading ? "Saving…" : "Save as Draft"}
           </button>
-          <button
-            onClick={() => handleCreatePost("Published")}
+          <button 
+            onClick={() => handleSavePost()}
             disabled={loading}
             className="px-8 py-3 text-sm font-bold text-white bg-emerald-600 rounded-xl hover:bg-emerald-700 transition-colors shadow-md disabled:opacity-50"
           >
-            {loading ? "Publishing…" : "Publish"}
+            {loading ? (editId ? "Saving..." : "Creating...") : (editId ? "Save Changes" : "Create Post")}
           </button>
         </div>
       </div>
@@ -798,3 +859,4 @@ export default function CreatePostPage() {
     </div>
   );
 }
+

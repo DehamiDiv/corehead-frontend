@@ -1,7 +1,6 @@
 import DetailedFooter from "@/components/DetailedFooter";
-import { PublicPageRenderer } from "@/components/Renderer/PublicPageRenderer";
-import type { BuilderBlock } from "@/components/admin/builder/BuilderContext";
-import "./page.css";
+import { api } from "@/lib/api";
+import BlogArchiveClient from "@/components/blog/BlogArchiveClient";
 
 export const metadata = {
   title: "Blog | CoreHead",
@@ -10,23 +9,15 @@ export const metadata = {
 };
 
 export default async function BlogArchivePage() {
-  // Platform /blog is not multi-tenant. Tenant blogs: /s/{slug}/blog
-  const layout: { blocks: BuilderBlock[] } = {
-    blocks: [
-      { id: "1", type: "Heading", content: "Latest Posts" },
-      { id: "2", type: "Collection List", content: { limit: 6, category: "" } },
-    ],
-  };
+  // Fetch posts data
+  const postsData = await api.getPreviewPosts(100).catch(() => ({ posts: [] }));
+  const posts = Array.isArray(postsData) ? postsData : (postsData?.posts || []);
+
+  const publishedPosts = posts.filter((p: any) => p.status === "Published");
 
   return (
     <>
-      <main className="blog-archive-page">
-        <PublicPageRenderer
-          layout={layout}
-          data={{ posts: [] }}
-          isLoop={true}
-        />
-      </main>
+      <BlogArchiveClient posts={publishedPosts} />
       <DetailedFooter />
     </>
   );
