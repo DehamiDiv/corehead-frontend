@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { Check, Sparkles, Zap, Loader2 } from "lucide-react";
+import Script from "next/script";
 import { api } from "@/lib/api";
 
 export default function Pricing() {
@@ -21,23 +22,86 @@ export default function Pricing() {
           setUser(JSON.parse(stored));
         } catch { }
       }
+
+      // Inject PayHere Sandbox SDK dynamically to ensure it is always loaded and ready
+      const existingScript = document.getElementById("payhere-sdk");
+      if (!existingScript) {
+        const script = document.createElement("script");
+        script.src = "https://www.payhere.lk/lib/payhere.js";
+        script.id = "payhere-sdk";
+        script.async = true;
+        document.body.appendChild(script);
+      }
     }
   }, []);
 
-  const handleUpgrade = async (planType: "PRO" = "PRO") => {
+  const handleUpgrade = async (planType: "PRO" = "PRO", gateway: "stripe" | "payhere" = "stripe") => {
     if (!token) {
       router.push(`/login?callback=/pricing`);
       return;
     }
 
-    setLoading(planType);
+    setLoading(gateway);
     try {
-      const data = await api.createCheckoutSession(false, planType);
-      if (data.success && data.url) {
-        window.location.href = data.url;
+      if (gateway === "stripe") {
+        const data = await api.createCheckoutSession(false, planType);
+        if (data.success && data.url) {
+          window.location.href = data.url;
+        } else {
+          alert("Failed to initialize Stripe checkout: " + (data.error || "Unknown error"));
+          setLoading(null);
+        }
       } else {
-        alert("Failed to initialize checkout session: " + (data.error || "Unknown error"));
-        setLoading(null);
+        const data = await api.createPayHereCheckout(planType);
+        if (data.success) {
+          const payhere = (window as any).payhere;
+          if (!payhere) {
+            alert("PayHere SDK not loaded yet. Please wait a moment and try again.");
+            setLoading(null);
+            return;
+          }
+
+          payhere.onCompleted = function (orderId: string) {
+            console.log("PayHere Payment completed:", orderId);
+            window.location.href = `/payment/success?gateway=payhere&order_id=${orderId}&plan=${planType}`;
+          };
+
+          payhere.onDismissed = function () {
+            console.log("PayHere Payment dismissed");
+            setLoading(null);
+          };
+
+          payhere.onError = function (error: any) {
+            console.error("PayHere Payment error:", error);
+            alert("PayHere payment error: " + error);
+            setLoading(null);
+          };
+
+          const payment = {
+            sandbox: true,
+            merchant_id: data.merchant_id,
+            return_url: data.return_url,
+            cancel_url: data.cancel_url,
+            notify_url: data.notify_url,
+            order_id: data.order_id,
+            items: data.items,
+            amount: data.amount,
+            currency: data.currency,
+            hash: data.hash,
+            first_name: data.first_name,
+            last_name: data.last_name,
+            email: data.email,
+            phone: data.phone,
+            address: data.address,
+            city: data.city,
+            country: data.country
+          };
+
+          payhere.startPayment(payment);
+        } else {
+          alert("Failed to initialize PayHere checkout: " + (data.error || "Unknown error"));
+          setLoading(null);
+        }
       }
     } catch (err: any) {
       console.error(err);
@@ -81,8 +145,8 @@ export default function Pricing() {
               <button
                 onClick={() => setBillingPeriod("monthly")}
                 className={`py-2 px-5 rounded-xl text-sm font-semibold tracking-tight transition-all duration-300 ${billingPeriod === "monthly"
-                    ? "bg-slate-100 text-slate-900 shadow-sm"
-                    : "text-slate-500 hover:text-slate-900"
+                  ? "bg-slate-100 text-slate-900 shadow-sm"
+                  : "text-slate-500 hover:text-slate-900"
                   }`}
               >
                 Monthly
@@ -90,8 +154,8 @@ export default function Pricing() {
               <button
                 onClick={() => setBillingPeriod("annually")}
                 className={`py-2 px-5 rounded-xl text-sm font-semibold tracking-tight transition-all duration-300 flex items-center gap-1.5 ${billingPeriod === "annually"
-                    ? "bg-slate-100 text-slate-900 shadow-sm"
-                    : "text-slate-500 hover:text-slate-900"
+                  ? "bg-slate-100 text-slate-900 shadow-sm"
+                  : "text-slate-500 hover:text-slate-900"
                   }`}
               >
                 Annually
@@ -241,14 +305,14 @@ export default function Pricing() {
                     </button>
                   ) : (
                     <button
-                      onClick={() => handleUpgrade("PRO")}
+                      onClick={() => handleUpgrade("PRO", "stripe")}
                       disabled={loading !== null}
-                      className="w-full py-3.5 px-6 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white font-bold text-sm text-center transition-all duration-300 hover:scale-[1.01] flex items-center justify-center gap-2 shadow-lg shadow-blue-600/20 active:scale-[0.98]"
+                      className="w-full py-3.5 px-6 rounded-xl bg-gradient-to-r from-slate-900 to-slate-800 hover:from-slate-800 hover:to-slate-700 text-white font-bold text-sm text-center transition-all duration-300 hover:scale-[1.01] flex items-center justify-center gap-2 shadow-lg shadow-slate-950/10 active:scale-[0.98]"
                     >
-                      {loading === "PRO" ? (
+                      {loading === "stripe" ? (
                         <Loader2 className="w-4 h-4 animate-spin" />
                       ) : (
-                        <>Upgrade Plan <Zap className="w-3.5 h-3.5 fill-white" /></>
+                        <>Upgrade to PRO <Zap className="w-3.5 h-3.5 fill-white" /></>
                       )}
                     </button>
                   )}

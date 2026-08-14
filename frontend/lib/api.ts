@@ -767,6 +767,15 @@ export const api = {
     });
   },
 
+  async createPayHereCheckout(planType: string = "PRO") {
+    return this.fetchWithAuth(`${BASE_URL}/payment/payhere/checkout`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ planType })
+    });
+  },
+
+
   async requestDemo(data: { name: string, email: string, company?: string, message?: string }) {
     return this.fetchWithAuth(`${BASE_URL}/payment/demo-request`, {
       method: 'POST',
