@@ -8,7 +8,6 @@ import Pricing from "@/components/Pricing";
 import CTA from "@/components/CTA";
 import DetailedFooter from "@/components/DetailedFooter";
 import FAQ from "@/components/FAQ";
-import LatestPosts from "@/components/LatestPosts";
 
 export default function LandingPage() {
   return (
@@ -19,7 +18,6 @@ export default function LandingPage() {
       <Pricing />
       <FAQ />
       <CTA />
-      <LatestPosts />
       <DetailedFooter />
     </main>
   );

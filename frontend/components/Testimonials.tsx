@@ -122,8 +122,13 @@ export default function Testimonials() {
                 <div>
                   <div className="flex items-center gap-4 mb-6">
                     <div
-                      className={`w-12 h-12 rounded-full ${t.color} shrink-0`}
-                    ></div>
+                      className={`w-12 h-12 rounded-full ${t.color} shrink-0 flex items-center justify-center text-white font-bold text-base`}
+                    >
+                      {t.name
+                        .split(" ")
+                        .map((n) => n[0])
+                        .join("")}
+                    </div>
                     <div>
                       <h4 className="font-bold text-slate-900">{t.name}</h4>
                       <p className="text-sm text-slate-500">{t.role}</p>
@@ -270,7 +275,7 @@ function VideoCarousel() {
               onClick={(e) => e.stopPropagation()}
             >
               <iframe
-                src={`https://www.youtube.com/shorts/${playingVideo}`}
+                src={`https://www.youtube.com/embed/${playingVideo}?autoplay=1`}
                 className="w-full h-full border-0"
                 allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
                 allowFullScreen

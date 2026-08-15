@@ -12,6 +12,7 @@ interface GuideCardProps {
   link: string;
   image?: string; // Optional image prop if we had images, but for now we might use placeholders or gradients
   delay?: number;
+  target?: string;
 }
 
 export default function GuideCard({
@@ -21,6 +22,7 @@ export default function GuideCard({
   link,
   image,
   delay = 0,
+  target,
 }: GuideCardProps) {
   return (
     <motion.div
@@ -79,6 +81,8 @@ export default function GuideCard({
       {/* Full card link overlay */}
       <Link
         href={link}
+        target={target}
+        rel={target === "_blank" ? "noopener noreferrer" : undefined}
         className="absolute inset-0 z-10"
         aria-label={`Read guide: ${title}`}
       />

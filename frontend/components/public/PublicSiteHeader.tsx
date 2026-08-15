@@ -54,8 +54,16 @@ export default function PublicSiteHeader({ site }: { site: PublicSite }) {
 
   const customNav =
     branding?.header?.navLinks?.filter((n) => n?.name && n?.link) || null;
-  const navItems =
+  let navItems =
     customNav && customNav.length > 0 ? customNav : DEFAULT_THEME_NAV_LINKS;
+
+  if (site.slug === "guides") {
+    navItems = [
+      { id: 1, name: "Home", link: "/" },
+      { id: 2, name: "Guides", link: "/guides" },
+      { id: 3, name: "All Guides", link: "/s/guides/blog" },
+    ];
+  }
 
   // Public marketing nav: hide admin tools from primary bar (still available if configured)
   const primaryNav = navItems.filter((item) => {
@@ -128,7 +136,12 @@ export default function PublicSiteHeader({ site }: { site: PublicSite }) {
       item.link === "/admin" ||
       item.link.startsWith("/admin");
 
-    const href = mapThemeNavHref(item.link, site.slug);
+    let href = mapThemeNavHref(item.link, site.slug);
+    if (site.slug === "guides") {
+      if (item.link === "/") href = "/";
+      else if (item.link === "/guides") href = "/guides";
+      else if (item.link === "/s/guides/blog") href = "/s/guides/blog";
+    }
     const active =
       !isLogout &&
       !isDashboard &&
@@ -235,13 +248,15 @@ export default function PublicSiteHeader({ site }: { site: PublicSite }) {
         </nav>
 
         <div className="hidden min-h-12 items-center justify-end justify-self-end lg:flex">
-          <Link
-            href={ctaUrl}
-            className="inline-flex h-10 shrink-0 items-center justify-center rounded-full px-4 text-sm font-bold leading-none shadow-md transition-transform hover:scale-[1.02] active:scale-[0.98]"
-            style={{ background: ctaBg, color: ctaColor }}
-          >
-            {ctaText || "Explore"}
-          </Link>
+          {site.slug !== "guides" && (
+            <Link
+              href={ctaUrl}
+              className="inline-flex h-10 shrink-0 items-center justify-center rounded-full px-4 text-sm font-bold leading-none shadow-md transition-transform hover:scale-[1.02] active:scale-[0.98]"
+              style={{ background: ctaBg, color: ctaColor }}
+            >
+              {ctaText || "Explore"}
+            </Link>
+          )}
           {utilityNav.length > 0 && (
             <div className="ml-1 flex h-10 items-center gap-0.5 border-l border-white/15 pl-2">
               {utilityNav.map((item) => renderNavItem(item))}
@@ -265,14 +280,16 @@ export default function PublicSiteHeader({ site }: { site: PublicSite }) {
           style={headerStyle}
         >
           {primaryNav.map((item) => renderNavItem(item, true))}
-          <Link
-            href={ctaUrl}
-            onClick={() => setMobileOpen(false)}
-            className="mt-2 flex items-center justify-center rounded-xl px-4 py-3 text-sm font-bold"
-            style={{ background: ctaBg, color: ctaColor }}
-          >
-            {ctaText || "Explore"}
-          </Link>
+          {site.slug !== "guides" && (
+            <Link
+              href={ctaUrl}
+              onClick={() => setMobileOpen(false)}
+              className="mt-2 flex items-center justify-center rounded-xl px-4 py-3 text-sm font-bold"
+              style={{ background: ctaBg, color: ctaColor }}
+            >
+              {ctaText || "Explore"}
+            </Link>
+          )}
           {utilityNav.map((item) => renderNavItem(item, true))}
         </div>
       )}

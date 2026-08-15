@@ -109,7 +109,11 @@ export default function AIHistoryPage() {
 
       // Use the actual generated layout if available, otherwise fallback
       let layoutData;
-      if (item.generated_layout && (item.generated_layout.cards || item.generated_layout.layout_data?.cards)) {
+      if (item.generated_layout && Array.isArray(item.generated_layout.blocks)) {
+        layoutData = { cards: item.generated_layout.blocks };
+      } else if (item.generated_layout && Array.isArray(item.generated_layout)) {
+        layoutData = { cards: item.generated_layout };
+      } else if (item.generated_layout && (item.generated_layout.cards || item.generated_layout.layout_data?.cards)) {
         // Handle both possible structures
         layoutData = item.generated_layout;
         // Normalize if it's nested under layout_data
@@ -132,7 +136,7 @@ export default function AIHistoryPage() {
       }
 
       localStorage.setItem('ai_generated_layout', JSON.stringify(layoutData));
-      router.push('/admin/builder');
+      router.push('/builder');
     } catch (err) {
       alert('Failed to restore layout: ' + err.message);
     } finally {

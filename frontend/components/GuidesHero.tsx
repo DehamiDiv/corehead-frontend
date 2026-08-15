@@ -2,12 +2,15 @@
 
 import { motion } from "framer-motion";
 import { Search } from "lucide-react";
-import Navbar from "@/components/Navbar";
 
-export default function GuidesHero() {
+interface GuidesHeroProps {
+  searchQuery: string;
+  setSearchQuery: (query: string) => void;
+}
+
+export default function GuidesHero({ searchQuery, setSearchQuery }: GuidesHeroProps) {
   return (
     <section className="relative pt-32 pb-24 px-6 md:px-12 bg-[#2563EB] overflow-hidden">
-      <Navbar />
       {/* Background Gradient blobfish */}
       <div className="absolute top-0 left-0 w-full h-full overflow-hidden pointer-events-none">
         <div className="absolute -top-[20%] -right-[10%] w-[600px] h-[600px] rounded-full bg-blue-400/20 blur-3xl"></div>
@@ -39,6 +42,8 @@ export default function GuidesHero() {
             </div>
             <input
               type="text"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
               placeholder="Search the guides..."
               className="w-full py-4 pl-12 pr-4 rounded-full bg-white text-slate-900 shadow-xl focus:outline-none focus:ring-2 focus:ring-blue-400 transition-all placeholder:text-slate-400"
             />

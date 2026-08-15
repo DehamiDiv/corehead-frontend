@@ -17,6 +17,7 @@ import {
   Code,
 } from "lucide-react";
 import Link from "next/link";
+import { useBuilder, BlockType } from "./BuilderContext";
 
 const tools = [
   { icon: Type, label: "Heading" },
@@ -42,21 +43,43 @@ const bottomTools = [
 ];
 
 export default function Toolbox() {
+  const { blocks, selectedBlockId, addBlock } = useBuilder();
+
+  const handleToolClick = (toolLabel: string) => {
+    const selectedBlock = blocks.find((b) => b.id === selectedBlockId);
+    if (selectedBlock) {
+      const levelBlocks = blocks.filter(
+        (b) => b.parentId === selectedBlock.parentId || (!b.parentId && !selectedBlock.parentId)
+      );
+      const targetIndex = levelBlocks.findIndex((b) => b.id === selectedBlock.id) + 1;
+      addBlock(toolLabel as BlockType, selectedBlock.parentId, targetIndex);
+    } else {
+      addBlock(toolLabel as BlockType);
+    }
+  };
+
   return (
     <aside className="w-full flex-1 flex flex-col p-4 overflow-y-auto">
-      <h3 className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-4 px-2">
-        Blog Components
-      </h3>
+      <div className="flex items-center justify-between mb-4 px-2">
+        <h3 className="text-xs font-semibold text-slate-500 uppercase tracking-wider">
+          Blog Components
+        </h3>
+        <span className="text-[10px] text-blue-600 font-medium bg-blue-50 px-2 py-0.5 rounded-full">
+          Drag or Click
+        </span>
+      </div>
 
       <div className="grid grid-cols-2 gap-3 mb-8">
         {tools.map((tool) => (
           <div
             key={tool.label}
             draggable
+            onClick={() => handleToolClick(tool.label)}
             onDragStart={(e) => {
               e.dataTransfer.setData("application/react-dnd", tool.label);
               e.dataTransfer.effectAllowed = "copy";
             }}
+            title="Drag to place anywhere, or click to insert"
             className="flex flex-col items-center justify-center gap-2.5 p-4 bg-gradient-to-br from-white to-blue-50/30 border border-blue-100/50 rounded-2xl cursor-grab hover:border-blue-300 hover:shadow-xl hover:shadow-blue-500/10 hover:-translate-y-1 transition-all group active:cursor-grabbing"
           >
             <div className="w-12 h-12 rounded-2xl bg-white shadow-sm border border-blue-50 flex items-center justify-center group-hover:scale-110 group-hover:bg-blue-600 group-hover:text-white transition-all duration-300">

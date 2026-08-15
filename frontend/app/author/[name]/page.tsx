@@ -1,6 +1,7 @@
 import Link from "next/link";
 import DetailedFooter from "@/components/DetailedFooter";
 import AuthorProfileHeader from "@/components/blog/AuthorProfileHeader";
+import { api } from "@/lib/api";
 import "./page.css";
 
 interface AuthorProfilePageProps {
@@ -18,15 +19,16 @@ export async function generateMetadata({ params }: AuthorProfilePageProps) {
 
 async function getPostsByAuthor(authorName: string) {
   try {
-    const res = await fetch("http://localhost:5000/api/posts?status=Published", {
-      cache: "no-store",
+    const postsData = await api.getPreviewPosts(100).catch(() => ({ posts: [] }));
+    const posts = Array.isArray(postsData) ? postsData : (postsData?.posts || []);
+    
+    // Filter posts by author name case-insensitively
+    return posts.filter((post: any) => {
+      const pAuthorName = post.author?.name || post.author_name || "";
+      return pAuthorName.toLowerCase() === authorName.toLowerCase();
     });
-    if (!res.ok) return [];
-    const data = await res.json();
-    if (!Array.isArray(data)) return [];
-    // Filter posts by author name
-    return data.filter(post => post.author?.name === authorName);
-  } catch {
+  } catch (error) {
+    console.error("Failed to get posts by author:", error);
     return [];
   }
 }

@@ -10,7 +10,7 @@ import { BuilderProvider } from "@/components/admin/builder/BuilderContext";
 import { Sparkles } from "lucide-react";
 
 export default function BuilderPage() {
-  const [isLaunching, setIsLaunching] = useState(true);
+  const [isLaunching, setIsLaunching] = useState(false);
 
   useEffect(() => {
     // Premium launch delay to show animation

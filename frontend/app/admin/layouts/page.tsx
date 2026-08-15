@@ -43,7 +43,7 @@ export default function LayoutsListPage() {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const [actionLoading, setActionLoading] = useState<number | null>(null); 
-    const [isLaunching, setIsLaunching] = useState(true);
+    const [isLaunching, setIsLaunching] = useState(false);
 
     useEffect(() => {
         const timer = setTimeout(() => {
@@ -297,7 +297,7 @@ export default function LayoutsListPage() {
                                                 {formatDate(layout.updatedAt)}
                                             </td>
                                             <td className="px-8 py-5">
-                                                <div className="flex items-center justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                                                <div className="flex items-center justify-end gap-2 transition-opacity">
                                                     <button
                                                         onClick={() => handlePublishToggle(layout)}
                                                         disabled={isPublished || isActive}

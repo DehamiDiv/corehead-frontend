@@ -30,28 +30,27 @@ export default function Header({ onToggleSidebar }: { onToggleSidebar: () => voi
 
   useEffect(() => {
     const storedUser = localStorage.getItem("user");
-    const token =
-      localStorage.getItem("accessToken") || localStorage.getItem("token");
+    const token = localStorage.getItem("accessToken") || localStorage.getItem("token");
 
     if (storedUser) {
       try {
         const parsedUser = JSON.parse(storedUser);
         setUser(parsedUser);
-        
+
         // If profile data is missing, fetch it from backend
         if ((!parsedUser.avatar && !parsedUser.image) || !parsedUser.name) {
-           if (!token) return;
-           fetch(`${getApiBaseUrl()}/auth/me`, {
-             headers: { 'Authorization': `Bearer ${token}` }
-           })
-           .then(res => res.json())
-           .then(data => {
-             if (data.user) {
-               setUser(data.user);
-               localStorage.setItem("user", JSON.stringify(data.user));
-             }
-           })
-           .catch(err => console.error("Error fetching user profile:", err));
+          if (!token) return;
+          fetch(`${getApiBaseUrl()}/auth/me`, {
+            headers: { 'Authorization': `Bearer ${token}` }
+          })
+            .then(res => res.json())
+            .then(data => {
+              if (data.user) {
+                setUser(data.user);
+                localStorage.setItem("user", JSON.stringify(data.user));
+              }
+            })
+            .catch(err => console.error("Error fetching user profile:", err));
         }
       } catch (e) {
         console.error("Failed to parse user from localStorage", e);
@@ -68,7 +67,7 @@ export default function Header({ onToggleSidebar }: { onToggleSidebar: () => voi
     <header className="h-[68px] bg-white border-b border-slate-100 flex items-center justify-between px-[24px] sticky top-0 z-40 max-w-[1700px] mx-auto w-full">
       {/* Left Side: Toggle & Search */}
       <div className="flex items-center gap-3">
-        <button 
+        <button
           onClick={onToggleSidebar}
           className="p-1.5 hover:bg-gray-50 rounded-lg text-gray-500 transition-colors"
           title="Toggle Sidebar"
@@ -96,7 +95,7 @@ export default function Header({ onToggleSidebar }: { onToggleSidebar: () => voi
         />
 
         {/* Fullscreen Toggle */}
-        <button 
+        <button
           onClick={toggleFullscreen}
           className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-50 rounded-full transition-colors"
           title={isFullscreen ? "Exit Fullscreen" : "Enter Fullscreen"}

@@ -12,6 +12,7 @@ const plusJakartaSans = Plus_Jakarta_Sans({
 export const metadata = {
   title: "CoreHead | Intelligent Blog Builder",
   description: "Create, customize, and publish dynamic blogs instantly using our AI-powered visual builder.",
+  referrer: 'no-referrer-when-downgrade' as const,
 };
 
 export default function RootLayout({ children }: { children: ReactNode }) {

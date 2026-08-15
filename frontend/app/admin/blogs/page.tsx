@@ -64,7 +64,7 @@ const BLOG_POSTS = [
 ];
 
 export default function BlogsPage() {
-  const [isLaunching, setIsLaunching] = useState(true);
+  const [isLaunching, setIsLaunching] = useState(false);
 
   useEffect(() => {
     const timer = setTimeout(() => {

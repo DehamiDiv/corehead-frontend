@@ -6,6 +6,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { AlertCircle, Loader2, Eye, EyeOff, CheckCircle2 } from "lucide-react";
 import { api } from "@/lib/api";
+import { useToast, ToastContainer } from "@/components/ui/Toast";
 
 function ResetPasswordForm() {
   const router = useRouter();
@@ -18,23 +19,24 @@ function ResetPasswordForm() {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
+  const { toasts, remove, success: toastSuccess, error: toastError, info: toastInfo } = useToast();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
-    
+
     if (!token) {
-      setError("Invalid or missing reset token.");
+      toastError("Invalid or missing reset token.");
       return;
     }
 
     if (password !== confirmPassword) {
-      setError("Passwords do not match.");
+      toastError("Passwords do not match.");
       return;
     }
 
     if (password.length < 8) {
-      setError("Password must be at least 8 characters long.");
+      toastError("Password must be at least 8 characters long.");
       return;
     }
 
@@ -42,12 +44,12 @@ function ResetPasswordForm() {
 
     try {
       await api.resetPassword({ token, password });
-      setSuccess("Your password has been successfully reset.");
+      toastSuccess("Your password has been successfully reset.");
       setTimeout(() => {
         router.push("/login");
       }, 3000);
     } catch (err: any) {
-      setError(err.message || "Failed to reset password. The link may have expired.");
+      toastError(err.message || "Failed to reset password. The link may have expired.");
     } finally {
       setIsLoading(false);
     }
@@ -61,7 +63,7 @@ function ResetPasswordForm() {
           <h2 className="text-xl font-bold text-slate-900">Invalid Link</h2>
           <p className="text-sm text-slate-600">The password reset link is invalid or missing.</p>
           <Link href="/forgot-password" className="mt-4 px-6 py-2 bg-slate-900 text-white rounded-lg font-semibold text-sm">
-             Request New Link
+            Request New Link
           </Link>
         </div>
       </div>
@@ -77,12 +79,7 @@ function ResetPasswordForm() {
         </p>
       </div>
 
-      {error && (
-        <div className="bg-red-50 border border-red-200 text-red-600 px-4 py-3 rounded-lg flex items-center gap-3 text-sm mb-5">
-          <AlertCircle className="w-4 h-4 shrink-0" />
-          <p>{error}</p>
-        </div>
-      )}
+      {/* Toast handles error */}
 
       {success ? (
         <div className="text-center space-y-4 py-4">

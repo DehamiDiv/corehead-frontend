@@ -5,15 +5,15 @@ import { X, Sparkles } from 'lucide-react';
 import { aiApi } from '@/services/aiApi';
 
 const layoutTypes = [
-  { id: 'single-post',   label: 'Single Post' },
-  { id: 'blog-archive',  label: 'Blog Archive' },
+  { id: 'single-post', label: 'Single Post' },
+  { id: 'blog-archive', label: 'Blog Archive' },
 ];
 
 const designStyles = [
-  { id: 'modern',      label: '✨ Modern' },
-  { id: 'editorial',   label: '📰 Editorial' },
-  { id: 'magazine',    label: '🗞️ Magazine' },
-  { id: 'minimalist',  label: '⬜ Minimalist' },
+  { id: 'modern', label: '✨ Modern' },
+  { id: 'editorial', label: '📰 Editorial' },
+  { id: 'magazine', label: '🗞️ Magazine' },
+  { id: 'minimalist', label: '⬜ Minimalist' },
 ];
 
 export default function AIGenerateModal({ isOpen, onClose, onGenerated }) {
@@ -49,6 +49,8 @@ export default function AIGenerateModal({ isOpen, onClose, onGenerated }) {
       // Pass generated layout back to builder page
       if (result.layout?.cards) {
         onGenerated(result.layout.cards);
+      } else if (result.blocks) {
+        onGenerated(result.blocks);
       } else {
         // Fallback — add a single AI post card
         onGenerated([{
@@ -123,24 +125,24 @@ export default function AIGenerateModal({ isOpen, onClose, onGenerated }) {
               ✍️ Describe your layout
             </label>
             <textarea
-  value={prompt}
-  onChange={e => { setPrompt(e.target.value); setError(null); }}
-  placeholder="e.g. Modern blog with full-width hero, sidebar with TOC, and related posts at the bottom"
-  rows={3}
-  style={{
-    width: '100%', padding: '10px 12px',
-    border: '2px solid #e5e5e5', borderRadius: '8px',
-    fontSize: '13px', resize: 'vertical',
-    fontFamily: 'inherit', boxSizing: 'border-box',
-    outline: 'none',
-    color: '#1a1a1a',           // ← make sure text is visible
-    background: '#ffffff',      // ← white background
-    lineHeight: '1.5'
-  }}
-  onFocus={e => e.target.style.borderColor = '#4f46e5'}
-  onBlur={e => e.target.style.borderColor = '#e5e5e5'}
-/>
-            
+              value={prompt}
+              onChange={e => { setPrompt(e.target.value); setError(null); }}
+              placeholder="e.g. Modern blog with full-width hero, sidebar with TOC, and related posts at the bottom"
+              rows={3}
+              style={{
+                width: '100%', padding: '10px 12px',
+                border: '2px solid #e5e5e5', borderRadius: '8px',
+                fontSize: '13px', resize: 'vertical',
+                fontFamily: 'inherit', boxSizing: 'border-box',
+                outline: 'none',
+                color: '#1a1a1a',           // ← make sure text is visible
+                background: '#ffffff',      // ← white background
+                lineHeight: '1.5'
+              }}
+              onFocus={e => e.target.style.borderColor = '#4f46e5'}
+              onBlur={e => e.target.style.borderColor = '#e5e5e5'}
+            />
+
           </div>
 
           {/* Layout Type */}
