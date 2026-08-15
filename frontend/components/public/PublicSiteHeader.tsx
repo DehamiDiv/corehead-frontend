@@ -25,8 +25,16 @@ export default function PublicSiteHeader({ site }: { site: PublicSite }) {
 
   const customNav =
     branding?.header?.navLinks?.filter((n) => n?.name && n?.link) || null;
-  const navItems =
+  let navItems =
     customNav && customNav.length > 0 ? customNav : DEFAULT_THEME_NAV_LINKS;
+
+  if (site.slug === "guides") {
+    navItems = [
+      { id: 1, name: "Home", link: "/" },
+      { id: 2, name: "Guides", link: "/guides" },
+      { id: 3, name: "All Guides", link: "/s/guides/blog" },
+    ];
+  }
 
   // Public marketing nav: hide admin tools from primary bar (still available if configured)
   const primaryNav = navItems.filter((item) => {
@@ -111,7 +119,12 @@ export default function PublicSiteHeader({ site }: { site: PublicSite }) {
       item.link === "/admin" ||
       item.link.startsWith("/admin");
 
-    const href = mapThemeNavHref(item.link, site.slug);
+    let href = mapThemeNavHref(item.link, site.slug);
+    if (site.slug === "guides") {
+      if (item.link === "/") href = "/";
+      else if (item.link === "/guides") href = "/guides";
+      else if (item.link === "/s/guides/blog") href = "/s/guides/blog";
+    }
     const active =
       !isLogout &&
       !isDashboard &&
@@ -120,10 +133,10 @@ export default function PublicSiteHeader({ site }: { site: PublicSite }) {
         (href.includes("/blog") && pathname.includes("/blog")));
 
     const baseClass = cn(
-      "font-semibold transition-colors whitespace-nowrap",
+      "font-bold transition-colors whitespace-nowrap",
       mobile
         ? "block w-full rounded-xl px-4 py-3 text-sm"
-        : "px-3 py-2 text-sm rounded-xl",
+        : "px-3 py-2 text-base rounded-xl",
       active
         ? "opacity-100 bg-white/10 underline underline-offset-4"
         : "opacity-85 hover:opacity-100 hover:bg-white/5"
@@ -191,9 +204,10 @@ export default function PublicSiteHeader({ site }: { site: PublicSite }) {
             <img
               src={logo}
               alt={site.name}
-              width={44}
-              height={44}
-              className="h-11 w-11 shrink-0 rounded-full object-contain bg-white border border-white/80 shadow-md p-1"
+              className={cn(
+                "h-10 shrink-0 object-contain",
+                logo.includes("logo.png") ? "w-auto" : "h-11 w-11 rounded-full bg-white border border-white/80 shadow-md p-1"
+              )}
             />
           ) : (
             <div
@@ -203,20 +217,24 @@ export default function PublicSiteHeader({ site }: { site: PublicSite }) {
               {site.name.charAt(0).toUpperCase()}
             </div>
           )}
-          <span className="font-bold truncate text-base sm:text-lg leading-tight">
-            {site.name}
-          </span>
+          {!logo?.includes("logo.png") && (
+            <span className="font-bold truncate text-base sm:text-lg leading-tight">
+              {site.name}
+            </span>
+          )}
         </Link>
 
         <nav className="hidden md:flex items-center gap-0.5">
           {primaryNav.map((item) => renderNavItem(item))}
-          <Link
-            href={ctaUrl}
-            className="ml-2 inline-flex px-4 py-2 text-sm font-bold rounded-full shadow-md transition-transform hover:scale-[1.02] active:scale-[0.98] shrink-0"
-            style={{ background: ctaBg, color: ctaColor }}
-          >
-            {ctaText || "Explore"}
-          </Link>
+          {site.slug !== "guides" && (
+            <Link
+              href={ctaUrl}
+              className="ml-2 inline-flex px-4 py-2 text-sm font-bold rounded-full shadow-md transition-transform hover:scale-[1.02] active:scale-[0.98] shrink-0"
+              style={{ background: ctaBg, color: ctaColor }}
+            >
+              {ctaText || "Explore"}
+            </Link>
+          )}
           {utilityNav.length > 0 && (
             <div className="ml-1 pl-2 border-l border-white/15 flex items-center gap-0.5">
               {utilityNav.map((item) => renderNavItem(item))}
@@ -240,14 +258,16 @@ export default function PublicSiteHeader({ site }: { site: PublicSite }) {
           style={headerStyle}
         >
           {primaryNav.map((item) => renderNavItem(item, true))}
-          <Link
-            href={ctaUrl}
-            onClick={() => setMobileOpen(false)}
-            className="mt-2 flex items-center justify-center rounded-xl px-4 py-3 text-sm font-bold"
-            style={{ background: ctaBg, color: ctaColor }}
-          >
-            {ctaText || "Explore"}
-          </Link>
+          {site.slug !== "guides" && (
+            <Link
+              href={ctaUrl}
+              onClick={() => setMobileOpen(false)}
+              className="mt-2 flex items-center justify-center rounded-xl px-4 py-3 text-sm font-bold"
+              style={{ background: ctaBg, color: ctaColor }}
+            >
+              {ctaText || "Explore"}
+            </Link>
+          )}
           {utilityNav.map((item) => renderNavItem(item, true))}
         </div>
       )}
