@@ -8,6 +8,7 @@ export function normalizeLayoutDocumentV1(input: any, options?: any): {
   };
   warnings: any[];
   issues: any[];
+  sourceFormat: string;
 };
 
 const _default: {

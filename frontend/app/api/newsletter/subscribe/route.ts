@@ -27,6 +27,7 @@ async function sendSubscriptionEmail(to: string, siteName: string, siteSlug?: st
 
   let nodemailer: any;
   try {
+    // @ts-ignore
     nodemailer = await import('nodemailer');
   } catch {
     console.warn('[Newsletter] nodemailer package not installed. Simulating subscription.');
@@ -108,6 +109,8 @@ async function sendSubscriptionEmail(to: string, siteName: string, siteSlug?: st
   }
 }
 
+import { addSubscriber } from '@/lib/subscriberStore';
+
 export async function POST(req: NextRequest) {
   try {
     const body = (await req.json()) as SubscribeBody;
@@ -122,7 +125,10 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Send the email
+    // Register subscriber for this site
+    addSubscriber(email, siteSlug);
+
+    // Send welcome email to the subscriber
     const result = await sendSubscriptionEmail(email, siteName, siteSlug);
 
     return NextResponse.json({
