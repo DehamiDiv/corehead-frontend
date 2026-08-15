@@ -1,10 +1,10 @@
-import layoutDocumentV1Schema from "../../../contracts/layout-document-v1.schema.json";
+import layoutDocumentV1Schema from "@/contracts/layout-document-v1.schema.json";
 import {
   assertValidLayoutDocumentV1,
   validateLayoutDocumentV1,
-} from "../../../contracts/layout-validator-v1.js";
-import { normalizeLayoutDocumentV1 } from "../../../contracts/layout-normalizer-v1.js";
-import { prepareRenderableLayout } from "../../../contracts/renderable-layout-v1.js";
+} from "@/contracts/layout-validator-v1.js";
+import { normalizeLayoutDocumentV1 } from "@/contracts/layout-normalizer-v1.js";
+import { prepareRenderableLayout } from "@/contracts/renderable-layout-v1.js";
 
 export const LAYOUT_SCHEMA_VERSION = "1.0" as const;
 export const LAYOUT_KINDS = ["single-post", "blog-archive"] as const;

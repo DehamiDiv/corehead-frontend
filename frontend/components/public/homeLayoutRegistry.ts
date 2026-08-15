@@ -1,5 +1,5 @@
 import { createElement, type ComponentType } from "react";
-import { getHomeLayoutRegistration } from "../../../../contracts/appearance-registry-v1.js";
+import { getHomeLayoutRegistration } from "@/contracts/appearance-registry-v1.js";
 import BentoHomeLayout from "@/components/public/BentoHomeLayout";
 import BloomHomeLayout from "@/components/public/BloomHomeLayout";
 import GlassHomeLayout from "@/components/public/GlassHomeLayout";

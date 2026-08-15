@@ -1,5 +1,5 @@
 import type { HomeSectionCopy } from "@/lib/publicSiteCopy";
-import { normalizeHomeLayoutData } from "../../../../contracts/home-layout-data-v1.js";
+import { normalizeHomeLayoutData } from "@/contracts/home-layout-data-v1.js";
 
 export type HomePost = {
   id: number | string;

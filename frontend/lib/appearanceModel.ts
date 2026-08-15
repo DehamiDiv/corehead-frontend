@@ -7,6 +7,6 @@ export {
   preserveHomeLayoutForThemeChange,
   selectHomeLayout,
   selectTheme,
-} from "../../../contracts/appearance-model-v1.js";
+} from "@/contracts/appearance-model-v1.js";
 
-export type { HomeStyle } from "../../../contracts/appearance-model-v1.js";
+export type { HomeStyle } from "@/contracts/appearance-model-v1.js";
