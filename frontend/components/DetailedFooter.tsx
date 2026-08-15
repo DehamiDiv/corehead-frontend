@@ -17,7 +17,6 @@ const footerLinks = {
   ],
   Resources: [
     { name: "Documentation", href: "/guides" },
-    { name: "Blog", href: "/blog" },
     { name: "Guides", href: "/guides" },
     { name: "FAQs", href: "/#faq" },
     { name: "Changelog", href: "#" },

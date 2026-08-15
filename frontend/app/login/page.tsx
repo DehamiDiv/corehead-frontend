@@ -109,9 +109,9 @@ export default function LoginPage() {
           router.push('/admin');
         }, 1500);
       } else {
-        setSuccess("Login successful! Redirecting to Blog Page...");
+        setSuccess("Login successful! Redirecting to Dashboard...");
         setTimeout(() => {
-          router.push('/blog'); 
+          router.push('/admin'); 
         }, 1500);
       }
     } catch (err: any) {

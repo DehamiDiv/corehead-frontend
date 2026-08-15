@@ -1,7 +1,8 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { MessageSquare, User, Send, Loader2 } from "lucide-react";
+import Link from "next/link";
+import { MessageSquare, User, Send, Loader2, Lock, X } from "lucide-react";
 import "./CommentsSection.css";
 
 interface Comment {
@@ -79,7 +80,7 @@ export default function CommentsSection({
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
   const [account, setAccount] = useState<AccountUser | null>(null);
-  const [nameLocked, setNameLocked] = useState(false);
+  const [showAuthModal, setShowAuthModal] = useState(false);
 
   // Auto-fill name from logged-in account
   useEffect(() => {
@@ -88,9 +89,6 @@ export default function CommentsSection({
     const name = displayNameFromAccount(u);
     if (name) {
       setUserName(name);
-      setNameLocked(true);
-    } else {
-      setNameLocked(false);
     }
   }, []);
 
@@ -123,11 +121,12 @@ export default function CommentsSection({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    // Re-read account in case they logged in after page load
     const u = account || readAccountUser();
-    const name =
-      (nameLocked ? displayNameFromAccount(u) : userName.trim()) ||
-      userName.trim();
+    if (!u) {
+      setShowAuthModal(true);
+      return;
+    }
+    const name = displayNameFromAccount(u) || userName.trim();
     if (!name || !content.trim()) return;
 
     setSubmitting(true);
@@ -167,8 +166,6 @@ export default function CommentsSection({
 
       setComments((prev) => [newComment, ...prev]);
       setContent("");
-      // Keep auto-filled name after submit
-      if (!nameLocked) setUserName(name);
       setSuccess(true);
       setTimeout(() => setSuccess(false), 3000);
     } catch (err: any) {
@@ -193,60 +190,64 @@ export default function CommentsSection({
         <form onSubmit={handleSubmit} className="comment-form">
           <h3>Join the discussion</h3>
           <div className="form-inputs">
-            <div className="input-group">
-              <User className="input-icon" />
-              <input
-                type="text"
-                placeholder={
-                  nameLocked ? "Signed in as…" : "Your name"
-                }
-                value={userName}
-                onChange={(e) => {
-                  if (!nameLocked) setUserName(e.target.value);
-                }}
-                required
-                readOnly={nameLocked}
-                className="name-input"
-                title={
-                  nameLocked
-                    ? "Name is taken from your account"
-                    : "Enter a display name"
-                }
-                style={
-                  nameLocked
-                    ? { background: "#f1f5f9", cursor: "default" }
-                    : undefined
-                }
-              />
-            </div>
-            {nameLocked && (
+            {account ? (
+              <>
+                <div className="input-group">
+                  <User className="input-icon" />
+                  <input
+                    type="text"
+                    placeholder="Signed in as…"
+                    value={userName}
+                    readOnly
+                    className="name-input"
+                    title="Name is taken from your account"
+                    style={{ background: "#f1f5f9", cursor: "default" }}
+                  />
+                </div>
+                <p
+                  style={{
+                    margin: "0 0 0.5rem",
+                    fontSize: "12px",
+                    color: "#64748b",
+                    fontWeight: 600,
+                  }}
+                >
+                  Commenting as your account: {userName}
+                </p>
+              </>
+            ) : (
               <p
                 style={{
                   margin: "0 0 0.5rem",
-                  fontSize: "12px",
+                  fontSize: "13px",
                   color: "#64748b",
-                  fontWeight: 600,
+                  fontWeight: 500,
                 }}
               >
-                Commenting as your account: {userName}
+                🔒 Registered users only — click below to log in or register to comment.
               </p>
             )}
-            {!nameLocked && (
-              <p
-                style={{
-                  margin: "0 0 0.5rem",
-                  fontSize: "12px",
-                  color: "#94a3b8",
-                }}
-              >
-                Not signed in — enter a name, or log in to use your account name.
-              </p>
-            )}
+
             <textarea
-              placeholder="Share your thoughts..."
+              placeholder={
+                account
+                  ? "Share your thoughts..."
+                  : "Please log in or register to post a comment..."
+              }
               value={content}
-              onChange={(e) => setContent(e.target.value)}
-              required
+              onChange={(e) => {
+                if (!account) {
+                  setShowAuthModal(true);
+                  return;
+                }
+                setContent(e.target.value);
+              }}
+              onClick={() => {
+                if (!account) {
+                  setShowAuthModal(true);
+                }
+              }}
+              required={!!account}
               rows={4}
               className="content-textarea"
             />
@@ -257,7 +258,17 @@ export default function CommentsSection({
             <p className="comment-success">Comment posted successfully.</p>
           )}
 
-          <button type="submit" disabled={submitting} className="submit-btn">
+          <button
+            type="submit"
+            disabled={submitting}
+            onClick={(e) => {
+              if (!account) {
+                e.preventDefault();
+                setShowAuthModal(true);
+              }
+            }}
+            className="submit-btn"
+          >
             {submitting ? (
               <Loader2 className="w-4 h-4 animate-spin" />
             ) : (
@@ -266,6 +277,56 @@ export default function CommentsSection({
             {submitting ? "Posting…" : "Post comment"}
           </button>
         </form>
+      )}
+
+      {/* Registration Required Popup Modal */}
+      {showAuthModal && (
+        <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4 animate-in fade-in duration-200">
+          <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl border border-slate-100 relative animate-in zoom-in-95 duration-200">
+            <button
+              type="button"
+              onClick={() => setShowAuthModal(false)}
+              className="absolute top-4 right-4 p-1.5 text-slate-400 hover:text-slate-600 rounded-lg hover:bg-slate-100 transition-colors"
+            >
+              <X className="w-5 h-5" />
+            </button>
+
+            <div className="w-12 h-12 rounded-2xl bg-blue-50 text-blue-600 flex items-center justify-center mx-auto mb-4 border border-blue-100">
+              <Lock className="w-6 h-6" />
+            </div>
+
+            <h3 className="text-xl font-bold text-slate-900 text-center mb-2">
+              Registration Required
+            </h3>
+            <p className="text-slate-600 text-sm text-center mb-6 leading-relaxed">
+              Only registered users can post comments. Please log in or register a new account to join the discussion.
+            </p>
+
+            <div className="flex flex-col gap-2.5">
+              <div className="flex flex-col sm:flex-row gap-2.5">
+                <Link
+                  href="/login"
+                  className="flex-1 py-2.5 px-4 bg-blue-600 hover:bg-blue-700 text-white font-bold text-sm rounded-xl text-center transition-all shadow-sm active:scale-95"
+                >
+                  Log In
+                </Link>
+                <Link
+                  href="/signup"
+                  className="flex-1 py-2.5 px-4 bg-slate-900 hover:bg-slate-800 text-white font-bold text-sm rounded-xl text-center transition-all shadow-sm active:scale-95"
+                >
+                  Sign Up
+                </Link>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowAuthModal(false)}
+                className="w-full py-2 px-4 text-slate-500 hover:text-slate-700 font-semibold text-xs rounded-xl hover:bg-slate-100 transition-colors mt-1"
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
       )}
 
       {loading ? (

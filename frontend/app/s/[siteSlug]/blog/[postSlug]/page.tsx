@@ -142,45 +142,49 @@ export default async function PublicSitePostPage({ params }: Props) {
             <header className="mb-8">
               {category && (
                 <p
-                  className="inline-flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-[0.16em] mb-3"
-                  style={{ color: "var(--site-primary)" }}
+                  className="inline-flex items-center gap-1.5 text-[11px] font-extrabold uppercase tracking-[0.16em] mb-3 px-3 py-1 rounded-full bg-blue-50 text-blue-600 border border-blue-100"
                 >
                   <Tag className="h-3.5 w-3.5" />
                   {category}
                 </p>
               )}
               <h1
-                className="text-3xl sm:text-4xl lg:text-[2.75rem] font-black tracking-tight leading-[1.15]"
+                className="text-3xl sm:text-4xl lg:text-[2.75rem] font-black tracking-tight leading-[1.2] mb-4"
                 style={{ color: "var(--site-ink)" }}
               >
                 {post.title}
               </h1>
+
+              <div
+                className="flex flex-wrap items-center gap-x-4 gap-y-2 text-xs sm:text-sm font-medium pb-4 border-b border-black/5 mb-6"
+                style={{ color: "var(--site-muted)" }}
+              >
+                <span className="font-bold flex items-center gap-2" style={{ color: "var(--site-ink)" }}>
+                  <div className="w-6 h-6 rounded-full bg-blue-600 text-white flex items-center justify-center text-[10px] font-bold">
+                    {authorName.charAt(0).toUpperCase()}
+                  </div>
+                  {authorName}
+                </span>
+                {dateLabel && (
+                  <span className="inline-flex items-center gap-1.5">
+                    <Calendar className="h-3.5 w-3.5 text-slate-400" />
+                    {dateLabel}
+                  </span>
+                )}
+                <span className="inline-flex items-center gap-1.5">
+                  <Clock className="h-3.5 w-3.5 text-slate-400" />
+                  {minutes} min read
+                </span>
+              </div>
+
               {post.excerpt && (
                 <p
-                  className="mt-4 text-base sm:text-lg leading-relaxed"
+                  className="text-base sm:text-lg leading-relaxed italic border-l-4 border-blue-500 pl-4 py-1 mb-6"
                   style={{ color: "var(--site-muted)" }}
                 >
                   {post.excerpt}
                 </p>
               )}
-              <div
-                className="mt-5 flex flex-wrap items-center gap-x-4 gap-y-2 text-xs sm:text-sm font-medium"
-                style={{ color: "var(--site-muted)" }}
-              >
-                <span className="font-semibold" style={{ color: "var(--site-ink)" }}>
-                  {authorName}
-                </span>
-                {dateLabel && (
-                  <span className="inline-flex items-center gap-1.5">
-                    <Calendar className="h-3.5 w-3.5" />
-                    {dateLabel}
-                  </span>
-                )}
-                <span className="inline-flex items-center gap-1.5">
-                  <Clock className="h-3.5 w-3.5" />
-                  {minutes} min read
-                </span>
-              </div>
             </header>
 
             {coverSrc && !layoutHasImage && (

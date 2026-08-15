@@ -1,16 +1,13 @@
 "use client";
 
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useState, useEffect, useCallback } from "react";
 import {
   Plus, Search, Edit, Trash2, Tags, RotateCcw,
-  X, Loader2, Check, Upload, FolderOpen, Image as ImageIcon,
-  ChevronDown,
+  X, Loader2, Check, FolderTree, Globe, ChevronDown,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { api } from "@/lib/api";
-import MediaLibraryModal from "@/components/admin/MediaLibraryModal";
 import EmptyState from "@/components/ui/EmptyState";
-import { resolveAdminMediaUrl } from "@/lib/apiOrigin";
 
 export default function CategoriesPage() {
   const [searchQuery, setSearchQuery] = useState("");
@@ -22,15 +19,10 @@ export default function CategoriesPage() {
   const [editingId, setEditingId] = useState<number | null>(null);
   const [name, setName] = useState("");
   const [slug, setSlug] = useState("");
+  const [isCustomSlug, setIsCustomSlug] = useState(false);
   const [description, setDescription] = useState("");
-  const [imageUrl, setImageUrl] = useState("");
   const [parentId, setParentId] = useState<number | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
-
-  // Image upload
-  const fileInputRef = useRef<HTMLInputElement>(null);
-  const [isUploadingImage, setIsUploadingImage] = useState(false);
-  const [isLibraryOpen, setIsLibraryOpen] = useState(false);
 
   const fetchCategories = useCallback(async () => {
     setIsLoading(true);
@@ -57,8 +49,8 @@ export default function CategoriesPage() {
   const resetForm = () => {
     setName("");
     setSlug("");
+    setIsCustomSlug(false);
     setDescription("");
-    setImageUrl("");
     setParentId(null);
     setEditingId(null);
   };
@@ -72,8 +64,8 @@ export default function CategoriesPage() {
     setEditingId(category.id);
     setName(category.name);
     setSlug(category.slug);
+    setIsCustomSlug(true);
     setDescription(category.description || "");
-    setImageUrl(category.imageUrl || "");
     setParentId(category.parentId || null);
     setIsModalOpen(true);
   };
@@ -89,47 +81,12 @@ export default function CategoriesPage() {
     }
   };
 
-  const handleImageFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    if (file.size > 5 * 1024 * 1024) {
-      alert("File size must be less than 5MB");
-      return;
-    }
-    setIsUploadingImage(true);
-    try {
-      const reader = new FileReader();
-      reader.onload = async () => {
-        const base64Data = reader.result as string;
-        try {
-          const uploaded = await api.uploadMedia({
-            name: file.name,
-            type: file.type,
-            size: String(file.size),
-            base64Data,
-          });
-          const rawUrl = uploaded.media?.url || uploaded.url || "";
-          const fullUrl = resolveAdminMediaUrl(rawUrl) || rawUrl;
-          setImageUrl(fullUrl);
-        } catch {
-          // Fallback: use local object URL for preview only
-          setImageUrl(URL.createObjectURL(file));
-        }
-        setIsUploadingImage(false);
-      };
-      reader.readAsDataURL(file);
-    } catch {
-      setIsUploadingImage(false);
-    }
-  };
-
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!name || !slug) return;
 
     setIsSubmitting(true);
     try {
-      // Backend categories table only supports: name, slug, description
       const data = {
         name,
         slug: slug
@@ -137,6 +94,7 @@ export default function CategoriesPage() {
           .replace(/[^a-z0-9-]/g, "-")
           .replace(/-+/g, "-"),
         description,
+        parentId: parentId ? Number(parentId) : null,
       };
 
       if (editingId) {
@@ -305,147 +263,126 @@ export default function CategoriesPage() {
         </div>
       </div>
 
-      {/* ─── Create / Edit Modal ─── */}
+      {/* ─── Create / Edit Modal (Option B: Compact & Minimal) ─── */}
       {isModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4">
-          <div className="bg-white rounded-[28px] shadow-2xl w-full max-w-[520px] overflow-hidden animate-in fade-in zoom-in-95 duration-300">
+          <div className="bg-white rounded-[28px] shadow-2xl w-full max-w-[560px] overflow-hidden animate-in fade-in zoom-in-95 duration-200">
             {/* Modal Header */}
-            <div className="px-8 pt-8 pb-5 relative border-b border-slate-100">
+            <div className="px-8 pt-7 pb-5 relative border-b border-slate-100 bg-slate-50/40">
               <button
+                type="button"
                 onClick={() => { setIsModalOpen(false); resetForm(); }}
-                className="absolute right-6 top-6 p-2 text-slate-400 hover:text-slate-900 rounded-xl hover:bg-slate-100 transition-all"
+                className="absolute right-6 top-6 p-2 text-slate-400 hover:text-slate-900 rounded-xl hover:bg-slate-200/60 transition-all"
               >
                 <X className="w-5 h-5" />
               </button>
-              <h2 className="text-[22px] font-bold text-slate-900">
-                {editingId ? "Edit Category" : "Create Category"}
-              </h2>
-              <p className="text-[13px] text-slate-500 mt-1">
-                {editingId
-                  ? "Update your category details below."
-                  : "Create a new category to organize your blog posts."}
-              </p>
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-2xl bg-blue-50 border border-blue-100 flex items-center justify-center text-blue-600 shadow-sm">
+                  <FolderTree className="w-5 h-5" />
+                </div>
+                <div>
+                  <h2 className="text-[20px] font-bold text-slate-900 leading-snug">
+                    {editingId ? "Edit Category" : "Create Category"}
+                  </h2>
+                  <p className="text-[13px] text-slate-500 font-medium">
+                    {editingId
+                      ? "Update your category name and URL identifier."
+                      : "Add a new category to group your blog posts."}
+                  </p>
+                </div>
+              </div>
             </div>
 
-            <form onSubmit={handleSave} className="px-8 py-6 space-y-5 max-h-[75vh] overflow-y-auto">
+            <form onSubmit={handleSave} className="px-8 py-6 space-y-5">
+              {/* Row 1: Name & Slug side by side */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {/* Category Name */}
+                <div>
+                  <label className="block text-[13px] font-semibold text-slate-700 mb-2">
+                    Category Name <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    placeholder="e.g. Technology"
+                    className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all text-[14px] text-slate-900 font-medium placeholder:text-slate-400"
+                    value={name}
+                    onChange={(e) => {
+                      const newName = e.target.value;
+                      setName(newName);
+                      if (!isCustomSlug) {
+                        setSlug(
+                          newName
+                            .toLowerCase()
+                            .trim()
+                            .replace(/[^a-z0-9\s-]/g, "")
+                            .replace(/\s+/g, "-")
+                            .replace(/-+/g, "-")
+                        );
+                      }
+                    }}
+                  />
+                </div>
 
-              {/* ── Category Image ── */}
-              <div>
-                <label className="block text-[13px] font-semibold text-slate-700 mb-3">
-                  Category Image
-                </label>
-                <div className="flex items-start gap-4">
-                  {/* Preview Box */}
-                  <div className="w-[88px] h-[88px] flex-shrink-0 rounded-[14px] border-2 border-dashed border-slate-200 bg-slate-50 flex items-center justify-center overflow-hidden">
-                    {isUploadingImage ? (
-                      <Loader2 className="w-6 h-6 text-slate-300 animate-spin" />
-                    ) : imageUrl ? (
-                      <img src={imageUrl} alt="preview" className="w-full h-full object-cover" />
-                    ) : (
-                      <ImageIcon className="w-7 h-7 text-slate-300" />
-                    )}
+                {/* Slug */}
+                <div>
+                  <div className="flex items-center justify-between mb-2">
+                    <label className="block text-[13px] font-semibold text-slate-700">
+                      Slug <span className="text-red-500">*</span>
+                    </label>
+                    <button
+                      type="button"
+                      onClick={() => setIsCustomSlug(!isCustomSlug)}
+                      className="text-[11px] font-bold text-blue-600 hover:text-blue-700 flex items-center gap-1 transition-colors"
+                      title={isCustomSlug ? "Auto-generate from name" : "Manually customize slug"}
+                    >
+                      {isCustomSlug ? (
+                        <>
+                          <RotateCcw className="w-3 h-3" /> Auto
+                        </>
+                      ) : (
+                        <>
+                          <Edit className="w-3 h-3" /> Edit
+                        </>
+                      )}
+                    </button>
                   </div>
-
-                  {/* Buttons + hint */}
-                  <div>
-                    <div className="flex gap-2 mb-2">
-                      <button
-                        type="button"
-                        onClick={() => fileInputRef.current?.click()}
-                        className="flex items-center gap-1.5 px-4 py-2 bg-white border border-slate-200 rounded-lg text-[13px] font-semibold text-slate-700 hover:bg-slate-50 transition-all shadow-sm"
-                      >
-                        <Upload className="w-4 h-4" />
-                        Upload
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => setIsLibraryOpen(true)}
-                        className="flex items-center gap-1.5 px-4 py-2 bg-white border border-slate-200 rounded-lg text-[13px] font-semibold text-slate-700 hover:bg-slate-50 transition-all shadow-sm"
-                      >
-                        <FolderOpen className="w-4 h-4" />
-                        Library
-                      </button>
-                    </div>
-                    <p className="text-[11px] text-slate-400">Upload a category image (max 5MB)</p>
-                    {imageUrl && (
-                      <button
-                        type="button"
-                        onClick={() => setImageUrl("")}
-                        className="text-[11px] text-red-400 hover:text-red-600 mt-1 transition-colors"
-                      >
-                        Remove image
-                      </button>
-                    )}
+                  <div className="relative">
+                    <input
+                      type="text"
+                      required
+                      readOnly={!isCustomSlug}
+                      placeholder="category-slug"
+                      className={cn(
+                        "w-full px-4 py-3 border rounded-xl focus:outline-none transition-all text-[14px] font-medium",
+                        isCustomSlug
+                          ? "bg-white border-blue-300 text-slate-900 focus:ring-2 focus:ring-blue-500/20"
+                          : "bg-slate-100/80 border-slate-200 text-slate-500 cursor-default"
+                      )}
+                      value={slug}
+                      onChange={(e) => {
+                        setIsCustomSlug(true);
+                        setSlug(
+                          e.target.value
+                            .toLowerCase()
+                            .replace(/[^a-z0-9-]/g, "-")
+                            .replace(/-+/g, "-")
+                        );
+                      }}
+                    />
                   </div>
                 </div>
-                <input
-                  ref={fileInputRef}
-                  type="file"
-                  accept="image/*"
-                  className="hidden"
-                  onChange={handleImageFileChange}
-                />
               </div>
 
-              {/* ── Category Name ── */}
-              <div>
-                <label className="block text-[13px] font-semibold text-slate-700 mb-2">
-                  Category Name <span className="text-red-500">*</span>
-                </label>
-                <input
-                  type="text"
-                  required
-                  placeholder="Enter category name"
-                  className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-400 transition-all text-[14px] text-slate-900 font-medium"
-                  value={name}
-                  onChange={(e) => {
-                    setName(e.target.value);
-                    if (!editingId) {
-                      setSlug(
-                        e.target.value
-                          .toLowerCase()
-                          .replace(/[^a-z0-9-]/g, "-")
-                          .replace(/-+/g, "-")
-                      );
-                    }
-                  }}
-                />
+              {/* Live URL Preview Badge */}
+              <div className="flex items-center gap-2 px-3.5 py-2.5 bg-slate-50 border border-slate-100 rounded-xl text-[12px] text-slate-500 font-medium">
+                <Globe className="w-3.5 h-3.5 text-blue-500 flex-shrink-0" />
+                <span className="truncate">
+                  URL Preview: <span className="font-bold text-slate-700">/category/{slug || "your-slug"}</span>
+                </span>
               </div>
 
-              {/* ── Slug ── */}
-              <div>
-                <label className="block text-[13px] font-semibold text-slate-700 mb-2">
-                  Slug <span className="text-red-500">*</span>
-                </label>
-                <input
-                  type="text"
-                  required
-                  disabled
-                  placeholder="category-slug"
-                  className="w-full px-4 py-3 bg-slate-100 border border-slate-200 rounded-xl focus:outline-none transition-all text-[14px] text-slate-400 font-medium cursor-not-allowed"
-                  value={slug}
-                  onChange={(e) => setSlug(e.target.value)}
-                />
-                <p className="text-[11px] text-slate-400 mt-1.5">
-                  URL-friendly identifier. Auto-generated from name but can be customized.
-                </p>
-              </div>
-
-              {/* ── Description ── */}
-              <div>
-                <label className="block text-[13px] font-semibold text-slate-700 mb-2">
-                  Description
-                </label>
-                <textarea
-                  rows={3}
-                  placeholder="Enter category description"
-                  className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-400 transition-all text-[14px] text-slate-500 font-medium resize-none leading-relaxed"
-                  value={description}
-                  onChange={(e) => setDescription(e.target.value)}
-                />
-              </div>
-
-              {/* ── Parent Category ── */}
+              {/* Parent Category */}
               <div>
                 <label className="block text-[13px] font-semibold text-slate-700 mb-2">
                   Parent Category <span className="text-[12px] text-slate-400 font-normal">(Optional)</span>
@@ -456,9 +393,9 @@ export default function CategoriesPage() {
                     onChange={(e) =>
                       setParentId(e.target.value ? parseInt(e.target.value) : null)
                     }
-                    className="w-full appearance-none px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-400 transition-all text-[14px] text-slate-700 font-medium pr-10 cursor-pointer"
+                    className="w-full appearance-none px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all text-[14px] text-slate-700 font-medium pr-10 cursor-pointer"
                   >
-                    <option value="">None (Parent Category)</option>
+                    <option value="">None (Top-Level Category)</option>
                     {parentOptions.map((cat) => (
                       <option key={cat.id} value={cat.id}>
                         {cat.name}
@@ -467,13 +404,24 @@ export default function CategoriesPage() {
                   </select>
                   <ChevronDown className="w-4 h-4 text-slate-400 absolute right-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
                 </div>
-                <p className="text-[11px] text-slate-400 mt-1.5">
-                  Leave as "None" to create a parent category.
-                </p>
               </div>
 
-              {/* ── Actions ── */}
-              <div className="flex gap-3 pt-2">
+              {/* Description */}
+              <div>
+                <label className="block text-[13px] font-semibold text-slate-700 mb-2">
+                  Description <span className="text-[12px] text-slate-400 font-normal">(Optional)</span>
+                </label>
+                <textarea
+                  rows={3}
+                  placeholder="Briefly describe what posts belong in this category..."
+                  className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all text-[14px] text-slate-800 font-medium resize-none leading-relaxed placeholder:text-slate-400"
+                  value={description}
+                  onChange={(e) => setDescription(e.target.value)}
+                />
+              </div>
+
+              {/* Actions */}
+              <div className="flex items-center gap-3 pt-3 border-t border-slate-100">
                 <button
                   type="button"
                   onClick={() => { setIsModalOpen(false); resetForm(); }}
@@ -483,7 +431,7 @@ export default function CategoriesPage() {
                 </button>
                 <button
                   type="submit"
-                  disabled={isSubmitting}
+                  disabled={isSubmitting || !name.trim() || !slug.trim()}
                   className="flex-1 py-3 bg-blue-600 text-white font-bold rounded-xl hover:bg-blue-700 transition-all shadow-md shadow-blue-500/20 disabled:opacity-50 text-[14px] flex items-center justify-center gap-2"
                 >
                   {isSubmitting ? (
@@ -491,23 +439,13 @@ export default function CategoriesPage() {
                   ) : (
                     <Check className="w-4 h-4" />
                   )}
-                  {editingId ? "Update Category" : "Create"}
+                  {editingId ? "Update Category" : "Create Category"}
                 </button>
               </div>
             </form>
           </div>
         </div>
       )}
-
-      {/* Media Library Modal */}
-      <MediaLibraryModal
-        isOpen={isLibraryOpen}
-        onClose={() => setIsLibraryOpen(false)}
-        onSelect={(url) => {
-          setImageUrl(url);
-          setIsLibraryOpen(false);
-        }}
-      />
     </div>
   );
 }
