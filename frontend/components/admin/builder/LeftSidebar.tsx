@@ -193,9 +193,10 @@ type Message = {
 
 // ─── Chat Panel ────────────────────────────────────────────────
 function ChatPanel({ onAnalyze, onDone }: { onAnalyze: () => void; onDone: () => void }) {
-  const { loadLayout, generateLayout } = useBuilder();
+  const { loadLayout, generateLayout, modifyLayout, blocks } = useBuilder();
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
+  const [refineMode, setRefineMode] = useState(blocks.length > 0);
   const [messages, setMessages] = useState<Message[]>([
     {
       role: "ai",
@@ -213,19 +214,35 @@ function ChatPanel({ onAnalyze, onDone }: { onAnalyze: () => void; onDone: () =>
     setLoading(true);
     onAnalyze();
     try {
-      const provider = await generateLayout(prompt);
+      if (refineMode && blocks.length > 0) {
+        const success = await modifyLayout(prompt);
+        if (success) {
+          setMessages((prev) => [
+            ...prev,
+            {
+              role: "ai",
+              text: `Refinement applied successfully! I've updated the canvas with your requested changes.`,
+            },
+          ]);
+        } else {
+          throw new Error("Could not apply layout refinement.");
+        }
+      } else {
+        const provider = await generateLayout(prompt);
 
-      const providerLabel = provider === 'groq' ? '⚡ Groq AI'
-        : provider === 'gemini' ? '✨ Gemini AI'
-          : '🔧 CoreHead Engine';
+        const providerLabel = provider === 'groq' ? '⚡ Groq AI'
+          : provider === 'gemini' ? '✨ Gemini AI'
+            : '🔧 CoreHead Engine';
 
-      setMessages((prev) => [
-        ...prev,
-        {
-          role: "ai",
-          text: `Done! I've crafted a custom layout using ${providerLabel}. You can now drag, reorder, and edit the blocks.`,
-        },
-      ]);
+        setMessages((prev) => [
+          ...prev,
+          {
+            role: "ai",
+            text: `Done! I've crafted a custom layout using ${providerLabel}. You can now drag, reorder, and edit the blocks.`,
+          },
+        ]);
+        setRefineMode(true);
+      }
     } catch (err: any) {
       setMessages((prev) => [
         ...prev,
@@ -302,6 +319,20 @@ function ChatPanel({ onAnalyze, onDone }: { onAnalyze: () => void; onDone: () =>
 
       {/* Input Area */}
       <div className="p-4 bg-white border-t border-slate-50">
+        {blocks.length > 0 && (
+          <div className="flex items-center gap-2 mb-2.5 px-1 text-xs font-bold text-slate-500">
+            <input
+              type="checkbox"
+              id="refineMode"
+              checked={refineMode}
+              onChange={(e) => setRefineMode(e.target.checked)}
+              className="w-3.5 h-3.5 rounded accent-blue-600 cursor-pointer"
+            />
+            <label htmlFor="refineMode" className="cursor-pointer select-none">
+              Refine current layout instead of regenerating
+            </label>
+          </div>
+        )}
         <form onSubmit={handleSubmit} className="relative group">
           <textarea
             value={input}
@@ -314,7 +345,7 @@ function ChatPanel({ onAnalyze, onDone }: { onAnalyze: () => void; onDone: () =>
           <button
             type="submit"
             disabled={!input.trim() || loading}
-            className="absolute right-3 bottom-3 w-10 h-10 flex items-center justify-center bg-slate-900 text-white rounded-xl disabled:opacity-30 hover:bg-blue-600 hover:shadow-lg hover:shadow-blue-200 transition-all active:scale-95"
+            className="absolute right-3 bottom-3 w-10 h-10 flex items-center justify-center bg-slate-900 text-white rounded-xl disabled:opacity-30 hover:bg-blue-600 hover:shadow-lg hover:shadow-blue-200 transition-all active:scale-95 cursor-pointer"
           >
             <CornerDownLeft size={18} />
           </button>

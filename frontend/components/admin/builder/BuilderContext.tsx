@@ -6,6 +6,7 @@ import React, {
   useState,
   ReactNode,
   useEffect,
+  useRef,
 } from "react";
 import { api } from "@/lib/api";
 import PaywallModal from "@/components/admin/PaywallModal";
@@ -39,7 +40,7 @@ export interface BuilderBlock {
 interface BuilderContextType {
   blocks: BuilderBlock[];
   selectedBlockId: string | null;
-  addBlock: (type: BlockType, parentId?: string) => void;
+  addBlock: (type: BlockType, parentId?: string, targetIndex?: number) => void;
   updateBlock: (
     id: string,
     content: any,
@@ -49,6 +50,9 @@ interface BuilderContextType {
   removeBlock: (id: string) => void;
   selectBlock: (id: string | null) => void;
   reorderBlocks: (startIndex: number, endIndex: number) => void;
+  duplicateBlock: (id: string) => void;
+  moveBlock: (id: string, direction: "up" | "down") => void;
+  moveBlockTo: (sourceBlockId: string, targetParentId?: string, targetIndex?: number) => void;
   serializeLayout: () => string;
   loadLayout: (json: string) => void;
   saveToBackend: (
@@ -75,6 +79,11 @@ interface BuilderContextType {
   aiBlocks: BuilderBlock[];
   acceptAiLayout: () => void;
   discardAiLayout: () => void;
+  undo: () => void;
+  redo: () => void;
+  canUndo: boolean;
+  canRedo: boolean;
+  modifyLayout: (instruction: string) => Promise<boolean>;
 }
 
 const BuilderContext = createContext<BuilderContextType | undefined>(undefined);
@@ -97,6 +106,10 @@ export function BuilderProvider({ children }: { children: ReactNode }) {
   const [aiBlocks, setAiBlocks] = useState<BuilderBlock[]>([]);
   const [isPaywallOpen, setIsPaywallOpen] = useState(false);
   const [paywallCooldown, setPaywallCooldown] = useState(0);
+
+  // History State
+  const [history, setHistory] = useState<BuilderBlock[][]>([]);
+  const [historyIndex, setHistoryIndex] = useState(-1);
 
   const acceptAiLayout = () => {
     if (aiBlocks.length > 0) {
@@ -223,6 +236,72 @@ export function BuilderProvider({ children }: { children: ReactNode }) {
     fetchInitialLayout();
   }, []);
 
+  // History refs to read state in effects without trigger loops
+  const historyRef = useRef<BuilderBlock[][]>([]);
+  const historyIndexRef = useRef(-1);
+
+  useEffect(() => {
+    historyRef.current = history;
+    historyIndexRef.current = historyIndex;
+  }, [history, historyIndex]);
+
+  // Initialize history once blocks are loaded (only once)
+  useEffect(() => {
+    if (isLoaded && historyIndex === -1) {
+      setHistory([blocks]);
+      setHistoryIndex(0);
+    }
+  }, [isLoaded]);
+
+  // Debounced history push when blocks change
+  useEffect(() => {
+    if (!isLoaded || historyIndexRef.current === -1) return;
+
+    // Check if the new state is actually different from the current history pointer
+    const currentRecorded = historyRef.current[historyIndexRef.current];
+    if (currentRecorded && JSON.stringify(currentRecorded) === JSON.stringify(blocks)) {
+      return;
+    }
+
+    // Debounce the push to prevent filling history with every keystroke
+    const timer = setTimeout(() => {
+      const nextHistory = historyRef.current.slice(0, historyIndexRef.current + 1);
+      if (nextHistory.length > 0 && JSON.stringify(nextHistory[nextHistory.length - 1]) === JSON.stringify(blocks)) {
+        return;
+      }
+      const updated = [...nextHistory, blocks];
+      setHistory(updated);
+      setHistoryIndex(updated.length - 1);
+    }, 500); // 500ms debounce for typing/editing
+
+    return () => clearTimeout(timer);
+  }, [blocks, isLoaded]);
+
+  // Global keydown listeners for Ctrl+Z and Ctrl+Y
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      const target = e.target as HTMLElement;
+      const isInput = target?.tagName === "INPUT" || target?.tagName === "TEXTAREA" || target?.isContentEditable;
+      
+      if ((e.ctrlKey || e.metaKey) && !e.shiftKey) {
+        if (e.key === "z" || e.key === "Z") {
+          if (!isInput) {
+            e.preventDefault();
+            undo();
+          }
+        } else if (e.key === "y" || e.key === "Y") {
+          if (!isInput) {
+            e.preventDefault();
+            redo();
+          }
+        }
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [historyIndex, history]);
+
   // Auto-save layout + meta after initial load (preview reads these keys)
   useEffect(() => {
     if (isLoaded) {
@@ -236,7 +315,7 @@ export function BuilderProvider({ children }: { children: ReactNode }) {
     }
   }, [blocks, isLoaded, templateName, templateType, templateId]);
 
-  const addBlock = (type: BlockType, parentId?: string) => {
+  const addBlock = (type: BlockType, parentId?: string, targetIndex?: number) => {
     const newBlock: BuilderBlock = {
       id: crypto.randomUUID(),
       type,
@@ -244,7 +323,22 @@ export function BuilderProvider({ children }: { children: ReactNode }) {
       styles: getDefaultStyles(type),
       parentId: parentId,
     };
-    setBlocks((prev) => [...prev, newBlock]);
+    setBlocks((prev) => {
+      if (targetIndex === undefined) {
+        return [...prev, newBlock];
+      }
+      const levelBlocks = prev.filter(
+        (b) => b.parentId === parentId || (!b.parentId && !parentId)
+      );
+      const targetBlock = levelBlocks[targetIndex];
+      const globalIndex = targetBlock
+        ? prev.findIndex((b) => b.id === targetBlock.id)
+        : prev.length;
+
+      const result = Array.from(prev);
+      result.splice(globalIndex, 0, newBlock);
+      return result;
+    });
     setSelectedBlockId(newBlock.id);
   };
 
@@ -301,6 +395,86 @@ export function BuilderProvider({ children }: { children: ReactNode }) {
       result.splice(endIndex, 0, removed);
       return result;
     });
+  };
+
+  const duplicateBlock = (id: string) => {
+    setBlocks((prev) => {
+      const originalIndex = prev.findIndex((b) => b.id === id);
+      if (originalIndex === -1) return prev;
+      const original = prev[originalIndex];
+      const newId = crypto.randomUUID();
+      const clone: BuilderBlock = {
+        ...original,
+        id: newId,
+        content: JSON.parse(JSON.stringify(original.content)),
+        styles: original.styles ? { ...original.styles } : undefined,
+        bindings: original.bindings ? { ...original.bindings } : undefined,
+      };
+      const result = Array.from(prev);
+      result.splice(originalIndex + 1, 0, clone);
+      setSelectedBlockId(newId);
+      return result;
+    });
+  };
+
+  const moveBlock = (id: string, direction: "up" | "down") => {
+    setBlocks((prev) => {
+      const block = prev.find((b) => b.id === id);
+      if (!block) return prev;
+      const parentId = block.parentId;
+      const siblingBlocks = prev.filter(
+        (b) => b.parentId === parentId || (!b.parentId && !parentId)
+      );
+      const siblingIndex = siblingBlocks.findIndex((b) => b.id === id);
+      if (siblingIndex === -1) return prev;
+
+      if (direction === "up" && siblingIndex === 0) return prev;
+      if (direction === "down" && siblingIndex === siblingBlocks.length - 1) return prev;
+
+      const targetSibling = siblingBlocks[direction === "up" ? siblingIndex - 1 : siblingIndex + 1];
+      const currentIndex = prev.findIndex((b) => b.id === id);
+      const targetIndex = prev.findIndex((b) => b.id === targetSibling.id);
+
+      const result = Array.from(prev);
+      const [moved] = result.splice(currentIndex, 1);
+      result.splice(targetIndex, 0, moved);
+      return result;
+    });
+  };
+
+  const moveBlockTo = (sourceBlockId: string, targetParentId?: string, targetIndex?: number) => {
+    setBlocks((prev) => {
+      const sourceIndex = prev.findIndex((b) => b.id === sourceBlockId);
+      if (sourceIndex === -1) return prev;
+
+      // Prevent dragging a container into itself
+      if (targetParentId === sourceBlockId) return prev;
+
+      const result = Array.from(prev);
+      const [sourceBlock] = result.splice(sourceIndex, 1);
+
+      const updatedBlock: BuilderBlock = {
+        ...sourceBlock,
+        parentId: targetParentId,
+      };
+
+      if (targetIndex === undefined) {
+        result.push(updatedBlock);
+      } else {
+        const levelBlocks = result.filter(
+          (b) => b.parentId === targetParentId || (!b.parentId && !targetParentId)
+        );
+        const targetBlock = levelBlocks[targetIndex];
+        const globalTargetIndex = targetBlock
+          ? result.findIndex((b) => b.id === targetBlock.id)
+          : result.length;
+
+        result.splice(globalTargetIndex, 0, updatedBlock);
+      }
+
+      return result;
+    });
+    setSelectedBlockId(sourceBlockId);
   };
 
   const serializeLayout = () => {
@@ -402,6 +576,51 @@ export function BuilderProvider({ children }: { children: ReactNode }) {
     }
   };
 
+  const modifyLayout = async (instruction: string): Promise<boolean> => {
+    if (!instruction.trim() || isAnalyzing) return false;
+
+    setIsAnalyzing(true);
+    try {
+      const data = await api.modifyLayout({
+        currentBlocks: blocks,
+        instruction: instruction.trim()
+      });
+
+      if (data.success && data.blocks) {
+        setBlocks(data.blocks);
+        setSelectedBlockId(null);
+        return true;
+      } else {
+        throw new Error(data.error || "Failed to refine layout.");
+      }
+    } catch (error: any) {
+      console.error("AI Modification error:", error);
+      alert("AI Refinement failed: " + error.message);
+      return false;
+    } finally {
+      setIsAnalyzing(false);
+    }
+  };
+
+  const undo = () => {
+    if (historyIndex > 0) {
+      const prevIndex = historyIndex - 1;
+      setHistoryIndex(prevIndex);
+      setBlocks(history[prevIndex]);
+    }
+  };
+
+  const redo = () => {
+    if (historyIndex < history.length - 1) {
+      const nextIndex = historyIndex + 1;
+      setHistoryIndex(nextIndex);
+      setBlocks(history[nextIndex]);
+    }
+  };
+
+  const canUndo = historyIndex > 0;
+  const canRedo = historyIndex < history.length - 1;
+
   return (
     <BuilderContext.Provider
       value={{
@@ -412,6 +631,9 @@ export function BuilderProvider({ children }: { children: ReactNode }) {
         removeBlock,
         selectBlock,
         reorderBlocks,
+        duplicateBlock,
+        moveBlock,
+        moveBlockTo,
         serializeLayout,
         loadLayout,
         saveToBackend,
@@ -433,6 +655,11 @@ export function BuilderProvider({ children }: { children: ReactNode }) {
         aiBlocks,
         acceptAiLayout,
         discardAiLayout,
+        undo,
+        redo,
+        canUndo,
+        canRedo,
+        modifyLayout,
       }}
     >
       {children}
@@ -487,7 +714,7 @@ function getDefaultContent(type: BlockType): any {
     case "Featured Carousel":
       return { limit: 3 };
     case "Video":
-      return "https://www.youtube.com/watch?v=dQw4w9WgXcQ";
+      return ""; // Cleaned default video URL (removed dummy Rickroll)
     case "Newsletter":
       return { title: "Subscribe to our newsletter", buttonText: "Subscribe", placeholder: "your@email.com" };
     case "Social Links":
