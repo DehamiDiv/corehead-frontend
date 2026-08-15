@@ -9,4 +9,4 @@ export {
   selectTheme,
 } from "@/contracts/appearance-model-v1.js";
 
-export type { HomeStyle } from "@/contracts/appearance-model-v1.js";
+export type HomeStyle = string;

@@ -162,6 +162,57 @@ body {
   border: 1px solid rgba(226, 232, 240, 0.8);
 }
 
+/* ============================================
+   ReactQuill Toolbar Styling & Alignment Fix
+   ============================================ */
+.ql-toolbar.ql-snow {
+  display: flex !important;
+  flex-wrap: wrap !important;
+  align-items: center !important;
+  gap: 2px 6px !important;
+  padding: 8px 12px !important;
+}
+
+.ql-toolbar.ql-snow .ql-formats {
+  display: inline-flex !important;
+  align-items: center !important;
+  margin-right: 4px !important;
+  margin-top: 0 !important;
+  margin-bottom: 0 !important;
+}
+
+.ql-toolbar.ql-snow button {
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  width: 28px !important;
+  height: 28px !important;
+  padding: 3px !important;
+  border-radius: 6px !important;
+}
+
+.ql-toolbar.ql-snow button:hover {
+  background-color: #e2e8f0 !important;
+}
+
+.ql-toolbar.ql-snow .ql-picker {
+  height: 28px !important;
+}
+
+.ql-toolbar.ql-snow .ql-picker-label {
+  display: inline-flex !important;
+  align-items: center !important;
+  height: 28px !important;
+  padding: 2px 8px !important;
+  border-radius: 6px !important;
+}
+
+/* Hide empty table responsive wrapper containers in Quill editor */
+.ql-editor .table-responsive:empty,
+.ql-editor .table-responsive:not(:has(table)) {
+  display: none !important;
+}
+
 .prose-public blockquote {
   border-left: 4px solid #2563eb;
   padding-left: 1.25rem;

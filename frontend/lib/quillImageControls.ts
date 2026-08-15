@@ -1,7 +1,5 @@
 /**
- * Interactive Image Resizing & Alignment Overlay Toolbar for ReactQuill.
- * Allows users to click on any image inside the editor to resize (25%, 50%, 75%, 100%)
- * and align/float (Left, Center, Right, Full Width).
+ * Interactive Image & Table Resizing, Alignment, and Row/Column Control Toolbar for ReactQuill.
  */
 export function attachQuillImageControls() {
   if (typeof window === "undefined") return;
@@ -17,8 +15,17 @@ export function attachQuillImageControls() {
       e.stopPropagation();
       showImageToolbar(target as HTMLImageElement);
     } else if (
+      target &&
+      (target.closest(".table-responsive") || target.closest("table") || target.tagName === "TD" || target.tagName === "TH") &&
+      target.closest(".ql-editor")
+    ) {
+      const tableElem = (target.closest(".table-responsive") ||
+        target.closest("table")) as HTMLElement;
+      showTableToolbar(tableElem);
+    } else if (
       !target.closest(`#${EXISTING_TOOLBAR_ID}`) &&
-      !target.closest(".ql-editor img")
+      !target.closest(".ql-editor img") &&
+      !target.closest(".ql-editor table")
     ) {
       hideImageToolbar();
     }
@@ -33,6 +40,11 @@ export function hideImageToolbar() {
   if (toolbar) {
     toolbar.remove();
   }
+
+  // Clear visual outline highlights
+  document.querySelectorAll(".ql-editor table, .ql-editor .table-responsive, .ql-editor img").forEach((el) => {
+    (el as HTMLElement).style.outline = "none";
+  });
 }
 
 export function showImageToolbar(img: HTMLImageElement) {
@@ -127,6 +139,10 @@ export function showImageToolbar(img: HTMLImageElement) {
 
   document.body.appendChild(toolbar);
 
+  // Visual outline effect
+  img.style.outline = "2px solid #2563eb";
+  img.style.outlineOffset = "2px";
+
   // Attach button click events
   alignButtons.forEach((b) => {
     const btn = toolbar.querySelector(`[data-align="${b.id}"]`);
@@ -141,11 +157,6 @@ export function showImageToolbar(img: HTMLImageElement) {
         img.style.width = "100%";
       }
 
-      // Visual outline effect
-      img.style.outline = "2px solid #2563eb";
-      img.style.outlineOffset = "2px";
-      setTimeout(() => (img.style.outline = "none"), 1000);
-
       showImageToolbar(img);
     });
   });
@@ -158,10 +169,6 @@ export function showImageToolbar(img: HTMLImageElement) {
       img.style.width = s.id;
       img.style.height = "auto";
 
-      img.style.outline = "2px solid #2563eb";
-      img.style.outlineOffset = "2px";
-      setTimeout(() => (img.style.outline = "none"), 1000);
-
       showImageToolbar(img);
     });
   });
@@ -171,6 +178,175 @@ export function showImageToolbar(img: HTMLImageElement) {
     e.preventDefault();
     e.stopPropagation();
     img.remove();
+    hideImageToolbar();
+  });
+}
+
+export function showTableToolbar(tableElem: HTMLElement) {
+  hideImageToolbar();
+
+  const wrapper = (tableElem.closest(".table-responsive") || tableElem.closest("table") || tableElem) as HTMLElement;
+  const table = (wrapper.querySelector("table") || (wrapper.tagName === "TABLE" ? wrapper : null)) as HTMLTableElement;
+
+  if (!table) return;
+
+  const toolbar = document.createElement("div");
+  toolbar.id = "quill-image-floating-toolbar";
+  toolbar.className =
+    "fixed z-[9999] bg-slate-900/95 text-white backdrop-blur-md rounded-2xl shadow-2xl p-2.5 flex flex-wrap items-center gap-2 border border-slate-700/60 animate-in fade-in zoom-in-95 duration-150 text-xs font-sans select-none max-w-2xl";
+
+  const rect = wrapper.getBoundingClientRect();
+  toolbar.style.top = `${Math.max(10, rect.top - 62)}px`;
+  toolbar.style.left = `${Math.max(10, rect.left)}px`;
+
+  // Read current width & float
+  const currentWidth = wrapper.style.width || wrapper.style.maxWidth || "100%";
+  const currentFloat = wrapper.style.float || "none";
+
+  toolbar.innerHTML = `
+    <div class="flex items-center gap-1 pr-2 border-r border-slate-700/80">
+      <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider px-1">Align:</span>
+      <button type="button" data-tbl-align="left" class="px-2 py-1 rounded-lg text-[11px] font-bold transition-all hover:bg-slate-800 ${currentFloat === "left" ? "bg-blue-600 text-white shadow-sm" : "text-slate-300"}">⬅️ Left</button>
+      <button type="button" data-tbl-align="center" class="px-2 py-1 rounded-lg text-[11px] font-bold transition-all hover:bg-slate-800 ${currentFloat === "none" ? "bg-blue-600 text-white shadow-sm" : "text-slate-300"}">⏺️ Center</button>
+      <button type="button" data-tbl-align="right" class="px-2 py-1 rounded-lg text-[11px] font-bold transition-all hover:bg-slate-800 ${currentFloat === "right" ? "bg-blue-600 text-white shadow-sm" : "text-slate-300"}">➡️ Right</button>
+    </div>
+
+    <div class="flex items-center gap-1 pr-2 border-r border-slate-700/80">
+      <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider px-1">Size:</span>
+      <button type="button" data-tbl-size="50%" class="px-2 py-1 rounded-lg text-[11px] font-bold transition-all hover:bg-slate-800 ${currentWidth === "50%" ? "bg-blue-600 text-white shadow-sm" : "text-slate-300"}">50%</button>
+      <button type="button" data-tbl-size="75%" class="px-2 py-1 rounded-lg text-[11px] font-bold transition-all hover:bg-slate-800 ${currentWidth === "75%" ? "bg-blue-600 text-white shadow-sm" : "text-slate-300"}">75%</button>
+      <button type="button" data-tbl-size="100%" class="px-2 py-1 rounded-lg text-[11px] font-bold transition-all hover:bg-slate-800 ${currentWidth === "100%" || currentWidth === "" ? "bg-blue-600 text-white shadow-sm" : "text-slate-300"}">100%</button>
+    </div>
+
+    <div class="flex items-center gap-1 pr-2 border-r border-slate-700/80">
+      <button type="button" id="btn-add-row" class="px-2.5 py-1 rounded-lg text-[11px] font-bold hover:bg-emerald-600/30 text-emerald-400 border border-emerald-500/30 transition-all" title="Add new row below">➕ Row</button>
+      <button type="button" id="btn-del-row" class="px-2.5 py-1 rounded-lg text-[11px] font-bold hover:bg-rose-600/30 text-rose-300 border border-rose-500/30 transition-all" title="Delete bottom row">➖ Row</button>
+      <button type="button" id="btn-add-col" class="px-2.5 py-1 rounded-lg text-[11px] font-bold hover:bg-emerald-600/30 text-emerald-400 border border-emerald-500/30 transition-all" title="Add new column right">➕ Col</button>
+      <button type="button" id="btn-del-col" class="px-2.5 py-1 rounded-lg text-[11px] font-bold hover:bg-rose-600/30 text-rose-300 border border-rose-500/30 transition-all" title="Delete rightmost column">➖ Col</button>
+    </div>
+
+    <button
+      type="button"
+      id="btn-delete-table"
+      class="px-2.5 py-1 rounded-lg text-[11px] font-bold text-red-400 hover:bg-red-500/20 hover:text-red-300 transition-all flex items-center gap-1"
+      title="Delete Entire Table"
+    >
+      🗑️ Delete Table
+    </button>
+  `;
+
+  document.body.appendChild(toolbar);
+
+  // Visual outline effect
+  wrapper.style.outline = "2px dashed #2563eb";
+  wrapper.style.outlineOffset = "4px";
+
+  // ALIGNMENT
+  toolbar.querySelector('[data-tbl-align="left"]')?.addEventListener("click", (e) => {
+    e.preventDefault(); e.stopPropagation();
+    wrapper.style.float = "left";
+    wrapper.style.margin = "0.5rem 1.5rem 1rem 0";
+    wrapper.style.display = "inline-block";
+    showTableToolbar(tableElem);
+  });
+  toolbar.querySelector('[data-tbl-align="center"]')?.addEventListener("click", (e) => {
+    e.preventDefault(); e.stopPropagation();
+    wrapper.style.float = "none";
+    wrapper.style.margin = "1.5rem auto";
+    wrapper.style.display = "block";
+    showTableToolbar(tableElem);
+  });
+  toolbar.querySelector('[data-tbl-align="right"]')?.addEventListener("click", (e) => {
+    e.preventDefault(); e.stopPropagation();
+    wrapper.style.float = "right";
+    wrapper.style.margin = "0.5rem 0 1rem 1.5rem";
+    wrapper.style.display = "inline-block";
+    showTableToolbar(tableElem);
+  });
+
+  // SIZE
+  ["50%", "75%", "100%"].forEach((sz) => {
+    toolbar.querySelector(`[data-tbl-size="${sz}"]`)?.addEventListener("click", (e) => {
+      e.preventDefault(); e.stopPropagation();
+      wrapper.style.width = sz;
+      wrapper.style.maxWidth = sz;
+      table.style.width = "100%";
+      if (sz !== "100%" && wrapper.style.float === "none") {
+        wrapper.style.display = "block";
+        wrapper.style.margin = "1.5rem auto";
+      }
+      showTableToolbar(tableElem);
+    });
+  });
+
+  // ADD ROW (Adds a horizontal row at the bottom)
+  toolbar.querySelector("#btn-add-row")?.addEventListener("click", (e) => {
+    e.preventDefault(); e.stopPropagation();
+    const rows = Array.from(table.querySelectorAll("tr"));
+    const colCount = rows.length > 0 ? rows[0].children.length : 2;
+    const newRow = document.createElement("tr");
+    const rowIndex = rows.length + 1;
+    for (let c = 1; c <= colCount; c++) {
+      const td = document.createElement("td");
+      td.style.border = "1px solid #cbd5e1";
+      td.style.padding = "10px 14px";
+      td.innerHTML = `Cell ${rowIndex}.${c}`;
+      newRow.appendChild(td);
+    }
+    const tbody = table.querySelector("tbody") || table;
+    tbody.appendChild(newRow);
+    showTableToolbar(tableElem);
+  });
+
+  // DELETE ROW (Removes bottom row)
+  toolbar.querySelector("#btn-del-row")?.addEventListener("click", (e) => {
+    e.preventDefault(); e.stopPropagation();
+    const rows = Array.from(table.querySelectorAll("tr"));
+    if (rows.length > 1) {
+      rows[rows.length - 1].remove();
+    }
+    showTableToolbar(tableElem);
+  });
+
+  // ADD COLUMN (Adds a vertical column to the right)
+  toolbar.querySelector("#btn-add-col")?.addEventListener("click", (e) => {
+    e.preventDefault(); e.stopPropagation();
+    const rows = Array.from(table.querySelectorAll("tr"));
+    rows.forEach((tr, rIdx) => {
+      const isHeader = rIdx === 0 && tr.parentElement?.tagName === "THEAD";
+      const cellTag = isHeader ? "th" : "td";
+      const cell = document.createElement(cellTag);
+      cell.style.border = "1px solid #cbd5e1";
+      cell.style.padding = "10px 14px";
+      if (isHeader) {
+        cell.style.backgroundColor = "#f8fafc";
+        cell.style.fontWeight = "bold";
+        cell.innerHTML = `Header ${tr.children.length + 1}`;
+      } else {
+        if (rIdx === 0) cell.style.backgroundColor = "#f8fafc";
+        cell.innerHTML = `Cell ${rIdx + 1}.${tr.children.length + 1}`;
+      }
+      tr.appendChild(cell);
+    });
+    showTableToolbar(tableElem);
+  });
+
+  // DELETE COLUMN (Removes rightmost column)
+  toolbar.querySelector("#btn-del-col")?.addEventListener("click", (e) => {
+    e.preventDefault(); e.stopPropagation();
+    const rows = Array.from(table.querySelectorAll("tr"));
+    rows.forEach((tr) => {
+      if (tr.children.length > 1) {
+        tr.children[tr.children.length - 1].remove();
+      }
+    });
+    showTableToolbar(tableElem);
+  });
+
+  // DELETE ENTIRE TABLE
+  toolbar.querySelector("#btn-delete-table")?.addEventListener("click", (e) => {
+    e.preventDefault(); e.stopPropagation();
+    wrapper.remove();
     hideImageToolbar();
   });
 }

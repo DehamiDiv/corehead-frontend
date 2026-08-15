@@ -53,21 +53,18 @@ const quillModules = {
         const numRows = Math.max(1, parseInt(rows, 10) || 3);
         const numCols = Math.max(1, parseInt(cols, 10) || 3);
 
-        let headerCells = "";
-        for (let c = 1; c <= numCols; c++) {
-          headerCells += `<th style="border: 1px solid #cbd5e1; padding: 10px 14px; background-color: #f8fafc; font-weight: bold; text-align: left;">Header ${c}</th>`;
-        }
-
         let bodyRows = "";
         for (let r = 1; r <= numRows; r++) {
           let rowCells = "";
           for (let c = 1; c <= numCols; c++) {
-            rowCells += `<td style="border: 1px solid #e2e8f0; padding: 10px 14px;">Data ${r}.${c}</td>`;
+            const isFirstRow = r === 1;
+            const bgStyle = isFirstRow ? "background-color: #f8fafc; font-weight: 600;" : "";
+            rowCells += `<td style="border: 1px solid #cbd5e1; padding: 10px 14px; ${bgStyle}">Cell ${r}.${c}</td>`;
           }
           bodyRows += `<tr>${rowCells}</tr>`;
         }
 
-        const tableHtml = `<div class="table-responsive my-4" style="overflow-x: auto;"><table style="width: 100%; border-collapse: collapse; margin: 16px 0; border: 1px solid #e2e8f0; font-size: 14px;"><thead><tr>${headerCells}</tr></thead><tbody>${bodyRows}</tbody></table></div><p><br></p>`;
+        const tableHtml = `<div class="table-responsive my-4" style="overflow-x: auto; width: 100%; margin: 1.5rem 0;"><table style="width: 100%; border-collapse: collapse; border: 1px solid #cbd5e1; font-size: 14px;"><tbody>${bodyRows}</tbody></table></div><p><br></p>`;
 
         this.quill.clipboard.dangerouslyPasteHTML(range.index, tableHtml);
       },
@@ -377,6 +374,17 @@ useEffect(() => {
 
     try {
       await api.updatePost(postId, finalData);
+      if (nextStatus === "Published") {
+        api.notifySubscribersNewPost({
+          title: formData.title,
+          slug: formData.slug,
+          excerpt: formData.excerpt,
+          coverImage: cover || undefined,
+          siteSlug: "",
+          siteName: "Blog",
+          siteId: currentSiteId || undefined,
+        }).catch(() => {});
+      }
       setFormData((prev) => ({ ...prev, status: nextStatus }));
       router.push("/admin/posts");
     } catch (err: any) {

@@ -13,7 +13,9 @@ export function prepareRenderableLayout(input, options = {}) {
       styles: b.styles || {},
       bindings: b.bindings || {},
     })),
-    issues: [],
+    issues: [
+      { code: "OK", path: "root", message: "Valid" }
+    ],
     valid: true,
   };
 }

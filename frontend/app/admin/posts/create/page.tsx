@@ -53,21 +53,18 @@ const quillModules = {
         const numRows = Math.max(1, parseInt(rows, 10) || 3);
         const numCols = Math.max(1, parseInt(cols, 10) || 3);
 
-        let headerCells = "";
-        for (let c = 1; c <= numCols; c++) {
-          headerCells += `<th style="border: 1px solid #cbd5e1; padding: 10px 14px; background-color: #f8fafc; font-weight: bold; text-align: left;">Header ${c}</th>`;
-        }
-
         let bodyRows = "";
         for (let r = 1; r <= numRows; r++) {
           let rowCells = "";
           for (let c = 1; c <= numCols; c++) {
-            rowCells += `<td style="border: 1px solid #e2e8f0; padding: 10px 14px;">Data ${r}.${c}</td>`;
+            const isFirstRow = r === 1;
+            const bgStyle = isFirstRow ? "background-color: #f8fafc; font-weight: 600;" : "";
+            rowCells += `<td style="border: 1px solid #cbd5e1; padding: 10px 14px; ${bgStyle}">Cell ${r}.${c}</td>`;
           }
           bodyRows += `<tr>${rowCells}</tr>`;
         }
 
-        const tableHtml = `<div class="table-responsive my-4" style="overflow-x: auto;"><table style="width: 100%; border-collapse: collapse; margin: 16px 0; border: 1px solid #e2e8f0; font-size: 14px;"><thead><tr>${headerCells}</tr></thead><tbody>${bodyRows}</tbody></table></div><p><br></p>`;
+        const tableHtml = `<div class="table-responsive my-4" style="overflow-x: auto; width: 100%; margin: 1.5rem 0;"><table style="width: 100%; border-collapse: collapse; border: 1px solid #cbd5e1; font-size: 14px;"><tbody>${bodyRows}</tbody></table></div><p><br></p>`;
 
         this.quill.clipboard.dangerouslyPasteHTML(range.index, tableHtml);
       },
@@ -333,6 +330,17 @@ export default function CreatePostPage() {
 
     try {
       await api.createPost(finalData, currentSiteId);
+      if (nextStatus === "Published") {
+        api.notifySubscribersNewPost({
+          title: formData.title,
+          slug: formData.slug,
+          excerpt: formData.excerpt,
+          coverImage: cover || undefined,
+          siteSlug: "",
+          siteName: "Blog",
+          siteId: currentSiteId || undefined,
+        }).catch(() => {});
+      }
       router.push("/admin/posts");
     } catch (err: any) {
       setError(err.message || "Failed to create post");
@@ -429,13 +437,20 @@ export default function CreatePostPage() {
 
                   <div className="space-y-2">
                     <label className="text-[14px] font-bold text-[#1E293B]">URL Slug <span className="text-red-500">*</span></label>
-                    <input
-                      type="text"
-                      placeholder="url-friendly-slug"
-                      className="w-full h-12 bg-white border border-[#E2E8F0] rounded-[10px] px-4 text-[14px] focus:outline-none"
-                      value={formData.slug}
-                      onChange={e => setFormData({ ...formData, slug: e.target.value })}
-                    />
+                    <div className="relative">
+                      <input
+                        type="text"
+                        readOnly
+                        disabled
+                        placeholder="url-friendly-slug"
+                        className="w-full h-12 bg-gray-100/70 border border-[#E2E8F0] rounded-[10px] px-4 text-[13px] font-mono text-gray-500 cursor-not-allowed select-none focus:outline-none"
+                        value={formData.slug}
+                      />
+                      <span className="absolute right-3 top-3.5 text-xs text-gray-400 font-bold flex items-center gap-1">
+                        🔒 Auto-generated
+                      </span>
+                    </div>
+                    <p className="text-[12px] text-gray-400 font-medium">This slug is automatically generated from the Post Title and cannot be edited manually.</p>
                   </div>
 
                   <div className="space-y-2">
