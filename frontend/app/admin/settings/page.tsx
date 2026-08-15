@@ -5,7 +5,7 @@ import { Settings as SettingsIcon, User, Globe, Palette, ArrowRight, Shield, Bel
 import React, { useState, useEffect } from "react";
 
 export default function SettingsPage() {
-  const [isLaunching, setIsLaunching] = useState(true);
+  const [isLaunching, setIsLaunching] = useState(false);
 
   useEffect(() => {
     const timer = setTimeout(() => {

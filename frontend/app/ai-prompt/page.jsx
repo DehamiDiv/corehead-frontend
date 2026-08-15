@@ -9,7 +9,7 @@ import './page.css';
 export default function AIPromptPage() {
   const [prompt, setPrompt] = useState('');
   const [error, setError] = useState('');
-  const [isLaunching, setIsLaunching] = useState(true);
+  const [isLaunching, setIsLaunching] = useState(false);
   const router = useRouter();
 
   // Protect the page - must be logged in to use AI features

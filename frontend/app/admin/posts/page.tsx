@@ -39,7 +39,7 @@ export default function PostsPage() {
   const [authorFilter, setAuthorFilter] = useState("All Authors");
   const [featuredFilter, setFeaturedFilter] = useState("All Posts");
   const [rowsPerPage, setRowsPerPage] = useState(20);
-  const [isLaunching, setIsLaunching] = useState(true);
+  const [isLaunching, setIsLaunching] = useState(false);
   const [dbCategories, setDbCategories] = useState<string[]>([]);
   const [statusActionId, setStatusActionId] = useState<number | null>(null);
 

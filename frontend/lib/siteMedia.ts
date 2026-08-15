@@ -21,8 +21,13 @@ export function resolveMediaUrl(path?: string | null): string | null {
     return value;
   }
 
-  // Next.js `public/demo/*` — same origin
-  if (value.startsWith("/demo/") || value.startsWith("demo/")) {
+  // Next.js `public/demo/*` or `/logo.png` — same origin
+  if (
+    value.startsWith("/demo/") ||
+    value.startsWith("demo/") ||
+    value === "/logo.png" ||
+    value === "logo.png"
+  ) {
     return value.startsWith("/") ? value : `/${value}`;
   }
 

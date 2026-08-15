@@ -39,7 +39,7 @@ export default function LayoutsListPage() {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const [actionLoading, setActionLoading] = useState<number | null>(null); 
-    const [isLaunching, setIsLaunching] = useState(true);
+    const [isLaunching, setIsLaunching] = useState(false);
 
     useEffect(() => {
         const timer = setTimeout(() => {

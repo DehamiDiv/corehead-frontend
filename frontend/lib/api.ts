@@ -759,6 +759,14 @@ export const api = {
     });
   },
 
+  async modifyLayout(data: { currentBlocks: any[], instruction: string }) {
+    return this.fetchWithAuth(`${BASE_URL}/ai/modify-layout`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data)
+    });
+  },
+
   async createCheckoutSession(mock: boolean = false, planType: string = "PRO") {
     return this.fetchWithAuth(`${BASE_URL}/payment/checkout-session`, {
       method: 'POST',
@@ -814,6 +822,15 @@ export const api = {
       headers: { 'Content-Type': 'application/json' },
       // Backend stores value as a JSON string
       body: JSON.stringify({ value: typeof value === 'string' ? value : JSON.stringify(value) })
+    });
+  },
+
+  async subscribeNewsletter(email: string) {
+    return this.fetchWithAuth(`${BASE_URL}/newsletter/subscribe`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email }),
+      skipSite: true
     });
   }
 };
