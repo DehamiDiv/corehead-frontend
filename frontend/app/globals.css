@@ -397,11 +397,31 @@ body {
 }
 
 .post-reading-surface .cms-post-body :where(img, video) {
-  display: block;
-  width: 100%;
+  max-width: 100%;
   height: auto;
-  margin-block: 2rem;
   border-radius: 1rem;
+}
+
+.post-reading-surface .cms-post-body img,
+.prose-public img,
+.ql-editor img {
+  max-width: 100%;
+  height: auto;
+  border-radius: 0.75rem;
+  transition: outline 0.15s ease;
+}
+
+.ql-editor img:hover {
+  outline: 2px dashed #2563eb;
+  outline-offset: 2px;
+  cursor: pointer;
+}
+
+.post-reading-surface .cms-post-body p::after,
+.prose-public p::after {
+  content: "";
+  display: table;
+  clear: both;
 }
 
 .post-reading-surface .cms-post-body pre {

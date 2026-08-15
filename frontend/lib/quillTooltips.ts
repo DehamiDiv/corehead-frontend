@@ -1,8 +1,14 @@
+import { attachQuillImageControls } from "./quillImageControls";
+
 /**
  * Attach user-friendly tooltips (descriptions) to ReactQuill toolbar buttons in English
+ * and activate image resize & alignment controls.
  */
 export function attachQuillTooltips() {
   if (typeof window === "undefined") return;
+
+  // Initialize interactive image controls (click image for size & float options)
+  attachQuillImageControls();
 
   const tooltips: Record<string, string> = {
     ".ql-undo": "Undo (Ctrl+Z)",
@@ -26,7 +32,7 @@ export function attachQuillTooltips() {
     ".ql-blockquote": "Blockquote",
     ".ql-code-block": "Code Block",
     ".ql-link": "Insert Link (Ctrl+K)",
-    ".ql-image": "Insert Image",
+    ".ql-image": "Insert Image (Click inserted image for Size & Alignment toolbar)",
     ".ql-video": "Insert Video",
     ".ql-table": "Insert Table",
     ".ql-clean": "Clear Formatting",
