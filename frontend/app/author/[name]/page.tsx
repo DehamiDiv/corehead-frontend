@@ -57,7 +57,7 @@ export default async function AuthorProfilePage({ params }: AuthorProfilePagePro
             <div className="author-empty">
               <span>📝</span>
               <p>This author hasn't published any posts yet.</p>
-              <Link href="/blog" className="author-empty-link">Back to Blog →</Link>
+              <Link href="/" className="author-empty-link">Back to Home →</Link>
             </div>
           ) : (
             <div className="blog-grid">

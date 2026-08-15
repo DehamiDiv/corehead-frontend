@@ -1,4 +1,4 @@
-import classification from "../../../contracts/template-classification-v1.js";
+import classification from "@/contracts/template-classification-v1.js";
 
 const { isPublishedTemplate, layoutKindFromTemplate } = classification;
 

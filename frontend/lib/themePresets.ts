@@ -4,7 +4,7 @@ import {
   THEME_REGISTRY,
   getHomeLayoutRegistration,
   getThemeRegistration,
-} from "../../../contracts/appearance-registry-v1.js";
+} from "@/contracts/appearance-registry-v1.js";
 import {
   normalizeHomeStyle,
   type HomeStyle,

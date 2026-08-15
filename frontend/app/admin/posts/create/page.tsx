@@ -20,7 +20,8 @@ import { cn } from "@/lib/utils";
 import MediaLibraryModal from "@/components/admin/MediaLibraryModal";
 import PostPreviewModal from "@/components/admin/PostPreviewModal";
 import { api } from "@/lib/api";
-import { resolveAdminMediaUrl } from "@/lib/apiOrigin";
+import { getApiBaseUrl, resolveAdminMediaUrl } from "@/lib/apiOrigin";
+import { attachQuillTooltips } from "@/lib/quillTooltips";
 import { useSite } from "@/components/admin/SiteContext";
 import dynamic from "next/dynamic";
 
@@ -37,12 +38,39 @@ const quillModules = {
       [{ list: "ordered" }, { list: "bullet" }, { indent: "-1" }, { indent: "+1" }],
       [{ align: [] }],
       ["blockquote", "code-block"],
-      ["link", "image", "video"],
+      ["link", "image", "video", "table"],
       ["clean"],
     ],
     handlers: {
       undo: function (this: any) { this.quill.history.undo(); },
       redo: function (this: any) { this.quill.history.redo(); },
+      table: function (this: any) {
+        const range = this.quill.getSelection(true);
+        const rows = prompt("Enter number of rows (e.g. 3):", "3");
+        if (rows === null) return;
+        const cols = prompt("Enter number of columns (e.g. 3):", "3");
+        if (cols === null) return;
+        const numRows = Math.max(1, parseInt(rows, 10) || 3);
+        const numCols = Math.max(1, parseInt(cols, 10) || 3);
+
+        let headerCells = "";
+        for (let c = 1; c <= numCols; c++) {
+          headerCells += `<th style="border: 1px solid #cbd5e1; padding: 10px 14px; background-color: #f8fafc; font-weight: bold; text-align: left;">Header ${c}</th>`;
+        }
+
+        let bodyRows = "";
+        for (let r = 1; r <= numRows; r++) {
+          let rowCells = "";
+          for (let c = 1; c <= numCols; c++) {
+            rowCells += `<td style="border: 1px solid #e2e8f0; padding: 10px 14px;">Data ${r}.${c}</td>`;
+          }
+          bodyRows += `<tr>${rowCells}</tr>`;
+        }
+
+        const tableHtml = `<div class="table-responsive my-4" style="overflow-x: auto;"><table style="width: 100%; border-collapse: collapse; margin: 16px 0; border: 1px solid #e2e8f0; font-size: 14px;"><thead><tr>${headerCells}</tr></thead><tbody>${bodyRows}</tbody></table></div><p><br></p>`;
+
+        this.quill.clipboard.dangerouslyPasteHTML(range.index, tableHtml);
+      },
     },
   },
   history: {
@@ -203,6 +231,13 @@ export default function CreatePostPage() {
   useEffect(() => {
     fetchUsers();
   }, [fetchUsers]);
+
+  // Attach tooltips to Quill toolbar
+  useEffect(() => {
+    if (activeTab === "Content") {
+      attachQuillTooltips();
+    }
+  }, [activeTab]);
 
   // Fetch categories from DB
   useEffect(() => {

@@ -2,7 +2,6 @@ import { notFound } from "next/navigation";
 import { api } from "@/lib/api";
 import BlogPostClient from "@/components/blog/BlogPostClient";
 import DetailedFooter from "@/components/DetailedFooter";
-import "./page.css";
 
 interface SinglePostPageProps {
   params: Promise<{

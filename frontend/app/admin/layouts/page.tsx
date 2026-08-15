@@ -20,7 +20,7 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { api } from "@/lib/api";
-import classification from "../../../../../contracts/template-classification-v1.js";
+import classification from "@/contracts/template-classification-v1.js";
 
 const { templateOrigin } = classification;
 

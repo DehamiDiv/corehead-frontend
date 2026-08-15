@@ -64,8 +64,15 @@ body {
   line-height: 1;
 }
 
+.ql-toolbar .ql-table::before {
+  content: "⊞";
+  font-size: 17px;
+  line-height: 1;
+}
+
 .ql-toolbar .ql-undo,
-.ql-toolbar .ql-redo {
+.ql-toolbar .ql-redo,
+.ql-toolbar .ql-table {
   width: 28px;
   height: 24px;
   display: inline-flex;
@@ -74,14 +81,150 @@ body {
   font-size: 15px;
   color: #444;
   cursor: pointer;
-  border-radius: 4px;
-  transition: background 0.15s;
+  border-radius: 6px;
+  transition: all 0.2s ease-in-out;
 }
 
-.ql-toolbar .ql-undo:hover,
-.ql-toolbar .ql-redo:hover {
-  background: #e8f0fe;
+/* ReactQuill - Toolbar Blue Hover Effects & Active States */
+.ql-toolbar button,
+.ql-toolbar .ql-picker-label {
+  transition: all 0.2s ease-in-out !important;
+  border-radius: 6px !important;
+}
+
+.ql-toolbar button:hover,
+.ql-toolbar button.ql-active,
+.ql-toolbar .ql-picker-label:hover,
+.ql-toolbar .ql-picker-label.ql-active {
+  color: #2563eb !important;
+  background-color: #eff6ff !important;
+}
+
+.ql-toolbar button:hover .ql-stroke,
+.ql-toolbar button.ql-active .ql-stroke,
+.ql-toolbar .ql-picker-label:hover .ql-stroke,
+.ql-toolbar .ql-picker-label.ql-active .ql-stroke {
+  stroke: #2563eb !important;
+}
+
+.ql-toolbar button:hover .ql-fill,
+.ql-toolbar button.ql-active .ql-fill,
+.ql-toolbar .ql-picker-label:hover .ql-fill,
+.ql-toolbar .ql-picker-label.ql-active .ql-fill {
+  fill: #2563eb !important;
+}
+
+.ql-toolbar .ql-picker-item:hover {
+  color: #2563eb !important;
+}
+
+/* Premium Article Typography & Layout (.prose-public) */
+.prose-public {
+  font-size: 1.0625rem;
+  line-height: 1.8;
+  color: #334155;
+}
+
+.prose-public h1,
+.prose-public h2,
+.prose-public h3,
+.prose-public h4,
+.prose-public h5,
+.prose-public h6 {
+  color: #0f172a;
+  font-weight: 800;
+  line-height: 1.3;
+  margin-top: 2.25rem;
+  margin-bottom: 1rem;
+  letter-spacing: -0.015em;
+}
+
+.prose-public h1 { font-size: 2.25rem; }
+.prose-public h2 { font-size: 1.65rem; margin-top: 2.5rem; }
+.prose-public h3 { font-size: 1.35rem; margin-top: 2rem; }
+.prose-public h4 { font-size: 1.15rem; }
+
+.prose-public p {
+  margin-bottom: 1.5rem;
+  color: #334155;
+  word-break: break-word;
+}
+
+.prose-public img {
+  width: 100%;
+  max-width: 100%;
+  height: auto;
+  border-radius: 1rem;
+  margin-top: 2rem;
+  margin-bottom: 2rem;
+  object-fit: cover;
+  box-shadow: 0 10px 30px -10px rgba(0, 0, 0, 0.08);
+  border: 1px solid rgba(226, 232, 240, 0.8);
+}
+
+.prose-public blockquote {
+  border-left: 4px solid #2563eb;
+  padding-left: 1.25rem;
+  margin-top: 1.75rem;
+  margin-bottom: 1.75rem;
+  font-style: italic;
+  color: #475569;
+  background-color: #f8fafc;
+  border-radius: 0 0.75rem 0.75rem 0;
+  padding-top: 0.75rem;
+  padding-bottom: 0.75rem;
+}
+
+.prose-public ul {
+  list-style-type: disc;
+  padding-left: 1.5rem;
+  margin-bottom: 1.5rem;
+}
+
+.prose-public ol {
+  list-style-type: decimal;
+  padding-left: 1.5rem;
+  margin-bottom: 1.5rem;
+}
+
+.prose-public li {
+  margin-bottom: 0.5rem;
+}
+
+.prose-public a {
   color: #2563eb;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  font-weight: 500;
+}
+
+.prose-public a:hover {
+  color: #1d4ed8;
+}
+
+.prose-public code {
+  background-color: #f1f5f9;
+  color: #0f172a;
+  padding: 0.2rem 0.4rem;
+  border-radius: 0.375rem;
+  font-size: 0.875em;
+  font-family: monospace;
+}
+
+.prose-public pre {
+  background-color: #0f172a;
+  color: #e2e8f0;
+  padding: 1.25rem;
+  border-radius: 1rem;
+  overflow-x: auto;
+  margin-top: 1.5rem;
+  margin-bottom: 1.5rem;
+}
+
+.prose-public pre code {
+  background-color: transparent;
+  color: inherit;
+  padding: 0;
 }
 
 /* ============================================

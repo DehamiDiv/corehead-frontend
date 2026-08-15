@@ -1,5 +1,4 @@
 import { NextRequest, NextResponse } from 'next/server';
-import nodemailer from 'nodemailer';
 
 interface SubscribeBody {
   email?: string;
@@ -23,6 +22,14 @@ async function sendSubscriptionEmail(to: string, siteName: string, siteSlug?: st
     console.log('[Newsletter] → Create .env.local using .env.local.example');
     console.log('[Newsletter] → For Gmail: use App Password (not regular password)');
     console.log(`[Newsletter] Would send to: ${to} | Site: ${siteName}`);
+    return { success: true, simulated: true };
+  }
+
+  let nodemailer: any;
+  try {
+    nodemailer = await import('nodemailer');
+  } catch {
+    console.warn('[Newsletter] nodemailer package not installed. Simulating subscription.');
     return { success: true, simulated: true };
   }
 

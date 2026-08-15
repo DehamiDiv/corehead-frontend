@@ -2,13 +2,19 @@
 
 import { PanelLeft, Maximize, Minimize, Search } from "lucide-react";
 import { useEffect, useState } from "react";
+import { usePathname } from "next/navigation";
 import SiteSwitcher from "@/components/admin/SiteSwitcher";
 import VisitPublicSiteButton from "@/components/admin/VisitPublicSiteButton";
 import { getApiBaseUrl, resolveAdminMediaUrl } from "@/lib/apiOrigin";
 
 export default function Header({ onToggleSidebar }: { onToggleSidebar: () => void }) {
+  const pathname = usePathname();
   const [user, setUser] = useState<any>(null);
   const [isFullscreen, setIsFullscreen] = useState(false);
+
+  const hideTopSearch =
+    pathname?.startsWith("/admin/categories") ||
+    pathname?.startsWith("/admin/posts");
 
   useEffect(() => {
     const handleFullscreenChange = () => {
@@ -75,14 +81,16 @@ export default function Header({ onToggleSidebar }: { onToggleSidebar: () => voi
           <PanelLeft className="w-5 h-5" />
         </button>
 
-        <div className="flex items-center bg-slate-50 rounded-xl px-4 h-[40px] w-[350px] border border-transparent focus-within:border-blue-200 focus-within:bg-white transition-all shadow-sm">
-          <Search className="w-4 h-4 text-slate-400 mr-3" />
-          <input
-            type="text"
-            placeholder="Search blogs and posts..."
-            className="bg-transparent border-none outline-none text-sm w-full placeholder:text-slate-400 text-slate-700 font-medium"
-          />
-        </div>
+        {!hideTopSearch && (
+          <div className="flex items-center bg-slate-50 rounded-xl px-4 h-[40px] w-[350px] border border-transparent focus-within:border-blue-200 focus-within:bg-white transition-all shadow-sm">
+            <Search className="w-4 h-4 text-slate-400 mr-3" />
+            <input
+              type="text"
+              placeholder="Search blogs and posts..."
+              className="bg-transparent border-none outline-none text-sm w-full placeholder:text-slate-400 text-slate-700 font-medium"
+            />
+          </div>
+        )}
       </div>
 
       {/* Right Side Actions */}
