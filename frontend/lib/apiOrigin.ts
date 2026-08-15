@@ -27,19 +27,30 @@ export function getApiOrigin(): string {
 
 /**
  * Resolve relative media/avatar paths for admin UI.
- * Absolute http(s)/data left unchanged; `/demo` stays same-origin.
+ * Absolute http(s)/data left unchanged (except /uploads → relative);
+ * `/demo` stays same-origin.
  */
 export function resolveAdminMediaUrl(path?: string | null): string | null {
   if (!path) return null;
-  const value = String(path).trim();
+  let value = String(path).trim();
   if (!value) return null;
 
-  if (
-    value.startsWith("http://") ||
-    value.startsWith("https://") ||
-    value.startsWith("data:")
-  ) {
-    return value;
+  // blob: only works in the creating tab
+  if (value.startsWith("blob:")) return value;
+
+  if (value.startsWith("data:")) return value;
+
+  // Absolute backend upload URLs → relative for Next rewrite
+  if (value.startsWith("http://") || value.startsWith("https://")) {
+    try {
+      const u = new URL(value);
+      if (u.pathname.includes("/uploads/")) {
+        return u.pathname.startsWith("/") ? u.pathname : `/${u.pathname}`;
+      }
+      return value;
+    } catch {
+      return value;
+    }
   }
 
   if (value.startsWith("/demo/") || value.startsWith("demo/")) {

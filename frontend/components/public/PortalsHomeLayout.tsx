@@ -56,47 +56,59 @@ export default function PortalsHomeLayout({
   const blogHref = siteBlogPath(siteSlug);
   const featured = posts[0];
   const rest = posts.slice(1, 3);
+  const postImage = (post?: PostLike | null) =>
+    post
+      ? resolveMediaUrl(
+          post.coverImage || post.thumbnailUrl || post.featured_image
+        )
+      : null;
 
   const pillars = (
     sections?.pillars?.length
       ? sections.pillars
       : [
           {
-            title: "Seamless swaps",
-            body: "Route complex flows in one action — less friction, more throughput.",
+            title: "Clear expertise",
+            body: `Present what ${siteName} does with a focused, credible message.`,
           },
           {
-            title: "Historical data",
-            body: "APIs and timelines that keep builders unblocked and informed.",
+            title: "Useful insights",
+            body: "Turn published knowledge into an accessible resource for visitors.",
           },
           {
-            title: "AI-ready stack",
-            body: "Integrate intelligence where it matters without slowing shipping.",
+            title: "Built for action",
+            body: "Guide readers from discovery to the next meaningful step.",
           },
         ]
   ).slice(0, 3);
 
   const pillarIcons = [Zap, Layers, Shield];
 
-  // Portals reference: white primary CTA, purple secondary
-  const primaryBg = ctaBg || "#ffffff";
-  const primaryFg = ctaColor || "#0a0a0a";
-  const purple = "#7c3aed";
+  // Prefer Appearance layout palette (CSS vars) — portals pack defaults as fallbacks
+  const primaryBg = ctaBg || "var(--site-cta-bg, #ffffff)";
+  const primaryFg = ctaColor || "var(--site-cta-color, #0a0a0a)";
+  const accent =
+    "var(--site-accent, var(--site-primary, #7c3aed))";
+  const ink = "var(--site-ink, #fafafa)";
+  const muted = "var(--site-muted, #a1a1aa)";
 
-  // Split headline for Portals-like multi-line impact
+  // Headline: Appearance heroTitle → ctaTitle → default
   const headline =
-    sections?.ctaTitle?.trim() ||
-    `Simplifying ${siteName}'s\nMost Complex\nTransactions`;
+    sections?.heroTitle?.trim() ||
+    `${siteName}\nIdeas, work and\nindustry insight`;
   const headlineLines = headline.split("\n");
+  const ctaBgImage = sections?.ctaBackgroundImage
+    ? resolveMediaUrl(sections.ctaBackgroundImage)
+    : null;
 
   return (
     <main
       className="w-full overflow-hidden relative"
       data-home-layout="portals"
       style={{
-        background: "#000000",
-        color: "#fafafa",
-        fontFamily: 'Inter, "DM Sans", system-ui, sans-serif',
+        background: "var(--site-bg, #000000)",
+        color: ink,
+        fontFamily: 'var(--site-font), Inter, "DM Sans", system-ui, sans-serif',
       }}
     >
       <style>{`
@@ -119,13 +131,13 @@ export default function PortalsHomeLayout({
         .p-pulse { animation: portals-pulse 3s ease-in-out infinite; }
       `}</style>
 
-      {/* Ambient purple wash (right side) */}
+      {/* Ambient accent wash (right side) — follows layout primary */}
       <div className="pointer-events-none fixed inset-0 -z-10">
         <div
           className="absolute top-0 right-0 w-[75%] h-full"
           style={{
             background:
-              "radial-gradient(ellipse 70% 60% at 75% 45%, rgba(124,58,237,0.22), transparent 60%)",
+              "radial-gradient(ellipse 70% 60% at 75% 45%, color-mix(in srgb, var(--site-primary, #7c3aed) 22%, transparent), transparent 60%)",
           }}
         />
       </div>
@@ -136,12 +148,18 @@ export default function PortalsHomeLayout({
           {/* LEFT — Portals copy block */}
           <div className="relative z-10 max-w-lg">
             {eyebrow ? (
-              <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-violet-300/80 mb-5">
+              <p
+                className="text-[11px] font-semibold uppercase tracking-[0.2em] mb-5"
+                style={{ color: "color-mix(in srgb, var(--site-primary, #7c3aed) 80%, white)" }}
+              >
                 {eyebrow}
               </p>
             ) : null}
 
-            <h1 className="text-[clamp(2.5rem,5.8vw,3.85rem)] font-semibold tracking-[-0.03em] leading-[1.05] text-white">
+            <h1
+              className="text-[clamp(2.5rem,5.8vw,3.85rem)] font-semibold tracking-[-0.03em] leading-[1.05]"
+              style={{ color: ink }}
+            >
               {headlineLines.map((line, i) => (
                 <span key={i} className="block">
                   {line}
@@ -149,9 +167,11 @@ export default function PortalsHomeLayout({
               ))}
             </h1>
 
-            <p className="mt-6 text-[15px] sm:text-[16px] leading-[1.65] text-zinc-400 max-w-[26rem]">
-              {tagline ||
-                `Powering seamless flows and integrations for ${siteName} — make complex work simpler and enable builders to ship faster.`}
+            <p
+              className="mt-6 text-[15px] sm:text-[16px] leading-[1.65] max-w-[26rem]"
+              style={{ color: muted }}
+            >
+              {tagline || `Explore the latest thinking, practical guidance and published work from ${siteName}.`}
             </p>
 
             <div className="mt-10 flex flex-wrap items-center gap-3">
@@ -168,10 +188,13 @@ export default function PortalsHomeLayout({
                     ? sitePostPath(siteSlug, String(featured.slug))
                     : blogHref
                 }
-                className="inline-flex items-center justify-center gap-2 rounded-full px-6 py-3 text-[14px] font-semibold text-white transition-opacity hover:opacity-90"
-                style={{ background: purple }}
+                className="inline-flex items-center justify-center gap-2 rounded-full px-6 py-3 text-[14px] font-semibold transition-opacity hover:opacity-90"
+                style={{
+                  background: accent,
+                  color: "var(--site-surface, #ffffff)",
+                }}
               >
-                Book a demo
+                {featured?.title || "Featured insight"}
               </Link>
             </div>
           </div>
@@ -335,16 +358,19 @@ export default function PortalsHomeLayout({
                 <div
                   className="mb-4 inline-flex h-10 w-10 items-center justify-center rounded-xl"
                   style={{
-                    background: "rgba(124,58,237,0.15)",
-                    color: "#c4b5fd",
+                    background:
+                      "color-mix(in srgb, var(--site-primary, #7c3aed) 18%, transparent)",
+                    color: "var(--site-primary, #7c3aed)",
                   }}
                 >
                   <Icon className="w-5 h-5" />
                 </div>
-                <h3 className="text-[15px] font-semibold text-white mb-2">
+                <h3 className="text-[15px] font-semibold mb-2" style={{ color: ink }}>
                   {p.title}
                 </h3>
-                <p className="text-sm text-zinc-500 leading-relaxed">{p.body}</p>
+                <p className="text-sm leading-relaxed" style={{ color: muted }}>
+                  {p.body}
+                </p>
               </div>
             );
           })}
@@ -356,16 +382,23 @@ export default function PortalsHomeLayout({
         <section className="max-w-6xl mx-auto px-4 sm:px-6 pb-16">
           <div className="flex items-end justify-between gap-4 mb-8">
             <div>
-              <p className="text-[11px] font-bold uppercase tracking-[0.2em] text-violet-400/90 mb-2">
+              <p
+                className="text-[11px] font-bold uppercase tracking-[0.2em] mb-2"
+                style={{ color: "var(--site-primary, #7c3aed)" }}
+              >
                 {sections?.featuredEyebrow || "Insights"}
               </p>
-              <h2 className="text-2xl sm:text-3xl font-semibold text-white tracking-tight">
-                {sections?.featuredTitle || "Latest from the lab"}
+              <h2
+                className="text-2xl sm:text-3xl font-semibold tracking-tight"
+                style={{ color: ink }}
+              >
+                {sections?.featuredTitle || "Latest insights"}
               </h2>
             </div>
             <Link
               href={blogHref}
-              className="text-sm font-semibold text-violet-300 hover:text-violet-200 inline-flex items-center gap-1"
+              className="text-sm font-semibold inline-flex items-center gap-1 opacity-90 hover:opacity-100"
+              style={{ color: "var(--site-primary, #7c3aed)" }}
             >
               View all
               <ArrowRight className="w-4 h-4" />
@@ -380,31 +413,41 @@ export default function PortalsHomeLayout({
                 className="group rounded-2xl overflow-hidden border border-white/[0.07] bg-zinc-950 hover:border-violet-500/25 transition-colors"
               >
                 <div className="aspect-[16/10] relative bg-zinc-900 overflow-hidden">
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img
-                    src={
-                      resolveMediaUrl(
-                        post.coverImage ||
-                          post.thumbnailUrl ||
-                          post.featured_image
-                      ) || ""
-                    }
-                    alt=""
-                    className="absolute inset-0 h-full w-full object-cover opacity-80 group-hover:scale-[1.03] transition-transform duration-500"
-                  />
+                  {postImage(post) ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img
+                      src={postImage(post) || ""}
+                      alt=""
+                      className="absolute inset-0 h-full w-full object-cover opacity-80 group-hover:scale-[1.03] transition-transform duration-500"
+                    />
+                  ) : (
+                    <div
+                      className="absolute inset-0"
+                      style={{
+                        background:
+                          "radial-gradient(circle at top right, color-mix(in srgb, var(--site-primary) 35%, transparent), transparent 65%)",
+                      }}
+                    />
+                  )}
                   <div className="absolute inset-0 bg-gradient-to-t from-black/80 to-transparent" />
                 </div>
                 <div className="p-5">
                   {postCategory(post) && (
-                    <p className="text-[10px] font-bold uppercase tracking-wider text-violet-300 mb-1.5">
+                    <p
+                      className="text-[10px] font-bold uppercase tracking-wider mb-1.5"
+                      style={{ color: "var(--site-primary, #7c3aed)" }}
+                    >
                       {postCategory(post)}
                     </p>
                   )}
-                  <h3 className="font-semibold text-white text-[15px] leading-snug line-clamp-2">
+                  <h3
+                    className="font-semibold text-[15px] leading-snug line-clamp-2"
+                    style={{ color: ink }}
+                  >
                     {post.title}
                   </h3>
                   {formatPostDate(post.publishedAt || post.createdAt) && (
-                    <p className="mt-2 text-[11px] text-zinc-500">
+                    <p className="mt-2 text-[11px]" style={{ color: muted }}>
                       {formatPostDate(post.publishedAt || post.createdAt)}
                     </p>
                   )}
@@ -417,23 +460,47 @@ export default function PortalsHomeLayout({
 
       {/* ── Bottom CTA ───────────────────────────────────────── */}
       <section className="max-w-6xl mx-auto px-4 sm:px-6 pb-20">
-        <div className="relative overflow-hidden rounded-[1.75rem] border border-white/[0.08] px-6 sm:px-12 py-12 text-center bg-[#050505]">
-          <div
-            className="absolute top-0 left-1/2 -translate-x-1/2 h-36 w-72 rounded-full blur-3xl opacity-50"
-            style={{ background: "rgba(124,58,237,0.4)" }}
-          />
+        <div
+          className="relative overflow-hidden rounded-[1.75rem] border border-white/[0.08] px-6 sm:px-12 py-12 text-center"
+          style={{
+            background: "color-mix(in srgb, var(--site-bg, #000) 88%, #111)",
+          }}
+        >
+          {ctaBgImage ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img
+              src={ctaBgImage}
+              alt=""
+              className="absolute inset-0 h-full w-full object-cover opacity-40"
+            />
+          ) : (
+            <div
+              className="absolute top-0 left-1/2 -translate-x-1/2 h-36 w-72 rounded-full blur-3xl opacity-50"
+              style={{
+                background:
+                  "color-mix(in srgb, var(--site-primary, #7c3aed) 40%, transparent)",
+              }}
+            />
+          )}
+          <div className="absolute inset-0 bg-black/50" />
           <div className="relative">
-            <p className="text-[11px] font-bold uppercase tracking-[0.22em] text-violet-300/80 mb-3">
+            <p
+              className="text-[11px] font-bold uppercase tracking-[0.22em] mb-3"
+              style={{ color: "var(--site-primary, #7c3aed)" }}
+            >
               {sections?.ctaEyebrow || "Get started"}
             </p>
-            <h2 className="text-2xl sm:text-3xl font-semibold text-white max-w-md mx-auto leading-tight">
-              {sections?.ctaTitle?.includes("\n")
-                ? `Build with ${siteName}`
-                : sections?.ctaTitle || `Build with ${siteName}`}
+            <h2
+              className="text-2xl sm:text-3xl font-semibold max-w-md mx-auto leading-tight"
+              style={{ color: ink }}
+            >
+              {sections?.ctaTitle && !sections.ctaTitle.includes("\n")
+                ? sections.ctaTitle
+                : `Discover more from ${siteName}`}
             </h2>
-            <p className="mt-3 text-sm text-zinc-400 max-w-sm mx-auto">
+            <p className="mt-3 text-sm max-w-sm mx-auto" style={{ color: muted }}>
               {sections?.ctaBody ||
-                "Ship faster with a stack built for complex workflows."}
+                "Explore the complete archive of published stories and practical insights."}
             </p>
             <Link
               href={blogHref}

@@ -142,6 +142,30 @@ export const api = {
     return this.fetchWithAuth(`${BASE_URL}/sites/${id}`, { skipSite: true });
   },
 
+  /**
+   * Silent membership check for public-site chrome.
+   * Unlike fetchWithAuth, a stale or unrelated session must not redirect a
+   * public reader away from the site. The protected site endpoint remains the
+   * authority and returns the site only to an owner/member/platform admin.
+   */
+  async getManageableSite(id: string | number): Promise<SiteSummary | null> {
+    const authHeaders = getAuthHeader();
+    if (!authHeaders.Authorization) return null;
+
+    const res = await fetch(`${BASE_URL}/sites/${id}`, {
+      cache: 'no-store',
+      headers: authHeaders,
+    });
+    if (res.status === 401 || res.status === 403 || res.status === 404) {
+      return null;
+    }
+    if (!res.ok) return null;
+
+    const data = await res.json().catch(() => null);
+    const site = data?.site ?? data;
+    return site?.id ? site : null;
+  },
+
   async getSiteBySlug(slug: string) {
     const res = await fetch(`${BASE_URL}/sites/by-slug/${encodeURIComponent(slug)}`, {
       cache: 'no-store',
@@ -399,8 +423,11 @@ export const api = {
   },
 
   // Posts Management (site-scoped via X-Site-Id)
-  async getPosts() {
-    return this.fetchWithAuth(`${BASE_URL}/posts`);
+  async getPosts(siteId?: number | null) {
+    return this.fetchWithAuth(`${BASE_URL}/posts`, {
+      cache: 'no-store',
+      headers: siteId ? { 'X-Site-Id': String(siteId) } : undefined,
+    });
   },
 
   async getPostById(id: string | number) {
@@ -415,10 +442,13 @@ export const api = {
     });
   },
 
-  async createPost(data: any) {
+  async createPost(data: any, siteId?: number | null) {
     return this.fetchWithAuth(`${BASE_URL}/posts`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: {
+        'Content-Type': 'application/json',
+        ...(siteId ? { 'X-Site-Id': String(siteId) } : {}),
+      },
       body: JSON.stringify(data)
     });
   },
@@ -759,6 +789,14 @@ export const api = {
     });
   },
 
+  async modifyLayout(data: { currentBlocks: any[], instruction: string }) {
+    return this.fetchWithAuth(`${BASE_URL}/ai/modify-layout`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data)
+    });
+  },
+
   async createCheckoutSession(mock: boolean = false, planType: string = "PRO") {
     return this.fetchWithAuth(`${BASE_URL}/payment/checkout-session`, {
       method: 'POST',
@@ -797,11 +835,20 @@ export const api = {
       );
       const rawValue = data?.setting?.value;
       if (rawValue === undefined || rawValue === null) return null;
-      try {
-        return typeof rawValue === 'string' ? JSON.parse(rawValue) : rawValue;
-      } catch {
-        return rawValue;
+      // Unwrap JSON strings (handles accidental double-stringify)
+      let cur: any = rawValue;
+      for (let i = 0; i < 3; i += 1) {
+        if (typeof cur !== 'string') break;
+        const s = cur.trim();
+        if (!s) break;
+        if (!(s.startsWith('{') || s.startsWith('[') || s.startsWith('"'))) break;
+        try {
+          cur = JSON.parse(s);
+        } catch {
+          break;
+        }
       }
+      return cur;
     } catch (err: any) {
       if (String(err?.message || '').includes('404')) return null;
       throw err;
@@ -814,6 +861,75 @@ export const api = {
       headers: { 'Content-Type': 'application/json' },
       // Backend stores value as a JSON string
       body: JSON.stringify({ value: typeof value === 'string' ? value : JSON.stringify(value) })
+    });
+  },
+
+  async saveAppearanceDraft(draft: Record<string, unknown>) {
+    return this.fetchWithAuth(`${BASE_URL}/settings/appearance/draft`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(draft),
+    });
+  },
+
+  async applyAppearanceDraft(draft: Record<string, unknown>) {
+    return this.fetchWithAuth(`${BASE_URL}/settings/appearance/apply`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(draft),
+    });
+  },
+
+  /**
+   * Public newsletter subscription for tenant sites (e.g. Verdura).
+   * 
+   * Tries local Next.js API route first (so we can send real emails via Nodemailer).
+   * Falls back to backend if the local route is unavailable.
+   */
+  async subscribeToNewsletter(
+    email: string, 
+    siteSlug?: string, 
+    siteId?: number | string,
+    siteName?: string
+  ) {
+    // 1. Try local Next.js route first (app/api/newsletter/subscribe)
+    try {
+      const localRes = await fetch('/api/newsletter/subscribe', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, siteSlug, siteId, siteName }),
+      });
+
+      if (localRes.ok) {
+        return await localRes.json();
+      }
+      // If local route returned error, fall through to try backend
+    } catch {
+      // Local route not reachable in this context, try backend
+    }
+
+    // 2. Fallback to backend
+    try {
+      const res = await fetch(`${BASE_URL}/newsletter/subscribe`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, siteSlug, siteId, siteName }),
+      });
+      if (!res.ok) {
+        return { success: true, demo: true };
+      }
+      return await res.json();
+    } catch (_e) {
+      return { success: true, demo: true };
+    }
+  },
+
+  async subscribeNewsletter(email: string) {
+    return this.fetchWithAuth(`${BASE_URL}/newsletter/subscribe`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email }),
+      skipSite: true
     });
   }
 };

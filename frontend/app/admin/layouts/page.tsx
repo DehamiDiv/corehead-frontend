@@ -20,6 +20,9 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { api } from "@/lib/api";
+import classification from "../../../../../contracts/template-classification-v1.js";
+
+const { templateOrigin } = classification;
 
 // --- Types ---
 interface Layout {
@@ -31,6 +34,7 @@ interface Layout {
     updatedAt: string;
     createdAt: string;
     author?: { email: string };
+    layoutJson?: { schemaVersion?: string; metadata?: { origin?: string } };
 }
 
 export default function LayoutsListPage() {
@@ -39,7 +43,7 @@ export default function LayoutsListPage() {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const [actionLoading, setActionLoading] = useState<number | null>(null); 
-    const [isLaunching, setIsLaunching] = useState(true);
+    const [isLaunching, setIsLaunching] = useState(false);
 
     useEffect(() => {
         const timer = setTimeout(() => {
@@ -247,6 +251,16 @@ export default function LayoutsListPage() {
                                                     <div>
                                                         <div className="font-bold text-slate-900 flex items-center gap-2">
                                                             {layout.name}
+                                                            <span className={cn(
+                                                                "text-[10px] px-2 py-0.5 rounded-full font-bold uppercase border tracking-wider",
+                                                                templateOrigin(layout) === "ai"
+                                                                    ? "bg-violet-50 text-violet-600 border-violet-100"
+                                                                    : templateOrigin(layout) === "migrated"
+                                                                        ? "bg-amber-50 text-amber-600 border-amber-100"
+                                                                        : "bg-slate-50 text-slate-500 border-slate-100"
+                                                            )}>
+                                                                {templateOrigin(layout)}
+                                                            </span>
                                                             {layout.category === "global_default" && (
                                                                 <span className="bg-emerald-50 text-emerald-600 text-[10px] px-2 py-0.5 rounded-full font-bold uppercase border border-emerald-100 tracking-wider">
                                                                     Global Default

@@ -60,7 +60,7 @@ export default async function PublicSiteBlogPage({ params }: Props) {
     return (
       <main className="w-full max-w-6xl mx-auto px-4 sm:px-6 py-12 sm:py-16">
         <PublicPageRenderer
-          layout={layout.blocks}
+          layout={layout.document}
           data={{ posts, siteSlug: site.slug, site }}
           isLoop
           siteBasePath={siteHomePath(site.slug)}

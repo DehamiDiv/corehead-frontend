@@ -6,7 +6,7 @@ import {
   ChevronDown, Star, Search, FileText, ImagePlus, X, Library,
   Eye, Type, Bold, Italic, Underline, Strikethrough,
   List, ListOrdered, AlignLeft, AlignCenter, AlignRight, AlignJustify,
-  Quote, Code, Link as LinkIcon, Image as ImageIcon, LayoutGrid, Minus, RemoveFormatting, Tag, Loader2,
+  Quote, Code, Link as LinkIcon, Image as ImageIcon, LayoutGrid, Minus, RemoveFormatting, Tag,
   Upload,
   ChevronLeft,
   Check,
@@ -14,17 +14,15 @@ import {
   Maximize2,
   Settings,
   Globe,
-  PlusCircle,
-  Sparkles
+  PlusCircle
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import MediaLibraryModal from "@/components/admin/MediaLibraryModal";
 import PostPreviewModal from "@/components/admin/PostPreviewModal";
-import AIBlogWriterModal from "@/components/admin/AIBlogWriterModal";
-import PaywallModal from "@/components/admin/PaywallModal";
 import { api } from "@/lib/api";
 import { getApiBaseUrl, resolveAdminMediaUrl } from "@/lib/apiOrigin";
 import { attachQuillTooltips } from "@/lib/quillTooltips";
+import { useSite } from "@/components/admin/SiteContext";
 import dynamic from "next/dynamic";
 
 const ReactQuill = dynamic(() => import("react-quill-new"), { ssr: false });
@@ -82,20 +80,39 @@ const quillModules = {
   },
 };
 
+function getLoggedInUser(): { id?: number | string; name?: string; email?: string } | null {
+  if (typeof window === "undefined") return null;
+  try {
+    const raw = localStorage.getItem("user");
+    if (!raw) return null;
+    return JSON.parse(raw);
+  } catch {
+    return null;
+  }
+}
+
+function mapSiteMembersToAuthors(members: any[]) {
+  const seen = new Set<string>();
+  const authors: { id: number | string; name: string; email?: string }[] = [];
+  for (const m of members) {
+    const id = m?.user?.id ?? m?.userId;
+    if (id == null || id === "") continue;
+    const key = String(id);
+    if (seen.has(key)) continue;
+    seen.add(key);
+    authors.push({
+      id,
+      name: m?.user?.name || m?.user?.email || `User #${id}`,
+      email: m?.user?.email,
+    });
+  }
+  return authors;
+}
+
 export default function CreatePostPage() {
   const router = useRouter();
-  const [editId, setEditId] = useState<string | null>(() => {
-    if (typeof window !== "undefined") {
-      return sessionStorage.getItem("editPostId");
-    }
-    return null;
-  });
+  const { currentSiteId, loading: siteLoading } = useSite();
 
-  useEffect(() => {
-    if (typeof window !== "undefined") {
-      sessionStorage.removeItem("editPostId");
-    }
-  }, []);
   const [formData, setFormData] = useState({
     title: "",
     slug: "",
@@ -120,61 +137,13 @@ export default function CreatePostPage() {
 
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const [loading, setLoading] = useState(!!editId);
+  const [loading, setLoading] = useState(false);
   const [users, setUsers] = useState<any[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [isMediaModalOpen, setIsMediaModalOpen] = useState(false);
   const [showPreview, setShowPreview] = useState(false);
-  const [isAiModalOpen, setIsAiModalOpen] = useState(false);
-  const [isPaywallOpen, setIsPaywallOpen] = useState(false);
   const [activeTab, setActiveTab] = useState("Content");
-  const [refining, setRefining] = useState(false);
   const [availableCategories, setAvailableCategories] = useState<string[]>([]);
-
-  const handleAiGenerate = (data: any) => {
-    setFormData(prev => ({
-      ...prev,
-      title: data.title || prev.title,
-      slug: (data.title || prev.title).toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)+/g, ''),
-      excerpt: data.excerpt || prev.excerpt,
-      content: data.content || prev.content,
-      metaTitle: data.seo?.metaTitle || prev.metaTitle,
-      metaDescription: data.seo?.metaDescription || prev.metaDescription,
-      keywords: data.seo?.keywords?.length ? data.seo.keywords : prev.keywords,
-    }));
-  };
-
-  const handleInlineRefine = async (action: "grammar" | "longer" | "summarize") => {
-    if (!formData.content) return;
-    setRefining(true);
-    setError(null);
-    try {
-      const res = await fetch(`${getApiBaseUrl()}/ai/refine`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "Authorization": `Bearer ${localStorage.getItem('accessToken')}`
-        },
-        body: JSON.stringify({ content: formData.content, action }),
-      });
-      const data = await res.json();
-      if (!res.ok) {
-        throw new Error(data.error || data.message || "Failed to refine content");
-      }
-      if (data.refined) {
-        setFormData(prev => ({ ...prev, content: data.refined }));
-      }
-    } catch (err: any) {
-      console.error(err);
-      if (err.message?.includes('LIMIT_EXCEEDED') || err.message?.includes('exceeded') || err.message?.includes('402')) {
-        setIsPaywallOpen(true);
-      } else {
-        setError("AI refinement failed: " + err.message);
-      }
-    } finally {
-      setRefining(false);
-    }
-  };
   const handleAddKeyword = () => {
     if (keywordInput.trim() && !formData.keywords.includes(keywordInput.trim())) {
       setFormData(prev => ({ ...prev, keywords: [...prev.keywords, keywordInput.trim()] }));
@@ -214,59 +183,54 @@ export default function CreatePostPage() {
     }
   };
 
-  const fetchData = useCallback(async () => {
-    setLoading(true);
-    try {
-      const [usersData, postData] = await Promise.all([
-        api.getUsers(),
-        editId ? api.getPostById(editId) : Promise.resolve(null)
-      ]);
+  // Authors = members of the current site (not main-site hardcoded list)
+  const fetchUsers = useCallback(async () => {
+    const me = getLoggedInUser();
+    let authors: { id: number | string; name: string; email?: string }[] = [];
 
-      const usersList = usersData.users && Array.isArray(usersData.users) ? usersData.users : [];
-      setUsers(usersList);
-
-      if (postData) {
-        let cats: string[] = [];
-        const rawCats = postData.categories || postData.category;
-        if (Array.isArray(rawCats)) cats = rawCats.map(String);
-        else if (typeof rawCats === 'string' && rawCats.trim()) {
-          try { cats = JSON.parse(rawCats); } catch(e) { cats = [rawCats]; }
-        }
-
-        setFormData({
-          title: postData.title || "",
-          slug: postData.slug || "",
-          excerpt: postData.excerpt || "",
-          authorId: String(postData.authorId || postData.author?.id || ""),
-          categories: cats,
-          status: postData.status || "Published",
-          featured: !!postData.featured,
-          content: postData.content || "",
-          showToc: !!postData.show_toc || !!postData.showToc,
-          allowComments: postData.allow_comments !== false && postData.allowComments !== false,
-          thumbnailUrl: postData.thumbnailUrl || postData.featured_image || "",
-          metaTitle: postData.meta_title || postData.metaTitle || "",
-          metaDescription: postData.meta_description || postData.metaDescription || "",
-          keywords: Array.isArray(postData.tags) ? postData.tags : (postData.tags ? postData.tags.split(',').map((t: string) => t.trim()) : []),
-          useThumbnailAsFeatured: true,
-          canonicalUrl: postData.canonicalUrl || "",
-          structuredData: typeof postData.structuredData === 'string' ? postData.structuredData : JSON.stringify(postData.structuredData, null, 2),
-        });
-      } else {
-        if (usersList.length > 0) {
-          setFormData(prev => ({ ...prev, authorId: String(usersList[0].id) }));
-        }
+    if (currentSiteId) {
+      try {
+        const res = await api.getSiteMembers(currentSiteId);
+        const members = Array.isArray(res?.members) ? res.members : [];
+        authors = mapSiteMembersToAuthors(members);
+      } catch (err) {
+        console.error("Failed to load site members for author list:", err);
       }
-    } catch (err: any) {
-      setError(err.message || "Failed to fetch data");
-    } finally {
-      setLoading(false);
     }
-  }, [editId]);
+
+    // Ensure logged-in user can always assign themselves as author
+    if (me?.id != null) {
+      const meId = String(me.id);
+      if (!authors.some((a) => String(a.id) === meId)) {
+        authors = [
+          {
+            id: me.id,
+            name: me.name || me.email || `User #${me.id}`,
+            email: me.email,
+          },
+          ...authors,
+        ];
+      }
+    }
+
+    setUsers(authors);
+
+    setFormData((prev) => {
+      if (prev.authorId && authors.some((a) => String(a.id) === String(prev.authorId))) {
+        return prev;
+      }
+      const preferred =
+        (me?.id != null && authors.find((a) => String(a.id) === String(me.id))) ||
+        authors[0];
+      return preferred
+        ? { ...prev, authorId: String(preferred.id) }
+        : { ...prev, authorId: "" };
+    });
+  }, [currentSiteId]);
 
   useEffect(() => {
-    fetchData();
-  }, [fetchData]);
+    fetchUsers();
+  }, [fetchUsers]);
 
   // Attach tooltips to Quill toolbar
   useEffect(() => {
@@ -305,7 +269,17 @@ export default function CreatePostPage() {
   const { completed, total } = calculateProgress();
   const progressPercent = (completed / total) * 100;
 
-  const handleSavePost = async (overrideStatus?: string) => {
+  const handleCreatePost = async (overrideStatus?: string) => {
+    if (siteLoading) {
+      setError("Please wait while your site workspace loads.");
+      return;
+    }
+
+    if (!currentSiteId) {
+      setError("Create or select a site before creating a post.");
+      return;
+    }
+
     if (!formData.title || !formData.content) {
       setError("Title and Content are required.");
       return;
@@ -334,7 +308,7 @@ export default function CreatePostPage() {
       }
     }
 
-    const finalData: any = {
+    const finalData = {
       title: formData.title,
       slug: formData.slug,
       excerpt: formData.excerpt,
@@ -346,43 +320,26 @@ export default function CreatePostPage() {
       authorId: parseInt(formData.authorId),
       thumbnailUrl: cover || null,
       featured: formData.featured,
-      meta_title: formData.metaTitle,
-      meta_description: formData.metaDescription,
+      metaTitle: formData.metaTitle,
+      metaDescription: formData.metaDescription,
       canonicalUrl: formData.canonicalUrl,
       structuredData: formData.structuredData,
       show_toc: formData.showToc,
       allow_comments: formData.allowComments,
-
+      ...(nextStatus === "Published"
+        ? { published_date: new Date().toISOString() }
+        : {}),
     };
 
-    if (!editId) {
-      finalData.published_date = new Date().toISOString();
-    }
-
     try {
-      if (editId) {
-        await api.updatePost(editId, finalData);
-      } else {
-        await api.createPost(finalData);
-      }
-      router.push('/admin/posts');
+      await api.createPost(finalData, currentSiteId);
+      router.push("/admin/posts");
     } catch (err: any) {
-      setError(err.message || `Failed to ${editId ? "update" : "create"} post`);
+      setError(err.message || "Failed to create post");
     } finally {
       setLoading(false);
     }
   };
-
-  const hasRealContent = formData.content.replace(/<[^>]*>/g, '').trim().length > 3;
-
-  if (loading && editId && !formData.title) {
-    return (
-      <div className="min-h-screen bg-[#F4F7FA] flex flex-col items-center justify-center">
-        <Loader2 className="w-12 h-12 text-[#2563EB] animate-spin mb-4" />
-        <p className="text-[#64748B] font-bold">Fetching post details...</p>
-      </div>
-    );
-  }
 
   return (
     <div className="min-h-screen bg-[#F4F7FA] pb-32 pt-8 px-6">
@@ -391,18 +348,10 @@ export default function CreatePostPage() {
         {/* Top Header */}
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-[32px] font-bold text-[#1E293B]">{editId ? "Edit Post" : "Create New Post"}</h1>
-            <p className="text-[15px] text-[#64748B] mt-1">{editId ? "Make changes to your existing blog post" : "Fill in the details below to create a new blog post"}</p>
+            <h1 className="text-[32px] font-bold text-[#1E293B]">Create New Post</h1>
+            <p className="text-[15px] text-[#64748B] mt-1">Fill in the details below to create a new blog post</p>
           </div>
           <div className="flex items-center gap-3">
-            <button
-              type="button"
-              onClick={() => setIsAiModalOpen(true)}
-              className="px-4 py-2 flex items-center gap-2 bg-gradient-to-r from-blue-600 to-indigo-600 text-white text-[14px] font-bold rounded-full transition-transform hover:scale-105 shadow-md shadow-blue-200"
-            >
-              <Sparkles className="w-4 h-4" />
-              AI Assist
-            </button>
             <span className={cn(
               "px-4 py-1.5 text-white text-[13px] font-bold rounded-full transition-colors",
               formData.status === "Published" ? "bg-emerald-600" : "bg-[#94A3B8]"
@@ -483,9 +432,9 @@ export default function CreatePostPage() {
                     <input
                       type="text"
                       placeholder="url-friendly-slug"
-                      className="w-full h-12 bg-[#F1F5F9] border border-[#E2E8F0] rounded-[10px] px-4 text-[14px] text-gray-500 cursor-not-allowed outline-none"
+                      className="w-full h-12 bg-white border border-[#E2E8F0] rounded-[10px] px-4 text-[14px] focus:outline-none"
                       value={formData.slug}
-                      readOnly
+                      onChange={e => setFormData({ ...formData, slug: e.target.value })}
                     />
                   </div>
 
@@ -508,7 +457,12 @@ export default function CreatePostPage() {
                         value={formData.authorId}
                         onChange={e => setFormData({ ...formData, authorId: e.target.value })}
                       >
-                        {users.map(u => <option key={u.id} value={u.id}>{u.name || u.email}</option>)}
+                        {users.length === 0 && (
+                          <option value="">No authors for this site</option>
+                        )}
+                        {users.map(u => (
+                          <option key={u.id} value={u.id}>{u.name || u.email}</option>
+                        ))}
                       </select>
                     </div>
                     <div className="space-y-2">
@@ -593,44 +547,10 @@ export default function CreatePostPage() {
                       placeholder="Write your blog post content here..."
                     />
 
-                    <div className="flex justify-between items-center px-4 py-3 border-t border-gray-100 bg-[#fafafa] flex-wrap gap-3">
-                      <div className="flex items-center gap-1.5 flex-wrap">
-                        <span className="text-xs font-bold text-gray-400 mr-1 flex items-center gap-1">
-                          <Sparkles className="w-3.5 h-3.5 text-blue-500 animate-pulse" /> AI Assistant:
-                        </span>
-                        <button
-                          type="button"
-                          onClick={() => handleInlineRefine("grammar")}
-                          disabled={refining || !hasRealContent}
-                          className="px-3 py-1.5 text-xs font-bold text-gray-700 bg-white border border-gray-200 rounded-lg hover:bg-gray-100 hover:border-gray-300 transition-all flex items-center gap-1 shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
-                        >
-                          Polish Grammar ✍️
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => handleInlineRefine("longer")}
-                          disabled={refining || !hasRealContent}
-                          className="px-3 py-1.5 text-xs font-bold text-gray-700 bg-white border border-gray-200 rounded-lg hover:bg-gray-100 hover:border-gray-300 transition-all flex items-center gap-1 shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
-                        >
-                          Make Longer 📝
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => handleInlineRefine("summarize")}
-                          disabled={refining || !hasRealContent}
-                          className="px-3 py-1.5 text-xs font-bold text-gray-700 bg-white border border-gray-200 rounded-lg hover:bg-gray-100 hover:border-gray-300 transition-all flex items-center gap-1 shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
-                        >
-                          Summarize Content 🔍
-                        </button>
-                        {refining && (
-                          <Loader2 className="w-3.5 h-3.5 text-blue-500 animate-spin ml-2" />
-                        )}
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <span className="text-xs font-bold text-gray-500">
-                          {formData.content.replace(/<[^>]*>?/gm, '').trim() ? formData.content.replace(/<[^>]*>?/gm, '').trim().split(/\s+/).length : 0} words | {formData.content.replace(/<[^>]*>?/gm, '').length} characters
-                        </span>
-                      </div>
+                    <div className="flex items-center justify-end border-t border-gray-100 bg-[#fafafa] px-4 py-3">
+                      <span className="text-xs font-bold text-gray-500">
+                        {formData.content.replace(/<[^>]*>?/gm, '').trim() ? formData.content.replace(/<[^>]*>?/gm, '').trim().split(/\s+/).length : 0} words | {formData.content.replace(/<[^>]*>?/gm, '').length} characters
+                      </span>
                     </div>
                   </div>
                 </div>
@@ -830,19 +750,19 @@ export default function CreatePostPage() {
             <Eye className="w-4 h-4" />
             Preview
           </button>
-          <button 
-            onClick={() => handleSavePost("Draft")}
+          <button
+            onClick={() => handleCreatePost("Draft")}
             disabled={loading}
             className="px-6 py-3 text-sm font-bold text-gray-700 bg-gray-50 hover:bg-gray-100 rounded-xl transition-colors shadow-sm border border-gray-100 disabled:opacity-50"
           >
             {loading ? "Saving…" : "Save as Draft"}
           </button>
-          <button 
-            onClick={() => handleSavePost()}
+          <button
+            onClick={() => handleCreatePost("Published")}
             disabled={loading}
             className="px-8 py-3 text-sm font-bold text-white bg-emerald-600 rounded-xl hover:bg-emerald-700 transition-colors shadow-md disabled:opacity-50"
           >
-            {loading ? (editId ? "Saving..." : "Creating...") : (editId ? "Save Changes" : "Create Post")}
+            {loading ? "Publishing…" : "Publish"}
           </button>
         </div>
       </div>
@@ -864,12 +784,6 @@ export default function CreatePostPage() {
         onSelect={(url) => setFormData({ ...formData, thumbnailUrl: url })}
       />
 
-      <AIBlogWriterModal
-        isOpen={isAiModalOpen}
-        onClose={() => setIsAiModalOpen(false)}
-        onGenerate={handleAiGenerate}
-      />
-
       <PostPreviewModal
         open={showPreview}
         onClose={() => setShowPreview(false)}
@@ -886,12 +800,6 @@ export default function CreatePostPage() {
             undefined,
         }}
       />
-
-      <PaywallModal
-        isOpen={isPaywallOpen}
-        onClose={() => setIsPaywallOpen(false)}
-      />
     </div>
   );
 }
-

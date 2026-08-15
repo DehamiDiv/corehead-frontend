@@ -1,11 +1,24 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { motion } from "framer-motion";
 import { ArrowRight } from "lucide-react";
 import Navbar from "./Navbar";
 
 export default function Hero() {
+  const [user, setUser] = useState<{ id: string; email: string; role: string } | null>(null);
+
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const storedUser = localStorage.getItem("user");
+      if (storedUser) {
+        try {
+          setUser(JSON.parse(storedUser));
+        } catch (e) {}
+      }
+    }
+  }, []);
   return (
     <section className="relative mx-4 mt-4 rounded-[40px] md:rounded-[60px] overflow-hidden bg-[#89CFF0] min-h-[90vh] flex flex-col items-center pt-32 pb-20">
       <Navbar />
@@ -40,14 +53,25 @@ export default function Hero() {
         </h1>
 
         <div className="flex flex-col items-center justify-center gap-5 sm:flex-row mt-10">
-          <Link
-            href="/signup"
-            style={{ backgroundColor: 'var(--primary)' }}
-            className="group flex items-center px-8 py-4 text-lg font-bold text-white transition-all duration-300 rounded-full hover:opacity-90 shadow-[0_0_40px_-10px_rgba(29,78,216,0.5)] hover:shadow-[0_0_60px_-15px_rgba(29,78,216,0.7)] hover:-translate-y-1"
-          >
-            Get Started Free
-            <ArrowRight className="w-5 h-5 ml-2 transition-transform duration-300 group-hover:translate-x-1" />
-          </Link>
+          {user ? (
+            <Link
+              href={user.role?.toLowerCase() === "admin" || user.role?.toLowerCase() === "administrator" ? "/admin" : "/admin/builder"}
+              style={{ backgroundColor: 'var(--primary)' }}
+              className="group flex items-center px-8 py-4 text-lg font-bold text-white transition-all duration-300 rounded-full hover:opacity-90 shadow-[0_0_40px_-10px_rgba(29,78,216,0.5)] hover:shadow-[0_0_60px_-15px_rgba(29,78,216,0.7)] hover:-translate-y-1"
+            >
+              {user.role?.toLowerCase() === "admin" || user.role?.toLowerCase() === "administrator" ? "Go to Dashboard" : "Open Visual Builder"}
+              <ArrowRight className="w-5 h-5 ml-2 transition-transform duration-300 group-hover:translate-x-1" />
+            </Link>
+          ) : (
+            <Link
+              href="/signup"
+              style={{ backgroundColor: 'var(--primary)' }}
+              className="group flex items-center px-8 py-4 text-lg font-bold text-white transition-all duration-300 rounded-full hover:opacity-90 shadow-[0_0_40px_-10px_rgba(29,78,216,0.5)] hover:shadow-[0_0_60px_-15px_rgba(29,78,216,0.7)] hover:-translate-y-1"
+            >
+              Get Started Free
+              <ArrowRight className="w-5 h-5 ml-2 transition-transform duration-300 group-hover:translate-x-1" />
+            </Link>
+          )}
         </div>
       </motion.div>
 

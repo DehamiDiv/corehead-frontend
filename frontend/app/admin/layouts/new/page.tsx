@@ -13,29 +13,14 @@ import {
 } from "lucide-react";
 import { api } from "@/lib/api";
 import { useRouter } from "next/navigation";
+import {
+    defaultLayoutDocument,
+    prepareLayoutForSave,
+} from "@/lib/templateLayout";
 
 // Default schema structure for new layouts
 // This prevents hardcoding the JSON directly inside the component's state initialization.
-const DEFAULT_LAYOUT_SCHEMA = {
-    version: "1.0",
-    sections: [
-        {
-            id: "header",
-            type: "hero-section",
-            props: {
-                title: "{post.title}",
-                image: "{post.coverImage}"
-            }
-        },
-        {
-            id: "content",
-            type: "rich-text",
-            props: {
-                content: "{post.content}"
-            }
-        }
-    ]
-};
+const DEFAULT_LAYOUT_SCHEMA = defaultLayoutDocument("Single Post");
 
 export default function CreateLayoutPage() {
     // --- State Management ---
@@ -70,10 +55,17 @@ export default function CreateLayoutPage() {
             }
 
             // API call to persist the template
+            const prepared = prepareLayoutForSave(parsedSchema, {
+                name: layoutName,
+                type: templateType,
+                status: publishStatus,
+                origin: "manual",
+            });
+
             await api.createTemplate({
                 name: layoutName,
                 type: templateType,
-                layoutJson: parsedSchema,
+                layoutJson: prepared.document,
                 status: publishStatus
             });
 
@@ -165,11 +157,18 @@ export default function CreateLayoutPage() {
                                     <FileType size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
                                     <select
                                         value={templateType}
-                                        onChange={(e) => setTemplateType(e.target.value)}
+                                        onChange={(e) => {
+                                            const nextType = e.target.value;
+                                            const currentDefault = JSON.stringify(defaultLayoutDocument(templateType), null, 2);
+                                            setTemplateType(nextType);
+                                            if (schemaContent === currentDefault) {
+                                                setSchemaContent(JSON.stringify(defaultLayoutDocument(nextType), null, 2));
+                                            }
+                                        }}
                                         className="w-full pl-10 pr-3 py-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-100 focus:border-blue-400 transition-all appearance-none bg-white"
                                     >
                                         <option value="Single Post">Single Post</option>
-                                        <option value="Archive">Archive</option>
+                                        <option value="Blog Archive">Blog Archive</option>
                                     </select>
                                 </div>
                                 <p className="text-xs text-slate-500 mt-2">

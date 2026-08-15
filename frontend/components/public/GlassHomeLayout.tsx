@@ -50,6 +50,11 @@ export default function GlassHomeLayout({
   const blogHref = siteBlogPath(siteSlug);
   const featured = posts[0];
   const rest = posts.slice(1, 4);
+  const featuredImage =
+    heroImage ||
+    resolveMediaUrl(
+      featured?.coverImage || featured?.thumbnailUrl || featured?.featured_image
+    );
 
   return (
     <main
@@ -87,7 +92,7 @@ export default function GlassHomeLayout({
           }}
         >
           <Sparkles className="w-3.5 h-3.5" />
-          {eyebrow || "Glass UI"}
+          {eyebrow || ""}
         </span>
 
         <h1
@@ -113,7 +118,7 @@ export default function GlassHomeLayout({
               boxShadow: "0 12px 40px color-mix(in srgb, var(--site-primary) 25%, transparent)",
             }}
           >
-            {ctaText || "Get started"}
+            {sections?.ctaButton || ctaText || "Explore the archive"}
             <ArrowRight className="w-4 h-4" />
           </Link>
           {featured?.slug && (
@@ -132,7 +137,7 @@ export default function GlassHomeLayout({
         </div>
 
         {/* Frosted hero card */}
-        {(heroImage || featured) && (
+        {featuredImage && (
           <div
             className="mt-12 relative mx-auto max-w-3xl rounded-[1.75rem] overflow-hidden border backdrop-blur-2xl shadow-2xl"
             style={{
@@ -144,15 +149,7 @@ export default function GlassHomeLayout({
             <div className="aspect-[16/9] relative">
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
-                src={
-                  heroImage ||
-                  resolveMediaUrl(
-                    featured?.coverImage ||
-                      featured?.thumbnailUrl ||
-                      featured?.featured_image
-                  ) ||
-                  ""
-                }
+                src={featuredImage}
                 alt=""
                 className="absolute inset-0 h-full w-full object-cover"
               />
@@ -170,9 +167,9 @@ export default function GlassHomeLayout({
               sections?.pillars?.length
                 ? []
                 : [
-                    { title: "Fast", body: "Ship pages in minutes, not days." },
-                    { title: "Clear", body: "Typography and space that breathe." },
-                    { title: "Yours", body: "Brand colours that actually stick." },
+                    { title: "Curated", body: "A focused collection of the latest published work." },
+                    { title: "Insightful", body: "Ideas and perspectives presented with clarity." },
+                    { title: "Independent", body: `A distinct publishing home for ${siteName}.` },
                   ]
             )
             .slice(0, 3)
@@ -223,16 +220,26 @@ export default function GlassHomeLayout({
                   }}
                 >
                   <div className="aspect-[16/10] relative bg-white/30">
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img
-                      src={
-                        resolveMediaUrl(
+                    {resolveMediaUrl(
+                      post.coverImage || post.thumbnailUrl || post.featured_image
+                    ) ? (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img
+                        src={resolveMediaUrl(
                           post.coverImage || post.thumbnailUrl || post.featured_image
-                        ) || ""
-                      }
-                      alt=""
-                      className="absolute inset-0 h-full w-full object-cover"
-                    />
+                        ) || ""}
+                        alt=""
+                        className="absolute inset-0 h-full w-full object-cover"
+                      />
+                    ) : (
+                      <div
+                        className="absolute inset-0"
+                        style={{
+                          background:
+                            "linear-gradient(135deg, var(--site-primary-soft), color-mix(in srgb, var(--site-accent) 22%, var(--site-surface)))",
+                        }}
+                      />
+                    )}
                   </div>
                   <div className="p-4">
                     {postCategory(post) && (

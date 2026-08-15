@@ -1,11 +1,13 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import type { Metadata } from "next";
 import { api } from "@/lib/api";
 import {
   isPublishedPost,
   resolvePublicSite,
   siteBlogPath,
   siteHomePath,
+  sitePostPath,
 } from "@/lib/publicSite";
 import { resolveMediaUrl } from "@/lib/siteMedia";
 import {
@@ -18,22 +20,77 @@ import { PublicPageRenderer } from "@/components/Renderer/PublicPageRenderer";
 import { postToBindData, resolveTenantLayout } from "@/lib/tenantLayout";
 import CommentsSection from "@/components/blog/CommentsSection";
 import PostReactions from "@/components/blog/PostReactions";
+import PostShareButtons from "@/components/blog/PostShareButtons";
 
 interface Props {
   params: Promise<{ siteSlug: string; postSlug: string }>;
 }
 
-export async function generateMetadata({ params }: Props) {
+function absolutePublicUrl(path: string) {
+  const origin = (process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000").replace(/\/$/, "");
+  return new URL(path, `${origin}/`).toString();
+}
+
+function safeCanonicalUrl(candidate: unknown, fallbackPath: string) {
+  if (typeof candidate === "string" && candidate.trim()) {
+    try {
+      const parsed = new URL(candidate.trim());
+      if (parsed.protocol === "http:" || parsed.protocol === "https:") return parsed.toString();
+    } catch {
+      // Use the tenant route when an editor saved an invalid canonical value.
+    }
+  }
+  return absolutePublicUrl(fallbackPath);
+}
+
+export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { siteSlug, postSlug } = await params;
   const site = await resolvePublicSite(siteSlug);
   if (!site) return { title: "Post not found | CoreHead" };
 
   try {
     const post = await api.getPostBySlug(postSlug, site.id);
-    if (!post) return { title: `Post | ${site.name}` };
+    if (!post || !isPublishedPost(post)) {
+      return { title: `Post | ${site.name}`, robots: { index: false, follow: false } };
+    }
+    const title = post.metaTitle || post.meta_title || post.title;
+    const description =
+      post.metaDescription || post.meta_description || post.excerpt || `Read on ${site.name}`;
+    const canonical = safeCanonicalUrl(
+      post.canonicalUrl,
+      sitePostPath(site.slug, post.slug || postSlug),
+    );
+    const rawImage = resolveMediaUrl(
+      post.coverImage || post.thumbnailUrl || post.featured_image || null,
+    );
+    const image =
+      rawImage && !rawImage.startsWith("data:")
+        ? rawImage.startsWith("http")
+          ? rawImage
+          : absolutePublicUrl(rawImage)
+        : null;
+    const author = post.author?.name || post.authorName || site.name;
     return {
-      title: `${post.title} | ${site.name}`,
-      description: post.excerpt || `Read on ${site.name}`,
+      title: `${title} | ${site.name}`,
+      description,
+      alternates: { canonical },
+      robots: { index: true, follow: true },
+      openGraph: {
+        type: "article",
+        url: canonical,
+        siteName: site.name,
+        title,
+        description,
+        publishedTime: post.publishedAt || post.published_date || undefined,
+        authors: [author],
+        images: image ? [{ url: image, alt: post.title }] : undefined,
+      },
+      twitter: {
+        card: image ? "summary_large_image" : "summary",
+        title,
+        description,
+        images: image ? [image] : undefined,
+      },
     };
   } catch {
     return { title: `Post | ${site.name}` };
@@ -222,13 +279,21 @@ export default async function PublicSitePostPage({ params }: Props) {
           </div>
         )}
 
-        <div className="prose-public">
+        <div className="prose-public post-reading-surface">
           <PublicPageRenderer
-            layout={blocksForRender}
+            layout={useTemplateChrome
+              ? { ...layout.document, blocks: blocksForRender }
+              : blocksForRender}
             data={bindData}
             siteBasePath={siteHomePath(site.slug)}
           />
         </div>
+
+        <PostShareButtons
+          title={post.title}
+          excerpt={post.excerpt}
+          sharePath={sitePostPath(site.slug, post.slug)}
+        />
 
         <div className="mt-12 pt-8 border-t border-black/5 space-y-8">
           <PostReactions postId={post.id} siteId={site.id} />

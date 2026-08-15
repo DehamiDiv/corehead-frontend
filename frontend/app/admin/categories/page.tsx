@@ -121,21 +121,21 @@ export default function CategoriesPage() {
       {/* Header */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
         <div>
-          <h1 className="text-[28px] font-bold text-slate-900 leading-tight">Categories</h1>
-          <p className="text-slate-500 mt-1 font-medium">Organize your blog posts efficiently</p>
+          <h1 className="admin-title">Categories</h1>
+          <p className="admin-subtitle">Organize your blog posts efficiently</p>
         </div>
         <div className="flex items-center gap-3">
           <button
             onClick={fetchCategories}
             disabled={isLoading}
-            className="flex items-center justify-center gap-2 px-5 py-2.5 bg-white border border-slate-200 rounded-xl text-[14px] font-bold text-slate-600 hover:bg-slate-50 transition-all shadow-sm disabled:opacity-50"
+            className="flex items-center justify-center gap-2 px-5 py-2.5 bg-white border border-slate-200 rounded-xl admin-btn-secondary text-slate-600 hover:bg-slate-50 transition-all shadow-sm disabled:opacity-50"
           >
             <RotateCcw className={cn("w-4 h-4 text-slate-400", isLoading && "animate-spin")} />
             Refresh
           </button>
           <button
             onClick={handleOpenCreate}
-            className="flex items-center gap-2 px-6 py-2.5 bg-blue-600 rounded-xl text-[14px] font-bold text-white hover:bg-blue-700 transition-all shadow-md shadow-blue-500/20"
+            className="flex items-center gap-2 px-6 py-2.5 bg-blue-600 rounded-xl admin-btn-primary text-white hover:bg-blue-700 transition-all shadow-md shadow-blue-500/20"
           >
             <Plus className="w-4 h-4" />
             Add Category
@@ -150,7 +150,7 @@ export default function CategoriesPage() {
           <input
             type="text"
             placeholder="Search categories..."
-            className="w-full pl-11 pr-4 py-3 bg-slate-50/50 border border-slate-100 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/10 transition-all text-[14px] font-medium"
+            className="w-full pl-11 pr-4 py-3 bg-slate-50/50 border border-slate-100 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/10 transition-all admin-input"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
           />

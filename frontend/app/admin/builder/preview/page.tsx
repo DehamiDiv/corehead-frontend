@@ -8,6 +8,11 @@ import { getCurrentSite, getCurrentSiteId } from "@/lib/siteStorage";
 import { PublicPageRenderer } from "@/components/Renderer/PublicPageRenderer";
 import { postToBindData } from "@/lib/tenantLayout";
 import type { BuilderBlock } from "@/components/admin/builder/BuilderContext";
+import {
+  normalizeLayoutDocumentV1,
+  prepareRenderableLayout,
+  type LayoutDocumentV1,
+} from "@/lib/layoutContract";
 
 const LAYOUT_KEY = "corehead_builder_layout";
 const META_KEY = "corehead_builder_meta";
@@ -26,6 +31,8 @@ type DeviceMode = "desktop" | "mobile";
  */
 export default function BuilderPreviewPage() {
   const [blocks, setBlocks] = useState<BuilderBlock[]>([]);
+  const [layoutDocument, setLayoutDocument] = useState<LayoutDocumentV1 | null>(null);
+  const [layoutIssues, setLayoutIssues] = useState<string[]>([]);
   const [meta, setMeta] = useState<BuilderMeta>({});
   const [bindData, setBindData] = useState<Record<string, any>>({});
   const [siteBasePath, setSiteBasePath] = useState<string | undefined>();
@@ -47,7 +54,23 @@ export default function BuilderPreviewPage() {
       if (saved) {
         try {
           const parsed = JSON.parse(saved);
-          layoutBlocks = Array.isArray(parsed) ? parsed : parsed?.blocks || [];
+          const normalized = normalizeLayoutDocumentV1(parsed, {
+            name: parsed?.name || "Builder Preview",
+            kind: parsed?.kind,
+            origin: parsed?.metadata?.origin || "manual",
+          });
+          const structural = prepareRenderableLayout(normalized.document, { semantic: false });
+          const semantic = prepareRenderableLayout(normalized.document, { semantic: true });
+          layoutBlocks = normalized.document.blocks as BuilderBlock[];
+          setLayoutDocument(normalized.document);
+          setLayoutIssues([
+            ...normalized.warnings,
+            ...structural.issues,
+            ...semantic.issues.filter((issue) => !structural.issues.some((item) => item.code === issue.code && item.path === issue.path)),
+          ].map((issue) => `${issue.path}: ${issue.message}`));
+          if (!structural.valid) {
+            setError("The saved layout has structural validation errors.");
+          }
         } catch {
           setError("Could not parse saved layout JSON.");
         }
@@ -235,8 +258,16 @@ export default function BuilderPreviewPage() {
                   {error}
                 </div>
               )}
+              {layoutIssues.length > 0 && (
+                <div className="mb-6 rounded-xl border border-blue-200 bg-blue-50 px-4 py-3 text-sm text-blue-900">
+                  <p className="font-semibold mb-1">Layout validation notes</p>
+                  <ul className="list-disc pl-5 space-y-1">
+                    {layoutIssues.map((issue) => <li key={issue}>{issue}</li>)}
+                  </ul>
+                </div>
+              )}
               <PublicPageRenderer
-                layout={blocks}
+                layout={layoutDocument || blocks}
                 data={bindData}
                 siteBasePath={siteBasePath}
               />

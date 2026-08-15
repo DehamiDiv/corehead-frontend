@@ -79,7 +79,7 @@ export default function BentoHomeLayout({
               style={{ color: "var(--site-primary)" }}
             >
               <Sparkles className="w-3.5 h-3.5" />
-              {eyebrow || "Bento home"}
+              {eyebrow || ""}
             </p>
             <h1
               className="text-3xl sm:text-5xl font-black tracking-tight leading-[1.05]"
@@ -102,17 +102,17 @@ export default function BentoHomeLayout({
               color: ctaColor || "var(--site-cta-color, #fff)",
             }}
           >
-            {ctaText || "Explore"}
+            {sections?.ctaButton || ctaText || "Explore all stories"}
             <ArrowRight className="w-4 h-4" />
           </Link>
         </div>
 
         {/* Bento grid */}
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 auto-rows-[140px] sm:auto-rows-[160px]">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 auto-rows-[150px] sm:auto-rows-[170px]">
           {/* Large hero tile */}
           <Link
             href={p0?.slug ? sitePostPath(siteSlug, String(p0.slug)) : blogHref}
-            className="col-span-2 row-span-2 relative rounded-3xl overflow-hidden border group"
+            className="col-span-1 sm:col-span-2 row-span-2 relative rounded-3xl overflow-hidden border group"
             style={{
               borderColor: "color-mix(in srgb, var(--site-ink) 8%, transparent)",
               background: "var(--site-surface)",
@@ -144,7 +144,7 @@ export default function BentoHomeLayout({
           </Link>
 
           {/* Tall tile */}
-          <Link
+          {p1 ? <Link
             href={p1?.slug ? sitePostPath(siteSlug, String(p1.slug)) : blogHref}
             className="col-span-1 row-span-2 relative rounded-3xl overflow-hidden border group"
             style={{
@@ -166,7 +166,7 @@ export default function BentoHomeLayout({
                 {p1?.title || sections?.pillarsTitle || "Stories"}
               </h3>
             </div>
-          </Link>
+          </Link> : null}
 
           {/* Square accent */}
           <div
@@ -185,7 +185,7 @@ export default function BentoHomeLayout({
             </p>
           </div>
 
-          <Link
+          {p2 ? <Link
             href={p2?.slug ? sitePostPath(siteSlug, String(p2.slug)) : blogHref}
             className="col-span-1 row-span-1 relative rounded-3xl overflow-hidden border group"
             style={{
@@ -205,9 +205,9 @@ export default function BentoHomeLayout({
             <div className="absolute bottom-0 p-3 text-white">
               <h3 className="text-xs font-bold line-clamp-2">{p2?.title || "More"}</h3>
             </div>
-          </Link>
+          </Link> : null}
 
-          <Link
+          {p3 ? <Link
             href={p3?.slug ? sitePostPath(siteSlug, String(p3.slug)) : blogHref}
             className="col-span-1 row-span-1 rounded-3xl border p-4 flex flex-col justify-end"
             style={{
@@ -224,9 +224,9 @@ export default function BentoHomeLayout({
             <h3 className="text-sm font-bold line-clamp-2" style={{ color: "var(--site-ink)" }}>
               {p3?.title || sections?.latestTitle || "From the journal"}
             </h3>
-          </Link>
+          </Link> : null}
 
-          <Link
+          {p4 ? <Link
             href={p4?.slug ? sitePostPath(siteSlug, String(p4.slug)) : blogHref}
             className="col-span-1 row-span-1 relative rounded-3xl overflow-hidden border"
             style={{
@@ -247,7 +247,7 @@ export default function BentoHomeLayout({
                 {p4?.title || sections?.ctaButton || "Explore all"}
               </span>
             </div>
-          </Link>
+          </Link> : null}
         </div>
       </section>
 

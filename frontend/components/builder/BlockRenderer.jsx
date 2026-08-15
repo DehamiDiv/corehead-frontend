@@ -36,13 +36,18 @@ export default function BlockRenderer({ block, isSelected, onClick, settings }) 
         return <p style={{ margin: 0, fontFamily: fontStyle, lineHeight: '1.6', ...styles }}>{content}</p>;
       
       case 'Image':
+        const imgSrc = typeof content === 'string' && content.trim() !== '' ? content : null;
         return (
-          <div style={{ width: '100%', overflow: 'hidden', borderRadius: '8px', ...styles }}>
-            <img 
-              src={content} 
-              alt="AI Generated" 
-              style={{ width: '100%', height: 'auto', display: 'block' }} 
-            />
+          <div style={{ width: '100%', overflow: 'hidden', borderRadius: '8px', ...styles, background: '#f1f5f9', minHeight: '120px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            {imgSrc ? (
+              <img 
+                src={imgSrc} 
+                alt="AI Generated" 
+                style={{ width: '100%', height: 'auto', display: 'block' }} 
+              />
+            ) : (
+              <div style={{ color: '#94a3b8', fontSize: '12px' }}>No image</div>
+            )}
           </div>
         );
       

@@ -85,7 +85,7 @@ export default function CommentsPage() {
       {/* Header */}
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h1 className="text-[28px] font-bold text-[#1E293B]">Interactions</h1>
+          <h1 className="admin-title">Interactions</h1>
           <p className="text-[14px] text-[#64748B] mt-0.5">
             View and manage blog interactions
           </p>
@@ -106,7 +106,7 @@ export default function CommentsPage() {
             key={tab}
             onClick={() => setActiveTab(tab)}
             className={cn(
-              "flex items-center gap-2 px-4 py-3 text-[14px] font-semibold border-b-2 -mb-[1px] transition-all",
+              "flex items-center gap-2 px-4 py-3 admin-btn-secondary text-[14px] font-semibold border-b-2 -mb-[1px] transition-all",
               activeTab === tab
                 ? "border-[#1E293B] text-[#1E293B]"
                 : "border-transparent text-[#64748B] hover:text-[#475569]"
@@ -123,7 +123,7 @@ export default function CommentsPage() {
       </div>
 
       {/* Sub-description */}
-      <p className="text-[13px] text-[#2563EB] mb-4 mt-3">
+      <p className="text-[13px] admin-small text-[#2563EB] mb-4 mt-3">
         {activeTab === "Recent Comments"
           ? "View and manage all recent comments across all posts"
           : "View interaction summary grouped by post"}
@@ -191,7 +191,7 @@ export default function CommentsPage() {
                                 </span>
                               )}
                             </div>
-                            <span className="text-[14px] font-semibold text-[#1E293B] whitespace-nowrap">
+                            <span className="admin-btn-secondary text-[14px] font-semibold text-[#1E293B] whitespace-nowrap">
                               {comment.userName}
                             </span>
                           </div>
@@ -277,7 +277,7 @@ export default function CommentsPage() {
                             <div className="w-9 h-9 rounded-xl bg-blue-50 flex items-center justify-center text-blue-500 border border-blue-100 shrink-0">
                               <FileText className="w-4 h-4" />
                             </div>
-                            <span className="text-[14px] font-semibold text-[#1E293B] max-w-[400px] line-clamp-1">
+                            <span className="admin-btn-secondary text-[14px] font-semibold text-[#1E293B] max-w-[400px] line-clamp-1">
                               {post.postTitle}
                             </span>
                           </div>

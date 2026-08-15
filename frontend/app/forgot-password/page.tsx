@@ -5,12 +5,15 @@ import Link from "next/link";
 import Image from "next/image";
 import { AlertCircle, Loader2, ArrowLeft, Mail } from "lucide-react";
 import { api } from "@/lib/api";
+import FloatingBubbles from "@/components/auth/FloatingBubbles";
+import { useToast, ToastContainer } from "@/components/ui/Toast";
 
 export default function ForgotPasswordPage() {
   const [email, setEmail] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
+  const { toasts, remove, success: toastSuccess, error: toastError, info: toastInfo } = useToast();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -20,30 +23,34 @@ export default function ForgotPasswordPage() {
 
     try {
       await api.forgotPassword(email);
-      setSuccess("If an account exists with this email, you will receive a reset link shortly.");
+      toastSuccess("If an account exists with this email, you will receive a reset link shortly.");
     } catch (err: any) {
-      setError(err.message || "An error occurred. Please try again.");
+      toastError(err.message || "An error occurred. Please try again.");
     } finally {
       setIsLoading(false);
     }
   };
 
   return (
-    <div className="min-h-screen w-full bg-gradient-to-br from-blue-100 via-blue-200 to-blue-400 flex flex-col font-sans">
+    <div className="min-h-screen w-full bg-gradient-to-br from-blue-200 via-blue-300 to-blue-400 flex flex-col font-sans relative overflow-hidden">
+      {/* Floating Animated Bubbles Background */}
+      <ToastContainer toasts={toasts} onRemove={remove} />
+      <FloatingBubbles />
+
       <nav className="w-full px-6 py-4 flex items-center justify-between mx-auto max-w-7xl relative z-10">
         <Link href="/" className="flex items-center">
           <Image
             src="/logo.png"
             alt="CoreHead Logo"
-            width={160}
-            height={40}
-            className="h-14 w-auto object-contain"
+            width={220}
+            height={55}
+            className="h-16 w-auto object-contain"
             priority
           />
         </Link>
       </nav>
 
-      <main className="flex-grow flex items-center justify-center px-4 pb-20">
+      <main className="flex-grow flex items-center justify-center px-4 pb-20 relative z-10">
         <div className="w-full max-w-md bg-white/40 backdrop-blur-md border border-white/50 shadow-xl rounded-2xl p-8 md:p-10">
           <div className="text-center mb-8">
             <h1 className="text-3xl font-bold text-slate-900 mb-2">Forgot Password</h1>
@@ -52,12 +59,7 @@ export default function ForgotPasswordPage() {
             </p>
           </div>
 
-          {error && (
-            <div className="bg-red-50 border border-red-200 text-red-600 px-4 py-3 rounded-lg flex items-center gap-3 text-sm mb-5 animate-in fade-in slide-in-from-top-1">
-              <AlertCircle className="w-4 h-4 shrink-0" />
-              <p>{error}</p>
-            </div>
-          )}
+          {/* Toast handles error */}
 
           {success ? (
             <div className="text-center space-y-6">

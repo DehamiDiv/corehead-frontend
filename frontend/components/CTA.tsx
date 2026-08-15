@@ -1,6 +1,22 @@
+"use client";
+
+import { useEffect, useState } from "react";
 import Link from "next/link";
 
 export default function CTA() {
+  const [user, setUser] = useState<{ id: string; email: string; role: string } | null>(null);
+
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const storedUser = localStorage.getItem("user");
+      if (storedUser) {
+        try {
+          setUser(JSON.parse(storedUser));
+        } catch (e) {}
+      }
+    }
+  }, []);
+
   return (
     <section className="py-32 px-6 bg-[#2563EB] relative overflow-hidden">
       <div className="max-w-5xl mx-auto text-center relative z-10">
@@ -14,19 +30,38 @@ export default function CTA() {
         </p>
 
         <div className="flex flex-col sm:flex-row gap-6 justify-center">
-          <Link 
-            href="/signup"
-            className="px-12 py-4 bg-white/10 backdrop-blur-md border border-white/20 text-white font-bold rounded-full hover:bg-white/20 transition-all text-lg text-center"
-          >
-            Get Started Now
-          </Link>
+          {user ? (
+            <>
+              <Link 
+                href={user.role?.toLowerCase() === "admin" || user.role?.toLowerCase() === "administrator" ? "/admin" : "/admin/builder"}
+                className="px-12 py-4 bg-white text-blue-600 font-bold rounded-full hover:bg-blue-50 transition-all shadow-xl text-lg hover:scale-105 active:scale-95 text-center"
+              >
+                {user.role?.toLowerCase() === "admin" || user.role?.toLowerCase() === "administrator" ? "Go to Dashboard" : "Open Visual Builder"}
+              </Link>
+              <Link 
+                href="/guides"
+                className="px-12 py-4 bg-white/10 backdrop-blur-md border border-white/20 text-white font-bold rounded-full hover:bg-white/20 transition-all text-lg text-center"
+              >
+                Read Documentation
+              </Link>
+            </>
+          ) : (
+            <>
+              <Link 
+                href="/signup"
+                className="px-12 py-4 bg-white/10 backdrop-blur-md border border-white/20 text-white font-bold rounded-full hover:bg-white/20 transition-all text-lg text-center"
+              >
+                Get Started Now
+              </Link>
 
-          <Link 
-            href="/signup"
-            className="px-12 py-4 bg-white text-blue-600 font-bold rounded-full hover:bg-blue-50 transition-all shadow-xl text-lg hover:scale-105 active:scale-95 text-center"
-          >
-            Get a Demo
-          </Link>
+              <Link 
+                href="/signup"
+                className="px-12 py-4 bg-white text-blue-600 font-bold rounded-full hover:bg-blue-50 transition-all shadow-xl text-lg hover:scale-105 active:scale-95 text-center"
+              >
+                Get a Demo
+              </Link>
+            </>
+          )}
         </div>
       </div>
     </section>

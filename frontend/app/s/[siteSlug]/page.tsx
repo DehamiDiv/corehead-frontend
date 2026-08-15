@@ -8,22 +8,23 @@ import {
   sitePostPath,
 } from "@/lib/publicSite";
 import { resolveMediaUrl } from "@/lib/siteMedia";
-import { resolvePublicBranding } from "@/lib/siteBranding";
+import {
+  resolvePublicBranding,
+  resolveHeaderLogo,
+} from "@/lib/siteBranding";
 import {
   siteEyebrow,
   siteTagline,
   siteHomeCaptions,
   siteHomeSections,
+  hasPillarsSection,
+  hasCtaSection,
   postCategory,
 } from "@/lib/publicSiteCopy";
 import PublicPostCard from "@/components/public/PublicPostCard";
 import VerduraEditorialHero from "@/components/public/VerduraEditorialHero";
-import BloomHomeLayout from "@/components/public/BloomHomeLayout";
-import PortalsHomeLayout from "@/components/public/PortalsHomeLayout";
-import BentoHomeLayout from "@/components/public/BentoHomeLayout";
-import StudioHomeLayout from "@/components/public/StudioHomeLayout";
-import PaperHomeLayout from "@/components/public/PaperHomeLayout";
-import GlassHomeLayout from "@/components/public/GlassHomeLayout";
+import { getDedicatedHomeRenderer } from "@/components/public/homeLayoutRegistry";
+import { normalizeHomeLayoutProps } from "@/components/public/homeLayoutTypes";
 import EmptyState from "@/components/ui/EmptyState";
 import {
   ArrowRight,
@@ -35,6 +36,10 @@ import {
   Globe2,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+
+/** Always re-read branding.homeStyle after Appearance → Use layout */
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
 
 interface Props {
   params: Promise<{ siteSlug: string }>;
@@ -78,9 +83,11 @@ export default async function PublicSiteHomePage({ params }: Props) {
   const homeStyle = branding.homeStyle || "classic";
   const isNature = homeStyle === "nature";
   const tagline = siteTagline(site.name, branding);
-  const eyebrow = siteEyebrow(branding);
+  const eyebrow = siteEyebrow(branding, site.name);
   const blogHref = siteBlogPath(site.slug);
-  const logo = resolveMediaUrl(site.logo);
+  const logo = resolveMediaUrl(
+    resolveHeaderLogo(site.logo, branding)
+  );
 
   let posts: any[] = [];
   try {
@@ -123,10 +130,10 @@ export default async function PublicSiteHomePage({ params }: Props) {
     ) ||
     null;
 
-  const captions = siteHomeCaptions(branding);
+  const captions = siteHomeCaptions(branding, site.name);
   const sections = siteHomeSections(site.name, branding);
 
-  const shared = {
+  const shared = normalizeHomeLayoutProps({
     siteName: site.name,
     siteSlug: site.slug,
     eyebrow,
@@ -137,57 +144,13 @@ export default async function PublicSiteHomePage({ params }: Props) {
     ctaColor: branding.header?.ctaColor,
     posts,
     sections,
-  };
+  });
 
-  // Unique dedicated layouts
-  if (homeStyle === "bloom") {
+  const DedicatedHomeLayout = getDedicatedHomeRenderer(homeStyle);
+  if (DedicatedHomeLayout) {
     return (
-      <div data-theme={branding.themeId} data-home-style="bloom">
-        <BloomHomeLayout {...shared} />
-      </div>
-    );
-  }
-  if (homeStyle === "portals") {
-    return (
-      <div data-theme={branding.themeId} data-home-style="portals">
-        <PortalsHomeLayout {...shared} />
-      </div>
-    );
-  }
-  if (homeStyle === "bento") {
-    return (
-      <div data-theme={branding.themeId} data-home-style="bento">
-        <BentoHomeLayout {...shared} />
-      </div>
-    );
-  }
-  if (homeStyle === "studio") {
-    return (
-      <div data-theme={branding.themeId} data-home-style="studio">
-        <StudioHomeLayout {...shared} />
-      </div>
-    );
-  }
-  if (homeStyle === "paper") {
-    return (
-      <div data-theme={branding.themeId} data-home-style="paper">
-        <PaperHomeLayout
-          siteName={shared.siteName}
-          siteSlug={shared.siteSlug}
-          eyebrow={shared.eyebrow}
-          tagline={shared.tagline}
-          heroImage={shared.heroImage}
-          ctaText={shared.ctaText}
-          posts={shared.posts}
-          sections={shared.sections}
-        />
-      </div>
-    );
-  }
-  if (homeStyle === "glass") {
-    return (
-      <div data-theme={branding.themeId} data-home-style="glass">
-        <GlassHomeLayout {...shared} />
+      <div data-theme={branding.themeId} data-home-style={homeStyle}>
+        <DedicatedHomeLayout {...shared} />
       </div>
     );
   }
@@ -196,15 +159,18 @@ export default async function PublicSiteHomePage({ params }: Props) {
   const pillarIcons = isNature
     ? [Leaf, TreePine, Camera]
     : [BookOpen, Sparkles, Globe2];
-  const pillars = sections.pillars.slice(0, 3).map((p, i) => ({
-    icon: pillarIcons[i] || BookOpen,
+  const pillars = sections.pillars.slice(0, 6).map((p, i) => ({
+    icon: pillarIcons[i % pillarIcons.length] || BookOpen,
     title: p.title,
     body: p.body,
   }));
   const isEditorialHome = homeStyle === "nature";
+  const showPillars = hasPillarsSection(sections);
+  const showCta = hasCtaSection(sections);
+  const heroCtaLabel = branding.header?.ctaText?.trim() || "Blog";
 
   return (
-    <main className="w-full" data-theme={branding.themeId} data-home-style={homeStyle}>
+    <main className="w-full" data-theme={branding.themeId} data-home-style={homeStyle} data-home-layout={homeStyle}>
       {isEditorialHome ? (
         <VerduraEditorialHero
           siteName={site.name}
@@ -217,8 +183,8 @@ export default async function PublicSiteHomePage({ params }: Props) {
           ctaColor={branding.header?.ctaColor}
           categories={categories}
           featuredSlug={featured?.slug || null}
-          captionLeft={captions.left}
-          captionRight={captions.right}
+          captionLeft={captions.left || null}
+          captionRight={captions.right || null}
         />
       ) : (
         <section className="relative overflow-hidden">
@@ -257,7 +223,7 @@ export default async function PublicSiteHomePage({ params }: Props) {
                   <img
                     src={logo}
                     alt={site.name}
-                    className="h-12 w-12 rounded-2xl object-cover border border-white/20 shadow-lg bg-white/10 backdrop-blur"
+                    className="h-12 w-auto max-w-[140px] object-contain"
                   />
                 ) : (
                   <div
@@ -267,37 +233,46 @@ export default async function PublicSiteHomePage({ params }: Props) {
                     {site.name.charAt(0).toUpperCase()}
                   </div>
                 )}
-                <p
-                  className={cn(
-                    "text-[11px] sm:text-xs font-bold uppercase tracking-[0.22em]",
-                    heroImage ? "text-emerald-200/90" : ""
-                  )}
-                  style={heroImage ? undefined : { color: "var(--site-primary)" }}
-                >
-                  {eyebrow}
-                </p>
+                {eyebrow ? (
+                  <p
+                    className={cn(
+                      "text-[11px] sm:text-xs font-bold uppercase tracking-[0.22em]",
+                      heroImage ? "text-white/90" : ""
+                    )}
+                    style={
+                      heroImage ? undefined : { color: "var(--site-primary)" }
+                    }
+                  >
+                    {eyebrow}
+                  </p>
+                ) : null}
               </div>
 
-              <h1
-                className={cn(
-                  "font-black tracking-tight leading-[1.05]",
-                  "text-4xl sm:text-5xl lg:text-6xl",
-                  heroImage ? "text-white" : ""
-                )}
-                style={heroImage ? undefined : { color: "var(--site-ink)" }}
-              >
-                {site.name}
-              </h1>
+              {/* Site name only when no logo wordmark (avoid double brand) */}
+              {!logo && (
+                <h1
+                  className={cn(
+                    "font-black tracking-tight leading-[1.05]",
+                    "text-4xl sm:text-5xl lg:text-6xl",
+                    heroImage ? "text-white" : ""
+                  )}
+                  style={heroImage ? undefined : { color: "var(--site-ink)" }}
+                >
+                  {site.name}
+                </h1>
+              )}
 
-              <p
-                className={cn(
-                  "mt-5 text-base sm:text-lg leading-relaxed max-w-xl",
-                  heroImage ? "text-white/85" : ""
-                )}
-                style={heroImage ? undefined : { color: "var(--site-muted)" }}
-              >
-                {tagline}
-              </p>
+              {tagline ? (
+                <p
+                  className={cn(
+                    "mt-5 text-base sm:text-lg leading-relaxed max-w-xl",
+                    heroImage ? "text-white/85" : ""
+                  )}
+                  style={heroImage ? undefined : { color: "var(--site-muted)" }}
+                >
+                  {tagline}
+                </p>
+              ) : null}
 
               <div className="mt-8 flex flex-wrap items-center gap-3">
                 <Link
@@ -313,7 +288,7 @@ export default async function PublicSiteHomePage({ params }: Props) {
                   }}
                 >
                   <BookOpen className="h-4 w-4" />
-                  {branding.header?.ctaText || "Read the journal"}
+                  {heroCtaLabel}
                   <ArrowRight className="h-4 w-4" />
                 </Link>
                 {featured && (
@@ -327,7 +302,7 @@ export default async function PublicSiteHomePage({ params }: Props) {
                     )}
                     style={heroImage ? undefined : { color: "var(--site-ink)" }}
                   >
-                    Featured story
+                    {featured.title || "Featured"}
                     <ArrowRight className="h-4 w-4 opacity-70" />
                   </Link>
                 )}
@@ -345,7 +320,9 @@ export default async function PublicSiteHomePage({ params }: Props) {
                           ? "bg-white/15 text-white/95 border border-white/20 hover:bg-white/25"
                           : "bg-[var(--site-surface)] border border-black/5 shadow-sm"
                       )}
-                      style={heroImage ? undefined : { color: "var(--site-ink)" }}
+                      style={
+                        heroImage ? undefined : { color: "var(--site-ink)" }
+                      }
                     >
                       {cat}
                     </Link>
@@ -359,30 +336,36 @@ export default async function PublicSiteHomePage({ params }: Props) {
 
       {posts.length > 0 ? (
         <section className="max-w-6xl mx-auto px-4 sm:px-6 py-14 sm:py-16">
-          <div className="flex items-end justify-between gap-4 mb-8">
-            <div>
-              <p
-                className="text-xs font-bold uppercase tracking-[0.2em] mb-1"
+          {(sections.featuredEyebrow || sections.featuredTitle) && (
+            <div className="flex items-end justify-between gap-4 mb-8">
+              <div>
+                {sections.featuredEyebrow ? (
+                  <p
+                    className="text-xs font-bold uppercase tracking-[0.2em] mb-1"
+                    style={{ color: "var(--site-primary)" }}
+                  >
+                    {sections.featuredEyebrow}
+                  </p>
+                ) : null}
+                {sections.featuredTitle ? (
+                  <h2
+                    className="text-2xl sm:text-3xl font-black tracking-tight"
+                    style={{ color: "var(--site-ink)" }}
+                  >
+                    {sections.featuredTitle}
+                  </h2>
+                ) : null}
+              </div>
+              <Link
+                href={blogHref}
+                className="hidden sm:inline-flex items-center gap-1.5 text-sm font-bold hover:underline"
                 style={{ color: "var(--site-primary)" }}
               >
-                {sections.featuredEyebrow}
-              </p>
-              <h2
-                className="text-2xl sm:text-3xl font-black tracking-tight"
-                style={{ color: "var(--site-ink)" }}
-              >
-                {sections.featuredTitle}
-              </h2>
+                View all
+                <ArrowRight className="h-4 w-4" />
+              </Link>
             </div>
-            <Link
-              href={blogHref}
-              className="hidden sm:inline-flex items-center gap-1.5 text-sm font-bold hover:underline"
-              style={{ color: "var(--site-primary)" }}
-            >
-              View all
-              <ArrowRight className="h-4 w-4" />
-            </Link>
-          </div>
+          )}
 
           <div className="grid gap-6 lg:grid-cols-5">
             {featured && (
@@ -395,12 +378,14 @@ export default async function PublicSiteHomePage({ params }: Props) {
               </div>
             )}
             <div className="lg:col-span-2 flex flex-col gap-3">
-              <p
-                className="text-[11px] font-bold uppercase tracking-wider mb-1"
-                style={{ color: "var(--site-muted)" }}
-              >
-                {sections.sideRailLabel}
-              </p>
+              {sections.sideRailLabel ? (
+                <p
+                  className="text-[11px] font-bold uppercase tracking-wider mb-1"
+                  style={{ color: "var(--site-muted)" }}
+                >
+                  {sections.sideRailLabel}
+                </p>
+              ) : null}
               {sideStories.map((post) => (
                 <PublicPostCard
                   key={post.id}
@@ -409,11 +394,6 @@ export default async function PublicSiteHomePage({ params }: Props) {
                   variant="horizontal"
                 />
               ))}
-              {sideStories.length === 0 && (
-                <p className="text-sm" style={{ color: "var(--site-muted)" }}>
-                  More stories will appear here as you publish.
-                </p>
-              )}
             </div>
           </div>
         </section>
@@ -422,96 +402,120 @@ export default async function PublicSiteHomePage({ params }: Props) {
           <EmptyState
             icon={BookOpen}
             title="No published posts yet"
-            description={`When ${site.name} publishes articles, the latest ones will appear here.`}
-            actions={[{ label: "Browse blog", href: blogHref, variant: "secondary" }]}
+            description={`Publish posts for ${site.name} to show them on the home page.`}
+            actions={[
+              { label: "Browse blog", href: blogHref, variant: "secondary" },
+            ]}
           />
         </section>
       )}
 
-      <section
-        id="features"
-        className="scroll-mt-24 border-y border-black/5"
-        style={{ background: "var(--site-surface)" }}
-      >
-        <div className="max-w-6xl mx-auto px-4 sm:px-6 py-14 sm:py-16">
-          <div className="max-w-2xl mb-10">
-            <p
-              className="text-xs font-bold uppercase tracking-[0.2em] mb-2"
-              style={{ color: "var(--site-primary)" }}
-            >
-              {sections.pillarsEyebrow}
-            </p>
-            <h2
-              className="text-2xl sm:text-3xl font-black tracking-tight"
-              style={{ color: "var(--site-ink)" }}
-            >
-              {sections.pillarsTitle}
-            </h2>
-            {sections.pillarsBody ? (
-              <p
-                className="mt-3 text-sm sm:text-base leading-relaxed"
-                style={{ color: "var(--site-muted)" }}
-              >
-                {sections.pillarsBody}
-              </p>
-            ) : null}
+      {showPillars && (
+        <section
+          id="features"
+          className="scroll-mt-24 border-y border-black/5"
+          style={{ background: "var(--site-surface)" }}
+        >
+          <div className="max-w-6xl mx-auto px-4 sm:px-6 py-14 sm:py-16">
+            {(sections.pillarsEyebrow ||
+              sections.pillarsTitle ||
+              sections.pillarsBody) && (
+              <div className="max-w-2xl mb-10">
+                {sections.pillarsEyebrow ? (
+                  <p
+                    className="text-xs font-bold uppercase tracking-[0.2em] mb-2"
+                    style={{ color: "var(--site-primary)" }}
+                  >
+                    {sections.pillarsEyebrow}
+                  </p>
+                ) : null}
+                {sections.pillarsTitle ? (
+                  <h2
+                    className="text-2xl sm:text-3xl font-black tracking-tight"
+                    style={{ color: "var(--site-ink)" }}
+                  >
+                    {sections.pillarsTitle}
+                  </h2>
+                ) : null}
+                {sections.pillarsBody ? (
+                  <p
+                    className="mt-3 text-sm sm:text-base leading-relaxed"
+                    style={{ color: "var(--site-muted)" }}
+                  >
+                    {sections.pillarsBody}
+                  </p>
+                ) : null}
+              </div>
+            )}
+            {pillars.length > 0 && (
+              <ul className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+                {pillars.map(({ icon: Icon, title, body }, idx) => (
+                  <li
+                    key={`${title}-${idx}`}
+                    className="rounded-2xl border border-black/5 bg-[var(--site-bg)] p-6 shadow-sm"
+                  >
+                    <div
+                      className="mb-4 inline-flex h-11 w-11 items-center justify-center rounded-xl text-white shadow-md"
+                      style={{ background: "var(--site-primary)" }}
+                    >
+                      <Icon className="h-5 w-5" />
+                    </div>
+                    {title ? (
+                      <h3
+                        className="text-lg font-bold mb-2"
+                        style={{ color: "var(--site-ink)" }}
+                      >
+                        {title}
+                      </h3>
+                    ) : null}
+                    {body ? (
+                      <p
+                        className="text-sm leading-relaxed"
+                        style={{ color: "var(--site-muted)" }}
+                      >
+                        {body}
+                      </p>
+                    ) : null}
+                  </li>
+                ))}
+              </ul>
+            )}
           </div>
-          <ul className="grid gap-5 sm:grid-cols-3">
-            {pillars.map(({ icon: Icon, title, body }) => (
-              <li
-                key={title}
-                className="rounded-2xl border border-black/5 bg-[var(--site-bg)] p-6 shadow-sm"
-              >
-                <div
-                  className="mb-4 inline-flex h-11 w-11 items-center justify-center rounded-xl text-white shadow-md"
-                  style={{ background: "var(--site-primary)" }}
-                >
-                  <Icon className="h-5 w-5" />
-                </div>
-                <h3
-                  className="text-lg font-bold mb-2"
-                  style={{ color: "var(--site-ink)" }}
-                >
-                  {title}
-                </h3>
-                <p
-                  className="text-sm leading-relaxed"
-                  style={{ color: "var(--site-muted)" }}
-                >
-                  {body}
-                </p>
-              </li>
-            ))}
-          </ul>
-        </div>
-      </section>
+        </section>
+      )}
 
       {gridStories.length > 0 && (
         <section className="max-w-6xl mx-auto px-4 sm:px-6 py-14 sm:py-16">
-          <div className="flex items-end justify-between gap-4 mb-8">
-            <div>
-              <p
-                className="text-xs font-bold uppercase tracking-[0.2em] mb-1"
+          {(sections.latestEyebrow || sections.latestTitle) && (
+            <div className="flex items-end justify-between gap-4 mb-8">
+              <div>
+                {sections.latestEyebrow ? (
+                  <p
+                    className="text-xs font-bold uppercase tracking-[0.2em] mb-1"
+                    style={{ color: "var(--site-primary)" }}
+                  >
+                    {sections.latestEyebrow}
+                  </p>
+                ) : null}
+                {sections.latestTitle ? (
+                  <h2
+                    className="text-2xl sm:text-3xl font-black tracking-tight"
+                    style={{ color: "var(--site-ink)" }}
+                  >
+                    {sections.latestTitle}
+                  </h2>
+                ) : null}
+              </div>
+              <Link
+                href={blogHref}
+                className="text-sm font-bold inline-flex items-center gap-1 hover:underline"
                 style={{ color: "var(--site-primary)" }}
               >
-                {sections.latestEyebrow}
-              </p>
-              <h2
-                className="text-2xl sm:text-3xl font-black tracking-tight"
-                style={{ color: "var(--site-ink)" }}
-              >
-                {sections.latestTitle}
-              </h2>
+                View all
+                <ArrowRight className="h-4 w-4" />
+              </Link>
             </div>
-            <Link
-              href={blogHref}
-              className="text-sm font-bold inline-flex items-center gap-1 hover:underline"
-              style={{ color: "var(--site-primary)" }}
-            >
-              Full archive
-              <ArrowRight className="h-4 w-4" />
-            </Link>
-          </div>
+          )}
           <ul className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
             {gridStories.map((post) => (
               <li key={post.id}>
@@ -522,38 +526,48 @@ export default async function PublicSiteHomePage({ params }: Props) {
         </section>
       )}
 
-      <section className="max-w-6xl mx-auto px-4 sm:px-6 pb-16 sm:pb-20">
-        <div
-          className="relative overflow-hidden rounded-3xl px-6 py-12 sm:px-12 sm:py-14 text-center shadow-xl"
-          style={{
-            background:
-              "linear-gradient(135deg, var(--site-primary) 0%, var(--site-accent, var(--site-primary)) 100%)",
-          }}
-        >
-          <div className="relative">
-            <p className="text-xs font-bold uppercase tracking-[0.25em] text-white/70 mb-3">
-              {sections.ctaEyebrow}
-            </p>
-            <h2 className="text-2xl sm:text-4xl font-black text-white tracking-tight max-w-xl mx-auto">
-              {sections.ctaTitle}
-            </h2>
-            <p className="mt-3 text-sm sm:text-base text-white/80 max-w-lg mx-auto leading-relaxed">
-              {sections.ctaBody}
-            </p>
-            <Link
-              href={blogHref}
-              className="mt-8 inline-flex items-center gap-2 rounded-full px-7 py-3.5 text-sm font-bold shadow-lg transition-transform hover:scale-[1.02] active:scale-[0.98]"
-              style={{
-                background: "var(--site-surface, #fff)",
-                color: "var(--site-primary)",
-              }}
-            >
-              {sections.ctaButton}
-              <ArrowRight className="h-4 w-4" />
-            </Link>
+      {showCta && (
+        <section className="max-w-6xl mx-auto px-4 sm:px-6 pb-16 sm:pb-20">
+          <div
+            className="relative overflow-hidden rounded-3xl px-6 py-12 sm:px-12 sm:py-14 text-center shadow-xl"
+            style={{
+              background:
+                "linear-gradient(135deg, var(--site-primary) 0%, var(--site-accent, var(--site-primary)) 100%)",
+            }}
+          >
+            <div className="relative">
+              {sections.ctaEyebrow ? (
+                <p className="text-xs font-bold uppercase tracking-[0.25em] text-white/70 mb-3">
+                  {sections.ctaEyebrow}
+                </p>
+              ) : null}
+              {sections.ctaTitle ? (
+                <h2 className="text-2xl sm:text-4xl font-black text-white tracking-tight max-w-xl mx-auto">
+                  {sections.ctaTitle}
+                </h2>
+              ) : null}
+              {sections.ctaBody ? (
+                <p className="mt-3 text-sm sm:text-base text-white/80 max-w-lg mx-auto leading-relaxed">
+                  {sections.ctaBody}
+                </p>
+              ) : null}
+              {sections.ctaButton ? (
+                <Link
+                  href={blogHref}
+                  className="mt-8 inline-flex items-center gap-2 rounded-full px-7 py-3.5 text-sm font-bold shadow-lg transition-transform hover:scale-[1.02] active:scale-[0.98]"
+                  style={{
+                    background: "var(--site-surface, #fff)",
+                    color: "var(--site-primary)",
+                  }}
+                >
+                  {sections.ctaButton}
+                  <ArrowRight className="h-4 w-4" />
+                </Link>
+              ) : null}
+            </div>
           </div>
-        </div>
-      </section>
+        </section>
+      )}
     </main>
   );
 }

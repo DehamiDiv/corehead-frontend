@@ -395,12 +395,19 @@ function ContentTab({ selectedBlock, updateBlock }: any) {
           onChange={(e) => updateBlock(selectedBlock.id, e.target.value)}
           className="w-full px-3 py-2 bg-slate-50 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 outline-none"
         />
-        <div className="mt-2 rounded-lg overflow-hidden border border-gray-200 aspect-video bg-slate-100 relative">
-          <img
-            src={selectedBlock.content}
-            alt="Preview"
-            className="w-full h-full object-cover"
-          />
+        <div className="mt-2 rounded-lg overflow-hidden border border-gray-200 aspect-video bg-slate-100 relative flex items-center justify-center">
+          {selectedBlock.content && typeof selectedBlock.content === "string" && selectedBlock.content.trim() !== "" ? (
+            <img
+              src={selectedBlock.content}
+              alt="Preview"
+              className="w-full h-full object-cover"
+            />
+          ) : (
+            <div className="text-center text-slate-400">
+              <ImageIcon className="w-8 h-8 mx-auto mb-1 opacity-60" />
+              <p className="text-xs">Preview will appear here</p>
+            </div>
+          )}
         </div>
       </div>
     );
@@ -558,23 +565,44 @@ function ContentTab({ selectedBlock, updateBlock }: any) {
   }
 
   if (selectedBlock.type === "Newsletter") {
+    const c = selectedBlock.content || {};
     return (
       <div className="space-y-4">
         <div className="space-y-2">
           <label className="text-sm text-slate-700">Form Title</label>
           <input
             type="text"
-            value={selectedBlock.content.title}
-            onChange={(e) => updateBlock(selectedBlock.id, { ...selectedBlock.content, title: e.target.value })}
+            value={c.title || ""}
+            onChange={(e) => updateBlock(selectedBlock.id, { ...c, title: e.target.value })}
             className="w-full px-3 py-2 bg-slate-50 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 outline-none"
+          />
+        </div>
+        <div className="space-y-2">
+          <label className="text-sm text-slate-700">Description</label>
+          <textarea
+            value={c.description || ""}
+            onChange={(e) => updateBlock(selectedBlock.id, { ...c, description: e.target.value })}
+            rows={2}
+            className="w-full px-3 py-2 bg-slate-50 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 outline-none resize-y"
+            placeholder="Stay updated with our latest stories..."
+          />
+        </div>
+        <div className="space-y-2">
+          <label className="text-sm text-slate-700">Placeholder</label>
+          <input
+            type="text"
+            value={c.placeholder || ""}
+            onChange={(e) => updateBlock(selectedBlock.id, { ...c, placeholder: e.target.value })}
+            className="w-full px-3 py-2 bg-slate-50 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 outline-none"
+            placeholder="your@email.com"
           />
         </div>
         <div className="space-y-2">
           <label className="text-sm text-slate-700">Button Text</label>
           <input
             type="text"
-            value={selectedBlock.content.buttonText}
-            onChange={(e) => updateBlock(selectedBlock.id, { ...selectedBlock.content, buttonText: e.target.value })}
+            value={c.buttonText || ""}
+            onChange={(e) => updateBlock(selectedBlock.id, { ...c, buttonText: e.target.value })}
             className="w-full px-3 py-2 bg-slate-50 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 outline-none"
           />
         </div>

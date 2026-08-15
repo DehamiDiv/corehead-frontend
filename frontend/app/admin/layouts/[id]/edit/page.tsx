@@ -5,6 +5,8 @@ import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { ArrowLeft, Save, UploadCloud, Code, FileType, Layout as LayoutIcon, CheckCircle2, Loader2 } from "lucide-react";
 import { api } from "@/lib/api";
+import { normalizeLayoutDocumentV1 } from "@/lib/layoutContract";
+import { prepareLayoutForSave } from "@/lib/templateLayout";
 
 export default function EditLayoutPage() {
     const params = useParams();
@@ -27,7 +29,12 @@ export default function EditLayoutPage() {
                 setType(template.type);
                 setStatus(template.status);
                 setVersion(template.version || 1);
-                setSchema(JSON.stringify(template.layoutJson, null, 2));
+                const normalized = normalizeLayoutDocumentV1(template.layoutJson, {
+                    name: template.name,
+                    kind: template.type,
+                    origin: template.layoutJson?.metadata?.origin || "migrated",
+                });
+                setSchema(JSON.stringify(normalized.document, null, 2));
             } catch (error) {
                 console.error("Failed to fetch template", error);
                 alert("Error: Template not found");
@@ -41,10 +48,16 @@ export default function EditLayoutPage() {
         setIsSaving(true);
         try {
             const layoutJson = JSON.parse(schema);
+            const prepared = prepareLayoutForSave(layoutJson, {
+                name,
+                type,
+                status,
+                origin: layoutJson?.metadata?.origin || "manual",
+            });
             const updated = await api.updateTemplate(id, {
                 name,
                 type,
-                layoutJson,
+                layoutJson: prepared.document,
                 status
             });
             setVersion(updated.version); // Update the version number on the UI
@@ -125,7 +138,7 @@ export default function EditLayoutPage() {
                                         className="w-full pl-10 pr-3 py-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-100 focus:border-blue-400 transition-all appearance-none bg-white"
                                     >
                                         <option value="Single Post">Single Post</option>
-                                        <option value="Archive">Archive</option>
+                                        <option value="Blog Archive">Blog Archive</option>
                                     </select>
                                 </div>
                             </div>

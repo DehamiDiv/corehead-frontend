@@ -6,7 +6,7 @@ import Sidebar from "@/components/admin/Sidebar";
 import Header from "@/components/admin/Header";
 import { SiteProvider, useOptionalSite } from "@/components/admin/SiteContext";
 import { canAccessAdminPath, canAccessSiteCms } from "@/lib/rbac";
-import { Loader2 } from "lucide-react";
+import { Loader2, ShieldAlert } from "lucide-react";
 
 /**
  * T5/T16: Zero sites → friendly empty state, then send to create-site wizard.
@@ -17,6 +17,7 @@ function RequireSiteGate({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     if (!siteCtx || siteCtx.loading) return;
+    if (siteCtx.accessDeniedSite) return;
     if (siteCtx.sites.length === 0) {
       const t = setTimeout(() => {
         router.replace("/onboarding/create-site");
@@ -30,6 +31,40 @@ function RequireSiteGate({ children }: { children: React.ReactNode }) {
       <div className="min-h-screen flex flex-col items-center justify-center bg-slate-50 gap-3 px-6 text-center">
         <Loader2 className="w-8 h-8 animate-spin text-blue-600" />
         <p className="text-sm font-medium text-slate-500">Loading your sites…</p>
+      </div>
+    );
+  }
+
+  if (siteCtx.accessDeniedSite) {
+    const publicSiteHref = siteCtx.accessDeniedSiteSlug
+      ? `/s/${encodeURIComponent(siteCtx.accessDeniedSiteSlug)}`
+      : "/";
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-slate-50 px-6">
+        <div className="max-w-md w-full rounded-3xl border border-red-100 bg-white p-8 text-center shadow-xl shadow-slate-200/40">
+          <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-red-50 text-red-600">
+            <ShieldAlert className="h-7 w-7" />
+          </div>
+          <p className="text-xs font-bold uppercase tracking-[0.18em] text-red-600">Access denied</p>
+          <h1 className="mt-2 text-xl font-black text-slate-900">You cannot manage this site</h1>
+          <p className="mt-3 text-sm leading-relaxed text-slate-500">
+            This dashboard is available only to the site owner and authorized team members.
+          </p>
+          <div className="mt-6 grid gap-3 sm:grid-cols-2">
+            <a
+              href={publicSiteHref}
+              className="inline-flex h-11 items-center justify-center rounded-xl border border-slate-200 px-4 text-sm font-bold text-slate-700 hover:bg-slate-50"
+            >
+              Return to site
+            </a>
+            <a
+              href="/admin/sites"
+              className="inline-flex h-11 items-center justify-center rounded-xl bg-slate-900 px-4 text-sm font-bold text-white hover:bg-slate-800"
+            >
+              Open my sites
+            </a>
+          </div>
+        </div>
       </div>
     );
   }

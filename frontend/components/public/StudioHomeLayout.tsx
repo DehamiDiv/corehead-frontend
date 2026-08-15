@@ -90,7 +90,7 @@ export default function StudioHomeLayout({
             className="text-[11px] font-medium uppercase tracking-[0.35em] mb-4 opacity-80"
             style={{ color: "var(--site-accent, var(--site-primary))" }}
           >
-            {eyebrow || "Studio"}
+            {eyebrow || ""}
           </p>
           <h1
             className="text-[clamp(2.8rem,8vw,5.5rem)] font-light tracking-tight leading-[0.95] max-w-3xl"
@@ -142,6 +142,7 @@ export default function StudioHomeLayout({
           </Link>
         </div>
 
+        {covers.length > 0 ? (
         <div className="grid grid-cols-12 gap-3 sm:gap-4">
           {covers.map(({ post, src }, i) => {
             const spans = [
@@ -179,6 +180,19 @@ export default function StudioHomeLayout({
             );
           })}
         </div>
+        ) : (
+          <div
+            className="min-h-64 border flex items-center justify-center px-6 text-center"
+            style={{
+              borderColor: "color-mix(in srgb, var(--site-ink) 18%, transparent)",
+              background: "color-mix(in srgb, var(--site-surface) 45%, transparent)",
+            }}
+          >
+            <p className="max-w-md text-sm leading-relaxed" style={{ color: "var(--site-muted)" }}>
+              Published stories and projects will appear here as a curated visual collection.
+            </p>
+          </div>
+        )}
       </section>
 
       <section className="max-w-6xl mx-auto px-4 sm:px-6 pb-20 text-center">

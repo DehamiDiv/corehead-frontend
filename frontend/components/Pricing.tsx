@@ -12,8 +12,10 @@ export default function Pricing() {
   const [user, setUser] = useState<any>(null);
   const [loading, setLoading] = useState<string | null>(null); // "PRO" | null
   const [billingPeriod, setBillingPeriod] = useState<"monthly" | "annually">("monthly");
+  const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
+    setMounted(true);
     if (typeof window !== "undefined") {
       setToken(localStorage.getItem("accessToken") || localStorage.getItem("token"));
       const stored = localStorage.getItem("user");
@@ -119,6 +121,14 @@ export default function Pricing() {
     </div>
   );
 
+  if (!mounted) {
+    return (
+      <section id="pricing" className="py-28 px-6 bg-slate-50/50 text-slate-800 relative overflow-hidden min-h-[600px] flex items-center justify-center">
+        <Loader2 className="w-8 h-8 animate-spin text-blue-600" />
+      </section>
+    );
+  }
+
   return (
     <section id="pricing" className="py-28 px-6 bg-slate-50/50 text-slate-800 relative overflow-hidden">
       {/* Background decorations for soft glow */}
@@ -167,8 +177,8 @@ export default function Pricing() {
           </div>
         </div>
 
-        {/* Pricing Cards Grid (2 Columns Centered) */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-stretch justify-center max-w-4xl mx-auto">
+        {/* Pricing Cards Grid (3 Columns) */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-8 items-stretch justify-center max-w-6xl mx-auto">
 
           {/* Card 1: Starter Plan (Free Tier) */}
           <div className="rounded-3xl border border-slate-200 bg-white hover:border-blue-500/30 transition-all duration-300 flex flex-col justify-between overflow-hidden shadow-xl shadow-slate-100/40 group">
@@ -209,7 +219,7 @@ export default function Pricing() {
                     disabled={true}
                     className="w-full py-3.5 px-6 rounded-xl border border-slate-200 text-slate-400 bg-slate-50 font-bold text-sm text-center cursor-not-allowed uppercase tracking-wider"
                   >
-                    {isPro ? "Free Tier" : "Your Current Plan"}
+                    Your Current Plan
                   </button>
                 </div>
 
@@ -219,11 +229,11 @@ export default function Pricing() {
                   <div className="space-y-3">
                     <div className="flex items-center gap-3 text-sm text-slate-700">
                       <CheckIcon />
-                      <span>5 AI generation credits per account</span>
+                      <span>5 AI generations per 24 hours</span>
                     </div>
                     <div className="flex items-center gap-3 text-sm text-slate-700">
                       <CheckIcon />
-                      <span>2 saved templates history limit</span>
+                      <span>1 active site creation limit</span>
                     </div>
                   </div>
                 </div>
@@ -275,7 +285,7 @@ export default function Pricing() {
               <div>
                 <h3 className="text-2xl font-bold tracking-tight text-slate-900 mb-2">Creator Plan (PRO)</h3>
                 <p className="text-slate-500 text-sm leading-relaxed mb-6">
-                  Freelancers and small creators that need fast layout design and unlimited AI capabilities.
+                  Freelancers and small creators that need fast layout design and robust AI capabilities.
                 </p>
 
                 {/* Price Display */}
@@ -324,11 +334,11 @@ export default function Pricing() {
                   <div className="space-y-3">
                     <div className="flex items-center gap-3 text-sm text-slate-700">
                       <CheckIcon />
-                      <span>Unlimited AI layout schema generation</span>
+                      <span>100 AI layout generations per 24h</span>
                     </div>
                     <div className="flex items-center gap-3 text-sm text-slate-700">
                       <CheckIcon />
-                      <span>Unlimited saved layout templates</span>
+                      <span>Up to 5 active site creations limit</span>
                     </div>
                   </div>
                 </div>
@@ -345,9 +355,105 @@ export default function Pricing() {
                       <CheckIcon />
                       <span>Exclusive templates & pre-designed styles</span>
                     </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Card 3: Enterprise Plan */}
+          <div className="rounded-3xl border border-slate-200 bg-white hover:border-indigo-500/30 transition-all duration-300 flex flex-col justify-between overflow-hidden shadow-xl shadow-slate-100/40 group">
+
+            {/* Top Fluid Wave SVG Graphic - Deep Navy/Purple */}
+            <div className="relative w-full h-32 overflow-hidden bg-slate-50">
+              <svg className="w-full h-full object-cover scale-[1.02] transform transition-transform duration-700 group-hover:scale-105" viewBox="0 0 400 120" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <defs>
+                  <linearGradient id="enterpriseWaveGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                    <stop offset="0%" stopColor="#312e81" />
+                    <stop offset="50%" stopColor="#4f46e5" />
+                    <stop offset="100%" stopColor="#6366f1" />
+                  </linearGradient>
+                </defs>
+                <rect width="400" height="120" fill="#f8fafc" />
+                <path d="M0 60 C120 100 240 20 400 70 L400 120 L0 120 Z" fill="url(#enterpriseWaveGrad)" opacity="0.85" />
+                <path d="M0 45 C150 15 280 90 400 35 L400 120 L0 120 Z" fill="url(#enterpriseWaveGrad)" opacity="0.45" />
+              </svg>
+            </div>
+
+            {/* Content Container */}
+            <div className="p-8 flex-1 flex flex-col justify-between">
+              <div>
+                <h3 className="text-2xl font-bold tracking-tight text-slate-900 mb-2">Enterprise Plan</h3>
+                <p className="text-slate-500 text-sm leading-relaxed mb-6">
+                  Large teams and agencies requiring infinite scale, custom domains, and support.
+                </p>
+
+                {/* Price Display */}
+                <div className="flex items-baseline gap-1.5 mb-8">
+                  {billingPeriod === "monthly" ? (
+                    <>
+                      <span className="text-5xl font-black text-slate-900 tracking-tighter">$49.99</span>
+                      <span className="text-slate-500 text-sm font-semibold">/ monthly</span>
+                    </>
+                  ) : (
+                    <>
+                      <span className="text-5xl font-black text-slate-900 tracking-tighter">$37.49</span>
+                      <span className="text-slate-500 text-sm font-semibold">/ monthly equiv</span>
+                      <span className="text-xs text-blue-600 font-bold ml-2">(billed annually $449.88)</span>
+                    </>
+                  )}
+                </div>
+
+                {/* CTA Action button */}
+                <div className="mb-8">
+                  {user?.subscription_status === "ENTERPRISE" ? (
+                    <button
+                      disabled
+                      className="w-full py-3.5 px-6 rounded-xl bg-emerald-500/10 text-emerald-600 border border-emerald-500/30 font-bold text-sm text-center flex items-center justify-center gap-1.5"
+                    >
+                      ✓ Plan Active (ENTERPRISE)
+                    </button>
+                  ) : (
+                    <button
+                      onClick={() => handleUpgrade("ENTERPRISE" as any, "stripe")}
+                      disabled={loading !== null}
+                      className="w-full py-3.5 px-6 rounded-xl bg-gradient-to-r from-indigo-900 to-indigo-800 hover:from-indigo-800 hover:to-indigo-700 text-white font-bold text-sm text-center transition-all duration-300 hover:scale-[1.01] flex items-center justify-center gap-2 shadow-lg shadow-indigo-950/10 active:scale-[0.98]"
+                    >
+                      {loading === "stripe" ? (
+                        <Loader2 className="w-4 h-4 animate-spin" />
+                      ) : (
+                        <>Upgrade to Enterprise <Zap className="w-3.5 h-3.5 fill-white" /></>
+                      )}
+                    </button>
+                  )}
+                </div>
+
+                {/* Plan limits list */}
+                <div className="border-t border-slate-100 pt-6 mb-6">
+                  <h4 className="text-xs font-bold text-indigo-600 uppercase tracking-widest mb-4">Plan Limits</h4>
+                  <div className="space-y-3">
                     <div className="flex items-center gap-3 text-sm text-slate-700">
                       <CheckIcon />
-                      <span>Priority support response priority</span>
+                      <span>Unlimited AI layout generations</span>
+                    </div>
+                    <div className="flex items-center gap-3 text-sm text-slate-700">
+                      <CheckIcon />
+                      <span>Unlimited active site creations</span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Features list */}
+                <div className="border-t border-slate-100 pt-6">
+                  <h4 className="text-xs font-bold text-indigo-600 uppercase tracking-widest mb-4">Everything in PRO Plus</h4>
+                  <div className="space-y-3">
+                    <div className="flex items-center gap-3 text-sm text-slate-700">
+                      <CheckIcon />
+                      <span>Team collaboration invites (Unlimited members)</span>
+                    </div>
+                    <div className="flex items-center gap-3 text-sm text-slate-700">
+                      <CheckIcon />
+                      <span>Dedicated Account Manager & 24/7 Support</span>
                     </div>
                   </div>
                 </div>

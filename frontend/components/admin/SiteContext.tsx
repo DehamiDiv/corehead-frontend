@@ -23,6 +23,8 @@ type SiteContextValue = {
   currentSiteId: number | null;
   loading: boolean;
   error: string | null;
+  accessDeniedSite: boolean;
+  accessDeniedSiteSlug: string | null;
   setSite: (site: SiteSummary | StoredSite) => void;
   refreshSites: () => Promise<void>;
 };
@@ -45,6 +47,8 @@ export function SiteProvider({ children }: { children: React.ReactNode }) {
   const [currentSite, setCurrentSiteState] = useState<StoredSite | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [accessDeniedSite, setAccessDeniedSite] = useState(false);
+  const [accessDeniedSiteSlug, setAccessDeniedSiteSlug] = useState<string | null>(null);
 
   const refreshSites = useCallback(async () => {
     setError(null);
@@ -60,21 +64,39 @@ export function SiteProvider({ children }: { children: React.ReactNode }) {
 
       // Prefer ?site=slug or ?siteId= from public "Dashboard" link (tenant-scoped)
       let queryMatch: SiteSummary | undefined;
+      let requestedSite = false;
+      let requestedSiteSlug: string | null = null;
       if (typeof window !== "undefined") {
         const qs = new URLSearchParams(window.location.search);
         const siteSlug = qs.get("site") || qs.get("siteSlug");
         const siteIdRaw = qs.get("siteId");
         if (siteSlug) {
+          requestedSite = true;
+          requestedSiteSlug = siteSlug;
           queryMatch = list.find(
             (s) => s.slug.toLowerCase() === siteSlug.toLowerCase()
           );
         } else if (siteIdRaw) {
+          requestedSite = true;
           const sid = parseInt(siteIdRaw, 10);
           if (Number.isFinite(sid)) {
             queryMatch = list.find((s) => s.id === sid);
           }
         }
       }
+
+      // An explicit tenant deep link is a security boundary. Never silently
+      // replace an unauthorized target with the user's first available site.
+      if (requestedSite && !queryMatch) {
+        setAccessDeniedSite(true);
+        setAccessDeniedSiteSlug(requestedSiteSlug);
+        setCurrentSite(null);
+        setCurrentSiteState(null);
+        return;
+      }
+
+      setAccessDeniedSite(false);
+      setAccessDeniedSiteSlug(null);
 
       const savedId = getCurrentSiteId();
       const saved = getCurrentSite();
@@ -145,10 +167,12 @@ export function SiteProvider({ children }: { children: React.ReactNode }) {
       currentSiteId: currentSite?.id ?? null,
       loading,
       error,
+      accessDeniedSite,
+      accessDeniedSiteSlug,
       setSite,
       refreshSites,
     }),
-    [sites, currentSite, loading, error, setSite, refreshSites]
+    [sites, currentSite, loading, error, accessDeniedSite, accessDeniedSiteSlug, setSite, refreshSites]
   );
 
   return <SiteContext.Provider value={value}>{children}</SiteContext.Provider>;
