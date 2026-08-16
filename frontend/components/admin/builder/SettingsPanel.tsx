@@ -391,13 +391,44 @@ function ContentTab({ selectedBlock, updateBlock }: any) {
       </div>
     );
   }
-  if (selectedBlock.type === "Image") {
-    return (
-      <div className="space-y-2">
-        <label className="text-sm text-slate-700">Image URL</label>
-        <input
-          type="text"
-          value={selectedBlock.content}
+      if (selectedBlock.type === "Image") {
+      const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = async () => {
+          const base64Data = reader.result as string;
+          try {
+            const { api } = await import('@/lib/api');
+            const { resolveAdminMediaUrl, extractUploadedMediaUrl, normalizeMediaPath } = await import('@/lib/mediaHelpers');
+            const uploaded = await api.uploadMedia({
+              name: file.name,
+              type: file.type,
+              size: String(file.size),
+              base64Data,
+            });
+            const rawUrl = extractUploadedMediaUrl(uploaded) || "";
+            const stored = normalizeMediaPath(rawUrl) || rawUrl;
+            updateBlock(selectedBlock.id, resolveAdminMediaUrl(stored) || stored);
+          } catch (err) {
+            console.error("Upload failed", err);
+          }
+        };
+        reader.readAsDataURL(file);
+      };
+
+      return (
+        <div className="space-y-2">
+          <div className="flex justify-between items-center mb-1">
+            <label className="text-sm text-slate-700">Image URL</label>
+            <label className="cursor-pointer text-xs font-semibold text-blue-600 bg-blue-50 px-2 py-1 rounded-md hover:bg-blue-100 transition-colors">
+              Upload from Device
+              <input type="file" className="hidden" accept="image/*" onChange={handleImageUpload} />
+            </label>
+          </div>
+          <input
+            type="text"
+            value={selectedBlock.content}
           onChange={(e) => updateBlock(selectedBlock.id, e.target.value)}
           className="w-full px-3 py-2 bg-slate-50 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 outline-none"
         />
@@ -666,3 +697,4 @@ function ContentTab({ selectedBlock, updateBlock }: any) {
     </p>
   );
 }
+
