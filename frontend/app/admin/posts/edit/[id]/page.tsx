@@ -22,6 +22,7 @@ import { api } from "@/lib/api";
 import PostPreviewModal from "@/components/admin/PostPreviewModal";
 import PostLayoutSelector from "@/components/admin/PostLayoutSelector";
 import { resolveAdminMediaUrl } from "@/lib/apiOrigin";
+import { attachQuillTooltips } from "@/lib/quillTooltips";
 import { useSite } from "@/components/admin/SiteContext";
 import dynamic from 'next/dynamic';
 import 'react-quill-new/dist/quill.snow.css';
@@ -38,12 +39,36 @@ const quillModules = {
       [{ list: "ordered" }, { list: "bullet" }, { indent: "-1" }, { indent: "+1" }],
       [{ align: [] }],
       ["blockquote", "code-block"],
-      ["link", "image", "video"],
+      ["link", "image", "video", "table"],
       ["clean"],
     ],
     handlers: {
       undo: function (this: any) { this.quill.history.undo(); },
       redo: function (this: any) { this.quill.history.redo(); },
+      table: function (this: any) {
+        const range = this.quill.getSelection(true);
+        const rows = prompt("Enter number of rows (e.g. 3):", "3");
+        if (rows === null) return;
+        const cols = prompt("Enter number of columns (e.g. 3):", "3");
+        if (cols === null) return;
+        const numRows = Math.max(1, parseInt(rows, 10) || 3);
+        const numCols = Math.max(1, parseInt(cols, 10) || 3);
+
+        let bodyRows = "";
+        for (let r = 1; r <= numRows; r++) {
+          let rowCells = "";
+          for (let c = 1; c <= numCols; c++) {
+            const isFirstRow = r === 1;
+            const bgStyle = isFirstRow ? "background-color: #f8fafc; font-weight: 600;" : "";
+            rowCells += `<td style="border: 1px solid #cbd5e1; padding: 10px 14px; ${bgStyle}">Cell ${r}.${c}</td>`;
+          }
+          bodyRows += `<tr>${rowCells}</tr>`;
+        }
+
+        const tableHtml = `<div class="table-responsive my-4" style="overflow-x: auto; width: 100%; margin: 1.5rem 0;"><table style="width: 100%; border-collapse: collapse; border: 1px solid #cbd5e1; font-size: 14px;"><tbody>${bodyRows}</tbody></table></div><p><br></p>`;
+
+        this.quill.clipboard.dangerouslyPasteHTML(range.index, tableHtml);
+      },
     },
   },
   history: {
@@ -282,6 +307,12 @@ export default function EditPostPage() {
     if (postId) fetchData();
   }, [fetchData]);
 
+useEffect(() => {
+  if (activeTab === "Content") {
+    attachQuillTooltips();
+  }
+}, [activeTab]);
+
 
 
   const calculateProgress = () => {
@@ -348,6 +379,17 @@ export default function EditPostPage() {
 
     try {
       await api.updatePost(postId, finalData);
+      if (nextStatus === "Published") {
+        api.notifySubscribersNewPost({
+          title: formData.title,
+          slug: formData.slug,
+          excerpt: formData.excerpt,
+          coverImage: cover || undefined,
+          siteSlug: "",
+          siteName: "Blog",
+          siteId: currentSiteId || undefined,
+        }).catch(() => {});
+      }
       setFormData((prev) => ({ ...prev, status: nextStatus }));
       router.push("/admin/posts");
     } catch (err: any) {

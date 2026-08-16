@@ -106,6 +106,7 @@ export default function AIHistoryPage() {
               ? 'Home Page'
               : 'Single Post',
           id: null,
+          ai_history_id: item.id
         }));
         router.push('/admin/builder');
         return;

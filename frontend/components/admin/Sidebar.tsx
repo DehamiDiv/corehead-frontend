@@ -18,6 +18,7 @@ import {
   PanelLeft,
   Globe2,
   UserPlus,
+  Zap,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { isPlatformAdmin } from "@/lib/rbac";
@@ -33,6 +34,7 @@ type NavItem = {
 
 export default function Sidebar({ isOpen = true }: { isOpen?: boolean }) {
   const pathname = usePathname();
+  const pathnameNormalized = pathname || "";
   const [settingsOpen, setSettingsOpen] = useState(true);
   const [user, setUser] = useState<{
     name?: string;
@@ -114,6 +116,7 @@ export default function Sidebar({ isOpen = true }: { isOpen?: boolean }) {
         { label: "Interactions", href: "/admin/comments", Icon: MessageSquare },
         // R3-1: site-scoped custom HTML pages
         { label: "Pages", href: "/admin/pages", Icon: File },
+        { label: "Pricing", href: "/pricing", Icon: Zap },
         { label: "Users", href: "/admin/users", Icon: Users, platformAdminOnly: true },
       ];
 
@@ -125,7 +128,10 @@ export default function Sidebar({ isOpen = true }: { isOpen?: boolean }) {
     [user?.role]
   );
 
-  const isActive = (href: string) => pathname === href || pathname.startsWith(href + "/");
+  const isActive = (href: string) => {
+    const currentPath = pathname || "";
+    return currentPath === href || currentPath.startsWith(href + "/");
+  };
 
   return (
     <aside className={cn(

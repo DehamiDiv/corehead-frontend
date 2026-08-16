@@ -55,7 +55,7 @@ export default function LatestPosts() {
             </h2>
           </div>
           <Link 
-            href="/blog" 
+            href="/admin/posts"
             className="group flex items-center gap-2 text-[15px] font-bold text-[#0F172A] hover:text-blue-600 transition-colors bg-white px-6 py-3 rounded-full shadow-sm hover:shadow-md border border-slate-200"
           >
             View all posts

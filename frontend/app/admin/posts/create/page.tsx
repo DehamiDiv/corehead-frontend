@@ -21,7 +21,8 @@ import MediaLibraryModal from "@/components/admin/MediaLibraryModal";
 import PostPreviewModal from "@/components/admin/PostPreviewModal";
 import PostLayoutSelector from "@/components/admin/PostLayoutSelector";
 import { api } from "@/lib/api";
-import { resolveAdminMediaUrl } from "@/lib/apiOrigin";
+import { getApiBaseUrl, resolveAdminMediaUrl } from "@/lib/apiOrigin";
+import { attachQuillTooltips } from "@/lib/quillTooltips";
 import { useSite } from "@/components/admin/SiteContext";
 import dynamic from "next/dynamic";
 
@@ -38,12 +39,36 @@ const quillModules = {
       [{ list: "ordered" }, { list: "bullet" }, { indent: "-1" }, { indent: "+1" }],
       [{ align: [] }],
       ["blockquote", "code-block"],
-      ["link", "image", "video"],
+      ["link", "image", "video", "table"],
       ["clean"],
     ],
     handlers: {
       undo: function (this: any) { this.quill.history.undo(); },
       redo: function (this: any) { this.quill.history.redo(); },
+      table: function (this: any) {
+        const range = this.quill.getSelection(true);
+        const rows = prompt("Enter number of rows (e.g. 3):", "3");
+        if (rows === null) return;
+        const cols = prompt("Enter number of columns (e.g. 3):", "3");
+        if (cols === null) return;
+        const numRows = Math.max(1, parseInt(rows, 10) || 3);
+        const numCols = Math.max(1, parseInt(cols, 10) || 3);
+
+        let bodyRows = "";
+        for (let r = 1; r <= numRows; r++) {
+          let rowCells = "";
+          for (let c = 1; c <= numCols; c++) {
+            const isFirstRow = r === 1;
+            const bgStyle = isFirstRow ? "background-color: #f8fafc; font-weight: 600;" : "";
+            rowCells += `<td style="border: 1px solid #cbd5e1; padding: 10px 14px; ${bgStyle}">Cell ${r}.${c}</td>`;
+          }
+          bodyRows += `<tr>${rowCells}</tr>`;
+        }
+
+        const tableHtml = `<div class="table-responsive my-4" style="overflow-x: auto; width: 100%; margin: 1.5rem 0;"><table style="width: 100%; border-collapse: collapse; border: 1px solid #cbd5e1; font-size: 14px;"><tbody>${bodyRows}</tbody></table></div><p><br></p>`;
+
+        this.quill.clipboard.dangerouslyPasteHTML(range.index, tableHtml);
+      },
     },
   },
   history: {
@@ -206,6 +231,13 @@ export default function CreatePostPage() {
     fetchUsers();
   }, [fetchUsers]);
 
+  // Attach tooltips to Quill toolbar
+  useEffect(() => {
+    if (activeTab === "Content") {
+      attachQuillTooltips();
+    }
+  }, [activeTab]);
+
   // Fetch categories from DB
   useEffect(() => {
     api.getCategories()
@@ -301,6 +333,17 @@ export default function CreatePostPage() {
 
     try {
       await api.createPost(finalData, currentSiteId);
+      if (nextStatus === "Published") {
+        api.notifySubscribersNewPost({
+          title: formData.title,
+          slug: formData.slug,
+          excerpt: formData.excerpt,
+          coverImage: cover || undefined,
+          siteSlug: "",
+          siteName: "Blog",
+          siteId: currentSiteId || undefined,
+        }).catch(() => {});
+      }
       router.push("/admin/posts");
     } catch (err: any) {
       setError(err.message || "Failed to create post");
@@ -398,13 +441,20 @@ export default function CreatePostPage() {
 
                   <div className="space-y-2">
                     <label className="text-[14px] font-bold text-[#1E293B]">URL Slug <span className="text-red-500">*</span></label>
-                    <input
-                      type="text"
-                      placeholder="url-friendly-slug"
-                      className="w-full h-12 bg-white border border-[#E2E8F0] rounded-[10px] px-4 text-[14px] focus:outline-none"
-                      value={formData.slug}
-                      onChange={e => setFormData({ ...formData, slug: e.target.value })}
-                    />
+                    <div className="relative">
+                      <input
+                        type="text"
+                        readOnly
+                        disabled
+                        placeholder="url-friendly-slug"
+                        className="w-full h-12 bg-gray-100/70 border border-[#E2E8F0] rounded-[10px] px-4 text-[13px] font-mono text-gray-500 cursor-not-allowed select-none focus:outline-none"
+                        value={formData.slug}
+                      />
+                      <span className="absolute right-3 top-3.5 text-xs text-gray-400 font-bold flex items-center gap-1">
+                        🔒 Auto-generated
+                      </span>
+                    </div>
+                    <p className="text-[12px] text-gray-400 font-medium">This slug is automatically generated from the Post Title and cannot be edited manually.</p>
                   </div>
 
                   <div className="space-y-2">

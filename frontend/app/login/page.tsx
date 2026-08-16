@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
@@ -91,7 +91,7 @@ export default function LoginPage() {
       if (destination.startsWith("/onboarding")) {
         setTimeout(() => router.push(destination), 1200);
       } else {
-        setTimeout(() => router.push('/blog'), 1200);
+        setTimeout(() => router.push(destination), 900);
       }
     } catch (err: any) {
       toastError(err.message || "Google Sign-In failed.");

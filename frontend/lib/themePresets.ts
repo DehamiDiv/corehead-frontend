@@ -4,7 +4,7 @@ import {
   THEME_REGISTRY,
   getHomeLayoutRegistration,
   getThemeRegistration,
-} from "../../../contracts/appearance-registry-v1.js";
+} from "@/contracts/appearance-registry-v1.js";
 import {
   normalizeHomeStyle,
   type HomeStyle,
@@ -72,7 +72,7 @@ export const THEME_OPTIONS = Object.values(THEME_PRESETS).map((theme) => {
     id: theme.id,
     name: theme.name,
     description: `A complete visual system recommended with ${recommendedLayout.name}.`,
-    preview: THEME_PREVIEW_ASSETS[theme.id],
+    preview: (THEME_PREVIEW_ASSETS as any)[theme.id],
     recommendedHomeStyle: theme.recommendedHomeStyle,
   };
 });
@@ -120,7 +120,7 @@ export function getHomeLayoutPalette(
 }
 
 export function getThemePreset(themeId?: string | null): ThemePreset {
-  return getThemeRegistration(themeId) as ThemePreset;
+  return getThemeRegistration(String(themeId || "")) as ThemePreset;
 }
 
 /** Merge API branding with preset defaults without coupling theme and layout. */

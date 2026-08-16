@@ -128,11 +128,7 @@ function SignupForm() {
       // ROLE-BASED REDIRECTION
       const isAdmin = data.user.role?.toLowerCase() === 'admin' || data.user.role?.toLowerCase() === 'administrator';
       setTimeout(() => {
-        if (isAdmin) {
-          router.push('/admin');
-        } else {
-          router.push('/blog'); 
-        }
+        router.push('/admin');
       }, 1500);
     } catch (err: any) {
       toastError(err.message || "Google Sign-In failed.");
