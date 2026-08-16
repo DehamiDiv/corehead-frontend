@@ -4,8 +4,8 @@ import { Calendar, User, Clock } from 'lucide-react';
 import './BlogCard.css';
 
 export default function BlogCard({ post, isSelected, onClick, contentMode, settings, cardLayout = 'grid' }) {
-  const activePrimary = settings?.colors?.primary || '#667eea';
-  const activeGradient = settings?.colors?.gradient || 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)';
+  const activePrimary = settings?.colors?.primary || '#1d4ed8';
+  const activeGradient = settings?.colors?.gradient || 'linear-gradient(135deg, #1d4ed8 0%, #1e3a8a 100%)';
   const fontStyle = settings?.fontStyle || 'inherit';
   const borderRadius = settings?.radiusValue || '16px';
 

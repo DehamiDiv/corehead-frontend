@@ -30,10 +30,10 @@ export default function PreviewModal({ isOpen, onClose, blogPosts, contentMode }
         return `<img src="${imgSrc}" alt="block image" onerror="this.src='https://picsum.photos/seed/ai-${seed}/800/400'" style="width:100%;border-radius:12px;margin:0 0 16px;display:block;" />`;
       }
       case 'Quote':
-        return `<blockquote style="border-left:4px solid #4f46e5;padding:16px 24px;background:#f5f3ff;border-radius:0 12px 12px 0;font-style:italic;color:#374151;margin:0 0 16px;">${c}</blockquote>`;
+        return `<blockquote style="border-left:4px solid #1d4ed8;padding:16px 24px;background:#f5f3ff;border-radius:0 12px 12px 0;font-style:italic;color:#374151;margin:0 0 16px;">${c}</blockquote>`;
       case 'Button': {
         const label = typeof block.content === 'object' ? (block.content?.text || 'Click Here') : c;
-        return `<button style="padding:12px 28px;background:linear-gradient(135deg,#4f46e5,#3730a3);color:#fff;border:none;border-radius:8px;font-weight:700;font-size:14px;cursor:pointer;margin:0 0 16px;">${label}</button>`;
+        return `<button style="padding:12px 28px;background:linear-gradient(135deg,#1d4ed8,#1e3a8a);color:#fff;border:none;border-radius:8px;font-weight:700;font-size:14px;cursor:pointer;margin:0 0 16px;">${label}</button>`;
       }
       case 'Divider':
         return `<hr style="border:none;border-top:1px solid #e2e8f0;margin:20px 0;" />`;
@@ -61,7 +61,7 @@ export default function PreviewModal({ isOpen, onClose, blogPosts, contentMode }
           font-size: 2rem;
           font-weight: 700;
           margin-bottom: 8px;
-          background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+          background: linear-gradient(135deg, #1d4ed8 0%, #1e3a8a 100%);
           -webkit-background-clip: text;
           -webkit-text-fill-color: transparent;
         }
@@ -90,7 +90,7 @@ export default function PreviewModal({ isOpen, onClose, blogPosts, contentMode }
           font-size: 11px;
           text-transform: uppercase;
           letter-spacing: 1px;
-          color: #667eea;
+          color: #1d4ed8;
           font-weight: 600;
           margin-bottom: 8px;
         }
@@ -107,11 +107,11 @@ export default function PreviewModal({ isOpen, onClose, blogPosts, contentMode }
         .dynamic-badge {
           display: inline-block;
           padding: 3px 10px;
-          background: linear-gradient(135deg, rgba(102,126,234,0.1) 0%, rgba(118,75,162,0.1) 100%);
-          border: 1px solid rgba(102,126,234,0.3);
+          background: linear-gradient(135deg, rgba(29,78,216,0.1) 0%, rgba(118,75,162,0.1) 100%);
+          border: 1px solid rgba(29,78,216,0.3);
           border-radius: 999px;
           font-size: 11px;
-          color: #667eea;
+          color: #1d4ed8;
           font-weight: 600;
           margin-bottom: 24px;
         }
@@ -177,11 +177,11 @@ export default function PreviewModal({ isOpen, onClose, blogPosts, contentMode }
                 padding: '8px 16px', borderRadius: '10px', border: 'none',
                 cursor: 'pointer', fontSize: '13px', fontWeight: '600',
                 background: viewport === key
-                  ? 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)'
+                  ? 'linear-gradient(135deg, #1d4ed8 0%, #1e3a8a 100%)'
                   : 'rgba(255,255,255,0.15)',
                 color: '#fff',
                 transition: 'all 0.2s',
-                boxShadow: viewport === key ? '0 4px 12px rgba(102,126,234,0.4)' : 'none'
+                boxShadow: viewport === key ? '0 4px 12px rgba(29,78,216,0.4)' : 'none'
               }}
             >
               <Icon size={14} /> {label}

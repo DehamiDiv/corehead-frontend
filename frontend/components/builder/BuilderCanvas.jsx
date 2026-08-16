@@ -15,8 +15,8 @@ const CARD_STYLES = [
 export default function BuilderCanvas({ blogPosts, contentMode, selectedCard, setSelectedCard, settings, onDeleteCard }) {
   const [cardLayout, setCardLayout] = useState('grid');
 
-  const activePrimary = settings?.colors?.primary || '#4f46e5';
-  const activeGradient = settings?.colors?.gradient || 'linear-gradient(135deg, #4f46e5 0%, #3730a3 100%)';
+  const activePrimary = settings?.colors?.primary || '#1d4ed8';
+  const activeGradient = settings?.colors?.gradient || 'linear-gradient(135deg, #1d4ed8 0%, #1e3a8a 100%)';
 
   const isStackedLayout = cardLayout === 'list' || cardLayout === 'minimal';
   const gridStyle = isStackedLayout

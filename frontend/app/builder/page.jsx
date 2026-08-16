@@ -24,10 +24,10 @@ const defaultSettings = {
   colors: {
     id: 'premium-indigo',
     label: 'Indigo Royale',
-    primary: '#4f46e5',
+    primary: '#1d4ed8',
     bg: '#ffffff',
     text: '#1e1e2e',
-    gradient: 'linear-gradient(135deg, #4f46e5 0%, #3730a3 100%)'
+    gradient: 'linear-gradient(135deg, #1d4ed8 0%, #1e3a8a 100%)'
   },
 
   spacing: 'normal',
@@ -287,7 +287,7 @@ export default function BlogBuilderPage() {
             className="btn-primary"
             disabled={blogPosts.length === 0 && aiPosts.length === 0}
             style={{
-              background: 'linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%)',
+              backgroundImage: 'linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%)',
               border: 'none',
               boxShadow: '0 4px 12px rgba(37,99,235,0.2)',
               opacity: (blogPosts.length === 0 && aiPosts.length === 0) ? 0.5 : 1,
@@ -468,14 +468,14 @@ export default function BlogBuilderPage() {
                   borderBottom: `2px solid ${compareMode ? 'rgba(79,70,229,0.2)' : '#fde68a'}`,
                   fontSize: '13px',
                 }}>
-                  <span style={{ fontWeight: '700', color: compareMode ? '#4f46e5' : '#92400e', marginRight: '4px' }}>
+                  <span style={{ fontWeight: '700', color: compareMode ? '#1d4ed8' : '#92400e', marginRight: '4px' }}>
                     {compareMode ? '⚡ Compare Mode — Your Layout vs AI' : '🤖 AI layout is ready!'}
                   </span>
                   <button
                     onClick={() => setCompareMode(v => !v)}
                     style={{
                       padding: '6px 14px', borderRadius: '8px', border: 'none',
-                      background: compareMode ? '#4f46e5' : '#f59e0b',
+                      background: compareMode ? '#1d4ed8' : '#f59e0b',
                       color: '#fff', fontWeight: '700', fontSize: '12px',
                       cursor: 'pointer', fontFamily: 'inherit',
                     }}
@@ -486,8 +486,8 @@ export default function BlogBuilderPage() {
                     onClick={() => { setBlogPosts(aiPosts); setAiPosts([]); setCompareMode(false); }}
                     style={{
                       padding: '6px 14px', borderRadius: '8px',
-                      border: '2px solid #4f46e5', background: '#fff',
-                      color: '#4f46e5', fontWeight: '700', fontSize: '12px',
+                      border: '2px solid #1d4ed8', background: '#fff',
+                      color: '#1d4ed8', fontWeight: '700', fontSize: '12px',
                       cursor: 'pointer', fontFamily: 'inherit',
                     }}
                   >
@@ -533,7 +533,7 @@ export default function BlogBuilderPage() {
                       padding: '8px 16px',
                       background: 'rgba(79,70,229,0.06)',
                       borderBottom: '1px solid rgba(79,70,229,0.15)',
-                      fontSize: '11px', fontWeight: '700', color: '#4f46e5',
+                      fontSize: '11px', fontWeight: '700', color: '#1d4ed8',
                       textTransform: 'uppercase', letterSpacing: '0.5px',
                     }}>
                       ⚡ AI Generated Layout
@@ -581,7 +581,7 @@ export default function BlogBuilderPage() {
                   onClick={() => { setSelectedCard(post); setActiveTab('builder'); }}
                   style={{
                     padding: '10px 14px', marginBottom: '8px',
-                    border: `1px solid ${selectedCard?.id === post.id ? '#4f46e5' : '#e5e5e5'}`,
+                    border: `1px solid ${selectedCard?.id === post.id ? '#1d4ed8' : '#e5e5e5'}`,
                     borderRadius: '8px', cursor: 'pointer',
                     display: 'flex', justifyContent: 'space-between', alignItems: 'center',
                     background: selectedCard?.id === post.id ? '#eff6ff' : '#fff'
@@ -593,7 +593,7 @@ export default function BlogBuilderPage() {
                       {post.category} · {post.author}
                     </div>
                   </div>
-                  <span style={{ fontSize: '12px', color: '#4f46e5' }}>Edit →</span>
+                  <span style={{ fontSize: '12px', color: '#1d4ed8' }}>Edit →</span>
                 </div>
               ))}
             </div>

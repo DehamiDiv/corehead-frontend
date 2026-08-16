@@ -99,7 +99,7 @@ export default function AIGenerateModal({ isOpen, onClose, onGenerated }) {
           display: 'flex', justifyContent: 'space-between', alignItems: 'center'
         }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <Sparkles size={20} color="#4f46e5" />
+            <Sparkles size={20} color="#1d4ed8" />
             <h2 style={{ fontSize: '18px', fontWeight: '700', margin: 0 }}>
               Generate with AI
             </h2>
@@ -139,7 +139,7 @@ export default function AIGenerateModal({ isOpen, onClose, onGenerated }) {
                 background: '#ffffff',      // ← white background
                 lineHeight: '1.5'
               }}
-              onFocus={e => e.target.style.borderColor = '#4f46e5'}
+              onFocus={e => e.target.style.borderColor = '#1d4ed8'}
               onBlur={e => e.target.style.borderColor = '#e5e5e5'}
             />
 
@@ -157,10 +157,10 @@ export default function AIGenerateModal({ isOpen, onClose, onGenerated }) {
                   onClick={() => setLayoutType(type.id)}
                   style={{
                     flex: 1, padding: '8px 12px',
-                    border: `2px solid ${layoutType === type.id ? '#4f46e5' : '#e5e5e5'}`,
+                    border: `2px solid ${layoutType === type.id ? '#1d4ed8' : '#e5e5e5'}`,
                     borderRadius: '8px', cursor: 'pointer', fontSize: '13px',
                     background: layoutType === type.id ? '#eff6ff' : '#fff',
-                    color: layoutType === type.id ? '#4f46e5' : '#444',
+                    color: layoutType === type.id ? '#1d4ed8' : '#444',
                     fontWeight: layoutType === type.id ? '600' : '400'
                   }}
                 >
@@ -182,10 +182,10 @@ export default function AIGenerateModal({ isOpen, onClose, onGenerated }) {
                   onClick={() => setDesignStyle(style.id)}
                   style={{
                     padding: '8px 12px',
-                    border: `2px solid ${designStyle === style.id ? '#4f46e5' : '#e5e5e5'}`,
+                    border: `2px solid ${designStyle === style.id ? '#1d4ed8' : '#e5e5e5'}`,
                     borderRadius: '8px', cursor: 'pointer', fontSize: '13px',
                     background: designStyle === style.id ? '#eff6ff' : '#fff',
-                    color: designStyle === style.id ? '#4f46e5' : '#444',
+                    color: designStyle === style.id ? '#1d4ed8' : '#444',
                     fontWeight: designStyle === style.id ? '600' : '400'
                   }}
                 >
@@ -243,7 +243,7 @@ export default function AIGenerateModal({ isOpen, onClose, onGenerated }) {
             disabled={loading}
             style={{
               width: '100%', padding: '12px',
-              background: loading ? '#a5b4fc' : '#4f46e5',
+              background: loading ? '#a5b4fc' : '#1d4ed8',
               color: '#fff', border: 'none',
               borderRadius: '10px', cursor: loading ? 'not-allowed' : 'pointer',
               fontSize: '15px', fontWeight: '600',

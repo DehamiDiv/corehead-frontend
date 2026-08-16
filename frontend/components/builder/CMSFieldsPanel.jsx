@@ -164,7 +164,7 @@ export default function CMSFieldsPanel({ cmsFields, selectedCard, contentMode, o
 
   const labelStyle = {
     display: 'block', fontSize: '11px',
-    fontWeight: '700', color: '#4f46e5',
+    fontWeight: '700', color: '#1d4ed8',
     marginBottom: '6px', textTransform: 'uppercase',
     letterSpacing: '0.5px'
   };
@@ -180,7 +180,7 @@ export default function CMSFieldsPanel({ cmsFields, selectedCard, contentMode, o
       <div style={{ padding: '16px', borderBottom: '1px solid #e2e8f0', background: '#f8fafc' }}>
         <h3 style={{
           fontSize: '14px', fontWeight: '700', margin: '0 0 2px',
-          background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+          backgroundImage: 'linear-gradient(135deg, #1d4ed8 0%, #1e3a8a 100%)',
           WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent',
           backgroundClip: 'text',
         }}>
@@ -195,8 +195,8 @@ export default function CMSFieldsPanel({ cmsFields, selectedCard, contentMode, o
         <div style={{ flex: 1, overflowY: 'auto' }}>
 
           {/* Mode Badge */}
-          <div style={{ padding: '7px 16px', background: contentMode === 'dynamic' ? 'rgba(102,126,234,0.08)' : 'rgba(16,185,129,0.08)', borderBottom: '1px solid #e0e0e0' }}>
-            <span style={{ fontSize: '11px', fontWeight: '600', color: contentMode === 'dynamic' ? '#667eea' : '#10b981' }}>
+          <div style={{ padding: '7px 16px', background: contentMode === 'dynamic' ? 'rgba(29,78,216,0.08)' : 'rgba(16,185,129,0.08)', borderBottom: '1px solid #e0e0e0' }}>
+            <span style={{ fontSize: '11px', fontWeight: '600', color: contentMode === 'dynamic' ? '#1d4ed8' : '#10b981' }}>
               {contentMode === 'dynamic' ? '⚡ Dynamic Mode' : '📌 Static Mode'}
             </span>
           </div>
@@ -257,7 +257,7 @@ export default function CMSFieldsPanel({ cmsFields, selectedCard, contentMode, o
                 <div style={{ display: 'flex', gap: '8px' }}>
                   <input
                     type="color"
-                    value={editValues.backgroundColor || '#4f46e5'}
+                    value={editValues.backgroundColor || '#1d4ed8'}
                     onChange={e => handleChange('backgroundColor', e.target.value)}
                     style={{ padding: 0, width: '30px', height: '30px', border: 'none', borderRadius: '4px', cursor: 'pointer' }}
                   />
@@ -281,12 +281,12 @@ export default function CMSFieldsPanel({ cmsFields, selectedCard, contentMode, o
                   onClick={() => toggleSection(section.id)}
                   style={{
                     width: '100%', padding: '10px 16px', display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                    background: isExpanded ? 'linear-gradient(135deg, rgba(102,126,234,0.06) 0%, rgba(118,75,162,0.06) 100%)' : '#fff',
+                    background: isExpanded ? 'linear-gradient(135deg, rgba(29,78,216,0.06) 0%, rgba(118,75,162,0.06) 100%)' : '#fff',
                     border: 'none', cursor: 'pointer', fontSize: '13px', fontWeight: '600', color: '#333', fontFamily: 'inherit'
                   }}
                 >
                   <span>{section.icon} {section.label}</span>
-                  {isExpanded ? <ChevronDown size={14} color="#667eea" /> : <ChevronRight size={14} color="#aaa" />}
+                  {isExpanded ? <ChevronDown size={14} color="#1d4ed8" /> : <ChevronRight size={14} color="#aaa" />}
                 </button>
 
                 {isExpanded && (
@@ -297,7 +297,7 @@ export default function CMSFieldsPanel({ cmsFields, selectedCard, contentMode, o
                           {field.label}
                         </label>
                         {contentMode === 'dynamic' ? (
-                          <div style={{ padding: '7px 10px', background: 'rgba(102,126,234,0.08)', border: '1px solid rgba(102,126,234,0.3)', borderRadius: '8px', fontSize: '12px', color: '#667eea', fontFamily: 'monospace' }}>
+                          <div style={{ padding: '7px 10px', background: 'rgba(29,78,216,0.08)', border: '1px solid rgba(29,78,216,0.3)', borderRadius: '8px', fontSize: '12px', color: '#1d4ed8', fontFamily: 'monospace' }}>
                             {'{{' + field.key + '}}'}
                           </div>
                         ) : field.type === 'textarea' ? (
@@ -330,7 +330,7 @@ export default function CMSFieldsPanel({ cmsFields, selectedCard, contentMode, o
               <button
                 onClick={handleSave}
                 style={{
-                  width: '100%', padding: '11px', background: saved ? '#10b981' : 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                  width: '100%', padding: '11px', background: saved ? '#10b981' : 'linear-gradient(135deg, #1d4ed8 0%, #1e3a8a 100%)',
                   color: '#fff', border: 'none', borderRadius: '10px', cursor: 'pointer', fontSize: '13px', fontWeight: '600',
                   display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px', transition: 'all 0.3s'
                 }}

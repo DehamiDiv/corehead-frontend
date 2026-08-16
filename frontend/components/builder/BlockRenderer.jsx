@@ -7,8 +7,8 @@
 export default function BlockRenderer({ block, isSelected, onClick, settings }) {
   const { type, content, styles = {} } = block;
 
-  const activePrimary = settings?.colors?.primary || '#4f46e5';
-  const activeGradient = settings?.colors?.gradient || `linear-gradient(135deg, ${activePrimary} 0%, #3730a3 100%)`;
+  const activePrimary = settings?.colors?.primary || '#1d4ed8';
+  const activeGradient = settings?.colors?.gradient || `linear-gradient(135deg, ${activePrimary} 0%, #1e3a8a 100%)`;
   const fontStyle = settings?.fontStyle || 'Inter, sans-serif';
   const borderRadius = settings?.radiusValue || '12px';
 
@@ -32,7 +32,7 @@ export default function BlockRenderer({ block, isSelected, onClick, settings }) 
         const text = (typeof content === 'string' && content.trim()) || 'Heading Block';
         return (
           <div style={{
-            background: 'linear-gradient(135deg, #f8faff 0%, #eef2ff 100%)',
+            backgroundImage: 'linear-gradient(135deg, #f8faff 0%, #eef2ff 100%)',
             borderLeft: `4px solid ${activePrimary}`,
             borderRadius: '8px',
             padding: '16px 20px',
@@ -112,9 +112,9 @@ export default function BlockRenderer({ block, isSelected, onClick, settings }) 
         return (
           <div style={{ padding: '8px 0', ...styles }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-              <div style={{ flex: 1, height: '1px', background: `linear-gradient(to right, transparent, ${activePrimary}40, transparent)` }} />
+              <div style={{ flex: 1, height: '1px', backgroundImage: `linear-gradient(to right, transparent, ${activePrimary}40, transparent)` }} />
               <div style={{ width: '6px', height: '6px', borderRadius: '50%', background: activePrimary, opacity: 0.5 }} />
-              <div style={{ flex: 1, height: '1px', background: `linear-gradient(to left, transparent, ${activePrimary}40, transparent)` }} />
+              <div style={{ flex: 1, height: '1px', backgroundImage: `linear-gradient(to left, transparent, ${activePrimary}40, transparent)` }} />
             </div>
           </div>
         );
