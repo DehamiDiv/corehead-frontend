@@ -326,14 +326,14 @@ export default function EditorHeader() {
   };
 
   const handleClear = () => {
-      setShowClearConfirm(true);
-    };
+    setShowClearConfirm(true);
+  };
 
-    const confirmClear = () => {
-      loadLayout("[]");
-      setShowClearConfirm(false);
-      setIsActionsOpen(false);
-    };
+  const confirmClear = () => {
+    loadLayout("[]");
+    setShowClearConfirm(false);
+    setIsActionsOpen(false);
+  };
 
   return (
     <>
