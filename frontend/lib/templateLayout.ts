@@ -9,6 +9,14 @@ import {
 
 export function templateTypeToKind(type?: string): LayoutKind {
   const normalized = String(type || "").trim().toLowerCase();
+  const normalizedWords = normalized.replace(/[_-]+/g, " ").replace(/\s+/g, " ").trim();
+  if (
+    normalizedWords === "home" ||
+    normalizedWords.includes("home page") ||
+    normalizedWords.includes("homepage")
+  ) {
+    return "home-page";
+  }
   if (
     normalized.includes("archive") ||
     normalized.includes("loop") ||
@@ -20,7 +28,8 @@ export function templateTypeToKind(type?: string): LayoutKind {
   return "single-post";
 }
 
-export function kindToTemplateType(kind: LayoutKind): "Single Post" | "Blog Archive" {
+export function kindToTemplateType(kind: LayoutKind): "Single Post" | "Blog Archive" | "Home Page" {
+  if (kind === "home-page") return "Home Page";
   return kind === "blog-archive" ? "Blog Archive" : "Single Post";
 }
 
@@ -41,6 +50,40 @@ export function defaultLayoutDocument(
           id: "archive-posts",
           type: "Collection List",
           content: { limit: 12, category: "" },
+        },
+      ],
+    };
+  }
+  if (kind === "home-page") {
+    return {
+      schemaVersion: "1.0",
+      kind,
+      name,
+      metadata: { origin: "manual" },
+      blocks: [
+        {
+          id: "home-title",
+          type: "Heading",
+          content: "Site name",
+          level: 1,
+          bindings: { content: "site.name" },
+        },
+        {
+          id: "home-tagline",
+          type: "Paragraph",
+          content: "Stories, ideas, and updates from our team.",
+          bindings: { content: "site.tagline" },
+        },
+        {
+          id: "home-posts-heading",
+          type: "Heading",
+          content: "Latest stories",
+          level: 2,
+        },
+        {
+          id: "home-posts",
+          type: "Collection List",
+          content: { limit: 6, category: "" },
         },
       ],
     };
@@ -112,7 +155,6 @@ export function prepareLayoutForSave(
   return {
     document,
     sourceFormat: normalized.sourceFormat,
-    warnings: [...normalized.warnings, ...((validation as any).warnings || [])],
-  };
+    warnings: normalized.warnings,
+};
 }
-

@@ -284,7 +284,6 @@ export default function PostsPage() {
             </button>
             <Link
               href="/admin/posts/create"
-              onClick={() => sessionStorage.removeItem("editPostId")}
               className="h-10 px-4 flex items-center gap-2.5 bg-blue-600 text-white rounded-xl admin-btn-primary hover:bg-blue-700 transition-all shadow-lg shadow-blue-500/20"
             >
               <Plus className="w-[18px] h-[18px]" />
@@ -501,8 +500,7 @@ export default function PostsPage() {
                               </button>
                             )}
                             <Link
-                              href="/admin/posts/create"
-                              onClick={() => sessionStorage.setItem("editPostId", String(post?.id))}
+                              href={`/admin/posts/edit/${post?.id}`}
                               className="p-1.5 text-slate-400 hover:text-slate-900 hover:bg-slate-50 rounded-lg transition-colors"
                               title="Edit"
                             >

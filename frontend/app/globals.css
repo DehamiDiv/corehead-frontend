@@ -363,6 +363,11 @@ body {
   min-width: 0 !important;
   max-width: 46rem !important;
   margin: 2rem auto 0 !important;
+  padding: clamp(1.25rem, 0.8rem + 2vw, 2.25rem) !important;
+  border: 1px solid color-mix(in srgb, var(--site-ink, #0f172a) 10%, transparent);
+  border-radius: calc(var(--site-radius, 1rem) + 0.35rem);
+  background: color-mix(in srgb, var(--site-surface, #ffffff) 94%, transparent);
+  box-shadow: 0 18px 50px color-mix(in srgb, var(--site-ink, #0f172a) 8%, transparent);
   color: color-mix(
     in srgb,
     var(--site-ink, #0f172a) 82%,
@@ -374,6 +379,14 @@ body {
   letter-spacing: -0.005em;
   overflow-wrap: anywhere;
   word-break: normal;
+  overflow-x: hidden;
+}
+
+.post-reading-surface .cms-post-body *,
+.post-reading-surface .cms-post-body :where(p, h1, h2, h3, h4, h5, h6, li, blockquote) {
+  max-width: 100%;
+  white-space: normal !important;
+  overflow-wrap: anywhere;
 }
 
 .post-reading-surface .cms-post-body :where(p, ul, ol, blockquote, pre, table) {
@@ -451,6 +464,49 @@ body {
   max-width: 100%;
   height: auto;
   border-radius: 1rem;
+}
+
+.post-reading-surface .cms-post-body figure {
+  margin-block: 2rem;
+}
+
+.post-reading-surface .cms-post-body figcaption {
+  margin-top: -1.35rem;
+  text-align: center;
+  color: var(--site-muted, #64748b) !important;
+  font-size: 0.825rem;
+  line-height: 1.5;
+}
+
+.post-reading-surface .cms-post-body table {
+  display: block;
+  width: 100%;
+  max-width: 100%;
+  overflow-x: auto;
+  border-collapse: collapse;
+  border-radius: 0.75rem;
+  -webkit-overflow-scrolling: touch;
+}
+
+.post-reading-surface .cms-post-body :where(th, td) {
+  min-width: 8rem;
+  border: 1px solid color-mix(in srgb, var(--site-ink, #0f172a) 14%, transparent);
+  padding: 0.75rem 0.9rem;
+  text-align: left;
+}
+
+.post-reading-surface .cms-post-body th {
+  background: color-mix(in srgb, var(--site-ink, #0f172a) 6%, transparent);
+  color: var(--site-ink, #0f172a) !important;
+  font-weight: 750;
+}
+
+.post-reading-surface .cms-post-body > :first-child {
+  margin-top: 0;
+}
+
+.post-reading-surface .cms-post-body > :last-child {
+  margin-bottom: 0;
 }
 
 .post-reading-surface .cms-post-body img,

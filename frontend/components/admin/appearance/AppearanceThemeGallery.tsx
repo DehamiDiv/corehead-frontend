@@ -144,7 +144,7 @@ export default function AppearanceThemeGallery({
                     type="button"
                     disabled={disabled || busy || active}
                     onClick={() => onActivate(theme.id)}
-                    className="inline-flex h-9 flex-1 items-center justify-center gap-1.5 rounded-xl bg-slate-900 text-xs font-bold text-white hover:bg-slate-800 disabled:opacity-50"
+                    className="inline-flex h-9 flex-1 items-center justify-center gap-1.5 rounded-xl bg-blue-600 text-xs font-bold text-white shadow-lg shadow-blue-200 transition-all hover:bg-blue-700 disabled:opacity-50"
                   >
                     {busy && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
                     {active ? "Selected" : "Use theme"}

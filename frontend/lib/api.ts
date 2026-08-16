@@ -377,12 +377,14 @@ export const api = {
   async resolveActiveLayout(
     templateType: string,
     categoryId?: string | null,
-    siteId?: number | null
+    siteId?: number | null,
+    templateId?: number | null,
   ) {
     const qs = new URLSearchParams();
     qs.set('templateType', templateType);
     if (categoryId) qs.set('categoryId', String(categoryId));
     if (siteId != null) qs.set('siteId', String(siteId));
+    if (templateId != null) qs.set('templateId', String(templateId));
 
     const headers: Record<string, string> = {};
     if (siteId != null) headers['X-Site-Id'] = String(siteId);
@@ -543,7 +545,15 @@ export const api = {
     });
     if (!res.ok) {
       const err = await res.json();
-      throw new Error(err.error || 'Login failed');
+      const loginError = new Error(err.error || 'Login failed') as Error & {
+        code?: string;
+        email?: string;
+        status?: number;
+      };
+      loginError.code = err.code;
+      loginError.email = err.email;
+      loginError.status = res.status;
+      throw loginError;
     }
     return res.json();
   },

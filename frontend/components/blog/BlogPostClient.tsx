@@ -152,7 +152,7 @@ export default function BlogPostClient({ post, recentPosts }: BlogPostClientProp
       <div className="w-full bg-white border-b border-slate-200 sticky top-0 z-50">
         <div className="max-w-[1300px] mx-auto px-6 h-16 flex items-center justify-between">
           <Link 
-            href="/" 
+            href="/"
             className="flex items-center gap-2 text-[14px] font-bold text-slate-600 hover:text-[#006400] transition-colors"
           >
             <ArrowLeft className="w-4 h-4" />

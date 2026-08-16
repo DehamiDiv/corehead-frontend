@@ -7,7 +7,8 @@ import {
   type LayoutDocumentV1,
 } from "@/lib/layoutContract";
 
-export type TenantLayoutKind = "blog-archive" | "single-post";
+export type TenantLayoutKind = "blog-archive" | "single-post" | "home-page";
+type RequiredTenantLayoutKind = Exclude<TenantLayoutKind, "home-page">;
 
 export type ResolvedTenantLayout = {
   document: LayoutDocumentV1;
@@ -40,19 +41,6 @@ export function defaultArchiveLayout(): BuilderBlock[] {
 export function defaultSinglePostLayout(): BuilderBlock[] {
   return [
     {
-      id: "def-img",
-      type: "Image",
-      content: "",
-      bindings: { content: "post.coverImage" },
-    },
-    {
-      id: "def-title",
-      type: "Heading",
-      content: "",
-      bindings: { content: "post.title" },
-      styles: { fontSize: "2.5rem", fontWeight: "800" },
-    },
-    {
       id: "def-cat",
       type: "Paragraph",
       content: "",
@@ -60,11 +48,26 @@ export function defaultSinglePostLayout(): BuilderBlock[] {
       styles: { color: "#2563eb", textTransform: "uppercase", fontSize: "0.75rem" },
     },
     {
+      id: "def-title",
+      type: "Heading",
+      content: "",
+      level: 1,
+      bindings: { content: "post.title" },
+      styles: { fontSize: "2.75rem", fontWeight: "800", lineHeight: "1.15" },
+    },
+    {
       id: "def-excerpt",
       type: "Paragraph",
       content: "",
       bindings: { content: "post.excerpt" },
       styles: { fontStyle: "italic", color: "#64748b" },
+    },
+    {
+      id: "def-img",
+      type: "Image",
+      content: "",
+      bindings: { content: "post.coverImage" },
+      styles: { borderRadius: "1.5rem", marginBottom: "2.5rem" },
     },
     {
       id: "def-body",
@@ -102,7 +105,7 @@ function preparePublicDocument(layoutJson: any, kind: TenantLayoutKind, name: st
   });
 }
 
-function defaultDocument(kind: TenantLayoutKind): LayoutDocumentV1 {
+function defaultDocument(kind: RequiredTenantLayoutKind): LayoutDocumentV1 {
   const normalized = normalizeLayoutDocumentV1(
     kind === "blog-archive" ? defaultArchiveLayout() : defaultSinglePostLayout(),
     {
@@ -137,15 +140,21 @@ function resolvedTemplate(tpl: any, kind: TenantLayoutKind): ResolvedTenantLayou
  * Tries API resolve (site-scoped); falls back to safe defaults.
  */
 export async function resolveTenantLayout(
-  kind: TenantLayoutKind,
+  kind: RequiredTenantLayoutKind,
   siteId: number,
-  categoryId?: string | null
+  categoryId?: string | null,
+  preferredTemplateId?: number | null,
 ): Promise<ResolvedTenantLayout> {
   const typeParam =
     kind === "blog-archive" ? "Blog Archive" : "Single Post";
 
   try {
-    const tpl = await api.resolveActiveLayout(typeParam, categoryId, siteId);
+    const tpl = await api.resolveActiveLayout(
+      typeParam,
+      categoryId,
+      siteId,
+      preferredTemplateId,
+    );
     const resolved = resolvedTemplate(tpl, kind);
     if (resolved) return resolved;
   } catch (err) {
@@ -160,7 +169,12 @@ export async function resolveTenantLayout(
 
   for (const t of alt) {
     try {
-      const tpl = await api.resolveActiveLayout(t, categoryId, siteId);
+      const tpl = await api.resolveActiveLayout(
+        t,
+        categoryId,
+        siteId,
+        preferredTemplateId,
+      );
       const resolved = resolvedTemplate(tpl, kind);
       if (resolved) return resolved;
     } catch {
@@ -174,6 +188,24 @@ export async function resolveTenantLayout(
     blocks: document.blocks as BuilderBlock[],
     source: "default",
   };
+}
+
+/** Resolve only an explicitly assigned published Home Page template. Preset home layouts remain the fallback. */
+export async function resolveAssignedHomeLayout(
+  siteId: number,
+): Promise<ResolvedTenantLayout | null> {
+  const typeNames = ["Home Page", "home-page", "homepage", "home_page", "home"];
+  for (const typeName of typeNames) {
+    try {
+      const template = await api.resolveActiveLayout(typeName, null, siteId);
+      if (template?.category !== "global_default") continue;
+      const resolved = resolvedTemplate(template, "home-page");
+      if (resolved) return resolved;
+    } catch {
+      // No assigned custom home layout for this alias; preserve the Appearance preset fallback.
+    }
+  }
+  return null;
 }
 
 /** Normalize post for binding paths used by layouts. */
@@ -222,6 +254,12 @@ export function postToBindData(post: any, siteSlug?: string) {
       contentHtml: contentHtml || contentText,
       contentText,
       slug: post.slug,
+      author: {
+        ...(post.author || {}),
+        name: post.author?.name || post.authorName || "Unknown author",
+      },
+      publishedAt:
+        post.publishedAt || post.published_date || post.createdAt || null,
     },
     siteSlug,
   };

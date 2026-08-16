@@ -7,6 +7,7 @@ const {
   isPublishedTemplate,
   layoutKindFromTemplate,
   templateOrigin,
+  templateTypeToKind,
 } = classification;
 
 test("classifies templates by canonical document kind before legacy type aliases", () => {
@@ -20,4 +21,11 @@ test("classifies publication status and provenance", () => {
   assert.equal(isPublishedTemplate({ status: "draft" }), false);
   assert.equal(templateOrigin({ layoutJson: { metadata: { origin: "ai" } } }), "ai");
   assert.equal(templateOrigin({ layoutJson: { sections: [] } }), "migrated");
+});
+
+test("classifies legacy Home Page aliases as one canonical family", () => {
+  for (const type of ["Home Page", "home_page", "homepage", "home-page"]) {
+    assert.equal(templateTypeToKind(type), "home-page");
+    assert.equal(layoutKindFromTemplate({ type }), "home-page");
+  }
 });

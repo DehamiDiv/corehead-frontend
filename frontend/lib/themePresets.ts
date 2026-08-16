@@ -120,7 +120,7 @@ export function getHomeLayoutPalette(
 }
 
 export function getThemePreset(themeId?: string | null): ThemePreset {
-  return getThemeRegistration(themeId as string) as ThemePreset;
+  return getThemeRegistration(String(themeId || "")) as ThemePreset;
 }
 
 /** Merge API branding with preset defaults without coupling theme and layout. */
@@ -152,4 +152,3 @@ export function mergeBrandingWithPreset(branding?: {
     home: branding?.home || null,
   };
 }
-

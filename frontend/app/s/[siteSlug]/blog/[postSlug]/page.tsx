@@ -130,7 +130,8 @@ export default async function PublicSitePostPage({ params }: Props) {
   const layout = await resolveTenantLayout(
     "single-post",
     site.id,
-    categoryHint
+    categoryHint,
+    post.layoutTemplateId ?? null,
   );
 
   const bindData = postToBindData(post, site.slug);
@@ -168,7 +169,7 @@ export default async function PublicSitePostPage({ params }: Props) {
         return true;
       });
 
-  const layoutHasImage = rawBlocks.some((b: any) => {
+  const renderedLayoutHasImage = blocksForRender.some((b: any) => {
     const t = String(b?.type || "").toLowerCase();
     return t === "image" || t.includes("image");
   });
@@ -182,8 +183,8 @@ export default async function PublicSitePostPage({ params }: Props) {
     post.author?.name || post.authorName || site.name;
 
   return (
-    <article className="w-full">
-      <div className="max-w-3xl mx-auto px-4 sm:px-6 pt-8 pb-16">
+    <article className="w-full" aria-labelledby="public-post-title">
+      <div className="mx-auto max-w-3xl px-4 pb-16 pt-8 sm:px-6 sm:pb-24 sm:pt-12">
         <Link
           href={siteBlogPath(site.slug)}
           className="inline-flex items-center gap-2 text-sm font-bold opacity-70 hover:opacity-100 hover:text-[var(--site-primary,#2563eb)] transition-colors mb-8"
@@ -206,7 +207,8 @@ export default async function PublicSitePostPage({ params }: Props) {
                 </p>
               )}
               <h1
-                className="text-3xl sm:text-4xl lg:text-[2.75rem] font-black tracking-tight leading-[1.2] mb-4"
+                id="public-post-title"
+                className="mb-4 text-3xl font-black leading-[1.15] tracking-tight sm:text-4xl lg:text-[2.75rem]"
                 style={{ color: "var(--site-ink)" }}
               >
                 {post.title}
@@ -244,15 +246,15 @@ export default async function PublicSitePostPage({ params }: Props) {
               )}
             </header>
 
-            {coverSrc && !layoutHasImage && (
-              <div className="relative w-full aspect-[16/9] mb-10 rounded-2xl overflow-hidden bg-black/5 border border-black/5 shadow-lg shadow-black/5">
+            {coverSrc && !renderedLayoutHasImage && (
+              <figure className="relative mb-12 aspect-[16/9] w-full overflow-hidden rounded-2xl border border-black/5 bg-black/5 shadow-xl shadow-black/10 sm:rounded-3xl">
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img
                   src={coverSrc}
                   alt={post.title || "Cover"}
                   className="absolute inset-0 w-full h-full object-cover"
                 />
-              </div>
+              </figure>
             )}
           </>
         )}
@@ -279,7 +281,7 @@ export default async function PublicSitePostPage({ params }: Props) {
           </div>
         )}
 
-        <div className="prose-public post-reading-surface">
+        <div className="prose-public post-reading-surface" data-layout-source={layout.source}>
           <PublicPageRenderer
             layout={useTemplateChrome
               ? { ...layout.document, blocks: blocksForRender }

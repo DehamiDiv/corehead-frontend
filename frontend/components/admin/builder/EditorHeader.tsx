@@ -547,8 +547,8 @@ export default function EditorHeader() {
                 <label className="text-[12px] font-black text-slate-400 uppercase tracking-widest px-1">
                   Layout Type
                 </label>
-                <div className="grid grid-cols-2 gap-3">
-                  {(["Single Post", "Blog Archive"] as const).map((type) => (
+                <div className="grid grid-cols-3 gap-3">
+                  {(["Single Post", "Blog Archive", "Home Page"] as const).map((type) => (
                     <button
                       key={type}
                       type="button"

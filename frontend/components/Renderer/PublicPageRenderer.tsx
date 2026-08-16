@@ -285,7 +285,7 @@ export function PublicPageRenderer({
           typeof content === "object" && content?.text != null
             ? content.text
             : content;
-        const className = "font-bold mb-4 text-slate-900";
+        const className = "mb-4 font-bold text-[var(--site-ink,#0f172a)]";
         if (level === 1)
           return (
             <h1 key={block.id} style={styleString} className={className + " text-4xl"}>
@@ -341,7 +341,7 @@ export function PublicPageRenderer({
           <p
             key={block.id}
             style={styleString}
-            className="mb-4 text-gray-700 leading-relaxed"
+            className="mb-4 leading-relaxed text-[color-mix(in_srgb,var(--site-ink,#0f172a)_82%,var(--site-muted,#64748b))]"
           >
             {typeof content === "object" ? content?.text || "" : content}
           </p>
@@ -349,10 +349,13 @@ export function PublicPageRenderer({
       }
 
       case "Image": {
-        const src = mediaUrl(
+        const rawSrc =
           typeof content === "string"
             ? content
-            : content?.src || content?.url || "",
+            : content?.src || content?.url || "";
+        if (block.bindings?.content && !rawSrc) return null;
+        const src = mediaUrl(
+          rawSrc,
         );
         const alt =
           (typeof content === "object" && content?.alt) ||
@@ -379,7 +382,7 @@ export function PublicPageRenderer({
           <blockquote
             key={block.id}
             style={styleString}
-            className="border-l-4 border-blue-500 pl-4 py-2 my-4 italic text-gray-600 bg-gray-50 rounded-r-lg"
+            className="my-6 rounded-r-xl border-l-4 border-[var(--site-primary,#2563eb)] bg-[color-mix(in_srgb,var(--site-primary,#2563eb)_8%,transparent)] py-3 pl-5 italic text-[var(--site-ink,#0f172a)]"
           >
             {typeof content === "object" ? content?.text || "" : content}
           </blockquote>
@@ -679,21 +682,34 @@ export function PublicPageRenderer({
       }
 
       case "Html":
-      case "HTML":
+      case "HTML": {
+        const binding = block.bindings?.content || "";
+        const isBodyBinding =
+          binding.includes("contentHtml") ||
+          binding === "post.content" ||
+          binding === "content" ||
+          binding === "contentHtml";
+        const rawHtml = String(
+          typeof content === "string"
+            ? content
+            : content?.html || content?.code || "",
+        );
+
         return (
           <div
             key={block.id}
             style={styleString}
-            className="my-4 prose prose-slate max-w-none"
+            className={
+              isBodyBinding
+                ? "cms-post-body my-4 max-w-none"
+                : "my-4 prose prose-slate max-w-none"
+            }
             dangerouslySetInnerHTML={{
-              __html: String(
-                typeof content === "string"
-                  ? content
-                  : content?.html || content?.code || "",
-              ),
+              __html: isBodyBinding ? preparePostHtml(rawHtml) : rawHtml,
             }}
           />
         );
+      }
 
       case "Markdown":
         return (

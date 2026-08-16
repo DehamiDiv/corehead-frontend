@@ -62,10 +62,10 @@ export default function AdminNavbar() {
     );
 
   return (
-    <div className="w-full flex justify-center pt-6 sm:pt-8 px-4 sm:px-6">
+    <div className="relative z-[100] isolate w-full flex justify-center pt-6 sm:pt-8 px-4 sm:px-6">
       <nav
         className={cn(
-          "relative w-full max-w-5xl",
+          "relative z-[100] w-full max-w-5xl overflow-visible",
           "bg-white/70 backdrop-blur-xl border border-white/50",
           "rounded-2xl sm:rounded-full shadow-[0_8px_40px_rgba(0,0,0,0.06)]",
           "flex items-center justify-between gap-3",
@@ -139,20 +139,6 @@ export default function AdminNavbar() {
               <ExternalLink className="w-3.5 h-3.5" />
             </Link>
           ) : null}
-
-          <Link
-            href="/pricing"
-            className={cn(
-              "inline-flex items-center justify-center gap-1.5",
-              "h-10 px-3 rounded-xl border border-slate-200/80 bg-white/90",
-              "text-xs font-bold text-slate-600",
-              "hover:text-blue-600 hover:border-blue-200 hover:bg-blue-50/50",
-              "transition-colors shrink-0",
-            )}
-            title="View plans and upgrade to PRO"
-          >
-            <span>Pricing</span>
-          </Link>
 
           {/* Profile — perfect circle */}
           <Link

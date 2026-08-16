@@ -81,22 +81,23 @@ function CMSPanel() {
         { label: "Post Excerpt", key: "post.excerpt", testVal: "Explore how neural networks are reshaping treatment options." },
         { label: "Post Content", key: "post.content", testVal: "# Introduction..." },
         { label: "Featured Image URL", key: "post.featured_image", testVal: "/images/med-ai.jpg" },
-        { label: "Publish Date", key: "post.date", testVal: "2026-08-07" },
+        { label: "Publish Date", key: "post.publishedAt", testVal: "2026-08-07" },
       ],
     },
     {
       group: "✍️ Author Fields",
       fields: [
-        { label: "Author Name", key: "post.author", testVal: "Dr. Sarah Jenkins" },
-        { label: "Author Bio", key: "post.author_bio", testVal: "Medical researcher focused on deep learning." },
-        { label: "Author Avatar URL", key: "post.author_avatar", testVal: "/images/sarah.jpg" },
+        { label: "Author Name", key: "post.author.name", testVal: "Dr. Sarah Jenkins" },
       ],
     },
     {
       group: "🌐 Site & SEO Info",
       fields: [
         { label: "Site Name", key: "site.name", testVal: "CoreHead Portal" },
-        { label: "SEO Keywords", key: "post.keywords", testVal: "Artificial Intelligence, Biotech" },
+        { label: "Site Tagline", key: "site.tagline", testVal: "Ideas worth sharing" },
+        { label: "Site Description", key: "site.description", testVal: "A publication for curious readers." },
+        { label: "Site Logo", key: "site.logo", testVal: "/uploads/logo.png" },
+        { label: "Hero Image", key: "site.heroImage", testVal: "/uploads/hero.jpg" },
       ],
     },
   ];
