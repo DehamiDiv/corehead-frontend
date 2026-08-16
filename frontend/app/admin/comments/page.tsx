@@ -13,6 +13,7 @@ import {
 import { cn } from "@/lib/utils";
 import { api } from "@/lib/api";
 import EmptyState from "@/components/ui/EmptyState";
+import { useOptionalSite } from "@/components/admin/SiteContext";
 
 interface Comment {
   id: number;
@@ -26,9 +27,26 @@ interface Comment {
 }
 
 export default function CommentsPage() {
+  const siteCtx = useOptionalSite();
   const [comments, setComments] = useState<Comment[]>([]);
   const [activeTab, setActiveTab] = useState("Recent Comments");
   const [isLoading, setIsLoading] = useState(true);
+
+  const getPostUrl = (comment: any) => {
+    const slug =
+      comment?.postSlug ||
+      comment?.post_slug ||
+      comment?.post?.slug ||
+      "";
+    const siteSlug = siteCtx?.currentSite?.slug;
+    if (slug) {
+      if (siteSlug) {
+        return `/s/${siteSlug}/blog/${slug}`;
+      }
+      return `/blog/${slug}`;
+    }
+    return "/admin/posts";
+  };
 
   const fetchComments = useCallback(async () => {
     setIsLoading(true);
@@ -206,9 +224,14 @@ export default function CommentsPage() {
 
                         {/* Blog Post */}
                         <td className="px-6 py-4 max-w-[200px]">
-                          <span className="text-[14px] text-[#2563EB] line-clamp-2 cursor-pointer hover:underline">
+                          <a
+                            href={getPostUrl(comment)}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-[14px] text-[#2563EB] line-clamp-2 hover:underline font-medium"
+                          >
                             {comment.postTitle}
-                          </span>
+                          </a>
                         </td>
 
                         {/* Date */}
@@ -223,7 +246,8 @@ export default function CommentsPage() {
                         <td className="px-6 py-4">
                           <div className="flex items-center justify-end gap-1">
                             <button
-                              onClick={() => window.open(`/blog/${comment.postSlug || ""}`, "_blank")}
+                              type="button"
+                              onClick={() => window.open(getPostUrl(comment), "_blank")}
                               className="p-2 text-[#94A3B8] hover:text-[#1E293B] hover:bg-slate-100 rounded-lg transition-all"
                               title="View post"
                             >

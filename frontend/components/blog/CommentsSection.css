@@ -113,7 +113,8 @@
   animation: fadeIn 0.3s ease;
 }
 
-.submit-comment-btn {
+.submit-comment-btn,
+.submit-btn {
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -130,17 +131,20 @@
   box-shadow: 0 4px 12px rgba(30, 41, 59, 0.1);
 }
 
-.submit-comment-btn:hover:not(:disabled) {
+.submit-comment-btn:hover:not(:disabled),
+.submit-btn:hover:not(:disabled) {
   background-color: #0f172a;
   transform: translateY(-1px);
   box-shadow: 0 6px 16px rgba(30, 41, 59, 0.15);
 }
 
-.submit-comment-btn:active:not(:disabled) {
+.submit-comment-btn:active:not(:disabled),
+.submit-btn:active:not(:disabled) {
   transform: translateY(0);
 }
 
-.submit-comment-btn:disabled {
+.submit-comment-btn:disabled,
+.submit-btn:disabled {
   opacity: 0.6;
   cursor: not-allowed;
 }
