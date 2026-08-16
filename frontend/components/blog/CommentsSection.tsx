@@ -267,7 +267,7 @@ export default function CommentsSection({
                 setShowAuthModal(true);
               }
             }}
-            className="submit-btn"
+            className="submit-comment-btn"
           >
             {submitting ? (
               <Loader2 className="w-4 h-4 animate-spin" />
