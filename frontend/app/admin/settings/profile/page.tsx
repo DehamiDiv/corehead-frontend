@@ -4,6 +4,7 @@ import React, { useState, useEffect, useRef } from "react";
 import { Edit2, Save, X, Camera } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { api } from "@/lib/api";
+import { updateStoredUser } from "@/lib/authSession";
 
 export default function ProfileSettingsPage() {
   const [isEditing, setIsEditing] = useState(false);
@@ -101,12 +102,13 @@ export default function ProfileSettingsPage() {
           }));
 
           // Email is locked on profile — never send it on update
-          await api.updateUser(currentUserId, {
+          const savedUser = await api.updateUser(currentUserId, {
             name: formData.name,
             designation: formData.designation,
             bio: formData.bio,
             avatar: formData.avatar
           });
+          updateStoredUser(savedUser);
         }
       }
 

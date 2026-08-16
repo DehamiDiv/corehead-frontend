@@ -64,6 +64,23 @@ export function persistAccessToken(accessToken: string) {
   setAuthCookies(accessToken, role);
 }
 
+/** Merge updated profile fields into the active browser session and notify admin chrome. */
+export function updateStoredUser(userUpdates: Record<string, unknown>) {
+  if (!isBrowser()) return userUpdates;
+
+  let storedUser: Record<string, unknown> = {};
+  try {
+    storedUser = JSON.parse(localStorage.getItem("user") || "{}");
+  } catch {
+    /* Replace malformed legacy session data with the canonical update. */
+  }
+
+  const updatedUser = { ...storedUser, ...userUpdates };
+  localStorage.setItem("user", JSON.stringify(updatedUser));
+  window.dispatchEvent(new Event("local-storage-update"));
+  return updatedUser;
+}
+
 export function clearSession() {
   if (!isBrowser()) return;
   localStorage.removeItem("accessToken");

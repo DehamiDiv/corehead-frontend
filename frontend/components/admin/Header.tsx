@@ -20,7 +20,7 @@ import { usePathname, useRouter } from "next/navigation";
 import SiteSwitcher from "@/components/admin/SiteSwitcher";
 import VisitPublicSiteButton from "@/components/admin/VisitPublicSiteButton";
 import { getApiBaseUrl, resolveAdminMediaUrl } from "@/lib/apiOrigin";
-import { clearSession } from "@/lib/authSession";
+import { clearSession, updateStoredUser } from "@/lib/authSession";
 
 const ADMIN_SECTIONS: Array<{ prefix: string; section: string; page: string }> = [
   { prefix: "/admin/settings/appearance", section: "Settings", page: "Appearance" },
@@ -131,13 +131,24 @@ export default function Header({ onToggleSidebar }: { onToggleSidebar: () => voi
   };
 
   useEffect(() => {
-    const storedUser = localStorage.getItem("user");
+    const syncStoredUser = () => {
+      const storedUser = localStorage.getItem("user");
+      if (!storedUser) return;
+      try {
+        const parsedUser = JSON.parse(storedUser);
+        setUser(parsedUser);
+      } catch (e) {
+        console.error("Failed to parse user from localStorage", e);
+      }
+    };
+
     const token = localStorage.getItem("accessToken") || localStorage.getItem("token");
+    const storedUser = localStorage.getItem("user");
+    syncStoredUser();
 
     if (storedUser) {
       try {
         const parsedUser = JSON.parse(storedUser);
-        setUser(parsedUser);
 
         // If profile data is missing, fetch it from backend
         if ((!parsedUser.avatar && !parsedUser.image) || !parsedUser.name) {
@@ -149,7 +160,7 @@ export default function Header({ onToggleSidebar }: { onToggleSidebar: () => voi
             .then(data => {
               if (data.user) {
                 setUser(data.user);
-                localStorage.setItem("user", JSON.stringify(data.user));
+                updateStoredUser(data.user);
               }
             })
             .catch(err => console.error("Error fetching user profile:", err));
@@ -158,6 +169,13 @@ export default function Header({ onToggleSidebar }: { onToggleSidebar: () => voi
         console.error("Failed to parse user from localStorage", e);
       }
     }
+
+    window.addEventListener("storage", syncStoredUser);
+    window.addEventListener("local-storage-update", syncStoredUser);
+    return () => {
+      window.removeEventListener("storage", syncStoredUser);
+      window.removeEventListener("local-storage-update", syncStoredUser);
+    };
   }, []);
 
   const displayName = user?.username || user?.name || "Admin";
