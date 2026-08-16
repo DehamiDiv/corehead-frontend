@@ -10,6 +10,9 @@ import {
 } from "lucide-react";
 import { useBuilder } from "@/components/admin/builder/BuilderContext";
 import { useState } from "react";
+import { api } from "@/lib/api";
+import { resolveAdminMediaUrl } from "@/lib/apiOrigin";
+import { extractUploadedMediaUrl, normalizeMediaPath } from "@/lib/siteMedia";
 
 export default function SettingsPanel() {
   const { blocks, selectedBlockId, updateBlock, removeBlock, templateName, setTemplateName, templateType, setTemplateType } = useBuilder();
@@ -399,8 +402,6 @@ function ContentTab({ selectedBlock, updateBlock }: any) {
         reader.onload = async () => {
           const base64Data = reader.result as string;
           try {
-            const { api } = await import('@/lib/api');
-            const { resolveAdminMediaUrl, extractUploadedMediaUrl, normalizeMediaPath } = await import('@/lib/mediaHelpers');
             const uploaded = await api.uploadMedia({
               name: file.name,
               type: file.type,
