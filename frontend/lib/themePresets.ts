@@ -64,13 +64,13 @@ export const HOME_LAYOUT_OPTIONS = Object.values(HOME_LAYOUT_REGISTRY).map(
   }),
 );
 
-export const THEME_OPTIONS = Object.values(THEME_PRESETS).map((theme) => {
+export const THEME_OPTIONS = Object.values(THEME_PRESETS).map((theme, index) => {
   const recommendedLayout = getHomeLayoutRegistration(
     theme.recommendedHomeStyle,
   );
   return {
     id: theme.id,
-    name: theme.name,
+    name: `Theme ${index + 1}`,
     description: `A complete visual system recommended with ${recommendedLayout.name}.`,
     preview: (THEME_PREVIEW_ASSETS as any)[theme.id],
     recommendedHomeStyle: theme.recommendedHomeStyle,
