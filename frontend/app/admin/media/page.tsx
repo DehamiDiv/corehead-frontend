@@ -22,6 +22,7 @@ import { cn } from "@/lib/utils";
 import { api } from "@/lib/api";
 import EmptyState from "@/components/ui/EmptyState";
 import { resolveAdminMediaUrl } from "@/lib/apiOrigin";
+import MediaThumbnail from "@/components/admin/MediaThumbnail";
 
 interface MediaItem {
   id: number | string;
@@ -267,7 +268,7 @@ export default function MediaPage() {
                 className="group rounded-[20px] overflow-hidden border border-slate-100 hover:shadow-xl hover:border-blue-100 hover:-translate-y-1.5 transition-all duration-500 bg-white"
               >
                 <div className="relative aspect-square bg-slate-50 overflow-hidden">
-                  <img
+                  <MediaThumbnail
                     src={getFullUrl(item.url)}
                     alt={item.name}
                     className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"

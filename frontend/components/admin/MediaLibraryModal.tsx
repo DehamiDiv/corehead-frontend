@@ -5,6 +5,7 @@ import { X, Search, Check, Loader2, ImageOff } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { api } from "@/lib/api";
 import { resolveAdminMediaUrl } from "@/lib/apiOrigin";
+import MediaThumbnail from "@/components/admin/MediaThumbnail";
 
 interface MediaItem {
   id: number | string;
@@ -114,7 +115,7 @@ export default function MediaLibraryModal({ isOpen, onClose, onSelect }: MediaLi
                       : "border-transparent hover:border-blue-100"
                   )}
                 >
-                  <img
+                  <MediaThumbnail
                     src={getFullUrl(item.url)}
                     alt={item.name}
                     className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
