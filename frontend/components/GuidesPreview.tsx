@@ -13,8 +13,14 @@ interface Guide {
   category: string;
 }
 
+interface GuidePost {
+  title?: string | null;
+  excerpt?: string | null;
+  category?: string | null;
+}
+
 export default function GuidesPreview() {
-  const [guides, setGuides] = useState([]);
+  const [guides, setGuides] = useState<Guide[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -23,14 +29,14 @@ export default function GuidesPreview() {
         const site = await resolvePublicSite("guides");
         if (site) {
           const postsData = await api.getPreviewPosts(6, site.id);
-          const raw = Array.isArray(postsData?.posts)
+          const raw: GuidePost[] = Array.isArray(postsData?.posts)
             ? postsData.posts
             : Array.isArray(postsData)
             ? postsData
             : [];
           setGuides(
             raw.map((p) => ({
-              title: p.title,
+              title: p.title || "Untitled guide",
               description: p.excerpt || "",
               link: "/guides",
               category: p.category || "quickstart",
@@ -128,7 +134,7 @@ export default function GuidesPreview() {
   );
 }
 
-function GuideRow({ guide }) {
+function GuideRow({ guide }: { guide: Guide }) {
   return (
     <Link
       href={guide.link}
@@ -162,7 +168,7 @@ function SkeletonRow() {
   );
 }
 
-function EmptyState({ label }) {
+function EmptyState({ label }: { label: string }) {
   return (
     <div className="p-6 bg-white rounded-2xl border border-slate-100 text-center text-slate-400 text-sm">
       {label}
