@@ -38,12 +38,7 @@ export default function CTA() {
               >
                 {user.role?.toLowerCase() === "admin" || user.role?.toLowerCase() === "administrator" ? "Go to Dashboard" : "Open Visual Builder"}
               </Link>
-              <Link 
-                href="/guides"
-                className="px-12 py-4 bg-white/10 backdrop-blur-md border border-white/20 text-white font-bold rounded-full hover:bg-white/20 transition-all text-lg text-center"
-              >
-                Read Documentation
-              </Link>
+              
             </>
           ) : (
             <>
@@ -67,3 +62,4 @@ export default function CTA() {
     </section>
   );
 }
+
