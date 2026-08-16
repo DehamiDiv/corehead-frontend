@@ -8,6 +8,7 @@ import Pricing from "@/components/Pricing";
 import CTA from "@/components/CTA";
 import DetailedFooter from "@/components/DetailedFooter";
 import FAQ from "@/components/FAQ";
+import GuidesPreview from "@/components/GuidesPreview";
 
 export default function LandingPage() {
   return (
@@ -16,6 +17,7 @@ export default function LandingPage() {
       <Features />
       <Testimonials />
       <Pricing />
+      <GuidesPreview />
       <FAQ />
       <CTA />
       <DetailedFooter />
