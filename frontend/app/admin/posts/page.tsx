@@ -46,6 +46,34 @@ export default function PostsPage() {
   const currentSiteId = siteCtx?.currentSiteId ?? null;
   const siteLoading = siteCtx?.loading ?? false;
 
+  const extractCategoryNames = (rawCats: any): string[] => {
+    if (!rawCats) return [];
+    let parsed: any[] = [];
+    if (Array.isArray(rawCats)) {
+      parsed = rawCats;
+    } else if (typeof rawCats === "string" && rawCats.trim()) {
+      try {
+        const res = JSON.parse(rawCats);
+        parsed = Array.isArray(res) ? res : [res];
+      } catch {
+        parsed = [rawCats];
+      }
+    } else if (typeof rawCats === "object") {
+      parsed = [rawCats];
+    }
+
+    return parsed
+      .map((item) => {
+        if (typeof item === "string") return item.trim();
+        if (typeof item === "number") return String(item);
+        if (typeof item === "object" && item !== null) {
+          return (item.name || item.title || item.slug || "").trim();
+        }
+        return "";
+      })
+      .filter((name) => name.length > 0);
+  };
+
   useEffect(() => {
     // Premium launch delay to show animation
     const timer = setTimeout(() => {
@@ -192,28 +220,21 @@ export default function PostsPage() {
 
   const postsArray = Array.isArray(posts) ? posts : [];
 
-  const allCategories = Array.from(
+  const postCategories = Array.from(
     new Set(
-      postsArray.flatMap((p) => {
-        const rawCats = p?.categories || p?.category;
-        if (Array.isArray(rawCats)) return rawCats;
-        if (typeof rawCats === "string" && rawCats.trim()) {
-          try {
-            return JSON.parse(rawCats);
-          } catch (e) {
-            return [rawCats];
-          }
-        }
-        return [];
-      })
+      postsArray.flatMap((p) => extractCategoryNames(p?.categories || p?.category))
     )
-  ).filter((c) => typeof c === "string" && (c as string).length > 0) as string[];
+  ).filter(Boolean);
+
+  const combinedCategories = Array.from(
+    new Set([...dbCategories, ...postCategories])
+  ).filter((c) => typeof c === "string" && c.trim().length > 0);
 
   const allAuthors = Array.from(
     new Set(
       postsArray.map((p) => {
         const name = p?.author?.name || p?.author_name || "Unknown Author";
-        return typeof name === "string" ? name : "Unknown Author";
+        return typeof name === "string" ? name.trim() : "Unknown Author";
       })
     )
   ).filter(Boolean) as string[];
@@ -230,35 +251,41 @@ export default function PostsPage() {
       return false;
 
     if (statusFilter !== "All Statuses") {
-      const status = normalizePostStatus(post?.status);
-      if (status !== statusFilter) return false;
+      const live = isPostLive(post);
+      const normalized = normalizePostStatus(post?.status);
+      if (statusFilter === "Published" && !live) return false;
+      if (statusFilter === "Draft" && (live || normalized !== "Draft")) return false;
+      if (statusFilter === "Unpublished" && (live || normalized !== "Unpublished")) return false;
     }
 
     if (authorFilter !== "All Authors") {
       const name =
         post?.author?.name || post?.author_name || "Unknown Author";
-      if (name !== authorFilter) return false;
+      if (name.trim() !== authorFilter.trim()) return false;
     }
 
     if (categoryFilter !== "All Categories") {
-      let cats: string[] = [];
-      const rawCats = post?.categories || post?.category;
-      if (Array.isArray(rawCats)) cats = rawCats.map(String);
-      else if (typeof rawCats === "string") {
-        try {
-          const parsed = JSON.parse(rawCats);
-          cats = Array.isArray(parsed)
-            ? parsed.map(String)
-            : [String(parsed)];
-        } catch (e) {
-          cats = [rawCats];
-        }
-      }
-      if (!cats.some((c) => c === categoryFilter)) return false;
+      const postCats = extractCategoryNames(post?.categories || post?.category);
+      if (!postCats.includes(categoryFilter)) return false;
     }
 
-    if (featuredFilter === "Featured Only" && !post?.featured) return false;
-    if (featuredFilter === "Regular Only" && post?.featured) return false;
+    if (featuredFilter === "Featured Only") {
+      const isFeatured =
+        post?.featured === true ||
+        post?.featured === 1 ||
+        post?.featured === "1" ||
+        String(post?.featured).toLowerCase() === "true";
+      if (!isFeatured) return false;
+    }
+
+    if (featuredFilter === "Regular Only") {
+      const isFeatured =
+        post?.featured === true ||
+        post?.featured === 1 ||
+        post?.featured === "1" ||
+        String(post?.featured).toLowerCase() === "true";
+      if (isFeatured) return false;
+    }
 
     return true;
   });
@@ -336,7 +363,7 @@ export default function PostsPage() {
                 <FilterSelect
                   value={categoryFilter}
                   onChange={setCategoryFilter}
-                  options={["All Categories", ...dbCategories]}
+                  options={["All Categories", ...combinedCategories]}
                 />
                 <FilterSelect
                   value={featuredFilter}
@@ -424,17 +451,7 @@ export default function PostsPage() {
                         <td className="px-4">
                           <div className="flex flex-wrap gap-2">
                             {(() => {
-                              let cats: string[] = [];
-                              const rawCats = post?.categories || post?.category;
-                              if (Array.isArray(rawCats)) cats = rawCats.map(String);
-                              else if (typeof rawCats === "string") {
-                                try {
-                                  const parsed = JSON.parse(rawCats);
-                                  cats = Array.isArray(parsed) ? parsed.map(String) : [String(parsed)];
-                                } catch (e) {
-                                  cats = [rawCats];
-                                }
-                              }
+                              const cats = extractCategoryNames(post?.categories || post?.category);
                               return cats.length > 0 ? (
                                 cats.slice(0, 2).map((cat, i) => (
                                   <span key={i} className="h-[26px] px-3 flex items-center rounded-full admin-small bg-blue-50 text-blue-600 border border-blue-100">
@@ -640,7 +657,8 @@ function FilterSelect({
   return (
     <div className="relative w-52">
       <button
-        onClick={() => setIsOpen(!isOpen)}
+        type="button"
+        onClick={() => setIsOpen((prev) => !prev)}
         onBlur={() => setTimeout(() => setIsOpen(false), 200)}
         className="w-full h-10 bg-white border border-slate-200 rounded-xl px-4 flex items-center justify-between text-[14px] font-medium text-slate-600 hover:border-slate-300 transition-all cursor-pointer shadow-sm text-left"
       >
@@ -653,6 +671,8 @@ function FilterSelect({
           {options.map((opt) => (
             <button
               key={opt}
+              type="button"
+              onMouseDown={(e) => e.preventDefault()}
               onClick={() => {
                 onChange(opt);
                 setIsOpen(false);
