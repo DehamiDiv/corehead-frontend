@@ -2,8 +2,8 @@ import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import test from "node:test";
 
-import normalizer from "../../../contracts/layout-normalizer-v1.js";
-import validator from "../../../contracts/layout-validator-v1.js";
+import normalizer from "../contracts/contracts/layout-normalizer-v1.js";
+import validator from "../contracts/contracts/layout-validator-v1.js";
 
 const { normalizeLayoutDocumentV1 } = normalizer;
 const { validateLayoutDocumentV1 } = validator;
@@ -22,7 +22,7 @@ function prepareLikeFrontend(input, { name, type, status }) {
 }
 
 test("manual and visual block input produce a canonical persisted document", async () => {
-  const fixtureUrl = new URL("../../../contracts/fixtures/valid-single-post.json", import.meta.url);
+  const fixtureUrl = new URL("../contracts/contracts/fixtures/valid-single-post.json", import.meta.url);
   const fixture = JSON.parse(await readFile(fixtureUrl, "utf8"));
   const prepared = prepareLikeFrontend(fixture.blocks, {
     name: "Builder Post",

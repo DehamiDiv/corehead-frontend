@@ -1,8 +1,8 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
-import normalizer from "../../../contracts/layout-normalizer-v1.js";
-import validator from "../../../contracts/layout-validator-v1.js";
+import normalizer from "../contracts/contracts/layout-normalizer-v1.js";
+import validator from "../contracts/contracts/layout-validator-v1.js";
 
 const { normalizeLayoutDocumentV1 } = normalizer;
 const { validateLayoutDocumentV1 } = validator;

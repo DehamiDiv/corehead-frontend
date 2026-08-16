@@ -5,7 +5,7 @@ import { CheckCircle2, LayoutTemplate, Loader2, Pencil, Sparkles } from "lucide-
 import { cn } from "@/lib/utils";
 import { api } from "@/lib/api";
 import ContentLayoutMiniPreview from "@/components/admin/appearance/ContentLayoutMiniPreview";
-import classification from "../../../../../contracts/template-classification-v1.js";
+import classification from "../../../contracts/template-classification-v1.js";
 import {
   HOME_LAYOUT_OPTIONS,
   getHomeLayoutPalette,
