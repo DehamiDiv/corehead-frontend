@@ -229,13 +229,12 @@ export default function Canvas() {
                     });
                   }}
                   onDrop={(e) => handleExecuteDrop(e, parentId, index)}
-                  className={`transition-all duration-200 relative flex items-center justify-center ${
-                    isDropTargetBefore
-                      ? "h-10 my-2 bg-blue-500/10 border-2 border-blue-500 rounded-xl"
-                      : isDragging
+                  className={`transition-all duration-200 relative flex items-center justify-center ${isDropTargetBefore
+                    ? "h-10 my-2 bg-blue-500/10 border-2 border-blue-500 rounded-xl"
+                    : isDragging
                       ? "h-3 -my-1.5 opacity-0 hover:opacity-100 hover:bg-blue-200"
                       : "h-2 -my-1 opacity-0 group-hover/block:opacity-100"
-                  }`}
+                    }`}
                 >
                   {isDropTargetBefore ? (
                     <div className="flex items-center gap-2 px-3 py-1 bg-blue-600 text-white rounded-full text-xs font-bold shadow-lg animate-pulse">
@@ -282,23 +281,19 @@ export default function Canvas() {
                     selectBlock(block.id);
                   }
                 }}
-                className={`relative transition-all duration-200 ${
-                  isInteractive ? "cursor-pointer" : ""
-                } ${
-                  isCurrentlyDragging
+                className={`relative transition-all duration-200 ${isInteractive ? "cursor-pointer" : ""
+                  } ${isCurrentlyDragging
                     ? "opacity-25 scale-[0.98] border-2 border-dashed border-blue-500"
                     : ""
-                } ${
-                  isInteractive && isSelected && !isCurrentlyDragging
+                  } ${isInteractive && isSelected && !isCurrentlyDragging
                     ? "ring-2 ring-blue-600 bg-blue-50/20 shadow-xl rounded-2xl z-20"
                     : isInteractive && !isCurrentlyDragging
-                    ? "hover:ring-1 hover:ring-blue-300 rounded-2xl"
-                    : ""
-                } ${
-                  block.type === "Container" || block.type === "Columns"
+                      ? "hover:ring-1 hover:ring-blue-300 rounded-2xl"
+                      : ""
+                  } ${block.type === "Container" || block.type === "Columns"
                     ? "p-5 border-2 border-dashed border-slate-200 rounded-2xl min-h-[140px] bg-slate-50/30"
                     : "p-6 rounded-2xl border-2 border-transparent hover:bg-slate-50/80"
-                }`}
+                  }`}
               >
                 {/* Floating Action Toolbar for Selected Block */}
                 {isInteractive && isSelected && !isCurrentlyDragging && (
@@ -395,20 +390,17 @@ export default function Canvas() {
                 {/* Nested Containers / Columns */}
                 {(block.type === "Container" || block.type === "Columns") && (
                   <div
-                    className={`mt-4 p-5 min-h-[90px] bg-white/80 rounded-xl gap-4 border-2 border-dashed border-slate-200 transition-all ${
-                      isDragging
-                        ? "border-blue-400 bg-blue-50/20 ring-2 ring-blue-200"
-                        : ""
-                    } ${
-                      block.type === "Columns" ? "grid" : "flex flex-col"
-                    }`}
+                    className={`mt-4 p-5 min-h-[90px] bg-white/80 rounded-xl gap-4 border-2 border-dashed border-slate-200 transition-all ${isDragging
+                      ? "border-blue-400 bg-blue-50/20 ring-2 ring-blue-200"
+                      : ""
+                      } ${block.type === "Columns" ? "grid" : "flex flex-col"
+                      }`}
                     style={
                       block.type === "Columns"
                         ? {
-                            gridTemplateColumns: `repeat(${
-                              block.content || 2
+                          gridTemplateColumns: `repeat(${block.content || 2
                             }, minmax(0, 1fr))`,
-                          }
+                        }
                         : {}
                     }
                     onDragOver={(e) => {
@@ -435,13 +427,13 @@ export default function Canvas() {
 
                     {blocksList.filter((b) => b.parentId === block.id)
                       .length === 0 && (
-                      <div className="text-sm text-slate-400 text-center py-6 border-2 border-dashed border-slate-200 rounded-xl flex flex-col items-center justify-center gap-2 bg-slate-50/50">
-                        <LayoutGrid size={18} className="text-slate-300" />
-                        <span className="font-medium text-xs">
-                          Drop components inside this {block.type}
-                        </span>
-                      </div>
-                    )}
+                        <div className="text-sm text-slate-400 text-center py-6 border-2 border-dashed border-slate-200 rounded-xl flex flex-col items-center justify-center gap-2 bg-slate-50/50">
+                          <LayoutGrid size={18} className="text-slate-300" />
+                          <span className="font-medium text-xs">
+                            Drop components inside this {block.type}
+                          </span>
+                        </div>
+                      )}
                   </div>
                 )}
               </div>
@@ -460,13 +452,12 @@ export default function Canvas() {
                     });
                   }}
                   onDrop={(e) => handleExecuteDrop(e, parentId, index + 1)}
-                  className={`transition-all duration-200 relative flex items-center justify-center ${
-                    isDropTargetAfter
-                      ? "h-10 my-2 bg-blue-500/10 border-2 border-blue-500 rounded-xl"
-                      : isDragging
+                  className={`transition-all duration-200 relative flex items-center justify-center ${isDropTargetAfter
+                    ? "h-10 my-2 bg-blue-500/10 border-2 border-blue-500 rounded-xl"
+                    : isDragging
                       ? "h-3 -my-1.5 opacity-0 hover:opacity-100 hover:bg-blue-200"
                       : "h-2 -my-1 opacity-0 group-hover/block:opacity-100"
-                  }`}
+                    }`}
                 >
                   {isDropTargetAfter ? (
                     <div className="flex items-center gap-2 px-3 py-1 bg-blue-600 text-white rounded-full text-xs font-bold shadow-lg animate-pulse">
@@ -501,10 +492,10 @@ export default function Canvas() {
     compareMode && aiBlocks.length > 0
       ? "max-w-[95%]"
       : deviceMode === "mobile"
-      ? "max-w-[375px]"
-      : deviceMode === "tablet"
-      ? "max-w-[768px]"
-      : "max-w-6xl";
+        ? "max-w-[375px]"
+        : deviceMode === "tablet"
+          ? "max-w-[768px]"
+          : "max-w-6xl";
 
   return (
     <div
@@ -585,9 +576,8 @@ export default function Canvas() {
 
         {/* Builder Content */}
         <div
-          className={`p-12 md:p-20 ${
-            compareMode && aiBlocks.length > 0 ? "pt-24" : ""
-          }`}
+          className={`p-12 md:p-20 ${compareMode && aiBlocks.length > 0 ? "pt-24" : ""
+            }`}
         >
           {compareMode && aiBlocks.length > 0 ? (
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-10 divide-x divide-slate-100">
@@ -731,34 +721,51 @@ function renderBlockContent(block: BuilderBlock, isSelected: boolean) {
           {contentToRender}
         </p>
       );
-    case "Image":
+    case "Image": {
       const hasBinding = !!block.bindings?.content;
-      const imageSrc = typeof block.content === "string" && block.content.trim() !== "" 
-        ? block.content 
+      const imageSrc = typeof block.content === "string" && block.content.trim() !== ""
+        ? block.content
         : null;
+      const seed = Math.abs((block.id || '').split('').reduce((a: number, c: string) => a + c.charCodeAt(0), 42));
+      const placeholderUrl = `https://picsum.photos/seed/ai-${seed}/800/400`;
 
       return (
         <div style={styleString} className="bg-slate-100 rounded-lg overflow-hidden min-h-[120px] flex items-center justify-center">
-          {imageSrc ? (
+          {hasBinding ? (
+            <div className="relative w-full">
+              <img
+                src={placeholderUrl}
+                alt="Bound image preview"
+                className="w-full h-auto rounded-lg opacity-60"
+              />
+              <div className="absolute inset-0 flex flex-col items-center justify-center text-blue-700 bg-blue-50/60 rounded-lg">
+                <ImageIcon className="w-6 h-6 mb-1" />
+                <span className="text-xs font-bold">Bound to: {`{${block.bindings?.content}}`}</span>
+              </div>
+            </div>
+          ) : imageSrc ? (
             <img
               src={imageSrc}
               alt="Block"
               className="w-full h-auto rounded-lg"
+              onError={(e) => {
+                (e.currentTarget as HTMLImageElement).onerror = null;
+                (e.currentTarget as HTMLImageElement).src = placeholderUrl;
+              }}
             />
-          ) : hasBinding ? (
-            <div className="flex flex-col items-center justify-center text-blue-600 py-6 text-center">
-              <ImageIcon className="w-8 h-8 mb-1" />
-              <span className="text-xs font-medium">Bound image</span>
-              <span className="text-[10px] text-blue-500/70 mt-0.5">{`{${block.bindings?.content}}`}</span>
-            </div>
           ) : (
-            <div className="flex flex-col items-center justify-center text-slate-400 py-8">
-              <ImageIcon className="w-8 h-8 mb-2" />
-              <span className="text-xs">No image URL</span>
-            </div>
+            <img
+              src={placeholderUrl}
+              alt="Image placeholder"
+              className="w-full h-auto rounded-lg"
+              onError={(e) => {
+                (e.currentTarget as HTMLImageElement).onerror = null;
+              }}
+            />
           )}
         </div>
       );
+    }
     case "Quote":
       return (
         <blockquote

@@ -140,6 +140,20 @@ export default function AdminNavbar() {
             </Link>
           ) : null}
 
+          <Link
+            href="/pricing"
+            className={cn(
+              "inline-flex items-center justify-center gap-1.5",
+              "h-10 px-3 rounded-xl border border-slate-200/80 bg-white/90",
+              "text-xs font-bold text-slate-600",
+              "hover:text-blue-600 hover:border-blue-200 hover:bg-blue-50/50",
+              "transition-colors shrink-0",
+            )}
+            title="View plans and upgrade to PRO"
+          >
+            <span>Pricing</span>
+          </Link>
+
           {/* Profile — perfect circle */}
           <Link
             href="/admin/settings/profile"

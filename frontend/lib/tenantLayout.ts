@@ -103,14 +103,15 @@ function preparePublicDocument(layoutJson: any, kind: TenantLayoutKind, name: st
 }
 
 function defaultDocument(kind: TenantLayoutKind): LayoutDocumentV1 {
-  return normalizeLayoutDocumentV1(
+  const normalized = normalizeLayoutDocumentV1(
     kind === "blog-archive" ? defaultArchiveLayout() : defaultSinglePostLayout(),
     {
       name: kind === "blog-archive" ? "Default Blog Archive" : "Default Single Post",
       kind,
       origin: "manual",
     },
-  ).document;
+  );
+  return normalized.document as unknown as LayoutDocumentV1;
 }
 
 function resolvedTemplate(tpl: any, kind: TenantLayoutKind): ResolvedTenantLayout | null {
@@ -127,7 +128,7 @@ function resolvedTemplate(tpl: any, kind: TenantLayoutKind): ResolvedTenantLayou
     templateId: tpl.id,
     templateName: tpl.name,
     templateType: tpl.type,
-    issues: prepared.issues,
+    issues: prepared.issues as any,
   };
 }
 

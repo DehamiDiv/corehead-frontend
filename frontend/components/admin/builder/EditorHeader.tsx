@@ -23,7 +23,11 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { getCurrentSite } from "@/lib/siteStorage";
 import { api } from "@/lib/api";
+<<<<<<< HEAD
 import { cn } from "@/lib/utils";
+=======
+import { aiApi } from "@/services/aiApi";
+>>>>>>> 2d29246f281a8c6f70323f39c98cbb78d6a59e33
 
 const SAVE_META_KEY = "corehead_builder_save_meta";
 
@@ -43,6 +47,7 @@ export default function EditorHeader() {
     redo,
     canUndo,
     canRedo,
+    aiHistoryId,
   } = useBuilder();
   const [isSaving, setIsSaving] = useState(false);
   const [showSaveModal, setShowSaveModal] = useState(false);
@@ -87,6 +92,14 @@ export default function EditorHeader() {
           blockCount: blocks.length,
         }),
       );
+
+      if (aiHistoryId) {
+        try {
+          await aiApi.promoteHistory(aiHistoryId, result?.name ?? tempName.trim());
+        } catch (e) {
+          console.error("Failed to update AI history library:", e);
+        }
+      }
 
       // R4-2: real success pages (not alert stubs)
       if (saveStatus === "published") {

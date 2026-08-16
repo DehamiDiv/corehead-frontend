@@ -11,7 +11,7 @@ const fontOptions = [
 ];
 
 const colorThemes = [
-  { id: 'premium-indigo', label: 'Indigo Royale', primary: '#4f46e5', bg: '#ffffff', text: '#1e1e2e', gradient: 'linear-gradient(135deg, #4f46e5 0%, #3730a3 100%)' },
+  { id: 'premium-indigo', label: 'Indigo Royale', primary: '#1d4ed8', bg: '#ffffff', text: '#1e1e2e', gradient: 'linear-gradient(135deg, #1d4ed8 0%, #1e3a8a 100%)' },
   { id: 'midnight', label: 'Midnight', primary: '#38bdf8', bg: '#0f172a', text: '#f1f5f9', gradient: 'linear-gradient(135deg, #0f172a 0%, #1e293b 100%)' },
   { id: 'sunset', label: 'Sunset Ember', primary: '#f43f5e', bg: '#fffafb', text: '#4c0519', gradient: 'linear-gradient(135deg, #f43f5e 0%, #fb923c 100%)' },
   { id: 'oceanic', label: 'Oceanic', primary: '#06b6d4', bg: '#f0f9ff', text: '#083344', gradient: 'linear-gradient(135deg, #06b6d4 0%, #3b82f6 100%)' },
@@ -36,8 +36,8 @@ const radiusOptions = [
 
 export default function SettingsPanel({ settings, onSettingsChange, setActiveTab }) {
   const [applied, setApplied] = useState(false);
-  const activePrimary = settings.colors?.primary || '#667eea';
-  const activeGradient = settings.colors?.gradient || 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)';
+  const activePrimary = settings.colors?.primary || '#1d4ed8';
+  const activeGradient = settings.colors?.gradient || 'linear-gradient(135deg, #1d4ed8 0%, #1e3a8a 100%)';
 
   const handleApply = () => {
     setApplied(true);

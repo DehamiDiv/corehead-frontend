@@ -129,7 +129,7 @@ export default function ComponentsPanel({ onAddComponent, selectedCard, isCanvas
             }}
             onMouseEnter={e => {
               if (!isCanvasEmpty) {
-                e.currentTarget.style.borderColor = '#4f46e5';
+                e.currentTarget.style.borderColor = '#1d4ed8';
                 e.currentTarget.style.background = '#f5f3ff';
                 e.currentTarget.style.transform = 'translateY(-2px)';
                 e.currentTarget.style.boxShadow = '0 4px 12px rgba(79,70,229,0.15)';

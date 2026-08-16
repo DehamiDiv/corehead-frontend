@@ -53,7 +53,7 @@ export default function AIChatPanel({ blogPosts, onUpdateLayout, onSwitchToBuild
   return (
     <div style={{ padding: '20px', display: 'flex', flexDirection: 'column', height: '100%' }}>
       <div style={{
-        background: 'linear-gradient(135deg, #4f46e5 0%, #3b82f6 100%)',
+        backgroundImage: 'linear-gradient(135deg, #1d4ed8 0%, #3b82f6 100%)',
         padding: '16px',
         borderRadius: '16px',
         color: '#fff',
@@ -93,7 +93,7 @@ export default function AIChatPanel({ blogPosts, onUpdateLayout, onSwitchToBuild
               background: loading ? '#f8fafc' : '#fff',
               color: '#334155',
             }}
-            onFocus={e => e.target.style.borderColor = '#4f46e5'}
+            onFocus={e => e.target.style.borderColor = '#1d4ed8'}
             onBlur={e => e.target.style.borderColor = '#e2e8f0'}
           />
         </div>
@@ -116,7 +116,7 @@ export default function AIChatPanel({ blogPosts, onUpdateLayout, onSwitchToBuild
           style={{
             width: '100%',
             padding: '12px',
-            background: loading ? '#cbd5e1' : '#4f46e5',
+            background: loading ? '#cbd5e1' : '#1d4ed8',
             color: '#fff',
             border: 'none',
             borderRadius: '12px',
@@ -171,7 +171,7 @@ export default function AIChatPanel({ blogPosts, onUpdateLayout, onSwitchToBuild
                 fontFamily: 'inherit'
               }}
               onMouseEnter={e => {
-                e.currentTarget.style.borderColor = '#4f46e5';
+                e.currentTarget.style.borderColor = '#1d4ed8';
                 e.currentTarget.style.background = '#f5f3ff';
               }}
               onMouseLeave={e => {

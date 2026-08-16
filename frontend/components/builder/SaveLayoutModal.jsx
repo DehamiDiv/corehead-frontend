@@ -78,12 +78,12 @@ export default function SaveLayoutModal({ isOpen, onClose, onSave, isSaving }) {
           padding: '20px 24px 16px',
           borderBottom: '1px solid #f0f0f0',
           display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-          background: 'linear-gradient(135deg, #f5f3ff 0%, #eff6ff 100%)'
+          backgroundImage: 'linear-gradient(135deg, #f5f3ff 0%, #eff6ff 100%)'
         }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
             <div style={{
               width: '36px', height: '36px', borderRadius: '10px',
-              background: '#4f46e5', display: 'flex', alignItems: 'center', justifyContent: 'center'
+              background: '#1d4ed8', display: 'flex', alignItems: 'center', justifyContent: 'center'
             }}>
               <Save size={18} color="#fff" />
             </div>
@@ -136,7 +136,7 @@ export default function SaveLayoutModal({ isOpen, onClose, onSave, isSaving }) {
                 background: error ? '#fff5f5' : '#fff',
                 transition: 'border-color 0.15s'
               }}
-              onFocus={e => !error && (e.target.style.borderColor = '#4f46e5')}
+              onFocus={e => !error && (e.target.style.borderColor = '#1d4ed8')}
               onBlur={e => !error && (e.target.style.borderColor = '#e5e5e5')}
             />
             {/* Character count */}
@@ -158,7 +158,7 @@ export default function SaveLayoutModal({ isOpen, onClose, onSave, isSaving }) {
               display: 'flex', alignItems: 'center', gap: '6px',
               marginBottom: '10px'
             }}>
-              <Sparkles size={13} color="#4f46e5" />
+              <Sparkles size={13} color="#1d4ed8" />
               <span style={{ fontSize: '12px', fontWeight: '600', color: '#555' }}>
                 Quick suggestions
               </span>
@@ -170,11 +170,11 @@ export default function SaveLayoutModal({ isOpen, onClose, onSave, isSaving }) {
                   onClick={() => handleSuggestion(s)}
                   style={{
                     padding: '5px 12px',
-                    border: `1.5px solid ${name === s ? '#4f46e5' : '#e5e5e5'}`,
+                    border: `1.5px solid ${name === s ? '#1d4ed8' : '#e5e5e5'}`,
                     borderRadius: '20px', cursor: 'pointer',
                     fontSize: '12px', fontFamily: 'inherit',
                     background: name === s ? '#f5f3ff' : '#fafafa',
-                    color: name === s ? '#4f46e5' : '#555',
+                    color: name === s ? '#1d4ed8' : '#555',
                     fontWeight: name === s ? '600' : '400',
                     transition: 'all 0.12s'
                   }}
@@ -204,7 +204,7 @@ export default function SaveLayoutModal({ isOpen, onClose, onSave, isSaving }) {
               disabled={isSaving}
               style={{
                 flex: 2, padding: '11px',
-                background: isSaving ? '#a5b4fc' : '#4f46e5',
+                background: isSaving ? '#a5b4fc' : '#1d4ed8',
                 color: '#fff', border: 'none',
                 borderRadius: '10px', cursor: isSaving ? 'not-allowed' : 'pointer',
                 fontSize: '14px', fontWeight: '600',

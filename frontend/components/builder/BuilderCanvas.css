@@ -23,7 +23,7 @@
   align-items: center;
   justify-content: space-between;
   padding: 16px 20px;
-  background: linear-gradient(135deg, rgba(102,126,234,0.06) 0%, rgba(118,75,162,0.06) 100%);
+  background: linear-gradient(135deg, rgba(29,78,216,0.06) 0%, rgba(118,75,162,0.06) 100%);
   border-bottom: 2px solid #e5e5e5;
 }
 
@@ -42,7 +42,7 @@
 
 .badge {
   padding: 4px 12px;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, #1d4ed8 0%, #1e3a8a 100%);
   color: white;
   border-radius: 999px;
   font-size: 11px;
@@ -71,9 +71,9 @@
   align-items: center;
   gap: 12px;
   padding: 12px 20px;
-  background: linear-gradient(135deg, rgba(102,126,234,0.06) 0%, rgba(118,75,162,0.06) 100%);
-  border-top: 2px dashed rgba(102,126,234,0.3);
-  color: #667eea;
+  background: linear-gradient(135deg, rgba(29,78,216,0.06) 0%, rgba(118,75,162,0.06) 100%);
+  border-top: 2px dashed rgba(29,78,216,0.3);
+  color: #1d4ed8;
   font-size: 12px;
   font-weight: 600;
 }
@@ -81,7 +81,7 @@
 .indicator-line {
   flex: 1;
   height: 2px;
-  background: linear-gradient(90deg, #667eea, #764ba2);
+  background: linear-gradient(90deg, #1d4ed8, #1e3a8a);
   border-radius: 999px;
   opacity: 0.4;
 }

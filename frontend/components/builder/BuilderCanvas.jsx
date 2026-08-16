@@ -15,8 +15,8 @@ const CARD_STYLES = [
 export default function BuilderCanvas({ blogPosts, contentMode, selectedCard, setSelectedCard, settings, onDeleteCard }) {
   const [cardLayout, setCardLayout] = useState('grid');
 
-  const activePrimary = settings?.colors?.primary || '#4f46e5';
-  const activeGradient = settings?.colors?.gradient || 'linear-gradient(135deg, #4f46e5 0%, #3730a3 100%)';
+  const activePrimary = settings?.colors?.primary || '#1d4ed8';
+  const activeGradient = settings?.colors?.gradient || 'linear-gradient(135deg, #1d4ed8 0%, #1e3a8a 100%)';
 
   const isStackedLayout = cardLayout === 'list' || cardLayout === 'minimal';
   const gridStyle = isStackedLayout
@@ -106,10 +106,11 @@ export default function BuilderCanvas({ blogPosts, contentMode, selectedCard, se
 
           {/* Blog Cards Grid / Blocks */}
           <div className="blog-grid" style={gridStyle}>
-            {blogPosts.map((item) => (
-              item.type && ['Heading', 'Paragraph', 'Image', 'Quote', 'Divider', 'Button', 'Collection List'].includes(item.type) ? (
+            {blogPosts.map((item, index) => {
+              const itemKey = item.id || `item-${index}`;
+              return item.type && ['Heading', 'Paragraph', 'Image', 'Quote', 'Divider', 'Button', 'Collection List'].includes(item.type) ? (
                 <BlockRenderer
-                  key={item.id}
+                  key={itemKey}
                   block={item}
                   isSelected={selectedCard?.id === item.id}
                   onClick={() => setSelectedCard(item)}
@@ -117,7 +118,7 @@ export default function BuilderCanvas({ blogPosts, contentMode, selectedCard, se
                 />
               ) : (
                 <BlogCard
-                  key={item.id}
+                  key={itemKey}
                   post={item}
                   isSelected={selectedCard?.id === item.id}
                   onClick={() => setSelectedCard(item)}
@@ -125,8 +126,8 @@ export default function BuilderCanvas({ blogPosts, contentMode, selectedCard, se
                   settings={settings}
                   cardLayout={cardLayout}
                 />
-              )
-            ))}
+              );
+            })}
           </div>
 
           {contentMode === 'dynamic' && (

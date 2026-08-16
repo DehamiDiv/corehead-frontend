@@ -55,7 +55,7 @@ export default function PaywallModal({
 
     const handleUpgrade = () => {
         onClose();
-        router.push("/pricing");
+        window.location.href = "/pricing";
     };
 
     const formatTime = (seconds: number) => {

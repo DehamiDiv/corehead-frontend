@@ -28,38 +28,38 @@ export default function AIOptionsPage() {
   });
 
   const layoutTypes = [
-    { 
-      id: 'single-post', 
-      name: 'Single Post Template', 
-      description: 'Individual blog article layout with full content display' 
+    {
+      id: 'single-post',
+      name: 'Single Post Template',
+      description: 'Individual blog article layout with full content display'
     },
-    { 
-      id: 'blog-archive', 
-      name: 'Blog Archive', 
-      description: 'Post listing page with grid or list view' 
+    {
+      id: 'blog-archive',
+      name: 'Blog Archive',
+      description: 'Post listing page with grid or list view'
     }
   ];
 
   const designStyles = [
-    { 
-      id: 'modern', 
-      name: 'Modern & Clean', 
-      description: 'Contemporary design with minimal aesthetics' 
+    {
+      id: 'modern',
+      name: 'Modern & Clean',
+      description: 'Contemporary design with minimal aesthetics'
     },
-    { 
-      id: 'editorial', 
-      name: 'Classic Editorial', 
-      description: 'Traditional blog style with serif fonts' 
+    {
+      id: 'editorial',
+      name: 'Classic Editorial',
+      description: 'Traditional blog style with serif fonts'
     },
-    { 
-      id: 'magazine', 
-      name: 'Magazine Layout', 
-      description: 'Multi-column editorial design' 
+    {
+      id: 'magazine',
+      name: 'Magazine Layout',
+      description: 'Multi-column editorial design'
     },
-    { 
-      id: 'minimalist', 
-      name: 'Minimalist', 
-      description: 'Ultra-clean with maximum white space' 
+    {
+      id: 'minimalist',
+      name: 'Minimalist',
+      description: 'Ultra-clean with maximum white space'
     }
   ];
 
@@ -71,10 +71,10 @@ export default function AIOptionsPage() {
   };
 
   const handleSaveOptions = () => {
-    localStorage.setItem('ai_options', JSON.stringify({ 
-      layoutType: selectedTemplate, 
-      designStyle: selectedStyle, 
-      features 
+    localStorage.setItem('ai_options', JSON.stringify({
+      layoutType: selectedTemplate,
+      designStyle: selectedStyle,
+      features
     }));
   };
 
@@ -108,8 +108,8 @@ export default function AIOptionsPage() {
         <Link href="/ai-templates" className="nav-item">
           Quick templates
         </Link>
-        <Link href="/ai-history" className="nav-item">History</Link> 
-        
+        <Link href="/ai-history" className="nav-item">History</Link>
+
       </div>
 
       {/* Content */}
@@ -119,7 +119,7 @@ export default function AIOptionsPage() {
             <h3>📄 Layout Type</h3>
             <div className="option-grid">
               {layoutTypes.map(type => (
-                <div 
+                <div
                   key={type.id}
                   className={`option-card ${selectedTemplate === type.id ? 'selected' : ''}`}
                   onClick={() => setSelectedTemplate(type.id)}
@@ -140,7 +140,7 @@ export default function AIOptionsPage() {
             <h3>🎨 Design Style</h3>
             <div className="option-grid">
               {designStyles.map(style => (
-                <div 
+                <div
                   key={style.id}
                   className={`option-card ${selectedStyle === style.id ? 'selected' : ''}`}
                   onClick={() => setSelectedStyle(style.id)}
@@ -161,48 +161,48 @@ export default function AIOptionsPage() {
             <h3>🔧 Key Features to Include</h3>
             <div className="features-list">
               <label className="feature-item">
-                <input 
-                  type="checkbox" 
+                <input
+                  type="checkbox"
                   checked={features.sidebar}
                   onChange={() => handleFeatureToggle('sidebar')}
                 />
                 <span>Include sidebar with widgets</span>
               </label>
               <label className="feature-item">
-                <input 
-                  type="checkbox" 
+                <input
+                  type="checkbox"
                   checked={features.toc}
                   onChange={() => handleFeatureToggle('toc')}
                 />
                 <span>Table of contents (sticky navigation)</span>
               </label>
               <label className="feature-item">
-                <input 
-                  type="checkbox" 
+                <input
+                  type="checkbox"
                   checked={features.author}
                   onChange={() => handleFeatureToggle('author')}
                 />
                 <span>Author bio section with avatar</span>
               </label>
               <label className="feature-item">
-                <input 
-                  type="checkbox" 
+                <input
+                  type="checkbox"
                   checked={features.related}
                   onChange={() => handleFeatureToggle('related')}
                 />
                 <span>Related posts section</span>
               </label>
               <label className="feature-item">
-                <input 
-                  type="checkbox" 
+                <input
+                  type="checkbox"
                   checked={features.comments}
                   onChange={() => handleFeatureToggle('comments')}
                 />
                 <span>Comments section</span>
               </label>
               <label className="feature-item">
-                <input 
-                  type="checkbox" 
+                <input
+                  type="checkbox"
                   checked={features.social}
                   onChange={() => handleFeatureToggle('social')}
                 />

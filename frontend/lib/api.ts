@@ -931,5 +931,26 @@ export const api = {
       body: JSON.stringify({ email }),
       skipSite: true
     });
+  },
+
+  async notifySubscribersNewPost(postData: {
+    title: string;
+    slug: string;
+    excerpt?: string;
+    coverImage?: string;
+    siteSlug: string;
+    siteName: string;
+    siteId?: string | number;
+  }) {
+    try {
+      const res = await fetch('/api/newsletter/notify-post', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(postData),
+      });
+      return await res.json();
+    } catch (_e) {
+      return { success: false, error: 'Failed to dispatch post alerts' };
+    }
   }
 };

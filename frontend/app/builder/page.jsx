@@ -14,6 +14,7 @@ import SaveLayoutModal from '@/components/builder/SaveLayoutModal';
 import LoadLayoutModal from '@/components/builder/LoadLayoutModal';
 import './page.css';
 import { builderApi } from '@/services/builderApi';
+import { aiApi } from '@/services/aiApi';
 import PaywallModal from '@/components/admin/PaywallModal';
 
 const defaultSettings = {
@@ -23,10 +24,10 @@ const defaultSettings = {
   colors: {
     id: 'premium-indigo',
     label: 'Indigo Royale',
-    primary: '#4f46e5',
+    primary: '#1d4ed8',
     bg: '#ffffff',
     text: '#1e1e2e',
-    gradient: 'linear-gradient(135deg, #4f46e5 0%, #3730a3 100%)'
+    gradient: 'linear-gradient(135deg, #1d4ed8 0%, #1e3a8a 100%)'
   },
 
   spacing: 'normal',
@@ -58,6 +59,7 @@ export default function BlogBuilderPage() {
 
   const [blogPosts, setBlogPosts] = useState([]);
   const [isGenerating, setIsGenerating] = useState(false);
+  const [currentAiHistoryId, setCurrentAiHistoryId] = useState(null);
 
   const [cmsFields] = useState({
     post: ['Title', 'Excerpt', 'Content', 'Featured Image', 'Category', 'Tags'],
@@ -87,8 +89,10 @@ export default function BlogBuilderPage() {
 
           if (result.layout?.cards) {
             setBlogPosts(result.layout.cards);
+            if (result.id) setCurrentAiHistoryId(result.id);
           } else if (result.blocks) {
             setBlogPosts(result.blocks);
+            if (result.id) setCurrentAiHistoryId(result.id);
           }
         } catch (err) {
           console.warn('AI Flow error:', err.message);
@@ -112,6 +116,7 @@ export default function BlogBuilderPage() {
         try {
           const parsed = JSON.parse(aiLayout);
           if (parsed.cards) setBlogPosts(parsed.cards);
+          if (parsed.history_id) setCurrentAiHistoryId(parsed.history_id);
           localStorage.removeItem('ai_generated_layout');
         } catch (e) {
           console.error('Failed to load AI layout:', e);
@@ -135,6 +140,15 @@ export default function BlogBuilderPage() {
         content_mode: contentMode,
         grid_layout: 'grid'
       });
+
+      if (currentAiHistoryId) {
+        try {
+          await aiApi.promoteHistory(currentAiHistoryId, name);
+        } catch (e) {
+          console.error('Failed to promote AI history:', e);
+        }
+      }
+
       setSaveModalOpen(false);
       setSaveStatus('saved');
       setTimeout(() => setSaveStatus(null), 2500);
@@ -203,9 +217,10 @@ export default function BlogBuilderPage() {
   };
 
   // AI generated posts — store separately, enable compare mode
-  const handleAIGenerated = (newCards) => {
+  const handleAIGenerated = (newCards, historyId) => {
     setAiPosts(newCards);
     setCompareMode(true);
+    if (historyId) setCurrentAiHistoryId(historyId);
   };
 
   return (
@@ -272,7 +287,7 @@ export default function BlogBuilderPage() {
             className="btn-primary"
             disabled={blogPosts.length === 0 && aiPosts.length === 0}
             style={{
-              background: 'linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%)',
+              backgroundImage: 'linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%)',
               border: 'none',
               boxShadow: '0 4px 12px rgba(37,99,235,0.2)',
               opacity: (blogPosts.length === 0 && aiPosts.length === 0) ? 0.5 : 1,
@@ -287,8 +302,21 @@ export default function BlogBuilderPage() {
               let finalLayout = [];
 
               if (isAlreadyBlocks) {
-                // If it is already a block structure, export directly
-                finalLayout = postsToSync;
+                // Keep AI block structure, but ensure Image blocks have a real src stored
+                // (BlockRenderer shows computed placeholders that aren't stored in content)
+                finalLayout = postsToSync.map(block => {
+                  if (block.type === 'Image') {
+                    const hasRealUrl = typeof block.content === 'string' && block.content.trim() !== '';
+                    if (!hasRealUrl) {
+                      // Compute same seed used by BlockRenderer
+                      const seed = Math.abs(
+                        (block.id || '').toString().split('').reduce((a, c) => a + c.charCodeAt(0), 42)
+                      );
+                      return { ...block, content: `https://picsum.photos/seed/ai-${seed}/800/400` };
+                    }
+                  }
+                  return block;
+                });
               } else {
                 // Otherwise wrap cards in container blocks
                 const mainBuilderBlocks = postsToSync.map((post, idx) => ({
@@ -440,14 +468,14 @@ export default function BlogBuilderPage() {
                   borderBottom: `2px solid ${compareMode ? 'rgba(79,70,229,0.2)' : '#fde68a'}`,
                   fontSize: '13px',
                 }}>
-                  <span style={{ fontWeight: '700', color: compareMode ? '#4f46e5' : '#92400e', marginRight: '4px' }}>
+                  <span style={{ fontWeight: '700', color: compareMode ? '#1d4ed8' : '#92400e', marginRight: '4px' }}>
                     {compareMode ? '⚡ Compare Mode — Your Layout vs AI' : '🤖 AI layout is ready!'}
                   </span>
                   <button
                     onClick={() => setCompareMode(v => !v)}
                     style={{
                       padding: '6px 14px', borderRadius: '8px', border: 'none',
-                      background: compareMode ? '#4f46e5' : '#f59e0b',
+                      background: compareMode ? '#1d4ed8' : '#f59e0b',
                       color: '#fff', fontWeight: '700', fontSize: '12px',
                       cursor: 'pointer', fontFamily: 'inherit',
                     }}
@@ -458,8 +486,8 @@ export default function BlogBuilderPage() {
                     onClick={() => { setBlogPosts(aiPosts); setAiPosts([]); setCompareMode(false); }}
                     style={{
                       padding: '6px 14px', borderRadius: '8px',
-                      border: '2px solid #4f46e5', background: '#fff',
-                      color: '#4f46e5', fontWeight: '700', fontSize: '12px',
+                      border: '2px solid #1d4ed8', background: '#fff',
+                      color: '#1d4ed8', fontWeight: '700', fontSize: '12px',
                       cursor: 'pointer', fontFamily: 'inherit',
                     }}
                   >
@@ -505,7 +533,7 @@ export default function BlogBuilderPage() {
                       padding: '8px 16px',
                       background: 'rgba(79,70,229,0.06)',
                       borderBottom: '1px solid rgba(79,70,229,0.15)',
-                      fontSize: '11px', fontWeight: '700', color: '#4f46e5',
+                      fontSize: '11px', fontWeight: '700', color: '#1d4ed8',
                       textTransform: 'uppercase', letterSpacing: '0.5px',
                     }}>
                       ⚡ AI Generated Layout
@@ -553,7 +581,7 @@ export default function BlogBuilderPage() {
                   onClick={() => { setSelectedCard(post); setActiveTab('builder'); }}
                   style={{
                     padding: '10px 14px', marginBottom: '8px',
-                    border: `1px solid ${selectedCard?.id === post.id ? '#4f46e5' : '#e5e5e5'}`,
+                    border: `1px solid ${selectedCard?.id === post.id ? '#1d4ed8' : '#e5e5e5'}`,
                     borderRadius: '8px', cursor: 'pointer',
                     display: 'flex', justifyContent: 'space-between', alignItems: 'center',
                     background: selectedCard?.id === post.id ? '#eff6ff' : '#fff'
@@ -565,7 +593,7 @@ export default function BlogBuilderPage() {
                       {post.category} · {post.author}
                     </div>
                   </div>
-                  <span style={{ fontSize: '12px', color: '#4f46e5' }}>Edit →</span>
+                  <span style={{ fontSize: '12px', color: '#1d4ed8' }}>Edit →</span>
                 </div>
               ))}
             </div>
