@@ -24,7 +24,7 @@ const DEDICATED_HOME_RENDERERS: Readonly<
 });
 
 export function getDedicatedHomeRenderer(homeStyle: unknown) {
-  const registration = getHomeLayoutRegistration(homeStyle);
+  const registration = getHomeLayoutRegistration(homeStyle as string);
   const Renderer = DEDICATED_HOME_RENDERERS[registration.renderer];
   if (!Renderer) return null;
   return function RegisteredHomeRenderer(props: HomeLayoutProps) {
@@ -33,10 +33,11 @@ export function getDedicatedHomeRenderer(homeStyle: unknown) {
 }
 
 export function hasRegisteredHomeRenderer(homeStyle: unknown): boolean {
-  const registration = getHomeLayoutRegistration(homeStyle);
+  const registration = getHomeLayoutRegistration(homeStyle as string);
   return (
     registration.renderer === "classic" ||
     registration.renderer === "nature" ||
     Boolean(DEDICATED_HOME_RENDERERS[registration.renderer])
   );
 }
+

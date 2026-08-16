@@ -112,6 +112,7 @@ export function prepareLayoutForSave(
   return {
     document,
     sourceFormat: normalized.sourceFormat,
-    warnings: [...normalized.warnings, ...validation.warnings],
+    warnings: [...normalized.warnings, ...((validation as any).warnings || [])],
   };
 }
+
