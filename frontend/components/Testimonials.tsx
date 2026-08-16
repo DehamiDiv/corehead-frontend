@@ -81,11 +81,9 @@ const testimonials = [
 
 const shortVideos = [
   "LA2tadwk-aw",
-  "cM2iK-xpRAs",
-  "gOfTY08EDu4",
-  "LA2tadwk-aw",
-  "cM2iK-xpRAs",
-  "gOfTY08EDu4",
+  "GMhxRj3mq74",
+  "cD6FHRVYjA8",
+  "z8fNWJXwrm0",
 ];
 
 export default function Testimonials() {
@@ -124,8 +122,13 @@ export default function Testimonials() {
                 <div>
                   <div className="flex items-center gap-4 mb-6">
                     <div
-                      className={`w-12 h-12 rounded-full ${t.color} shrink-0`}
-                    ></div>
+                      className={`w-12 h-12 rounded-full ${t.color} shrink-0 flex items-center justify-center text-white font-bold text-base`}
+                    >
+                      {t.name
+                        .split(" ")
+                        .map((n) => n[0])
+                        .join("")}
+                    </div>
                     <div>
                       <h4 className="font-bold text-slate-900">{t.name}</h4>
                       <p className="text-sm text-slate-500">{t.role}</p>
@@ -216,7 +219,8 @@ function VideoCarousel() {
               
               {/* YouTube Thumbnail */}
               <img 
-                src={`https://img.youtube.com/vi/${id}/hqdefault.jpg`} 
+                src={`https://i.ytimg.com/vi/${id}/sddefault.jpg`}
+                onError={(e) => { (e.target as HTMLImageElement).src = `https://i.ytimg.com/vi/${id}/hqdefault.jpg`; }}
                 alt="Video thumbnail"
                 className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
               />
@@ -272,9 +276,10 @@ function VideoCarousel() {
             >
               <iframe
                 src={`https://www.youtube.com/embed/${playingVideo}?autoplay=1`}
-                className="w-full h-full"
-                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                className="w-full h-full border-0"
+                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
                 allowFullScreen
+                referrerPolicy="strict-origin-when-cross-origin"
               />
               <button
                 onClick={() => setPlayingVideo(null)}

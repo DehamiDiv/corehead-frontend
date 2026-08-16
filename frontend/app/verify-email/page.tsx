@@ -1,31 +1,87 @@
 "use client";
 
-import React, { useState, Suspense, useEffect } from "react";
+import React, { useState, Suspense, useEffect, useCallback } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import Image from "next/image";
-import { AlertCircle, Loader2, ShieldCheck, Mail } from "lucide-react";
+import {
+  AlertCircle,
+  Loader2,
+  ShieldCheck,
+  Mail,
+  Copy,
+  Check,
+  Info,
+} from "lucide-react";
 import { api } from "@/lib/api";
 
 function VerifyEmailForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const emailParam = searchParams.get("email") || "";
+  const callbackParam = searchParams.get("callback") || "";
+  const emailKey = emailParam.trim().toLowerCase();
 
   const [otp, setOtp] = useState(["", "", "", "", "", ""]);
   const [isLoading, setIsLoading] = useState(false);
+  const [isResending, setIsResending] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
+  const [info, setInfo] = useState<string | null>(null);
+  const [devOtp, setDevOtp] = useState<string | null>(null);
+  const [copied, setCopied] = useState(false);
+  const [resendCooldown, setResendCooldown] = useState(0);
+
+  // Restore dev OTP / email error from signup redirect
+  useEffect(() => {
+    if (!emailKey) return;
+    try {
+      const stored = sessionStorage.getItem(`corehead_dev_otp:${emailKey}`);
+      if (stored && /^\d{6}$/.test(stored)) {
+        setDevOtp(stored);
+        setOtp(stored.split(""));
+        setInfo(
+          "Resend is not configured on the backend, so no real email was sent. Use the verification code below (also printed in the backend console as [AUTH] Verification OTP).",
+        );
+      }
+      const emailErr = sessionStorage.getItem(
+        `corehead_email_error:${emailKey}`,
+      );
+      if (emailErr && !stored) {
+        setInfo(emailErr);
+      }
+    } catch {
+      /* ignore */
+    }
+  }, [emailKey]);
+
+  // Resend cooldown timer
+  useEffect(() => {
+    if (resendCooldown <= 0) return;
+    const t = setTimeout(() => setResendCooldown((c) => c - 1), 1000);
+    return () => clearTimeout(t);
+  }, [resendCooldown]);
+
+  const fillOtp = useCallback((code: string) => {
+    const digits = code.replace(/\D/g, "").slice(0, 6).split("");
+    while (digits.length < 6) digits.push("");
+    setOtp(digits);
+  }, []);
 
   const handleOtpChange = (index: number, value: string) => {
-    if (value.length > 1) return; // Only 1 digit
-    
+    // Support paste of full 6-digit code into one box
+    const cleaned = value.replace(/\D/g, "");
+    if (cleaned.length > 1) {
+      fillOtp(cleaned);
+      return;
+    }
+    if (value.length > 1) return;
+
     const newOtp = [...otp];
-    newOtp[index] = value;
+    newOtp[index] = cleaned;
     setOtp(newOtp);
 
-    // Auto-focus next input
-    if (value && index < 5) {
+    if (cleaned && index < 5) {
       const nextInput = document.getElementById(`otp-${index + 1}`);
       nextInput?.focus();
     }
@@ -38,11 +94,23 @@ function VerifyEmailForm() {
     }
   };
 
+  const handlePaste = (e: React.ClipboardEvent) => {
+    const text = e.clipboardData.getData("text");
+    if (/\d{6}/.test(text.replace(/\D/g, ""))) {
+      e.preventDefault();
+      fillOtp(text);
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     const otpString = otp.join("");
     if (otpString.length < 6) {
       setError("Please enter the complete 6-digit code.");
+      return;
+    }
+    if (!emailParam) {
+      setError("Missing email. Please sign up again.");
       return;
     }
 
@@ -51,14 +119,84 @@ function VerifyEmailForm() {
 
     try {
       await api.verifyEmail({ email: emailParam, otp: otpString });
+      try {
+        sessionStorage.removeItem(`corehead_dev_otp:${emailKey}`);
+        sessionStorage.removeItem(`corehead_email_error:${emailKey}`);
+      } catch {
+        /* ignore */
+      }
       setSuccess("Email verified successfully! Redirecting to login...");
       setTimeout(() => {
-        router.push("/login?registered=true");
+        const qs = new URLSearchParams({ registered: "true" });
+        if (callbackParam.startsWith("/")) {
+          qs.set("callback", callbackParam);
+        }
+        router.push(`/login?${qs.toString()}`);
       }, 2000);
     } catch (err: any) {
-      setError(err.message || "Verification failed. Please check the code and try again.");
+      setError(
+        err.message ||
+          "Verification failed. Please check the code and try again.",
+      );
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const handleResend = async () => {
+    if (!emailParam || resendCooldown > 0 || isResending) return;
+    setIsResending(true);
+    setError(null);
+    setSuccess(null);
+
+    try {
+      const res = await api.resendOtp(emailParam);
+      const realMail =
+        res.emailSent === true && res.emailRealDelivery !== false;
+
+      if (res.devOtp) {
+        setDevOtp(res.devOtp);
+        fillOtp(res.devOtp);
+        try {
+          sessionStorage.setItem(
+            `corehead_dev_otp:${emailKey}`,
+            String(res.devOtp),
+          );
+        } catch {
+          /* ignore */
+        }
+        setInfo(
+          "Resend is not configured — a new code was generated and is shown below (and in the backend console). Configure RESEND_API_KEY and EMAIL_FROM for email delivery.",
+        );
+        setSuccess("New verification code ready (dev mode).");
+      } else if (realMail) {
+        setDevOtp(null);
+        setInfo(null);
+        setSuccess("A new verification code was sent to your email.");
+      } else {
+        setInfo(
+          res.emailError ||
+            res.message ||
+            "Email was not delivered. Check backend console for [AUTH] Verification OTP, or configure Resend.",
+        );
+        setSuccess(res.message || "OTP regenerated.");
+      }
+      setResendCooldown(30);
+    } catch (err: any) {
+      setError(err.message || "Failed to resend OTP.");
+    } finally {
+      setIsResending(false);
+    }
+  };
+
+  const handleCopyDevOtp = async () => {
+    if (!devOtp) return;
+    try {
+      await navigator.clipboard.writeText(devOtp);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch {
+      /* ignore */
     }
   };
 
@@ -81,14 +219,62 @@ function VerifyEmailForm() {
         <div className="w-full max-w-md bg-white/40 backdrop-blur-md border border-white/50 shadow-xl rounded-2xl p-8 md:p-10">
           <div className="text-center mb-8">
             <div className="w-16 h-16 bg-blue-600 rounded-2xl flex items-center justify-center mx-auto mb-6 shadow-lg shadow-blue-200">
-               <Mail className="text-white w-8 h-8" />
+              <Mail className="text-white w-8 h-8" />
             </div>
-            <h1 className="text-3xl font-bold text-slate-900 mb-2">Verify Your Email</h1>
+            <h1 className="text-3xl font-bold text-slate-900 mb-2">
+              Verify Your Email
+            </h1>
             <p className="text-slate-600 text-sm">
-              We've sent a 6-digit verification code to <br/>
-              <span className="font-bold text-slate-900">{emailParam}</span>
+              Enter the 6-digit verification code for
+              <br />
+              <span className="font-bold text-slate-900">
+                {emailParam || "your account"}
+              </span>
             </p>
           </div>
+
+          {info && (
+            <div className="bg-amber-50 border border-amber-200 text-amber-900 px-4 py-3 rounded-lg flex items-start gap-3 text-sm mb-5">
+              <Info className="w-4 h-4 shrink-0 mt-0.5 text-amber-600" />
+              <div className="space-y-1">
+                <p className="font-semibold">Email not delivered to inbox</p>
+                <p className="text-amber-800/90 text-xs leading-relaxed">
+                  {info}
+                </p>
+              </div>
+            </div>
+          )}
+
+          {devOtp && (
+            <div className="bg-slate-900 text-white rounded-xl px-4 py-4 mb-5 shadow-lg">
+              <p className="text-[10px] uppercase tracking-wider text-slate-400 font-bold mb-1">
+                Dev OTP (Resend not configured)
+              </p>
+              <div className="flex items-center justify-between gap-3">
+                <p className="text-3xl font-black tracking-[0.35em] font-mono">
+                  {devOtp}
+                </p>
+                <button
+                  type="button"
+                  onClick={handleCopyDevOtp}
+                  className="shrink-0 p-2 rounded-lg bg-white/10 hover:bg-white/20 transition-colors"
+                  title="Copy code"
+                >
+                  {copied ? (
+                    <Check className="w-4 h-4 text-emerald-400" />
+                  ) : (
+                    <Copy className="w-4 h-4" />
+                  )}
+                </button>
+              </div>
+              <p className="text-[11px] text-slate-400 mt-2">
+                For email delivery, configure{" "}
+                <code className="text-slate-300">RESEND_API_KEY</code> and{" "}
+                <code className="text-slate-300">EMAIL_FROM</code>, then restart
+                or redeploy the backend.
+              </p>
+            </div>
+          )}
 
           {error && (
             <div className="bg-red-50 border border-red-200 text-red-600 px-4 py-3 rounded-lg flex items-center gap-3 text-sm mb-5">
@@ -104,14 +290,15 @@ function VerifyEmailForm() {
           )}
 
           <form onSubmit={handleSubmit} className="space-y-8">
-            <div className="flex justify-between gap-2">
+            <div className="flex justify-between gap-2" onPaste={handlePaste}>
               {otp.map((digit, idx) => (
                 <input
                   key={idx}
                   id={`otp-${idx}`}
                   type="text"
                   inputMode="numeric"
-                  maxLength={1}
+                  autoComplete={idx === 0 ? "one-time-code" : "off"}
+                  maxLength={6}
                   value={digit}
                   onChange={(e) => handleOtpChange(idx, e.target.value)}
                   onKeyDown={(e) => handleKeyDown(idx, e)}
@@ -136,8 +323,19 @@ function VerifyEmailForm() {
             </button>
 
             <p className="text-center text-xs text-slate-500">
-              Didn't receive the code? Check your spam folder or{" "}
-              <button type="button" className="text-blue-600 font-bold hover:underline">Resend OTP</button>
+              Didn&apos;t receive the code? Check your spam folder or{" "}
+              <button
+                type="button"
+                onClick={handleResend}
+                disabled={isResending || resendCooldown > 0 || !emailParam}
+                className="text-blue-600 font-bold hover:underline disabled:opacity-50 disabled:no-underline"
+              >
+                {isResending
+                  ? "Sending..."
+                  : resendCooldown > 0
+                    ? `Resend OTP (${resendCooldown}s)`
+                    : "Resend OTP"}
+              </button>
             </p>
           </form>
         </div>
@@ -148,11 +346,13 @@ function VerifyEmailForm() {
 
 export default function VerifyEmailPage() {
   return (
-    <Suspense fallback={
-      <div className="min-h-screen flex items-center justify-center bg-blue-200">
-        <Loader2 className="w-8 h-8 animate-spin text-blue-700" />
-      </div>
-    }>
+    <Suspense
+      fallback={
+        <div className="min-h-screen flex items-center justify-center bg-blue-200">
+          <Loader2 className="w-8 h-8 animate-spin text-blue-700" />
+        </div>
+      }
+    >
       <VerifyEmailForm />
     </Suspense>
   );

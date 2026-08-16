@@ -1,551 +1,493 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { useRouter } from "next/navigation";
-import { ChevronDown, Star, Search, FileText, ImagePlus, X, Library, Sparkles, Loader2 } from "lucide-react";
+import {
+  ChevronDown, Star, Search, FileText, ImagePlus, X, Library,
+  Eye, Type, Bold, Italic, Underline, Strikethrough,
+  List, ListOrdered, AlignLeft, AlignCenter, AlignRight, AlignJustify,
+  Quote, Code, Link as LinkIcon, Image as ImageIcon, LayoutGrid, Minus, RemoveFormatting, Tag,
+  Upload,
+  ChevronLeft,
+  Check,
+  Plus,
+  Maximize2,
+  Settings,
+  Globe,
+  PlusCircle
+} from "lucide-react";
 import { cn } from "@/lib/utils";
 import MediaLibraryModal from "@/components/admin/MediaLibraryModal";
-import { aiApi } from "@/services/aiApi";
+import PostPreviewModal from "@/components/admin/PostPreviewModal";
+import PostLayoutSelector from "@/components/admin/PostLayoutSelector";
+import { api } from "@/lib/api";
+import { getApiBaseUrl, resolveAdminMediaUrl } from "@/lib/apiOrigin";
+import { attachQuillTooltips } from "@/lib/quillTooltips";
+import { useSite } from "@/components/admin/SiteContext";
+import dynamic from "next/dynamic";
 
-const TONE_OPTIONS = [
-  { label: "Professional", value: "informative and professional" },
-  { label: "Casual", value: "casual and friendly" },
-  { label: "Tech-Focused", value: "tech-focused and detailed" },
-  { label: "Inspirational", value: "inspirational and persuasive" },
-  { label: "Educational", value: "educational and how-to" },
-];
+const ReactQuill = dynamic(() => import("react-quill-new"), { ssr: false });
+import "react-quill-new/dist/quill.snow.css";
 
-const LENGTH_OPTIONS = [
-  { label: "Short (~500 words)", value: "500 words" },
-  { label: "Medium (~1000 words)", value: "1000 words" },
-  { label: "Long-form (~1500 words)", value: "1500 words" },
-];
+const quillModules = {
+  toolbar: {
+    container: [
+      ["undo", "redo"],
+      [{ header: [1, 2, 3, 4, 5, 6, false] }, { font: [] }, { size: [] }],
+      ["bold", "italic", "underline", "strike", { script: "sub" }, { script: "super" }],
+      [{ color: [] }, { background: [] }],
+      [{ list: "ordered" }, { list: "bullet" }, { indent: "-1" }, { indent: "+1" }],
+      [{ align: [] }],
+      ["blockquote", "code-block"],
+      ["link", "image", "video", "table"],
+      ["clean"],
+    ],
+    handlers: {
+      undo: function (this: any) { this.quill.history.undo(); },
+      redo: function (this: any) { this.quill.history.redo(); },
+      table: function (this: any) {
+        const range = this.quill.getSelection(true);
+        const rows = prompt("Enter number of rows (e.g. 3):", "3");
+        if (rows === null) return;
+        const cols = prompt("Enter number of columns (e.g. 3):", "3");
+        if (cols === null) return;
+        const numRows = Math.max(1, parseInt(rows, 10) || 3);
+        const numCols = Math.max(1, parseInt(cols, 10) || 3);
+
+        let bodyRows = "";
+        for (let r = 1; r <= numRows; r++) {
+          let rowCells = "";
+          for (let c = 1; c <= numCols; c++) {
+            const isFirstRow = r === 1;
+            const bgStyle = isFirstRow ? "background-color: #f8fafc; font-weight: 600;" : "";
+            rowCells += `<td style="border: 1px solid #cbd5e1; padding: 10px 14px; ${bgStyle}">Cell ${r}.${c}</td>`;
+          }
+          bodyRows += `<tr>${rowCells}</tr>`;
+        }
+
+        const tableHtml = `<div class="table-responsive my-4" style="overflow-x: auto; width: 100%; margin: 1.5rem 0;"><table style="width: 100%; border-collapse: collapse; border: 1px solid #cbd5e1; font-size: 14px;"><tbody>${bodyRows}</tbody></table></div><p><br></p>`;
+
+        this.quill.clipboard.dangerouslyPasteHTML(range.index, tableHtml);
+      },
+    },
+  },
+  history: {
+    delay: 1000,
+    maxStack: 100,
+    userOnly: true,
+  },
+};
+
+function getLoggedInUser(): { id?: number | string; name?: string; email?: string } | null {
+  if (typeof window === "undefined") return null;
+  try {
+    const raw = localStorage.getItem("user");
+    if (!raw) return null;
+    return JSON.parse(raw);
+  } catch {
+    return null;
+  }
+}
+
+function mapSiteMembersToAuthors(members: any[]) {
+  const seen = new Set<string>();
+  const authors: { id: number | string; name: string; email?: string }[] = [];
+  for (const m of members) {
+    const id = m?.user?.id ?? m?.userId;
+    if (id == null || id === "") continue;
+    const key = String(id);
+    if (seen.has(key)) continue;
+    seen.add(key);
+    authors.push({
+      id,
+      name: m?.user?.name || m?.user?.email || `User #${id}`,
+      email: m?.user?.email,
+    });
+  }
+  return authors;
+}
 
 export default function CreatePostPage() {
   const router = useRouter();
+  const { currentSiteId, loading: siteLoading } = useSite();
 
   const [formData, setFormData] = useState({
     title: "",
     slug: "",
     excerpt: "",
-    authorId: "1",
+    authorId: "",
     categories: [] as string[],
-    status: "Published",
+    status: "Draft",
     featured: false,
     content: "",
-    // Images
+    showToc: false,
+    allowComments: true, // public can comment by default
     thumbnailUrl: "",
-    // SEO
     metaTitle: "",
     metaDescription: "",
     keywords: [] as string[],
+    useThumbnailAsFeatured: true,
     canonicalUrl: "",
-    structuredData: `{
-  "@context": "https://schema.org",
-  "@type": "Article",
-  "headline": "Article headline",
-  "description": "Article description",
-  "author": {
-    "@type": "Person",
-    "name": "Author Name"
-  }
-}`
+    structuredData: "",
+    layoutTemplateId: null as number | null,
   });
 
   const [keywordInput, setKeywordInput] = useState("");
+
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
   const [loading, setLoading] = useState(false);
+  const [users, setUsers] = useState<any[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [isMediaModalOpen, setIsMediaModalOpen] = useState(false);
-  // Templates state
-  const [templates, setTemplates] = useState<any[]>([]);
-  const [selectedTemplateId, setSelectedTemplateId] = useState<string>("");
-
-  useEffect(() => {
-    (async () => {
-      try {
-        const res = await fetch('http://localhost:5000/api/templates?type=Single%20Post&status=published');
-        const data = await res.json();
-        // Guard against unexpected shape – ensure we always store an array
-        const arr = Array.isArray(data) ? data : (Array.isArray(data.templates) ? data.templates : []);
-        setTemplates(arr);
-      } catch (e) {
-        console.error('Failed to load templates', e);
-        setTemplates([]);
-      }
-    })();
-  }, []);
-
+  const [showPreview, setShowPreview] = useState(false);
   const [activeTab, setActiveTab] = useState("Content");
-
-  // ── AI Writer tab state ──────────────────────────────────────
-  const [aiTopic, setAiTopic] = useState("");
-  const [aiTone, setAiTone] = useState("informative and professional");
-  const [aiWordCount, setAiWordCount] = useState("1000 words");
-  const [aiKeywordInput, setAiKeywordInput] = useState("");
-  const [aiKeywords, setAiKeywords] = useState<string[]>([]);
-  const [aiGenerating, setAiGenerating] = useState(false);
-  const [aiError, setAiError] = useState<string | null>(null);
-  const [aiSuccess, setAiSuccess] = useState(false);
-
-  const availableCategories = ["Business", "Education", "Marketing", "StartUps", "Tech", "Lifestyle"];
-
-  const handleCategoryToggle = (cat: string) => {
-    setFormData(prev => ({
-      ...prev,
-      categories: prev.categories.includes(cat)
-        ? prev.categories.filter(c => c !== cat)
-        : [...prev.categories, cat]
-    }));
-  };
-
+  const [availableCategories, setAvailableCategories] = useState<string[]>([]);
   const handleAddKeyword = () => {
     if (keywordInput.trim() && !formData.keywords.includes(keywordInput.trim())) {
-      setFormData(prev => ({
-        ...prev,
-        keywords: [...prev.keywords, keywordInput.trim()]
-      }));
+      setFormData(prev => ({ ...prev, keywords: [...prev.keywords, keywordInput.trim()] }));
       setKeywordInput("");
     }
   };
 
   const removeKeyword = (kw: string) => {
-    setFormData(prev => ({
-      ...prev,
-      keywords: prev.keywords.filter(k => k !== kw)
-    }));
+    setFormData(prev => ({ ...prev, keywords: prev.keywords.filter(k => k !== kw) }));
   };
 
-  const handleCreatePost = async () => {
+  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    try {
+      setError(null);
+      const reader = new FileReader();
+      const base64Data: string = await new Promise((resolve, reject) => {
+        reader.onload = () => resolve(String(reader.result || ""));
+        reader.onerror = () => reject(new Error("Failed to read image"));
+        reader.readAsDataURL(file);
+      });
+      const uploaded = await api.uploadMedia({
+        name: file.name,
+        type: file.type,
+        size: String(file.size),
+        base64Data,
+      });
+      const rawUrl = uploaded.media?.url || uploaded.url || "";
+      if (!rawUrl) throw new Error("Upload succeeded but no URL returned");
+      setFormData((prev) => ({ ...prev, thumbnailUrl: rawUrl }));
+    } catch (err: any) {
+      setError(err?.message || "Failed to upload cover image");
+    } finally {
+      e.target.value = "";
+    }
+  };
+
+  // Authors = members of the current site (not main-site hardcoded list)
+  const fetchUsers = useCallback(async () => {
+    const me = getLoggedInUser();
+    let authors: { id: number | string; name: string; email?: string }[] = [];
+
+    if (currentSiteId) {
+      try {
+        const res = await api.getSiteMembers(currentSiteId);
+        const members = Array.isArray(res?.members) ? res.members : [];
+        authors = mapSiteMembersToAuthors(members);
+      } catch (err) {
+        console.error("Failed to load site members for author list:", err);
+      }
+    }
+
+    // Ensure logged-in user can always assign themselves as author
+    if (me?.id != null) {
+      const meId = String(me.id);
+      if (!authors.some((a) => String(a.id) === meId)) {
+        authors = [
+          {
+            id: me.id,
+            name: me.name || me.email || `User #${me.id}`,
+            email: me.email,
+          },
+          ...authors,
+        ];
+      }
+    }
+
+    setUsers(authors);
+
+    setFormData((prev) => {
+      if (prev.authorId && authors.some((a) => String(a.id) === String(prev.authorId))) {
+        return prev;
+      }
+      const preferred =
+        (me?.id != null && authors.find((a) => String(a.id) === String(me.id))) ||
+        authors[0];
+      return preferred
+        ? { ...prev, authorId: String(preferred.id) }
+        : { ...prev, authorId: "" };
+    });
+  }, [currentSiteId]);
+
+  useEffect(() => {
+    fetchUsers();
+  }, [fetchUsers]);
+
+  // Attach tooltips to Quill toolbar
+  useEffect(() => {
+    if (activeTab === "Content") {
+      attachQuillTooltips();
+    }
+  }, [activeTab]);
+
+  // Fetch categories from DB
+  useEffect(() => {
+    api.getCategories()
+      .then((res: any) => {
+        const cats = res?.categories || res || [];
+        setAvailableCategories(cats.map((c: any) => c.name).filter(Boolean));
+      })
+      .catch(() => setAvailableCategories([]));
+  }, []);
+
+  // Calculate Progress
+  const calculateProgress = () => {
+    const fields = [
+      formData.title.trim().length > 0,
+      formData.slug.trim().length > 0,
+      formData.excerpt.trim().length > 0,
+      formData.authorId !== "",
+      formData.categories.length > 0,
+      formData.content.trim().length > 0,
+      formData.thumbnailUrl !== "",
+      formData.metaTitle !== "",
+      formData.metaDescription !== ""
+    ];
+    const completed = fields.filter(f => f).length;
+    return { completed, total: fields.length };
+  };
+
+  const { completed, total } = calculateProgress();
+  const progressPercent = (completed / total) * 100;
+
+  const handleCreatePost = async (overrideStatus?: string) => {
+    if (siteLoading) {
+      setError("Please wait while your site workspace loads.");
+      return;
+    }
+
+    if (!currentSiteId) {
+      setError("Create or select a site before creating a post.");
+      return;
+    }
+
+    if (!formData.title || !formData.content) {
+      setError("Title and Content are required.");
+      return;
+    }
+
     setLoading(true);
     setError(null);
-    try {
-      const res = await fetch("http://localhost:5000/api/posts", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(formData),
-      });
 
-      if (!res.ok) {
-        const data = await res.json();
-        throw new Error(data.error || "Failed to create post");
+    const nextStatus = overrideStatus || formData.status || "Draft";
+    let cover = formData.thumbnailUrl || "";
+    if (cover.startsWith("data:")) {
+      setError(
+        "Cover is still a local preview. Upload again (device upload uses backend) or pick from Media Library.",
+      );
+      setLoading(false);
+      return;
+    }
+    // Normalize absolute backend URL → relative /uploads/...
+    if (cover.includes("/uploads/")) {
+      try {
+        if (cover.startsWith("http")) {
+          cover = new URL(cover).pathname;
+        }
+      } catch {
+        /* keep */
       }
+    }
 
+    const finalData = {
+      title: formData.title,
+      slug: formData.slug,
+      excerpt: formData.excerpt,
+      content: formData.content,
+      status: nextStatus,
+      category: formData.categories[0] || "General",
+      categories: formData.categories,
+      tags: formData.keywords,
+      authorId: parseInt(formData.authorId),
+      thumbnailUrl: cover || null,
+      featured: formData.featured,
+      metaTitle: formData.metaTitle,
+      metaDescription: formData.metaDescription,
+      canonicalUrl: formData.canonicalUrl,
+      structuredData: formData.structuredData,
+      show_toc: formData.showToc,
+      allow_comments: formData.allowComments,
+      layoutTemplateId: formData.layoutTemplateId,
+      ...(nextStatus === "Published"
+        ? { published_date: new Date().toISOString() }
+        : {}),
+    };
+
+    try {
+      await api.createPost(finalData, currentSiteId);
+      if (nextStatus === "Published") {
+        api.notifySubscribersNewPost({
+          title: formData.title,
+          slug: formData.slug,
+          excerpt: formData.excerpt,
+          coverImage: cover || undefined,
+          siteSlug: "",
+          siteName: "Blog",
+          siteId: currentSiteId || undefined,
+        }).catch(() => {});
+      }
       router.push("/admin/posts");
     } catch (err: any) {
-      setError(err.message);
+      setError(err.message || "Failed to create post");
     } finally {
       setLoading(false);
     }
   };
 
-  // ── AI Writer handlers ───────────────────────────────────────
-  const handleAddAiKeyword = () => {
-    if (aiKeywordInput.trim() && !aiKeywords.includes(aiKeywordInput.trim())) {
-      setAiKeywords(prev => [...prev, aiKeywordInput.trim()]);
-      setAiKeywordInput("");
-    }
-  };
-
-  const handleGenerateWithAI = async () => {
-    if (!aiTopic.trim() || aiTopic.trim().length < 5) {
-      setAiError("Please describe your topic in at least 5 characters.");
-      return;
-    }
-    setAiGenerating(true);
-    setAiError(null);
-    setAiSuccess(false);
-
-    try {
-      const result = await (aiApi as any).generateBlogContent({
-        topic: aiTopic.trim(),
-        tone: aiTone,
-        keywords: aiKeywords,
-        wordCount: aiWordCount,
-      });
-
-      setFormData(prev => ({
-        ...prev,
-        title: result.title,
-        slug: result.title.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)+/g, ""),
-        excerpt: result.excerpt || "",
-        content: result.content,
-        metaTitle: result.seo?.metaTitle || "",
-        metaDescription: result.seo?.metaDescription || "",
-        keywords: result.seo?.keywords || [],
-      }));
-
-      setAiSuccess(true);
-      // Auto-switch to Content tab so user can review draft
-      setTimeout(() => setActiveTab("Content"), 800);
-    } catch (err: any) {
-      setAiError(err.message || "Failed to generate blog content. Please try again.");
-    } finally {
-      setAiGenerating(false);
-    }
-  };
-
-  const completedFields = [
-    formData.title,
-    formData.slug,
-    formData.excerpt,
-    formData.authorId,
-    formData.categories.length > 0,
-    formData.content
-  ].filter(Boolean).length;
-
-  const tabs = [
-    { id: "Content",   icon: <FileText  className="w-4 h-4" /> },
-
-    { id: "Images",    icon: <ImagePlus className="w-4 h-4" /> },
-    { id: "SEO",       icon: <Search    className="w-4 h-4" /> },
-    { id: "AI Writer", icon: <Sparkles  className="w-4 h-4" /> },
-  ];
-
   return (
-    <div className="max-w-5xl mx-auto pb-24 space-y-6">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900">Create New Post</h1>
-          <p className="text-gray-500 text-sm mt-1">
-            Fill in the details below to create a new blog post
-          </p>
+    <div className="min-h-screen bg-[#F4F7FA] pb-32 pt-8 px-6">
+      <div className="max-w-[1200px] mx-auto space-y-6">
+
+        {/* Top Header */}
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-[32px] font-bold text-[#1E293B]">Create New Post</h1>
+            <p className="text-[15px] text-[#64748B] mt-1">Fill in the details below to create a new blog post</p>
+          </div>
+          <div className="flex items-center gap-3">
+            <span className={cn(
+              "px-4 py-1.5 text-white text-[13px] font-bold rounded-full transition-colors",
+              formData.status === "Published" ? "bg-emerald-600" : "bg-[#94A3B8]"
+            )}>
+              {formData.status}
+            </span>
+          </div>
         </div>
-        <div className="px-4 py-1.5 bg-blue-600 text-white rounded-full text-sm font-medium shadow-sm">
-          {formData.status}
+
+        {/* Progress Bar Card */}
+        <div className="bg-white rounded-[20px] p-6 border border-[#E2E8F0] shadow-sm">
+          <div className="flex items-center justify-between mb-3">
+            <span className="text-[14px] font-bold text-[#1E293B]">Completion Progress</span>
+            <span className="text-[13px] font-bold text-[#94A3B8]">{completed}/{total} fields completed</span>
+          </div>
+          <div className="w-full h-2 bg-[#F1F5F9] rounded-full overflow-hidden">
+            <div
+              className="h-full bg-[#2563EB] transition-all duration-500 ease-out"
+              style={{ width: `${progressPercent}%` }}
+            />
+          </div>
         </div>
-      </div>
 
-      {/* Progress */}
-      <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
-        <div className="flex justify-between items-center mb-3">
-          <span className="text-sm font-medium text-gray-700">Completion Progress</span>
-          <span className="text-sm text-gray-500">{completedFields}/6 fields completed</span>
+        {/* Section Tabs */}
+        <div className="bg-[#F8FAFC] rounded-[16px] p-1.5 flex gap-2 border border-[#E2E8F0]">
+          {["Content", "Images", "Layout", "SEO"].map((tab) => (
+            <button
+              key={tab}
+              onClick={() => setActiveTab(tab)}
+              className={cn(
+                "flex-1 h-12 flex items-center justify-center gap-2 text-[14px] font-bold transition-all rounded-[12px]",
+                activeTab === tab
+                  ? "bg-white text-[#2563EB] shadow-sm border border-[#E2E8F0]"
+                  : "text-[#64748B] hover:text-[#475569]"
+              )}
+            >
+              {tab === "Content" && <FileText className="w-4 h-4" />}
+              {tab === "Images" && <ImageIcon className="w-4 h-4" />}
+              {tab === "Layout" && <LayoutGrid className="w-4 h-4" />}
+              {tab === "SEO" && <Search className="w-4 h-4" />}
+              {tab}
+            </button>
+          ))}
         </div>
-        <div className="h-2 w-full bg-gray-100 rounded-full overflow-hidden">
-          <div
-            className="h-full bg-blue-600 transition-all duration-300"
-            style={{ width: `${(completedFields / 6) * 100}%` }}
-          />
-        </div>
-      </div>
 
-      {/* Tabs */}
-      <div className="bg-white p-2 rounded-xl shadow-sm border border-gray-100 flex gap-2">
-        {tabs.map(tab => (
-          <button
-            key={tab.id}
-            onClick={() => setActiveTab(tab.id)}
-            className={cn(
-              "flex-1 py-2.5 px-4 text-sm font-medium rounded-lg transition-colors flex items-center justify-center gap-2",
-              activeTab === tab.id
-                ? tab.id === "AI Writer"
-                  ? "bg-blue-600 text-white shadow-sm shadow-blue-200"
-                  : "bg-gray-50 text-gray-900 border border-gray-200"
-                : tab.id === "AI Writer"
-                  ? "text-blue-600 hover:bg-blue-50"
-                  : "text-gray-500 hover:text-gray-700 hover:bg-gray-50/50"
-            )}
-          >
-            {tab.icon}
-            {tab.id}
-          </button>
-        ))}
-      </div>
-
-      {error && (
-        <div className="p-4 bg-red-50 text-red-600 rounded-xl text-sm border border-red-100">
-          {error}
-        </div>
-      )}
-
-      {/* Tab Content */}
-      <div className="bg-white p-8 rounded-xl shadow-sm border border-gray-100 min-h-[500px]">
-
-        {/* ── AI WRITER TAB ───────────────────────────────────── */}
-        {activeTab === "AI Writer" && (
-          <div className="space-y-8 animate-in fade-in duration-300">
-
-            {/* Gradient banner */}
-            <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-blue-600 via-blue-700 to-indigo-700 p-8 text-white">
-              <div className="absolute inset-0 opacity-10"
-                style={{ backgroundImage: "radial-gradient(circle at 80% 20%, white 1px, transparent 0), radial-gradient(circle at 20% 80%, white 1px, transparent 0)", backgroundSize: "40px 40px" }} />
-              <div className="relative z-10 flex items-start gap-4">
-                <div className="p-3 bg-white/20 rounded-xl backdrop-blur-sm">
-                  <Sparkles className="w-7 h-7 text-white" />
-                </div>
-                <div>
-                  <h2 className="text-xl font-bold">AI Blog Writer</h2>
-                  <p className="text-blue-100 text-sm mt-1 max-w-lg">
-                    Describe your topic below and let Groq AI (Llama) instantly draft a full blog post — title, content, and SEO — directly into your form.
-                  </p>
-                  {aiSuccess && (
-                    <div className="mt-3 inline-flex items-center gap-2 px-3 py-1.5 bg-emerald-500/20 border border-emerald-400/30 rounded-full text-emerald-200 text-xs font-semibold">
-                      <div className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
-                      Draft generated! Switching to Content tab...
-                    </div>
-                  )}
-                </div>
-              </div>
-            </div>
-
-            {aiError && (
-              <div className="p-4 bg-red-50 text-red-600 rounded-xl text-sm border border-red-100 flex items-start gap-2">
-                <X className="w-4 h-4 mt-0.5 shrink-0" />
-                {aiError}
-              </div>
-            )}
-
-            {aiGenerating ? (
-              <div className="flex flex-col items-center justify-center py-20 space-y-5">
-                <div className="relative">
-                  <div className="w-16 h-16 rounded-full border-4 border-blue-100 border-t-blue-600 animate-spin" />
-                  <Sparkles className="w-6 h-6 text-blue-600 absolute inset-0 m-auto" />
-                </div>
-                <div className="text-center">
-                  <p className="font-bold text-gray-900 text-lg">Drafting your post...</p>
-                  <p className="text-sm text-gray-500 mt-1 max-w-sm">
-                    Groq AI is writing your title, content, and SEO fields. This takes 5–15 seconds.
-                  </p>
-                </div>
-              </div>
-            ) : (
-              <div className="space-y-6">
-                {/* Topic */}
-                <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-2">
-                    What should the blog post be about? <span className="text-red-500">*</span>
-                  </label>
-                  <textarea
-                    rows={4}
-                    placeholder="e.g. A beginner's guide to using React Server Components in Next.js 15, including real-world examples and performance tips."
-                    className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all text-sm resize-none placeholder-gray-400"
-                    value={aiTopic}
-                    onChange={e => { setAiTopic(e.target.value); setAiError(null); }}
-                  />
-                </div>
-
-                {/* Tone + Length side by side */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <div>
-                    <label className="block text-sm font-semibold text-gray-700 mb-2">Tone of Voice</label>
-                    <div className="flex flex-wrap gap-2">
-                      {TONE_OPTIONS.map(t => (
-                        <button
-                          key={t.value}
-                          type="button"
-                          onClick={() => setAiTone(t.value)}
-                          className={cn(
-                            "px-3 py-1.5 rounded-full border text-sm font-medium transition-colors",
-                            aiTone === t.value
-                              ? "bg-blue-50 border-blue-200 text-blue-700"
-                              : "bg-white border-gray-200 text-gray-600 hover:bg-gray-50"
-                          )}
-                        >
-                          {t.label}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-semibold text-gray-700 mb-2">Target Length</label>
-                    <div className="relative">
-                      <select
-                        className="w-full px-4 py-2.5 bg-white border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all appearance-none text-sm font-medium"
-                        value={aiWordCount}
-                        onChange={e => setAiWordCount(e.target.value)}
-                      >
-                        {LENGTH_OPTIONS.map(l => (
-                          <option key={l.value} value={l.value}>{l.label}</option>
-                        ))}
-                      </select>
-                      <ChevronDown className="w-4 h-4 text-gray-400 absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" />
-                    </div>
-                  </div>
-                </div>
-
-                {/* Keywords */}
-                <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-2">
-                    Primary Keywords <span className="text-gray-400 font-normal">(optional — AI will also generate its own)</span>
-                  </label>
-                  <div className="flex gap-2 mb-3">
-                    <input
-                      type="text"
-                      placeholder="e.g. server components"
-                      className="flex-1 px-4 py-2.5 bg-white border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all text-sm"
-                      value={aiKeywordInput}
-                      onChange={e => setAiKeywordInput(e.target.value)}
-                      onKeyDown={e => e.key === "Enter" && (e.preventDefault(), handleAddAiKeyword())}
-                    />
-                    <button
-                      type="button"
-                      onClick={handleAddAiKeyword}
-                      className="px-4 py-2.5 bg-gray-50 text-gray-700 border border-gray-200 rounded-xl hover:bg-gray-100 transition-colors text-sm font-medium"
-                    >
-                      Add
-                    </button>
-                  </div>
-                  {aiKeywords.length > 0 && (
-                    <div className="flex flex-wrap gap-2">
-                      {aiKeywords.map(kw => (
-                        <span key={kw} className="inline-flex items-center gap-1.5 px-3 py-1 bg-blue-50 border border-blue-100 rounded-full text-xs font-semibold text-blue-700">
-                          {kw}
-                          <button type="button" onClick={() => setAiKeywords(prev => prev.filter(k => k !== kw))}>
-                            <X className="w-3 h-3 hover:text-red-500 transition-colors" />
-                          </button>
-                        </span>
-                      ))}
-                    </div>
-                  )}
-                </div>
-
-                {/* Generate button */}
-                <button
-                  type="button"
-                  disabled={!aiTopic.trim()}
-                  onClick={handleGenerateWithAI}
-                  className="w-full py-4 bg-blue-600 hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed text-white rounded-xl text-base font-bold shadow-lg shadow-blue-200 transition-all flex items-center justify-center gap-3"
-                >
-                  <Sparkles className="w-5 h-5" />
-                  Generate Blog Post Draft with AI
-                </button>
-
-                <p className="text-xs text-center text-gray-400">
-                  Generated content will automatically fill the Content, and SEO tabs. You can edit everything before publishing.
-                </p>
-              </div>
-            )}
+        {error && (
+          <div className="p-4 bg-red-50 text-red-600 rounded-[12px] border border-red-100 flex items-center gap-3">
+            <X className="w-5 h-5" />
+            <span className="text-[14px] font-bold">{error}</span>
           </div>
         )}
 
+        {/* Main Form Content */}
+        <div className="bg-white rounded-[24px] border border-[#E2E8F0] shadow-sm overflow-hidden">
+          <div className="p-8">
 
-        
-    
-            <div className="mt-4">
-              {templates.length === 0 ? (
-                <p className="text-sm text-gray-500">No published templates found.</p>
-              ) : (
-                <select
-                  value={selectedTemplateId}
-                  onChange={async e => {
-                    const id = e.target.value;
-                    setSelectedTemplateId(id);
-                    const tmplRes = await fetch(`http://localhost:5000/api/templates/${id}`);
-                    const tmpl = await tmplRes.json();
-                    setFormData(prev => ({
-                      ...prev,
-                      title: tmpl.title || prev.title,
-                      slug: tmpl.slug || prev.slug,
-                      excerpt: tmpl.excerpt || prev.excerpt,
-                      content: tmpl.content || prev.content,
-                    }));
-                  }}
-                  className="p-1 border rounded bg-white"
-                >
-                  <option value="">Select Template</option>
-                  {Array.isArray(templates) && templates.map(t => (
-                    <option key={t.id} value={t.id}>{t.name || t.title}</option>
-                  ))}
-                </select>
-              )}
-            </div>
-          </div>
-
-        {/* Existing Content Tab */}
-        {activeTab === "Content" && (
-          <div className="space-y-8 animate-in fade-in duration-300">
-            <div>
-              <h2 className="text-lg font-semibold text-gray-900">Basic Information</h2>
-              <p className="text-sm text-gray-500 mb-6">Enter the core details of your blog post</p>
-
-              <div className="space-y-6">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Post Title <span className="text-red-500">*</span></label>
-                  <input
-                    type="text"
-                    placeholder="Enter an engaging title for your blog post"
-                    className="w-full px-4 py-2.5 bg-white border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
-                    value={formData.title}
-                    onChange={e => setFormData({ ...formData, title: e.target.value, slug: e.target.value.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)+/g, '') })}
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">URL Slug <span className="text-red-500">*</span></label>
-                  <input
-                    type="text"
-                    placeholder="url-friendly-slug"
-                    className="w-full px-4 py-2.5 bg-white border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
-                    value={formData.slug}
-                    onChange={e => setFormData({ ...formData, slug: e.target.value })}
-                  />
-                  <p className="text-xs text-gray-500 mt-2">Auto-generated from title. Edit if needed.</p>
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Summary</label>
-                  <textarea
-                    rows={3}
-                    placeholder="Write a compelling summary that will appear in blog listings and previews"
-                    className="w-full px-4 py-2.5 bg-white border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all resize-none"
-                    value={formData.excerpt}
-                    onChange={e => setFormData({ ...formData, excerpt: e.target.value })}
-                  />
-                  <p className="text-xs text-gray-500 mt-2">Brief summary for blog listings</p>
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Author <span className="text-red-500">*</span></label>
-                  <div className="relative">
-                    <select
-                      className="w-full px-4 py-2.5 bg-white border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all appearance-none"
-                      value={formData.authorId}
-                      onChange={e => setFormData({ ...formData, authorId: e.target.value })}
-                    >
-                      <option value="1">Admin User</option>
-                    </select>
-                    <ChevronDown className="w-4 h-4 text-gray-400 absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none" />
+            {/* CONTENT TAB */}
+            {activeTab === "Content" && (
+              <div className="space-y-10 animate-in fade-in duration-300">
+                <div className="space-y-6">
+                  <div>
+                    <h2 className="text-[20px] font-bold text-[#1E293B]">Basic Information</h2>
+                    <p className="text-[14px] text-[#64748B] mt-1">Enter the core details of your blog post</p>
                   </div>
-                  <p className="text-xs text-gray-500 mt-2">Select the author who will be credited for this blog post</p>
-                </div>
 
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Categories <span className="text-red-500">*</span></label>
-                  <div className="flex flex-wrap gap-2 mb-3">
-                    {availableCategories.map(cat => (
-                      <button
-                        key={cat}
-                        type="button"
-                        onClick={() => handleCategoryToggle(cat)}
-                        className={cn(
-                          "px-3 py-1.5 rounded-full text-sm font-medium transition-colors border",
-                          formData.categories.includes(cat)
-                            ? "bg-blue-50 border-blue-200 text-blue-700"
-                            : "bg-white border-gray-200 text-gray-600 hover:bg-gray-50"
-                        )}
-                      >
-                        {cat}
-                      </button>
-                    ))}
+                  <div className="space-y-2">
+                    <label className="text-[14px] font-bold text-[#1E293B]">Post Title <span className="text-red-500">*</span></label>
+                    <input
+                      type="text"
+                      placeholder="Enter an engaging title for your blog post"
+                      className="w-full h-12 bg-white border border-[#E2E8F0] rounded-[10px] px-4 text-[14px] focus:outline-none focus:ring-2 focus:ring-blue-500/10 focus:border-blue-400 transition-all"
+                      value={formData.title}
+                      onChange={e => setFormData({ ...formData, title: e.target.value, slug: e.target.value.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)+/g, '') })}
+                    />
                   </div>
-                  {formData.categories.length === 0 && (
-                    <div className="p-6 bg-gray-50 rounded-xl border border-gray-100 flex flex-col items-center justify-center text-center">
-                      <span className="text-sm text-gray-500">No categories selected. Please add at least one category.</span>
-                    </div>
-                  )}
-                  <p className="text-xs text-gray-500 mt-2">Select one or more categories.</p>
-                </div>
 
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Publish Status <span className="text-red-500">*</span></label>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <label className="text-[14px] font-bold text-[#1E293B]">URL Slug <span className="text-red-500">*</span></label>
                     <div className="relative">
+                      <input
+                        type="text"
+                        readOnly
+                        disabled
+                        placeholder="url-friendly-slug"
+                        className="w-full h-12 bg-gray-100/70 border border-[#E2E8F0] rounded-[10px] px-4 text-[13px] font-mono text-gray-500 cursor-not-allowed select-none focus:outline-none"
+                        value={formData.slug}
+                      />
+                      <span className="absolute right-3 top-3.5 text-xs text-gray-400 font-bold flex items-center gap-1">
+                        🔒 Auto-generated
+                      </span>
+                    </div>
+                    <p className="text-[12px] text-gray-400 font-medium">This slug is automatically generated from the Post Title and cannot be edited manually.</p>
+                  </div>
+
+                  <div className="space-y-2">
+                    <label className="text-[14px] font-bold text-[#1E293B]">Excerpt <span className="text-red-500">*</span></label>
+                    <textarea
+                      rows={3}
+                      placeholder="Write a compelling summary..."
+                      className="w-full bg-white border border-[#E2E8F0] rounded-[10px] p-4 text-[14px] focus:outline-none"
+                      value={formData.excerpt}
+                      onChange={e => setFormData({ ...formData, excerpt: e.target.value })}
+                    />
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div className="space-y-2">
+                      <label className="text-[14px] font-bold text-[#1E293B]">Author <span className="text-red-500">*</span></label>
                       <select
-                        className="w-full px-4 py-3 bg-white border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all appearance-none"
+                        className="w-full h-12 bg-white border border-[#E2E8F0] rounded-[10px] px-4 text-[14px] appearance-none"
+                        value={formData.authorId}
+                        onChange={e => setFormData({ ...formData, authorId: e.target.value })}
+                      >
+                        {users.length === 0 && (
+                          <option value="">No authors for this site</option>
+                        )}
+                        {users.map(u => (
+                          <option key={u.id} value={u.id}>{u.name || u.email}</option>
+                        ))}
+                      </select>
+                    </div>
+                    <div className="space-y-2">
+                      <label className="text-[14px] font-bold text-[#1E293B]">Publish Status <span className="text-red-500">*</span></label>
+                      <select
+                        className="w-full h-12 bg-white border border-[#E2E8F0] rounded-[10px] px-4 text-[14px]"
                         value={formData.status}
                         onChange={e => setFormData({ ...formData, status: e.target.value })}
                       >
@@ -553,60 +495,101 @@ export default function CreatePostPage() {
                         <option value="Draft">Draft</option>
                         <option value="Unpublished">Unpublished</option>
                       </select>
-                      <div className="w-2.5 h-2.5 rounded-full bg-emerald-500 absolute left-4 top-1/2 -translate-y-1/2" />
-                      <ChevronDown className="w-4 h-4 text-gray-400 absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none" />
                     </div>
+                  </div>
 
-                    <div
-                      onClick={() => setFormData({ ...formData, featured: !formData.featured })}
-                      className={cn(
-                        "p-4 rounded-xl border cursor-pointer transition-colors flex items-start gap-3",
-                        formData.featured ? "bg-amber-50 border-amber-200" : "bg-white border-gray-200 hover:bg-gray-50"
-                      )}
-                    >
-                      <div className={cn(
-                        "w-5 h-5 rounded border flex items-center justify-center mt-0.5",
-                        formData.featured ? "bg-amber-500 border-amber-500" : "bg-white border-gray-300"
-                      )}>
-                        {formData.featured && <Star className="w-3 h-3 text-white fill-white" />}
-                      </div>
-                      <div>
-                        <div className="flex items-center gap-2">
-                          <Star className={cn("w-4 h-4", formData.featured ? "text-amber-500 fill-amber-500" : "text-gray-400")} />
-                          <span className="text-sm font-medium text-gray-900">Featured Post</span>
-                        </div>
-                        <p className="text-xs text-gray-500 mt-1">Highlight this post on your homepage</p>
-                      </div>
+                  <div className="space-y-2">
+                    <label className="text-[14px] font-bold text-[#1E293B]">Categories <span className="text-red-500">*</span></label>
+                    <div className="flex flex-wrap gap-2 mb-2">
+                      {availableCategories.map(cat => (
+                        <button
+                          key={cat}
+                          onClick={() => setFormData({
+                            ...formData,
+                            categories: formData.categories.includes(cat)
+                              ? formData.categories.filter(c => c !== cat)
+                              : [...formData.categories, cat]
+                          })}
+                          className={cn(
+                            "px-3 py-1.5 rounded-lg text-xs font-bold border transition-all",
+                            formData.categories.includes(cat)
+                              ? "bg-blue-600 text-white border-blue-600"
+                              : "bg-white text-gray-600 border-gray-200 hover:border-blue-400"
+                          )}
+                        >
+                          {cat}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div className="p-4 border border-gray-100 rounded-xl bg-white flex items-start gap-4">
+                    <input
+                      type="checkbox"
+                      id="featured"
+                      className="mt-1 w-4 h-4 text-blue-600 rounded border-gray-300 focus:ring-blue-500"
+                      checked={formData.featured}
+                      onChange={(e) => setFormData({ ...formData, featured: e.target.checked })}
+                    />
+                    <div>
+                      <label htmlFor="featured" className="text-sm font-bold text-gray-900 cursor-pointer block">Featured Post</label>
+                      <p className="text-xs font-medium text-gray-500 mt-0.5">Show this post in the featured section</p>
+                    </div>
+                  </div>
+
+                  <div className="p-4 border border-gray-100 rounded-xl bg-white flex items-start gap-4">
+                    <input
+                      type="checkbox"
+                      id="comments"
+                      className="mt-1 w-4 h-4 text-blue-600 rounded border-gray-300 focus:ring-blue-500"
+                      checked={formData.allowComments}
+                      onChange={(e) => setFormData({ ...formData, allowComments: e.target.checked })}
+                    />
+                    <div>
+                      <label htmlFor="comments" className="text-sm font-bold text-gray-900 cursor-pointer block">Allow Comments</label>
+                      <p className="text-xs font-medium text-gray-500 mt-0.5">Allow readers to leave comments on this post</p>
                     </div>
                   </div>
                 </div>
 
-                <div>
-                  <div className="flex items-center justify-between mb-2">
-                    <label className="block text-sm font-medium text-gray-700">Content <span className="text-red-500">*</span></label>
-                    {formData.content && (
-                      <span className="text-xs text-blue-600 font-semibold flex items-center gap-1">
-                        <Sparkles className="w-3 h-3" /> AI Generated
+                <div className="pt-4 border-t border-gray-50">
+                  <label className="block text-sm font-bold text-gray-900 mb-2">Content <span className="text-red-500">*</span></label>
+                  <p className="text-sm text-gray-500 mb-4 font-medium">Write your blog post content with rich formatting</p>
+
+                  <div className="border border-gray-100 rounded-xl overflow-hidden bg-white shadow-sm">
+                    <ReactQuill
+                      theme="snow"
+                      value={formData.content}
+                      onChange={(val: string) => setFormData({ ...formData, content: val })}
+                      modules={quillModules}
+                      className="min-h-[400px] [&_.ql-editor]:min-h-[400px] [&_.ql-editor]:text-base [&_.ql-editor]:font-medium [&_.ql-container]:border-none [&_.ql-toolbar]:border-none [&_.ql-toolbar]:bg-[#fafafa] [&_.ql-toolbar]:border-b [&_.ql-toolbar]:border-gray-100"
+                      placeholder="Write your blog post content here..."
+                    />
+
+                    <div className="flex items-center justify-end border-t border-gray-100 bg-[#fafafa] px-4 py-3">
+                      <span className="text-xs font-bold text-gray-500">
+                        {formData.content.replace(/<[^>]*>?/gm, '').trim() ? formData.content.replace(/<[^>]*>?/gm, '').trim().split(/\s+/).length : 0} words | {formData.content.replace(/<[^>]*>?/gm, '').length} characters
                       </span>
-                    )}
-                  </div>
-                  <textarea
-                    rows={15}
-                    placeholder="Write your blog post content here... or use the AI Writer tab to generate it automatically!"
-                    className="w-full px-4 py-4 bg-white border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
-                    value={formData.content}
-                    onChange={e => setFormData({ ...formData, content: e.target.value })}
-                  />
-                  <div className="flex justify-end mt-2">
-                    <span className="text-xs text-gray-400">{formData.content.trim().split(/\s+/).filter(Boolean).length} words | {formData.content.length} characters</span>
+                    </div>
                   </div>
                 </div>
               </div>
-            </div>
+            )}
+          </div>
+        </div>
+
+        {activeTab === "Layout" && (
+          <div className="rounded-[24px] border border-[#E2E8F0] bg-white p-8 shadow-sm animate-in fade-in duration-300">
+            <PostLayoutSelector
+              siteId={currentSiteId}
+              value={formData.layoutTemplateId}
+              onChange={(layoutTemplateId) =>
+                setFormData((current) => ({ ...current, layoutTemplateId }))
+              }
+            />
           </div>
         )}
 
-        {/* ── IMAGES TAB ──────────────────────────────────────── */}
         {activeTab === "Images" && (
           <div className="space-y-8 animate-in fade-in duration-300">
             <div>
@@ -619,12 +602,18 @@ export default function CreatePostPage() {
                   <p className="text-xs text-gray-500 mb-4">This image appears in blog listing pages and previews</p>
 
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div className="border-2 border-dashed border-gray-200 rounded-2xl p-10 flex flex-col items-center justify-center text-center hover:border-blue-400 hover:bg-blue-50/30 transition-all cursor-pointer group">
+                    <div className="border-2 border-dashed border-gray-200 rounded-2xl p-10 flex flex-col items-center justify-center text-center hover:border-blue-400 hover:bg-blue-50/30 transition-all cursor-pointer group relative">
+                      <input
+                        type="file"
+                        accept="image/*"
+                        className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
+                        onChange={handleImageUpload}
+                      />
                       <div className="w-14 h-14 bg-gray-50 rounded-2xl flex items-center justify-center mb-4 group-hover:bg-blue-100 transition-colors">
                         <ImagePlus className="w-7 h-7 text-gray-400 group-hover:text-blue-600" />
                       </div>
                       <span className="text-sm font-bold text-gray-900 mb-1">Upload from Device</span>
-                      <span className="text-[10px] text-gray-500 uppercase tracking-wider font-bold">PNG, JPG, GIF up to 5MB</span>
+                      <span className="text-[10px] text-gray-500 uppercase tracking-wider font-bold">Saves to backend /uploads (required for public posts)</span>
                     </div>
 
                     <div
@@ -642,7 +631,7 @@ export default function CreatePostPage() {
                   {formData.thumbnailUrl && (
                     <div className="mt-8 p-4 bg-gray-50 rounded-3xl border border-gray-100 flex items-center gap-6 animate-in slide-in-from-bottom-4 duration-500">
                       <div className="w-24 h-24 rounded-2xl overflow-hidden border-2 border-white shadow-md shrink-0">
-                        <img src={formData.thumbnailUrl} className="w-full h-full object-cover" alt="Preview" />
+                        <img src={resolveAdminMediaUrl(formData.thumbnailUrl) || formData.thumbnailUrl} className="w-full h-full object-cover" alt="Preview" />
                       </div>
                       <div className="flex-1 min-w-0">
                         <p className="text-xs font-black text-gray-400 uppercase tracking-widest mb-1">Selected Thumbnail</p>
@@ -668,142 +657,180 @@ export default function CreatePostPage() {
           </div>
         )}
 
-        {/* ── SEO TAB ─────────────────────────────────────────── */}
         {activeTab === "SEO" && (
-          <div className="space-y-8 animate-in fade-in duration-300">
-            <div>
-              <h2 className="text-lg font-semibold text-gray-900">SEO Optimization</h2>
-              <p className="text-sm text-gray-500 mb-6">Optimize your blog post for search engines and social media</p>
+          <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
+            {/* Search Preview */}
+            <div className="bg-[#f8f9fa] p-8 rounded-3xl border border-gray-100">
+              <div className="flex items-center gap-3 mb-6">
+                <div className="w-8 h-8 rounded-full bg-white flex items-center justify-center shadow-sm border border-gray-100">
+                  <Search className="w-4 h-4 text-blue-600" />
+                </div>
+                <h3 className="text-sm font-black text-gray-900 uppercase tracking-widest">Search Engine Preview</h3>
+              </div>
+
+              <div className="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm max-w-2xl">
+                <p className="text-[#1a0dab] text-xl font-medium mb-1 truncate">
+                  {formData.metaTitle || formData.title || "Post Title"}
+                </p>
+                <p className="text-[#006621] text-sm mb-1 truncate">
+                  https://corehead.com/blog/{formData.slug || "your-slug"}
+                </p>
+                <p className="text-[#4d5156] text-sm line-clamp-2">
+                  {formData.metaDescription || formData.excerpt || "Please provide a meta description to see how your post appears in search results."}
+                </p>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+              <div className="space-y-6">
+                <div>
+                  <label className="block text-sm font-bold text-gray-900 mb-2">Meta Title</label>
+                  <input
+                    type="text"
+                    value={formData.metaTitle}
+                    onChange={(e) => setFormData({ ...formData, metaTitle: e.target.value })}
+                    placeholder="Enter meta title..."
+                    className="w-full px-5 py-3.5 bg-white border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all font-medium text-sm text-gray-900"
+                  />
+                  <p className="mt-2 text-xs text-gray-400 font-medium flex justify-between">
+                    <span>Recommended length: 50-60 characters</span>
+                    <span className={cn(formData.metaTitle.length > 60 ? "text-amber-500" : "text-gray-400")}>
+                      {formData.metaTitle.length}/60
+                    </span>
+                  </p>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-bold text-gray-900 mb-2">Meta Description</label>
+                  <textarea
+                    rows={4}
+                    value={formData.metaDescription}
+                    onChange={(e) => setFormData({ ...formData, metaDescription: e.target.value })}
+                    placeholder="Enter meta description..."
+                    className="w-full px-5 py-3.5 bg-white border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all font-medium text-sm text-gray-900 resize-none"
+                  />
+                  <p className="mt-2 text-xs text-gray-400 font-medium flex justify-between">
+                    <span>Recommended length: 150-160 characters</span>
+                    <span className={cn(formData.metaDescription.length > 160 ? "text-amber-500" : "text-gray-400")}>
+                      {formData.metaDescription.length}/160
+                    </span>
+                  </p>
+                </div>
+              </div>
 
               <div className="space-y-6">
                 <div>
-                  <div className="flex justify-between mb-2">
-                    <label className="block text-sm font-medium text-gray-700">Meta Title</label>
-                    <span className={cn("text-xs font-medium", formData.metaTitle.length > 60 ? "text-red-500" : "text-gray-400")}>
-                      {formData.metaTitle.length}/60
-                    </span>
-                  </div>
+                  <label className="block text-sm font-bold text-gray-900 mb-2">Canonical URL</label>
                   <input
-                    type="text"
-                    placeholder="SEO optimized title (leave empty to use post title)"
-                    className="w-full px-4 py-2.5 bg-white border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
-                    value={formData.metaTitle}
-                    onChange={e => setFormData({ ...formData, metaTitle: e.target.value })}
+                    type="url"
+                    value={formData.canonicalUrl}
+                    onChange={(e) => setFormData({ ...formData, canonicalUrl: e.target.value })}
+                    placeholder="https://example.com/canonical-url"
+                    className="w-full px-5 py-3.5 bg-white border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all font-medium text-sm text-gray-900"
                   />
-                  <p className="text-xs text-gray-500 mt-2">Recommended: 50-60 characters</p>
                 </div>
 
                 <div>
-                  <div className="flex justify-between mb-2">
-                    <label className="block text-sm font-medium text-gray-700">Meta Description</label>
-                    <span className={cn("text-xs font-medium", formData.metaDescription.length > 160 ? "text-red-500" : "text-gray-400")}>
-                      {formData.metaDescription.length}/160
-                    </span>
+                  <label className="block text-sm font-bold text-gray-900 mb-2">Focus Keywords</label>
+                  <div className="flex flex-wrap gap-2 mb-3">
+                    {formData.keywords.map(kw => (
+                      <span key={kw} className="inline-flex items-center gap-1 px-3 py-1 bg-blue-50 text-blue-600 rounded-lg text-xs font-bold border border-blue-100">
+                        {kw}
+                        <button onClick={() => removeKeyword(kw)} className="hover:text-blue-800 transition-colors"><X className="w-3 h-3" /></button>
+                      </span>
+                    ))}
                   </div>
-                  <textarea
-                    rows={4}
-                    placeholder="Brief description for search engines (leave empty to use excerpt)"
-                    className="w-full px-4 py-2.5 bg-white border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all resize-none"
-                    value={formData.metaDescription}
-                    onChange={e => setFormData({ ...formData, metaDescription: e.target.value })}
-                  />
-                  <p className="text-xs text-gray-500 mt-2">Recommended: 150-160 characters</p>
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Focus Keywords</label>
-                  <div className="flex gap-2 mb-3">
+                  <div className="flex gap-2">
                     <input
                       type="text"
-                      placeholder="Type keyword and press Enter"
-                      className="flex-1 px-4 py-2.5 bg-white border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
                       value={keywordInput}
-                      onChange={e => setKeywordInput(e.target.value)}
-                      onKeyDown={e => e.key === 'Enter' && (e.preventDefault(), handleAddKeyword())}
+                      onChange={(e) => setKeywordInput(e.target.value)}
+                      onKeyDown={(e) => e.key === 'Enter' && (e.preventDefault(), handleAddKeyword())}
+                      placeholder="Add focus keyword..."
+                      className="flex-1 px-5 py-3.5 bg-white border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all font-medium text-sm text-gray-900"
                     />
                     <button
+                      type="button"
                       onClick={handleAddKeyword}
-                      className="px-4 py-2.5 bg-gray-50 text-gray-700 border border-gray-200 rounded-lg hover:bg-gray-100 transition-colors text-sm font-medium"
+                      className="px-6 py-3.5 bg-gray-900 text-white rounded-xl font-bold hover:bg-black transition-colors"
                     >
                       Add
                     </button>
                   </div>
-                  <div className="flex flex-wrap gap-2 min-h-[100px] p-4 bg-gray-50 rounded-xl border border-gray-100 border-dashed">
-                    {formData.keywords.length > 0 ? (
-                      formData.keywords.map(kw => (
-                        <span key={kw} className="inline-flex items-center gap-1.5 px-3 py-1 bg-white border border-gray-200 rounded-full text-xs font-medium text-gray-700">
-                          {kw}
-                          <button onClick={() => removeKeyword(kw)} className="text-gray-400 hover:text-red-500 transition-colors">
-                            <X className="w-3 h-3" />
-                          </button>
-                        </span>
-                      ))
-                    ) : (
-                      <div className="w-full flex items-center justify-center text-gray-400 text-sm">
-                        No keywords added yet. Type a keyword and press Enter or click Add.
-                      </div>
-                    )}
-                  </div>
-                  <p className="text-xs text-gray-500 mt-2">Add keywords that help search engines understand your content.</p>
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Canonical URL</label>
-                  <input
-                    type="text"
-                    placeholder="https://example.com/blog/post-slug"
-                    className="w-full px-4 py-2.5 bg-white border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
-                    value={formData.canonicalUrl}
-                    onChange={e => setFormData({ ...formData, canonicalUrl: e.target.value })}
-                  />
-                  <p className="text-xs text-gray-500 mt-2">Optional: Specify the preferred URL if this content exists elsewhere</p>
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Structured Data (JSON-LD)</label>
-                  <p className="text-xs text-gray-500 mb-2">Advanced: Add structured data for rich search results</p>
-                  <textarea
-                    rows={10}
-                    className="w-full px-4 py-4 bg-gray-900 text-gray-100 font-mono text-xs rounded-xl focus:outline-none ring-offset-2 ring-blue-500 focus:ring-2 border-none"
-                    value={formData.structuredData}
-                    onChange={e => setFormData({ ...formData, structuredData: e.target.value })}
-                  />
-                  <p className="text-xs text-gray-500 mt-2">Optional: Valid JSON-LD markup for enhanced search appearance.</p>
                 </div>
               </div>
             </div>
           </div>
         )}
-   
+      </div>
 
-      {/* Bottom Bar */}
-      <div className="fixed bottom-0 left-[280px] right-0 bg-white border-t border-gray-200 p-4 px-8 flex justify-between items-center z-10">
+      {/* Action Bar (Card instead of fixed bottom bar) */}
+      <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 flex justify-between items-center">
         <button
           onClick={() => router.push('/admin/posts')}
-          className="px-6 py-2.5 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+          className="px-6 py-3 text-sm font-bold text-gray-700 bg-white border border-gray-200 rounded-xl hover:bg-gray-50 transition-colors shadow-sm"
         >
           Cancel
         </button>
         <div className="flex items-center gap-3">
-          <button className="px-6 py-2.5 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors flex items-center gap-2">
+          <button
+            type="button"
+            onClick={() => setShowPreview(true)}
+            className="px-6 py-3 text-sm font-bold text-gray-700 bg-white border border-gray-200 rounded-xl hover:bg-gray-50 transition-colors flex items-center gap-2 shadow-sm"
+          >
+            <Eye className="w-4 h-4" />
             Preview
           </button>
           <button
-            onClick={() => setFormData({ ...formData, status: "Draft" })}
-            className="px-6 py-2.5 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+            onClick={() => handleCreatePost("Draft")}
+            disabled={loading}
+            className="px-6 py-3 text-sm font-bold text-gray-700 bg-gray-50 hover:bg-gray-100 rounded-xl transition-colors shadow-sm border border-gray-100 disabled:opacity-50"
           >
-            Save as Draft
+            {loading ? "Saving…" : "Save as Draft"}
           </button>
           <button
-            onClick={handleCreatePost}
+            onClick={() => handleCreatePost("Published")}
             disabled={loading}
-            className="px-6 py-2.5 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 transition-colors shadow-sm disabled:opacity-50 flex items-center gap-2"
+            className="px-8 py-3 text-sm font-bold text-white bg-emerald-600 rounded-xl hover:bg-emerald-700 transition-colors shadow-md disabled:opacity-50"
           >
-            {loading && <Loader2 className="w-4 h-4 animate-spin" />}
-            {loading ? "Creating..." : "Create Post"}
+            {loading ? "Publishing…" : "Publish"}
           </button>
         </div>
       </div>
+
+      {/* Footer Text */}
+      <div className="flex justify-between items-center pt-4 border-t border-gray-200/60 pb-8 text-xs font-medium text-gray-400">
+        <div>
+          <p>Copyright © 2026 SeekaHost Technologies Ltd. All Rights Reserved.</p>
+          <p className="mt-1">Company Number: 16026964 | VAT Number: 485829729</p>
+        </div>
+        <div>
+          <span>v1.0.0</span>
+        </div>
+      </div>
+
+      <MediaLibraryModal
+        isOpen={isMediaModalOpen}
+        onClose={() => setIsMediaModalOpen(false)}
+        onSelect={(url) => setFormData({ ...formData, thumbnailUrl: url })}
+      />
+
+      <PostPreviewModal
+        open={showPreview}
+        onClose={() => setShowPreview(false)}
+        post={{
+          title: formData.title,
+          slug: formData.slug,
+          excerpt: formData.excerpt,
+          content: formData.content,
+          status: formData.status,
+          categories: formData.categories,
+          thumbnailUrl: formData.thumbnailUrl,
+          authorName:
+            users.find((u) => String(u.id) === String(formData.authorId))?.name ||
+            undefined,
+        }}
+      />
     </div>
   );
 }

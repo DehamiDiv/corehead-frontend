@@ -4,32 +4,38 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import {
   Sparkles, Clock, Layers, Palette, RefreshCw,
-  Trash2, Search, Filter, RotateCcw, ArrowUpRight
+  Trash2, Search, Filter, RotateCcw, ArrowUpRight, Save
 } from 'lucide-react';
 import Link from 'next/link';
 import './page.css';
 import { aiApi } from '@/services/aiApi';
+import { normalizeLayoutDocumentV1 } from '@/lib/layoutContract';
 
 const BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api';
 
 const STYLE_COLORS = {
-  modern:     { bg: 'rgba(79,70,229,0.10)',  color: '#4f46e5', border: 'rgba(79,70,229,0.25)',  label: '✨ Modern' },
-  editorial:  { bg: 'rgba(16,185,129,0.10)', color: '#10b981', border: 'rgba(16,185,129,0.25)', label: '📰 Editorial' },
-  magazine:   { bg: 'rgba(245,158,11,0.10)', color: '#f59e0b', border: 'rgba(245,158,11,0.25)', label: '🗞️ Magazine' },
-  minimalist: { bg: 'rgba(107,114,128,0.10)',color: '#6b7280', border: 'rgba(107,114,128,0.25)',label: '⬜ Minimalist' },
+  modern: { bg: 'rgba(79,70,229,0.10)', color: '#4f46e5', border: 'rgba(79,70,229,0.25)', label: '✨ Modern' },
+  editorial: { bg: 'rgba(16,185,129,0.10)', color: '#10b981', border: 'rgba(16,185,129,0.25)', label: '📰 Editorial' },
+  magazine: { bg: 'rgba(245,158,11,0.10)', color: '#f59e0b', border: 'rgba(245,158,11,0.25)', label: '🗞️ Magazine' },
+  minimalist: { bg: 'rgba(107,114,128,0.10)', color: '#6b7280', border: 'rgba(107,114,128,0.25)', label: '⬜ Minimalist' },
 };
 
-const LAYOUT_ICONS = { 'blog-archive': '🗂️', 'single-post': '📄' };
+const LAYOUT_ICONS = { 'blog-archive': '🗂️', 'single-post': '📄', 'home-page': '🏠' };
 
 export default function AIHistoryPage() {
   const router = useRouter();
-  const [history, setHistory]       = useState([]);
-  const [filtered, setFiltered]     = useState([]);
-  const [loading, setLoading]       = useState(true);
-  const [error, setError]           = useState(null);
-  const [loadingId, setLoadingId]   = useState(null);
+  const [history, setHistory] = useState([]);
+  const [filtered, setFiltered] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [loadingId, setLoadingId] = useState(null);
   const [deletingId, setDeletingId] = useState(null);
-  const [search, setSearch]         = useState('');
+  const [confirmDeleteId, setConfirmDeleteId] = useState(null);
+  const [editingId, setEditingId] = useState(null);
+  const [editPromptValue, setEditPromptValue] = useState('');
+  const [updatingId, setUpdatingId] = useState(null);
+  const [promotingId, setPromotingId] = useState(null);
+  const [search, setSearch] = useState('');
   const [filterStyle, setFilterStyle] = useState('all');
   const [expandedId, setExpandedId] = useState(null);
 
@@ -83,10 +89,36 @@ export default function AIHistoryPage() {
   const handleRestore = async (item) => {
     try {
       setLoadingId(item.id);
-      
+
+      if (item.generated_layout?.blocks) {
+        const normalized = normalizeLayoutDocumentV1(item.generated_layout, {
+          name: item.generated_layout?.name || item.prompt?.slice(0, 80) || 'AI Layout',
+          kind: item.layout_type,
+          origin: 'ai',
+          designStyle: item.design_style,
+        });
+        localStorage.setItem('corehead_builder_layout', JSON.stringify(normalized.document));
+        localStorage.setItem('corehead_builder_meta', JSON.stringify({
+          name: normalized.document.name,
+          type: normalized.document.kind === 'blog-archive'
+            ? 'Blog Archive'
+            : normalized.document.kind === 'home-page'
+              ? 'Home Page'
+              : 'Single Post',
+          id: null,
+          ai_history_id: item.id
+        }));
+        router.push('/admin/builder');
+        return;
+      }
+
       // Use the actual generated layout if available, otherwise fallback
       let layoutData;
-      if (item.generated_layout && (item.generated_layout.cards || item.generated_layout.layout_data?.cards)) {
+      if (item.generated_layout && Array.isArray(item.generated_layout.blocks)) {
+        layoutData = { cards: item.generated_layout.blocks };
+      } else if (item.generated_layout && Array.isArray(item.generated_layout)) {
+        layoutData = { cards: item.generated_layout };
+      } else if (item.generated_layout && (item.generated_layout.cards || item.generated_layout.layout_data?.cards)) {
         // Handle both possible structures
         layoutData = item.generated_layout;
         // Normalize if it's nested under layout_data
@@ -107,7 +139,7 @@ export default function AIHistoryPage() {
           }))
         };
       }
-      
+
       localStorage.setItem('ai_generated_layout', JSON.stringify(layoutData));
       router.push('/builder');
     } catch (err) {
@@ -117,23 +149,33 @@ export default function AIHistoryPage() {
     }
   };
 
+  const handlePromote = async (item) => {
+    try {
+      setPromotingId(item.id);
+      const name = item.generated_layout?.name || item.prompt?.slice(0, 80) || 'AI Layout';
+      const result = await aiApi.promoteHistory(item.id, name);
+      setHistory(prev => prev.map(entry => entry.id === item.id
+        ? { ...entry, promoted_template_id: result.template?.id }
+        : entry));
+    } catch (err) {
+      alert('Save to Layout Library failed: ' + err.message);
+    } finally {
+      setPromotingId(null);
+    }
+  };
+
   /* ── Delete entry ── */
-  const handleDelete = async (id) => {
-    if (!confirm('Remove this generation from history?')) return;
+  const handleDelete = (id) => {
+    setConfirmDeleteId(id);
+  };
+
+  const handleConfirmDelete = async () => {
+    if (confirmDeleteId === null) return;
+    const id = confirmDeleteId;
+    setConfirmDeleteId(null);
     try {
       setDeletingId(id);
-      
-      // Get the auth header for direct fetch or update aiApi to have a delete method
-      const token = localStorage.getItem('token');
-      const res = await fetch(`${BASE_URL}/ai/history/${id}`, { 
-        method: 'DELETE',
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
-      });
-      
-      if (!res.ok) throw new Error('Failed to delete');
-
+      await aiApi.deleteHistory(id);
       setHistory(prev => prev.filter(h => h.id !== id));
     } catch (err) {
       alert('Delete failed: ' + err.message);
@@ -142,11 +184,29 @@ export default function AIHistoryPage() {
     }
   };
 
+  /* ── Update entry prompt ── */
+  const handleUpdatePrompt = async (id, newPrompt) => {
+    if (!newPrompt || newPrompt.trim().length < 3) {
+      alert('Prompt must be at least 3 characters long.');
+      return;
+    }
+    try {
+      setUpdatingId(id);
+      await aiApi.updateHistory(id, newPrompt.trim());
+      setHistory(prev => prev.map(h => h.id === id ? { ...h, prompt: newPrompt.trim() } : h));
+      setEditingId(null);
+    } catch (err) {
+      alert('Update failed: ' + err.message);
+    } finally {
+      setUpdatingId(null);
+    }
+  };
+
   /* ── Stats ── */
   const stats = [
-    { label: 'Total Generations', value: history.length,       icon: '🤖', color: '#4f46e5' },
-    { label: 'Unique Styles',     value: [...new Set(history.map(h => h.design_style))].length, icon: '🎨', color: '#10b981' },
-    { label: 'Layout Types',      value: [...new Set(history.map(h => h.layout_type))].length,  icon: '📄', color: '#f59e0b' },
+    { label: 'Total Generations', value: history.length, icon: '🤖', color: '#4f46e5' },
+    { label: 'Unique Styles', value: [...new Set(history.map(h => h.design_style))].length, icon: '🎨', color: '#10b981' },
+    { label: 'Layout Types', value: [...new Set(history.map(h => h.layout_type))].length, icon: '📄', color: '#f59e0b' },
   ];
 
   const allStyles = [...new Set(history.map(h => h.design_style).filter(Boolean))];
@@ -176,10 +236,10 @@ export default function AIHistoryPage() {
 
       {/* ── Navigation ── */}
       <div className="generator-nav">
-        <Link href="/ai-prompt"     className="nav-item">Prompt</Link>
-        <Link href="/ai-options"    className="nav-item">Options</Link>
-        <Link href="/ai-templates"  className="nav-item">Quick Templates</Link>
-        <Link href="/ai-history"    className="nav-item active">History</Link>
+        <Link href="/ai-prompt" className="nav-item">Prompt</Link>
+        <Link href="/ai-options" className="nav-item">Options</Link>
+        <Link href="/ai-templates" className="nav-item">Quick Templates</Link>
+        <Link href="/ai-history" className="nav-item active">History</Link>
       </div>
 
       {/* ── Content ── */}
@@ -340,22 +400,119 @@ export default function AIHistoryPage() {
 
                       {/* Text */}
                       <div style={{ flex: 1, minWidth: 0 }}>
-                        {/* Prompt Preview */}
-                        <p
-                          onClick={() => setExpandedId(isExpanded ? null : item.id)}
-                          style={{
-                            fontSize: '15px', fontWeight: '600', color: '#222',
-                            margin: '0 0 10px', lineHeight: 1.5,
-                            overflow: 'hidden', textOverflow: 'ellipsis',
-                            display: '-webkit-box',
-                            WebkitLineClamp: isExpanded ? 'unset' : 2,
-                            WebkitBoxOrient: 'vertical',
-                            cursor: 'pointer',
-                          }}
-                          title="Click to expand"
-                        >
-                          "{item.prompt || 'No prompt recorded'}"
-                        </p>
+                        {/* Prompt Preview & Inline Edit */}
+                        {editingId === item.id ? (
+                          <div style={{ display: 'flex', gap: '8px', marginBottom: '10px', alignItems: 'center' }}>
+                            <input
+                              type="text"
+                              value={editPromptValue}
+                              onChange={e => setEditPromptValue(e.target.value)}
+                              disabled={updatingId === item.id}
+                              style={{
+                                flex: 1,
+                                padding: '8px 12px',
+                                border: '2px solid #4f46e5',
+                                borderRadius: '8px',
+                                fontSize: '14px',
+                                color: '#1e293b',
+                                background: '#fff',
+                                outline: 'none',
+                                fontFamily: 'inherit',
+                                boxShadow: '0 0 0 3px rgba(79, 70, 229, 0.1)',
+                              }}
+                              autoFocus
+                              onKeyDown={e => {
+                                if (e.key === 'Enter') handleUpdatePrompt(item.id, editPromptValue);
+                                if (e.key === 'Escape') setEditingId(null);
+                              }}
+                            />
+                            <button
+                              onClick={() => handleUpdatePrompt(item.id, editPromptValue)}
+                              disabled={updatingId === item.id}
+                              style={{
+                                padding: '8px 14px',
+                                background: '#10b981',
+                                color: '#fff',
+                                border: 'none',
+                                borderRadius: '8px',
+                                fontSize: '12px',
+                                fontWeight: '700',
+                                cursor: 'pointer',
+                                transition: 'all 0.2s',
+                              }}
+                            >
+                              {updatingId === item.id ? 'Saving...' : 'Save'}
+                            </button>
+                            <button
+                              onClick={() => setEditingId(null)}
+                              disabled={updatingId === item.id}
+                              style={{
+                                padding: '8px 14px',
+                                background: '#f3f4f6',
+                                color: '#4b5563',
+                                border: 'none',
+                                borderRadius: '8px',
+                                fontSize: '12px',
+                                fontWeight: '700',
+                                cursor: 'pointer',
+                                transition: 'all 0.2s',
+                              }}
+                            >
+                              Cancel
+                            </button>
+                          </div>
+                        ) : (
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '10px' }}>
+                            <p
+                              onClick={() => setExpandedId(isExpanded ? null : item.id)}
+                              style={{
+                                fontSize: '15px', fontWeight: '600', color: '#222',
+                                margin: 0,
+                                lineHeight: 1.5,
+                                overflow: 'hidden',
+                                textOverflow: 'ellipsis',
+                                display: '-webkit-box',
+                                WebkitLineClamp: isExpanded ? 'unset' : 2,
+                                WebkitBoxOrient: 'vertical',
+                                cursor: 'pointer',
+                                flex: 1,
+                              }}
+                              title="Click to expand"
+                            >
+                              "{item.prompt || 'No prompt recorded'}"
+                            </p>
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setEditingId(item.id);
+                                setEditPromptValue(item.prompt || '');
+                              }}
+                              style={{
+                                background: 'rgba(79, 70, 229, 0.08)',
+                                border: 'none',
+                                color: '#4f46e5',
+                                cursor: 'pointer',
+                                padding: '6px 12px',
+                                borderRadius: '8px',
+                                display: 'inline-flex',
+                                alignItems: 'center',
+                                gap: '4px',
+                                fontSize: '12px',
+                                fontWeight: '700',
+                                transition: 'all 0.2s',
+                              }}
+                              onMouseEnter={e => {
+                                e.currentTarget.style.background = 'rgba(79, 70, 229, 0.15)';
+                              }}
+                              onMouseLeave={e => {
+                                e.currentTarget.style.background = 'rgba(79, 70, 229, 0.08)';
+                              }}
+                              title="Edit Prompt"
+                            >
+                              ✏️ Edit
+                            </button>
+                          </div>
+                        )}
 
                         {/* Badges */}
                         <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', marginBottom: '10px' }}>
@@ -421,6 +578,33 @@ export default function AIHistoryPage() {
                             : <><RotateCcw size={13} /> Restore in Builder</>
                           }
                         </button>
+                        {item.promoted_template_id ? (
+                          <Link
+                            href="/admin/layouts"
+                            style={{
+                              display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px',
+                              padding: '9px 16px', background: '#ecfdf5', color: '#047857',
+                              border: '2px solid #a7f3d0', borderRadius: '10px',
+                              fontSize: '12px', fontWeight: '700', textDecoration: 'none',
+                            }}
+                          >
+                            <ArrowUpRight size={13} /> Saved to Library
+                          </Link>
+                        ) : (
+                          <button
+                            onClick={() => handlePromote(item)}
+                            disabled={promotingId === item.id}
+                            style={{
+                              display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px',
+                              padding: '9px 16px', background: '#fff', color: '#047857',
+                              border: '2px solid #a7f3d0', borderRadius: '10px',
+                              fontSize: '12px', fontWeight: '700', cursor: 'pointer',
+                            }}
+                          >
+                            <Save size={13} />
+                            {promotingId === item.id ? 'Saving...' : 'Save to Layout Library'}
+                          </button>
+                        )}
                         <button
                           onClick={() => handleDelete(item.id)}
                           disabled={deletingId === item.id}
@@ -454,6 +638,109 @@ export default function AIHistoryPage() {
           </div>
         )}
       </div>
+
+      {/* ── Custom Deletion Confirmation Modal ── */}
+      {confirmDeleteId !== null && (
+        <div style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          backgroundColor: 'rgba(15, 23, 42, 0.6)',
+          backdropFilter: 'blur(4px)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          zIndex: 9999,
+          padding: '20px',
+        }}>
+          <div style={{
+            backgroundColor: '#ffffff',
+            borderRadius: '20px',
+            maxWidth: '400px',
+            width: '100%',
+            padding: '30px',
+            boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)',
+            textAlign: 'center',
+            border: '1px solid rgba(226, 232, 240, 0.8)',
+            animation: 'modalFadeIn 0.3s ease-out'
+          }}>
+            <div style={{
+              width: '60px',
+              height: '60px',
+              backgroundColor: '#fee2e2',
+              borderRadius: '50%',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              margin: '0 auto 20px',
+              color: '#ef4444'
+            }}>
+              <Trash2 size={30} />
+            </div>
+            <h3 style={{
+              fontSize: '18px',
+              fontWeight: 700,
+              color: '#0f172a',
+              margin: '0 0 10px 0'
+            }}>Delete Item?</h3>
+            <p style={{
+              fontSize: '14px',
+              color: '#64748b',
+              margin: '0 0 24px 0',
+              lineHeight: 1.5
+            }}>Are you sure you want to remove this generation from your history? This action cannot be undone.</p>
+            <div style={{
+              display: 'flex',
+              gap: '12px',
+              justifyContent: 'center'
+            }}>
+              <button
+                onClick={() => setConfirmDeleteId(null)}
+                style={{
+                  flex: 1,
+                  padding: '12px 20px',
+                  backgroundColor: '#f1f5f9',
+                  color: '#475569',
+                  border: 'none',
+                  borderRadius: '12px',
+                  fontSize: '14px',
+                  fontWeight: 600,
+                  cursor: 'pointer',
+                  transition: 'background-color 0.2s',
+                  fontFamily: 'inherit'
+                }}
+                onMouseOver={(e) => e.currentTarget.style.backgroundColor = '#e2e8f0'}
+                onMouseOut={(e) => e.currentTarget.style.backgroundColor = '#f1f5f9'}
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleConfirmDelete}
+                style={{
+                  flex: 1,
+                  padding: '12px 20px',
+                  backgroundColor: '#ef4444',
+                  color: '#ffffff',
+                  border: 'none',
+                  borderRadius: '12px',
+                  fontSize: '14px',
+                  fontWeight: 600,
+                  cursor: 'pointer',
+                  transition: 'background-color 0.2s',
+                  boxShadow: '0 4px 12px rgba(239, 68, 68, 0.25)',
+                  fontFamily: 'inherit'
+                }}
+                onMouseOver={(e) => e.currentTarget.style.backgroundColor = '#dc2626'}
+                onMouseOut={(e) => e.currentTarget.style.backgroundColor = '#ef4444'}
+              >
+                Yes, Delete
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       <style>{`
         .spin-icon { animation: spin 1s linear infinite; }

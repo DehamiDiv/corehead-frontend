@@ -5,6 +5,8 @@ import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { ArrowLeft, Save, UploadCloud, Code, FileType, Layout as LayoutIcon, CheckCircle2, Loader2 } from "lucide-react";
 import { api } from "@/lib/api";
+import { normalizeLayoutDocumentV1 } from "@/lib/layoutContract";
+import { prepareLayoutForSave } from "@/lib/templateLayout";
 
 export default function EditLayoutPage() {
     const params = useParams();
@@ -27,7 +29,12 @@ export default function EditLayoutPage() {
                 setType(template.type);
                 setStatus(template.status);
                 setVersion(template.version || 1);
-                setSchema(JSON.stringify(template.layoutJson, null, 2));
+                const normalized = normalizeLayoutDocumentV1(template.layoutJson, {
+                    name: template.name,
+                    kind: template.type,
+                    origin: template.layoutJson?.metadata?.origin || "migrated",
+                });
+                setSchema(JSON.stringify(normalized.document, null, 2));
             } catch (error) {
                 console.error("Failed to fetch template", error);
                 alert("Error: Template not found");
@@ -37,18 +44,25 @@ export default function EditLayoutPage() {
         fetchTemplate();
     }, [id, router]);
 
-    const handleSave = async () => {
+    const handleSave = async (nextStatus: "draft" | "published" = status as "draft" | "published") => {
         setIsSaving(true);
         try {
             const layoutJson = JSON.parse(schema);
+            const prepared = prepareLayoutForSave(layoutJson, {
+                name,
+                type,
+                status: nextStatus,
+                origin: layoutJson?.metadata?.origin || "manual",
+            });
             const updated = await api.updateTemplate(id, {
                 name,
                 type,
-                layoutJson,
-                status
+                layoutJson: prepared.document,
+                status: nextStatus,
             });
             setVersion(updated.version); // Update the version number on the UI
-            alert("Changes saved! New version created.");
+            setStatus(updated.status || nextStatus);
+            alert(nextStatus === "published" ? "Layout validated and published." : "Draft saved. New version created.");
         } catch (error: any) {
             alert("Error saving: " + error.message);
         } finally {
@@ -76,18 +90,28 @@ export default function EditLayoutPage() {
                     </div>
                 </div>
                 <div className="flex items-center gap-3">
-                    <div className="flex items-center gap-2 px-3 py-1 bg-green-50 text-green-700 rounded-full text-xs font-bold uppercase tracking-wide border border-green-200 mr-2">
+                    <div className={`flex items-center gap-2 px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wide border mr-2 ${status === "published" ? "bg-green-50 text-green-700 border-green-200" : "bg-amber-50 text-amber-700 border-amber-200"}`}>
                         <CheckCircle2 size={12} />
-                        Published
+                        {status === "published" ? "Published" : "Draft"}
                     </div>
                     <button
-                        onClick={handleSave}
+                        onClick={() => handleSave(status === "published" ? "published" : "draft")}
                         disabled={isSaving}
-                        className="px-4 py-2 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition-colors flex items-center gap-2 shadow-sm disabled:opacity-50"
+                        className="px-4 py-2 bg-white border border-slate-200 text-slate-700 rounded-lg font-medium hover:bg-slate-50 transition-colors flex items-center gap-2 disabled:opacity-50"
                     >
                         {isSaving ? <Loader2 size={18} className="animate-spin" /> : <Save size={18} />}
-                        Save Changes
+                        {status === "published" ? "Save Changes" : "Save Draft"}
                     </button>
+                    {status !== "published" && (
+                        <button
+                            onClick={() => handleSave("published")}
+                            disabled={isSaving}
+                            className="px-4 py-2 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition-colors flex items-center gap-2 shadow-sm disabled:opacity-50"
+                        >
+                            {isSaving ? <Loader2 size={18} className="animate-spin" /> : <UploadCloud size={18} />}
+                            Validate & Publish
+                        </button>
+                    )}
                 </div>
             </div>
 
@@ -125,7 +149,8 @@ export default function EditLayoutPage() {
                                         className="w-full pl-10 pr-3 py-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-100 focus:border-blue-400 transition-all appearance-none bg-white"
                                     >
                                         <option value="Single Post">Single Post</option>
-                                        <option value="Archive">Archive</option>
+                                        <option value="Blog Archive">Blog Archive</option>
+                                        <option value="Home Page">Home Page</option>
                                     </select>
                                 </div>
                             </div>

@@ -2,7 +2,7 @@
 
 import { motion } from "framer-motion";
 import Link from "next/link";
-import { LayoutTemplate, FileText, Sparkles, ArrowUpRight, Settings, Image as ImageIcon, BarChart3 } from "lucide-react";
+import { LayoutTemplate, FileText, Sparkles, ArrowUpRight, MessageSquare, Image as ImageIcon, Map } from "lucide-react";
 
 const features = [
   {
@@ -22,13 +22,37 @@ const features = [
     href: "/ai-prompt"
   },
   {
-    title: "Blog Management",
-    description: "Create, edit, and organize your blog posts. Manage content seamlessly.",
+    title: "Content Management",
+    description: "Moderate comments, manage categories, media library, and organize your blog posts.",
     icon: FileText,
     color: "emerald",
     glow: "shadow-emerald-500/20",
-    href: "/admin/blogs"
+    href: "/admin/posts"
   },
+  {
+    title: "Layout Templates",
+    description: "Manage visual layout templates and map them to blog categories.",
+    icon: Map,
+    color: "indigo",
+    glow: "shadow-indigo-500/20",
+    href: "/admin/layouts"
+  },
+  {
+    title: "Media Library",
+    description: "Upload and manage all your assets in a unified cloud-based storage system.",
+    icon: ImageIcon,
+    color: "purple",
+    glow: "shadow-purple-500/20",
+    href: "/admin/media"
+  },
+  {
+    title: "Interactions",
+    description: "Moderate comments and engage with your readers in real-time with ease.",
+    icon: MessageSquare,
+    color: "orange",
+    glow: "shadow-orange-500/20",
+    href: "/admin/comments"
+  }
 ];
 
 export default function FeatureCards() {
@@ -39,6 +63,7 @@ export default function FeatureCards() {
     orange: "bg-orange-50 text-orange-600 group-hover:bg-orange-600",
     slate: "bg-slate-50 text-slate-600 group-hover:bg-slate-600",
     rose: "bg-rose-50 text-rose-600 group-hover:bg-rose-600",
+    indigo: "bg-indigo-50 text-indigo-600 group-hover:bg-indigo-600",
   };
 
   const lineMap: any = {
@@ -48,49 +73,79 @@ export default function FeatureCards() {
     orange: "group-hover:bg-orange-600",
     slate: "group-hover:bg-slate-600",
     rose: "group-hover:bg-rose-600",
+    indigo: "group-hover:bg-indigo-600",
+  };
+
+  const borderHoverMap: any = {
+    blue: "group-hover:border-blue-200",
+    purple: "group-hover:border-purple-200",
+    emerald: "group-hover:border-emerald-200",
+    orange: "group-hover:border-orange-200",
+    slate: "group-hover:border-slate-200",
+    rose: "group-hover:border-rose-200",
+    indigo: "group-hover:border-indigo-200",
+  };
+
+  const gradientMap: any = {
+    blue: "from-blue-500/10 to-indigo-500/5",
+    purple: "from-purple-500/10 to-pink-500/5",
+    emerald: "from-emerald-500/10 to-teal-500/5",
+    orange: "from-orange-500/10 to-amber-500/5",
+    slate: "from-slate-500/10 to-slate-400/5",
+    rose: "from-rose-500/10 to-red-500/5",
+    indigo: "from-indigo-500/10 to-blue-500/5",
   };
 
   return (
-    <section className="px-8 pb-4">
-      <div className="max-w-7xl mx-auto grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+    <section className="px-8 pb-20">
+      <div className="max-w-[1400px] mx-auto grid md:grid-cols-2 lg:grid-cols-3 gap-8">
         {features.map((feature, index) => (
-          <Link href={feature.href} key={index} className="block group">
+          <Link href={feature.href} key={index} className="block group h-full">
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.1 + index * 0.05 }}
-              className={`relative p-8 rounded-[2.5rem] bg-white border border-slate-100 text-left flex flex-col hover:border-transparent transition-all duration-500 hover:shadow-2xl ${feature.glow} h-full overflow-hidden`}
+              transition={{ delay: 0.2 + index * 0.1 }}
+              className={cn(
+                "relative p-10 rounded-[32px] bg-white border border-slate-100 text-left flex flex-col transition-all duration-500 shadow-xl shadow-slate-900/5 h-full min-h-[320px] group-hover:shadow-2xl group-hover:shadow-blue-900/5 overflow-hidden",
+                feature.glow,
+                borderHoverMap[feature.color]
+              )}
             >
               {/* Background Accent Gradient */}
-              <div className={`absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-${feature.color}-400/5 to-transparent rounded-full -mr-16 -mt-16 group-hover:scale-150 transition-transform duration-700`} />
+              <div className={`absolute top-0 right-0 w-36 h-36 bg-gradient-to-br ${gradientMap[feature.color]} rounded-full -mr-16 -mt-16 group-hover:scale-150 transition-transform duration-700`} />
 
-              <div className="flex justify-between items-start mb-6">
-                <div className={`p-4 rounded-2xl ${colorMap[feature.color]} group-hover:text-white transition-all duration-300 shadow-sm flex items-center justify-center`}>
-                  {feature.image ? (
-                    <img src={feature.image} alt="Gemini" className="w-7 h-7 group-hover:invert group-hover:brightness-0 transition-all" />
-                  ) : (
-                    feature.icon && <feature.icon className="w-7 h-7" strokeWidth={2} />
-                  )}
+              <div className="flex justify-between items-start mb-10 relative z-10">
+                <div className={cn(
+                  "p-5 rounded-[22px] transition-all duration-500 flex items-center justify-center",
+                  colorMap[feature.color] || "bg-slate-50 text-slate-600"
+                )}>
+                  <feature.icon className="w-8 h-8 group-hover:text-white transition-all duration-300" strokeWidth={2.5} />
                 </div>
-                <div className="p-2 rounded-full bg-slate-50 text-slate-300 group-hover:text-slate-900 group-hover:bg-white transition-all duration-300">
+                <div className="p-2.5 rounded-xl bg-slate-50 text-slate-300 group-hover:text-blue-600 group-hover:bg-blue-50 transition-all duration-300">
                   <ArrowUpRight className="w-5 h-5" />
                 </div>
               </div>
 
-              <h3 className="text-xl font-black text-slate-900 mb-3 tracking-tight group-hover:translate-x-1 transition-transform duration-300">
+              <h3 className="text-[22px] font-bold text-slate-900 mb-4 tracking-tight group-hover:text-blue-600 transition-colors relative z-10">
                 {feature.title}
               </h3>
 
-              <p className="text-slate-500 leading-relaxed font-semibold text-sm mb-6 flex-grow">
+              <p className="text-slate-500 leading-relaxed font-medium text-[14px] flex-grow relative z-10">
                 {feature.description}
               </p>
 
               {/* Decorative line */}
-              <div className={`h-1.5 w-10 bg-slate-100 rounded-full group-hover:w-full ${lineMap[feature.color]} transition-all duration-500`} />
+              <div className="mt-auto pt-8 flex items-center gap-2 overflow-hidden relative z-10">
+                <div className={cn("h-1.5 w-12 bg-slate-100 rounded-full group-hover:w-full transition-all duration-500", lineMap[feature.color])} />
+              </div>
             </motion.div>
           </Link>
         ))}
       </div>
     </section>
   );
+}
+
+function cn(...inputs: any[]) {
+  return inputs.filter(Boolean).join(" ");
 }

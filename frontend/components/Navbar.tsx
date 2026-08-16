@@ -10,8 +10,8 @@ import { Menu, X } from "lucide-react";
 const navLinks = [
   { name: "Home", href: "/" },
   { name: "Features", href: "/#features" },
-  { name: "Pricing", href: "/#pricing" },
-  { name: "Blogs", href: "/blog" },
+  { name: "Pricing", href: "/pricing" },
+  
   { name: "Guide", href: "/guides" },
 ];
 
@@ -26,7 +26,7 @@ export default function Navbar() {
       if (storedUser) {
         try {
           setUser(JSON.parse(storedUser));
-        } catch (e) {}
+        } catch (e) { }
       }
     }
   }, []);
@@ -50,7 +50,7 @@ export default function Navbar() {
             alt="CoreHead Logo"
             width={300}
             height={60}
-            className="h-14 w-auto object-contain"
+            className="h-16 w-auto object-contain"
             priority
           />
         </Link>
@@ -61,7 +61,7 @@ export default function Navbar() {
             <Link
               key={item.name}
               href={item.href}
-              className="relative text-base font-semibold text-slate-600 hover:text-blue-600 transition-colors duration-300 group"
+              className="relative text-lg font-bold text-slate-600 hover:text-blue-600 transition-colors duration-300 group"
             >
               {item.name}
               <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-blue-600 rounded-full transition-all duration-300 group-hover:w-full" />
@@ -74,10 +74,10 @@ export default function Navbar() {
           {user ? (
             <>
               <Link
-                href={user.role === "admin" ? "/admin" : "/admin/builder"}
-                className="text-lg font-semibold text-slate-600 hover:text-blue-600 transition-colors hover:scale-105 px-5"
+                href={user.role?.toLowerCase() === "admin" || user.role?.toLowerCase() === "administrator" ? "/admin" : "/admin/builder"}
+                className="text-sm font-bold text-slate-600 hover:text-blue-600 transition-colors px-4"
               >
-                {user.role === "admin" ? "Dashboard" : "Visual Builder"}
+                {user.role?.toLowerCase() === "admin" || user.role?.toLowerCase() === "administrator" ? "Dashboard" : "Visual Builder"}
               </Link>
               <button
                 onClick={handleLogout}

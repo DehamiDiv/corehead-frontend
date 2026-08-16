@@ -1,11 +1,11 @@
 "use client";
 
 import Link from "next/link";
-import { Settings as SettingsIcon, User, Globe, Palette, ArrowRight, Shield, Bell, Zap, Database, Sparkles } from "lucide-react";
+import { Settings as SettingsIcon, User, Globe, Palette, ArrowRight, Shield, Bell, Zap, Database, Sparkles, CreditCard, Link2 } from "lucide-react";
 import React, { useState, useEffect } from "react";
 
 export default function SettingsPage() {
-  const [isLaunching, setIsLaunching] = useState(true);
+  const [isLaunching, setIsLaunching] = useState(false);
 
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -76,6 +76,22 @@ export default function SettingsPage() {
       icon: Palette,
       color: "purple",
       badge: "Visual"
+    },
+    {
+      title: "Custom Domain",
+      description: "Attach a custom hostname (Premium+) so visitors open your site without /s/slug.",
+      href: "/admin/settings/domain",
+      icon: Link2,
+      color: "blue",
+      badge: "R6"
+    },
+    {
+      title: "Plan & Billing",
+      description: "View and change the site plan (demo billing — no card required).",
+      href: "/admin/settings/billing",
+      icon: CreditCard,
+      color: "emerald",
+      badge: "R6"
     },
     {
       title: "Security & Access",

@@ -6,8 +6,8 @@ import BlockRenderer from './BlockRenderer';
 import './BuilderCanvas.css';
 
 const CARD_STYLES = [
-  { id: 'grid',    label: '⊞ Grid',    desc: 'Classic card grid' },
-  { id: 'list',    label: '☰ List',    desc: 'Horizontal rows' },
+  { id: 'grid', label: '⊞ Grid', desc: 'Classic card grid' },
+  { id: 'list', label: '☰ List', desc: 'Horizontal rows' },
   { id: 'overlay', label: '◫ Overlay', desc: 'Image + text overlap' },
   { id: 'minimal', label: '✦ Minimal', desc: 'Typography-only, no image' },
 ];
@@ -15,18 +15,18 @@ const CARD_STYLES = [
 export default function BuilderCanvas({ blogPosts, contentMode, selectedCard, setSelectedCard, settings, onDeleteCard }) {
   const [cardLayout, setCardLayout] = useState('grid');
 
-  const activePrimary = settings?.colors?.primary || '#4f46e5';
-  const activeGradient = settings?.colors?.gradient || 'linear-gradient(135deg, #4f46e5 0%, #3730a3 100%)';
+  const activePrimary = settings?.colors?.primary || '#1d4ed8';
+  const activeGradient = settings?.colors?.gradient || 'linear-gradient(135deg, #1d4ed8 0%, #1e3a8a 100%)';
 
   const isStackedLayout = cardLayout === 'list' || cardLayout === 'minimal';
   const gridStyle = isStackedLayout
     ? { display: 'flex', flexDirection: 'column', gap: settings.spacingValue || '16px', padding: '20px' }
     : {
-        display: 'grid',
-        gridTemplateColumns: `repeat(${settings.columns || 3}, 1fr)`,
-        gap: settings.spacingValue || '16px',
-        padding: '20px',
-      };
+      display: 'grid',
+      gridTemplateColumns: `repeat(${settings.columns || 3}, 1fr)`,
+      gap: settings.spacingValue || '16px',
+      padding: '20px',
+    };
 
   return (
     <div className="builder-canvas">
@@ -106,27 +106,11 @@ export default function BuilderCanvas({ blogPosts, contentMode, selectedCard, se
 
           {/* Blog Cards Grid / Blocks */}
           <div className="blog-grid" style={gridStyle}>
-            {blogPosts.map((post) => {
-              const isFullWidth = post.type === 'hero' || post.type === 'banner';
-              const itemStyle = isFullWidth ? { gridColumn: '1 / -1' } : {};
-              
-              return (
-                <div key={post.id} style={itemStyle}>
-                  <BlogCard
-                    post={post}
-                    isSelected={selectedCard?.id === post.id}
-                    onClick={() => setSelectedCard(post)}
-                    contentMode={contentMode}
-                    settings={settings}
-                    cardLayout={cardLayout}
-                  />
-                </div>
-              );
-            })}
-            {blogPosts.map((item) => (
-              item.type && ['Heading', 'Paragraph', 'Image', 'Quote', 'Divider', 'Button', 'Collection List'].includes(item.type) ? (
+            {blogPosts.map((item, index) => {
+              const itemKey = item.id || `item-${index}`;
+              return item.type && ['Heading', 'Paragraph', 'Image', 'Quote', 'Divider', 'Button', 'Collection List'].includes(item.type) ? (
                 <BlockRenderer
-                  key={item.id}
+                  key={itemKey}
                   block={item}
                   isSelected={selectedCard?.id === item.id}
                   onClick={() => setSelectedCard(item)}
@@ -134,7 +118,7 @@ export default function BuilderCanvas({ blogPosts, contentMode, selectedCard, se
                 />
               ) : (
                 <BlogCard
-                  key={item.id}
+                  key={itemKey}
                   post={item}
                   isSelected={selectedCard?.id === item.id}
                   onClick={() => setSelectedCard(item)}
@@ -142,8 +126,8 @@ export default function BuilderCanvas({ blogPosts, contentMode, selectedCard, se
                   settings={settings}
                   cardLayout={cardLayout}
                 />
-              )
-            ))}
+              );
+            })}
           </div>
 
           {contentMode === 'dynamic' && (

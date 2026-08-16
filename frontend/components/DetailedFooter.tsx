@@ -1,10 +1,11 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { motion } from "framer-motion";
 import { ArrowRight, Mail, Sparkles, Heart, ExternalLink } from "lucide-react";
+import { api } from "@/lib/api";
 
 const footerLinks = {
   Product: [
@@ -16,7 +17,6 @@ const footerLinks = {
   ],
   Resources: [
     { name: "Documentation", href: "/guides" },
-    { name: "Blog", href: "/blog" },
     { name: "Guides", href: "/guides" },
     { name: "FAQs", href: "/#faq" },
     { name: "Changelog", href: "#" },
@@ -44,22 +44,74 @@ const containerVariants = {
   },
 };
 
-const itemVariants = {
+const itemVariants: any = {
   hidden: { opacity: 0, y: 20 },
   visible: { opacity: 1, y: 0, transition: { duration: 0.5, ease: "easeOut" } },
 };
 
-export default function DetailedFooter() {
-  const [email, setEmail] = useState("");
-  const [subscribed, setSubscribed] = useState(false);
-  const [hoveredSocial, setHoveredSocial] = useState<string | null>(null);
+interface DetailedFooterProps {
+  isSaaS?: boolean;
+}
 
-  const handleSubscribe = (e: React.FormEvent) => {
+export default function DetailedFooter({ isSaaS = true }: DetailedFooterProps) {
+  const [email, setEmail] = useState("");
+  const [status, setStatus] = useState<"idle" | "loading" | "success" | "error">("idle");
+  const [statusMessage, setStatusMessage] = useState("");
+  const [hoveredSocial, setHoveredSocial] = useState<string | null>(null);
+  const [footerLogo, setFooterLogo] = useState<string>("/logo.png");
+  const [footerDescription, setFooterDescription] = useState<string>("The ultimate AI-powered blog builder. Create, customize, and publish dynamic blogs instantly.");
+
+  useEffect(() => {
+    if (isSaaS) return;
+    const loadSettings = async () => {
+      try {
+        const data = await api.getSetting("theme_theme-1_footer");
+        if (data && data.footerLogo) {
+          setFooterLogo(data.footerLogo);
+        }
+        if (data && data.footerDescription) {
+          setFooterDescription(data.footerDescription);
+        }
+      } catch (error) {
+        console.error("Failed to fetch footer settings:", error);
+      }
+    };
+    loadSettings();
+  }, [isSaaS]);
+
+  const handleSubscribe = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (email) {
-      setSubscribed(true);
-      setEmail("");
-      setTimeout(() => setSubscribed(false), 4000);
+    if (!email || !email.includes("@")) {
+      setStatus("error");
+      setStatusMessage("Enter a valid email address.");
+      return;
+    }
+
+    setStatus("loading");
+    setStatusMessage("");
+    try {
+      const res = await api.subscribeToNewsletter(
+        email.trim(),
+        undefined,
+        undefined,
+        "CoreHead",
+      );
+      if (res?.success || res?.demo) {
+        setStatus("success");
+        setStatusMessage(res.message || "Successfully subscribed!");
+        setEmail("");
+        setTimeout(() => {
+          setStatus("idle");
+          setStatusMessage("");
+        }, 5000);
+      } else {
+        setStatus("error");
+        setStatusMessage(res?.error || "Subscription failed. Please try again.");
+      }
+    } catch (err: any) {
+      console.error("Subscription failed:", err);
+      setStatus("error");
+      setStatusMessage(err?.message || "An unexpected error occurred.");
     }
   };
 
@@ -102,42 +154,53 @@ export default function DetailedFooter() {
               </p>
             </div>
 
-            <form onSubmit={handleSubscribe} className="flex w-full max-w-md">
-              <div className="relative flex w-full bg-white/[0.06] border border-gray-200 rounded-2xl p-1.5 focus-within:border-blue-500/40 transition-colors duration-300">
-                <Mail
-                  size={18}
-                  className="absolute left-5 top-1/2 -translate-y-1/2 text-slate-500"
-                />
-                <input
-                  type="email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  placeholder="Enter your email"
-                  className="flex-1 bg-transparent text-gray-800 placeholder-slate-400 pl-11 pr-4 py-3 text-base outline-none"
-                />
-                <motion.button
-                  type="submit"
-                  whileHover={{ scale: 1.03 }}
-                  whileTap={{ scale: 0.97 }}
-                  className="px-6 py-3 bg-blue-600 hover:bg-blue-500 text-white font-bold text-sm rounded-xl transition-colors duration-200 flex items-center gap-2 whitespace-nowrap"
-                >
-                  {subscribed ? (
-                    <motion.span
-                      initial={{ scale: 0 }}
-                      animate={{ scale: 1 }}
-                      className="flex items-center gap-2"
-                    >
-                      ✓ Subscribed!
-                    </motion.span>
-                  ) : (
-                    <>
-                      Subscribe
-                      <ArrowRight size={16} />
-                    </>
-                  )}
-                </motion.button>
-              </div>
-            </form>
+            <div className="flex flex-col w-full max-w-md">
+              <form onSubmit={handleSubscribe} className="flex w-full">
+                <div className="relative flex w-full bg-white/[0.06] border border-gray-200 rounded-2xl p-1.5 focus-within:border-blue-500/40 transition-colors duration-300">
+                  <Mail
+                    size={18}
+                    className="absolute left-5 top-1/2 -translate-y-1/2 text-slate-500"
+                  />
+                  <input
+                    type="email"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    placeholder="Enter your email"
+                    className="flex-1 bg-transparent text-gray-800 placeholder-slate-400 pl-11 pr-4 py-3 text-base outline-none"
+                    disabled={status === "loading"}
+                  />
+                  <motion.button
+                    type="submit"
+                    disabled={status === "loading"}
+                    whileHover={{ scale: 1.03 }}
+                    whileTap={{ scale: 0.97 }}
+                    className="px-6 py-3 bg-blue-600 hover:bg-blue-500 text-white font-bold text-sm rounded-xl transition-colors duration-200 flex items-center gap-2 whitespace-nowrap disabled:bg-blue-400"
+                  >
+                    {status === "loading" ? (
+                      "Subscribing..."
+                    ) : status === "success" ? (
+                      <motion.span
+                        initial={{ scale: 0 }}
+                        animate={{ scale: 1 }}
+                        className="flex items-center gap-2"
+                      >
+                        ✓ Subscribed!
+                      </motion.span>
+                    ) : (
+                      <>
+                        Subscribe
+                        <ArrowRight size={16} />
+                      </>
+                    )}
+                  </motion.button>
+                </div>
+              </form>
+              {statusMessage && (
+                <p className={`mt-2 text-sm ml-4 ${status === "success" ? "text-emerald-600" : "text-red-500"}`}>
+                  {statusMessage}
+                </p>
+              )}
+            </div>
           </div>
         </div>
       </motion.div>
@@ -154,17 +217,14 @@ export default function DetailedFooter() {
           {/* Brand Column */}
           <motion.div variants={itemVariants} className="col-span-2 space-y-6">
             <Link href="/" className="inline-block">
-              <Image
-                src="/logo.png"
-                alt="CoreHead Logo"
-                width={160}
-                height={40}
-                className="h-12 w-auto object-contain brightness-0 invert opacity-90"
+              <img
+                src={footerLogo}
+                alt="Footer Logo"
+                className="h-16 w-auto object-contain"
               />
             </Link>
             <p className="text-slate-400 text-base leading-relaxed max-w-xs">
-              The ultimate headless CMS for modern web development. Build, manage,
-              and scale your content effortlessly.
+              {footerDescription}
             </p>
 
 
@@ -213,8 +273,9 @@ export default function DetailedFooter() {
             <motion.span
               animate={{ scale: [1, 1.2, 1] }}
               transition={{ duration: 1.5, repeat: Infinity, repeatDelay: 2 }}
+              className="inline-flex items-center"
             >
-              <Heart size={14} className="text-red-400 fill-red-400" />
+              <Heart size={14} className="text-red-500 fill-red-500 mx-1 align-middle" />
             </motion.span>
             <span>by the CoreHead team.</span>
           </div>

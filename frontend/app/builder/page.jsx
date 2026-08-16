@@ -9,12 +9,13 @@ import PreviewModal from '@/components/builder/PreviewModal';
 import ExportModal from '@/components/builder/ExportModal';
 import ComponentsPanel from '@/components/builder/ComponentsPanel';
 import SettingsPanel from '@/components/builder/SettingsPanel';
+import AIGenerateModal from '@/components/builder/AIGenerateModal';
 import SaveLayoutModal from '@/components/builder/SaveLayoutModal';
 import LoadLayoutModal from '@/components/builder/LoadLayoutModal';
-import AIChatPanel from '@/components/builder/AIChatPanel';
-import { useRouter } from 'next/navigation';
 import './page.css';
 import { builderApi } from '@/services/builderApi';
+import { aiApi } from '@/services/aiApi';
+import PaywallModal from '@/components/admin/PaywallModal';
 
 const defaultSettings = {
   font: 'inter',
@@ -23,43 +24,48 @@ const defaultSettings = {
   colors: {
     id: 'premium-indigo',
     label: 'Indigo Royale',
-    primary: '#4f46e5',
+    primary: '#1d4ed8',
     bg: '#ffffff',
     text: '#1e1e2e',
-    gradient: 'linear-gradient(135deg, #4f46e5 0%, #3730a3 100%)'
+    gradient: 'linear-gradient(135deg, #1d4ed8 0%, #1e3a8a 100%)'
   },
 
   spacing: 'normal',
   spacingValue: '16px',
   radius: 'medium',
   radiusValue: '12px',
-  columns: 1,
+  columns: 3,
 };
 
-import { defaultSettings, initialMockPosts, cmsFieldConfig } from '@/lib/builderConstants';
 
 export default function BlogBuilderPage() {
-  const router = useRouter();
   const [activeTab, setActiveTab] = useState('builder');
   const [contentMode, setContentMode] = useState('static');
   const [selectedCard, setSelectedCard] = useState(null);
   const [settings, setSettings] = useState(defaultSettings);
   const [previewOpen, setPreviewOpen] = useState(false);
   const [exportOpen, setExportOpen] = useState(false);
+  const [aiOpen, setAiOpen] = useState(false);
   const [saveModalOpen, setSaveModalOpen] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [saveStatus, setSaveStatus] = useState(null);
   const [savedLayouts, setSavedLayouts] = useState([]);
   const [showLayoutPicker, setShowLayoutPicker] = useState(false);
   const [loadingLayouts, setLoadingLayouts] = useState(false);
-  const [aiPosts, setAiPosts]               = useState([]);    // AI cards stored separately
-  const [aiSettings, setAiSettings]         = useState(null);  // AI settings stored separately
-  const [compareMode, setCompareMode]       = useState(false); // show both side by side
-  const [error, setError]                   = useState(null);
+  const [aiPosts, setAiPosts] = useState([]);    // AI cards stored separately
+  const [compareMode, setCompareMode] = useState(false); // show both side by side
+  const [isPaywallOpen, setIsPaywallOpen] = useState(false);
+  const [paywallCooldown, setPaywallCooldown] = useState(0);
 
   const [blogPosts, setBlogPosts] = useState([]);
+  const [isGenerating, setIsGenerating] = useState(false);
+  const [currentAiHistoryId, setCurrentAiHistoryId] = useState(null);
 
-  const [cmsFields] = useState(cmsFieldConfig);
+  const [cmsFields] = useState({
+    post: ['Title', 'Excerpt', 'Content', 'Featured Image', 'Category', 'Tags'],
+    author: ['Name', 'Bio', 'Avatar', 'Social Links'],
+    seo: ['Meta Title', 'Meta Description', 'Keywords', 'OG Image']
+  });
 
   // Handle AI flows from separate pages
   useEffect(() => {
@@ -70,15 +76,7 @@ export default function BlogBuilderPage() {
 
       if (aiPrompt || selectedTemplate) {
         try {
-          const token = localStorage.getItem('accessToken');
-          if (!token) {
-             setError('Authentication required. Please login to use AI features.');
-             // Clear AI prompt to prevent infinite loop/retry without login
-             localStorage.removeItem('ai_prompt');
-             router.push('/login?callback=/builder');
-             return;
-          }
-
+          setIsGenerating(true);
           const options = aiOptions ? JSON.parse(aiOptions) : {};
           const template = selectedTemplate ? JSON.parse(selectedTemplate) : null;
 
@@ -89,36 +87,36 @@ export default function BlogBuilderPage() {
             features: options.features || {}
           });
 
-          if (result.blocks) {
-            handleAIGenerated(result.blocks, { theme: options.designStyle || 'modern', columns: 3 });
-          } else if (result.layout?.cards) {
-            handleAIGenerated(result.layout.cards, result.layout.settings);
+          if (result.layout?.cards) {
+            setBlogPosts(result.layout.cards);
+            if (result.id) setCurrentAiHistoryId(result.id);
+          } else if (result.blocks) {
+            setBlogPosts(result.blocks);
+            if (result.id) setCurrentAiHistoryId(result.id);
           }
-
-          // Clear after use
+        } catch (err) {
+          console.warn('AI Flow error:', err.message);
+          if (err.message?.includes('LIMIT_EXCEEDED') || err.data?.error?.includes('LIMIT_EXCEEDED') || err.status === 402 || err.status === 429 || err.status === 403) {
+            setPaywallCooldown(err.data?.cooldown_remaining || err.data?.cooldownRemaining || 0);
+            setIsPaywallOpen(true);
+          } else {
+            alert('AI Generation failed: ' + err.message);
+          }
+        } finally {
+          setIsGenerating(false);
           localStorage.removeItem('ai_prompt');
           localStorage.removeItem('selected_template');
           localStorage.removeItem('ai_options');
-
-        } catch (err) {
-          console.error('AI Flow error:', err);
-          if (err.message?.includes('Access denied') || err.message?.includes('token')) {
-             setError('Your session has expired. Please login again.');
-             router.push('/login');
-          } else {
-             setError('Failed to generate AI layout. ' + err.message);
-          }
         }
       }
 
-      // Existing direct generated layout pick-up (from History)
+      // Existing direct generated layout pick-up
       const aiLayout = localStorage.getItem('ai_generated_layout');
       if (aiLayout) {
         try {
           const parsed = JSON.parse(aiLayout);
-          if (parsed.cards) {
-            handleAIGenerated(parsed.cards, parsed.settings);
-          }
+          if (parsed.cards) setBlogPosts(parsed.cards);
+          if (parsed.history_id) setCurrentAiHistoryId(parsed.history_id);
           localStorage.removeItem('ai_generated_layout');
         } catch (e) {
           console.error('Failed to load AI layout:', e);
@@ -129,32 +127,8 @@ export default function BlogBuilderPage() {
     triggerAIFlow();
   }, []);
 
-  // Persist settings to localStorage
-  useEffect(() => {
-    const saved = localStorage.getItem('corehead_builder_settings');
-    if (saved) {
-      try {
-        setSettings(JSON.parse(saved));
-      } catch (e) {
-        console.error('Failed to load settings:', e);
-      }
-    }
-  }, []);
-
-  useEffect(() => {
-    localStorage.setItem('corehead_builder_settings', JSON.stringify(settings));
-  }, [settings]);
-
-  // Open save modal with validation
-  const handleSaveClick = () => {
-    if (blogPosts.length === 0) {
-      setError('Cannot save an empty layout. Please add some components first.');
-      // Auto-clear error after 4 seconds
-      setTimeout(() => setError(null), 4000);
-      return;
-    }
-    setSaveModalOpen(true);
-  };
+  // Open save modal
+  const handleSaveClick = () => setSaveModalOpen(true);
 
   // Save with custom name
   const handleSaveWithName = async (name) => {
@@ -166,6 +140,15 @@ export default function BlogBuilderPage() {
         content_mode: contentMode,
         grid_layout: 'grid'
       });
+
+      if (currentAiHistoryId) {
+        try {
+          await aiApi.promoteHistory(currentAiHistoryId, name);
+        } catch (e) {
+          console.error('Failed to promote AI history:', e);
+        }
+      }
+
       setSaveModalOpen(false);
       setSaveStatus('saved');
       setTimeout(() => setSaveStatus(null), 2500);
@@ -211,18 +194,9 @@ export default function BlogBuilderPage() {
     setSavedLayouts(prev => prev.filter(l => l.id !== id));
   };
 
-  // Add or Replace block from Blocks tab
+  // Add component from Components tab
   const handleAddComponent = (template) => {
-    // If a card is selected, REPLACE it. Otherwise ADD it.
-    if (selectedCard) {
-      const updatedComponent = { ...template, id: selectedCard.id }; // Keep the same ID
-      setBlogPosts(prev => prev.map(p => p.id === selectedCard.id ? updatedComponent : p));
-      setSelectedCard(updatedComponent);
-    } else {
-      const newComponent = { ...template, id: Date.now() };
-      setBlogPosts(prev => [...prev, newComponent]);
-      setSelectedCard(newComponent);
-    }
+    setBlogPosts(prev => [...prev, { ...template, id: Date.now() }]);
     setActiveTab('builder');
   };
 
@@ -243,14 +217,54 @@ export default function BlogBuilderPage() {
   };
 
   // AI generated posts — store separately, enable compare mode
-  const handleAIGenerated = (newCards, newSettings) => {
+  const handleAIGenerated = (newCards, historyId) => {
     setAiPosts(newCards);
-    if (newSettings) setAiSettings(newSettings);
     setCompareMode(true);
+    if (historyId) setCurrentAiHistoryId(historyId);
   };
 
   return (
     <div className="blog-builder">
+      {isGenerating && (
+        <div style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          width: '100vw',
+          height: '100vh',
+          background: 'rgba(255, 255, 255, 0.95)',
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          justifyContent: 'center',
+          zIndex: 9999,
+          fontFamily: 'Inter, sans-serif'
+        }}>
+          <div className="animate-spin-custom" style={{
+            width: '50px',
+            height: '50px',
+            border: '4px solid #e2e8f0',
+            borderTop: '4px solid #2563eb',
+            borderRadius: '50%',
+            marginBottom: '20px'
+          }}></div>
+          <style>{`
+            .animate-spin-custom {
+              animation: spin 1s linear infinite;
+            }
+            @keyframes spin {
+              0% { transform: rotate(0deg); }
+              100% { transform: rotate(360deg); }
+            }
+          `}</style>
+          <h2 style={{ fontSize: '20px', fontWeight: '700', color: '#1e293b', marginBottom: '8px' }}>
+            Generating Layout with AI
+          </h2>
+          <p style={{ fontSize: '14px', color: '#64748b' }}>
+            Please wait while we prepare your custom workspace...
+          </p>
+        </div>
+      )}
 
       {/* Header */}
       <header className="builder-header">
@@ -268,20 +282,132 @@ export default function BlogBuilderPage() {
           <button className="btn-secondary" onClick={() => setExportOpen(true)}>
             <Code size={18} /> Export
           </button>
-          <button className="btn-primary" onClick={() => router.push('/ai-prompt')}>
-            <Sparkles size={18} /> Generate with AI
+
+          <button
+            className="btn-primary"
+            disabled={blogPosts.length === 0 && aiPosts.length === 0}
+            style={{
+              backgroundImage: 'linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%)',
+              border: 'none',
+              boxShadow: '0 4px 12px rgba(37,99,235,0.2)',
+              opacity: (blogPosts.length === 0 && aiPosts.length === 0) ? 0.5 : 1,
+              cursor: (blogPosts.length === 0 && aiPosts.length === 0) ? 'not-allowed' : 'pointer'
+            }}
+            onClick={() => {
+              const postsToSync = (compareMode && aiPosts.length > 0) ? aiPosts : blogPosts;
+
+              // Check if the posts list already contains visual blocks (with type properties)
+              const isAlreadyBlocks = postsToSync.some(post => post.type && typeof post.type === 'string');
+
+              let finalLayout = [];
+
+              if (isAlreadyBlocks) {
+                // Keep AI block structure, but ensure Image blocks have a real src stored
+                // (BlockRenderer shows computed placeholders that aren't stored in content)
+                finalLayout = postsToSync.map(block => {
+                  if (block.type === 'Image') {
+                    const hasRealUrl = typeof block.content === 'string' && block.content.trim() !== '';
+                    if (!hasRealUrl) {
+                      // Compute same seed used by BlockRenderer
+                      const seed = Math.abs(
+                        (block.id || '').toString().split('').reduce((a, c) => a + c.charCodeAt(0), 42)
+                      );
+                      return { ...block, content: `https://picsum.photos/seed/ai-${seed}/800/400` };
+                    }
+                  }
+                  return block;
+                });
+              } else {
+                // Otherwise wrap cards in container blocks
+                const mainBuilderBlocks = postsToSync.map((post, idx) => ({
+                  id: `card-${post.id}-${idx}`,
+                  type: 'Container',
+                  content: 'Card Container',
+                  parentId: null,
+                  styles: {
+                    padding: '24px',
+                    borderRadius: '16px',
+                    backgroundColor: '#ffffff',
+                    borderWidth: '1px',
+                    borderColor: '#e2e8f0',
+                    margin: '16px 0px',
+                    boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)'
+                  },
+                  bindings: {}
+                }));
+
+                const childBlocks = [];
+                postsToSync.forEach((post, idx) => {
+                  const parentId = `card-${post.id}-${idx}`;
+
+                  childBlocks.push({
+                    id: `img-${post.id}-${idx}`,
+                    type: 'Image',
+                    content: post.image || 'https://picsum.photos/400/250',
+                    parentId: parentId,
+                    styles: { borderRadius: '12px', margin: '0px 0px 16px 0px' },
+                    bindings: contentMode === 'dynamic' ? { content: 'post.featured_image' } : {}
+                  });
+
+                  childBlocks.push({
+                    id: `heading-${post.id}-${idx}`,
+                    type: 'Heading',
+                    content: post.title,
+                    parentId: parentId,
+                    styles: { fontSize: '20px', color: '#1e1e2e', margin: '0px 0px 8px 0px' },
+                    bindings: contentMode === 'dynamic' ? { content: 'post.title' } : {}
+                  });
+
+                  childBlocks.push({
+                    id: `excerpt-${post.id}-${idx}`,
+                    type: 'Paragraph',
+                    content: post.excerpt,
+                    parentId: parentId,
+                    styles: { fontSize: '14px', color: '#64748b', margin: '0px 0px 16px 0px' },
+                    bindings: contentMode === 'dynamic' ? { content: 'post.excerpt' } : {}
+                  });
+
+                  childBlocks.push({
+                    id: `author-${post.id}-${idx}`,
+                    type: 'Paragraph',
+                    content: `${post.author} • ${post.date}`,
+                    parentId: parentId,
+                    styles: { fontSize: '12px', color: '#94a3b8' },
+                    bindings: contentMode === 'dynamic' ? { content: 'post.author' } : {}
+                  });
+                });
+
+                finalLayout = [...mainBuilderBlocks, ...childBlocks];
+              }
+
+              // Clear competing template keys to force loading from synced layout
+              localStorage.removeItem("selected_template");
+              localStorage.removeItem("ai_prompt");
+              localStorage.removeItem("ai_options");
+
+              localStorage.setItem("corehead_builder_layout", JSON.stringify(finalLayout));
+              localStorage.setItem("corehead_builder_meta", JSON.stringify({
+                name: "AI Playground Export",
+                type: "Blog Archive",
+                id: null
+              }));
+
+              window.location.href = '/admin/builder';
+            }}
+          >
+            <Sparkles size={18} /> Sync to Main Builder
           </button>
         </div>
       </header>
 
       {/* Main Content */}
       <div className="builder-content">
-        <Sidebar activeTab={activeTab} setActiveTab={setActiveTab} />
+        <Sidebar activeTab={activeTab} setActiveTab={setActiveTab} isCanvasEmpty={blogPosts.length === 0} />
 
         <main className="builder-main">
 
           {/* Toolbar */}
-          <div className="builder-toolbar">
+          <div className="builder-toolbar" style={blogPosts.length === 0 ? { opacity: 0.5, pointerEvents: 'none' } : {}}>
             <div className="mode-toggle">
               <button
                 className={contentMode === 'static' ? 'active' : ''}
@@ -312,45 +438,23 @@ export default function BlogBuilderPage() {
 
           {/* Save / Load */}
           <div className="layout-actions">
-            <button className="btn-secondary" onClick={handleSaveClick}>
-              {saveStatus === 'saved' && '✅ Saved!'}
-              {saveStatus === 'error' && '❌ Save Failed'}
-              {saveStatus === null && (
-                <>
-                  💾 {
-                    activeTab === 'settings' ? 'Save Settings & Layout' :
-                    activeTab === 'cms' ? 'Save Content & Layout' :
-                    'Save Layout'
-                  }
-                </>
-              )}
+            <button
+              className="btn-secondary"
+              onClick={handleSaveClick}
+              disabled={blogPosts.length === 0}
+              style={{
+                opacity: blogPosts.length === 0 ? 0.5 : 1,
+                cursor: blogPosts.length === 0 ? 'not-allowed' : 'pointer'
+              }}
+            >
+              {saveStatus === 'saved' ? '✅ Saved!' : null}
+              {saveStatus === 'error' ? '❌ Save Failed' : null}
+              {saveStatus === null ? '💾 Save Layout' : null}
             </button>
             <button className="btn-secondary" onClick={handleOpenLayoutPicker}>
               📂 Load Layout
             </button>
           </div>
-
-          {/* Error Banner */}
-          {error && (
-            <div style={{
-              padding: '12px 20px',
-              background: '#fef2f2',
-              borderBottom: '1px solid #fecaca',
-              color: '#dc2626',
-              fontSize: '14px',
-              display: 'flex',
-              justifyContent: 'space-between',
-              alignItems: 'center'
-            }}>
-              <span>⚠️ {error}</span>
-              <button 
-                onClick={() => setError(null)}
-                style={{ background: 'none', border: 'none', color: '#dc2626', cursor: 'pointer', fontWeight: '700' }}
-              >
-                ✕
-              </button>
-            </div>
-          )}
 
           {/* Tab Content */}
           {activeTab === 'builder' && (
@@ -364,14 +468,14 @@ export default function BlogBuilderPage() {
                   borderBottom: `2px solid ${compareMode ? 'rgba(79,70,229,0.2)' : '#fde68a'}`,
                   fontSize: '13px',
                 }}>
-                  <span style={{ fontWeight: '700', color: compareMode ? '#4f46e5' : '#92400e', marginRight: '4px' }}>
+                  <span style={{ fontWeight: '700', color: compareMode ? '#1d4ed8' : '#92400e', marginRight: '4px' }}>
                     {compareMode ? '⚡ Compare Mode — Your Layout vs AI' : '🤖 AI layout is ready!'}
                   </span>
                   <button
                     onClick={() => setCompareMode(v => !v)}
                     style={{
                       padding: '6px 14px', borderRadius: '8px', border: 'none',
-                      background: compareMode ? '#4f46e5' : '#f59e0b',
+                      background: compareMode ? '#1d4ed8' : '#f59e0b',
                       color: '#fff', fontWeight: '700', fontSize: '12px',
                       cursor: 'pointer', fontFamily: 'inherit',
                     }}
@@ -379,24 +483,18 @@ export default function BlogBuilderPage() {
                     {compareMode ? 'Exit Compare' : 'Compare Side by Side'}
                   </button>
                   <button
-                    onClick={() => { 
-                      setBlogPosts(aiPosts); 
-                      if (aiSettings) setSettings(prev => ({ ...prev, ...aiSettings }));
-                      setAiPosts([]); 
-                      setAiSettings(null);
-                      setCompareMode(false); 
-                    }}
+                    onClick={() => { setBlogPosts(aiPosts); setAiPosts([]); setCompareMode(false); }}
                     style={{
                       padding: '6px 14px', borderRadius: '8px',
-                      border: '2px solid #4f46e5', background: '#fff',
-                      color: '#4f46e5', fontWeight: '700', fontSize: '12px',
+                      border: '2px solid #1d4ed8', background: '#fff',
+                      color: '#1d4ed8', fontWeight: '700', fontSize: '12px',
                       cursor: 'pointer', fontFamily: 'inherit',
                     }}
                   >
                     ✅ Use AI Layout
                   </button>
                   <button
-                    onClick={() => { setAiPosts([]); setAiSettings(null); setCompareMode(false); }}
+                    onClick={() => { setAiPosts([]); setCompareMode(false); }}
                     style={{
                       padding: '6px 12px', borderRadius: '8px',
                       border: '2px solid #e0e0e0', background: '#fff',
@@ -435,7 +533,7 @@ export default function BlogBuilderPage() {
                       padding: '8px 16px',
                       background: 'rgba(79,70,229,0.06)',
                       borderBottom: '1px solid rgba(79,70,229,0.15)',
-                      fontSize: '11px', fontWeight: '700', color: '#4f46e5',
+                      fontSize: '11px', fontWeight: '700', color: '#1d4ed8',
                       textTransform: 'uppercase', letterSpacing: '0.5px',
                     }}>
                       ⚡ AI Generated Layout
@@ -444,9 +542,9 @@ export default function BlogBuilderPage() {
                       blogPosts={aiPosts}
                       contentMode={contentMode}
                       selectedCard={null}
-                      setSelectedCard={() => {}}
+                      setSelectedCard={() => { }}
                       settings={settings}
-                      onDeleteCard={() => {}}
+                      onDeleteCard={() => { }}
                     />
                   </div>
                 </div>
@@ -464,10 +562,7 @@ export default function BlogBuilderPage() {
           )}
 
           {activeTab === 'components' && (
-            <ComponentsPanel 
-              onAddComponent={handleAddComponent} 
-              selectedCard={selectedCard}
-            />
+            <ComponentsPanel onAddComponent={handleAddComponent} isCanvasEmpty={blogPosts.length === 0} />
           )}
 
           {activeTab === 'cms' && (
@@ -476,40 +571,36 @@ export default function BlogBuilderPage() {
                 🗄️ CMS Fields
               </h2>
               <p style={{ fontSize: '13px', color: '#888', marginBottom: '16px' }}>
-                Click a card below to select and edit it in the right panel.
+                {blogPosts.some(post => post.type && typeof post.type === 'string')
+                  ? 'Your workspace contains a structured template. Please click the components on the canvas to customize them directly.'
+                  : 'Click a card below to select and edit it in the right panel.'}
               </p>
-              {blogPosts.map(post => (
+              {!blogPosts.some(post => post.type && typeof post.type === 'string') && blogPosts.map(post => (
                 <div
                   key={post.id}
                   onClick={() => { setSelectedCard(post); setActiveTab('builder'); }}
                   style={{
                     padding: '10px 14px', marginBottom: '8px',
-                    border: `1px solid ${selectedCard?.id === post.id ? '#4f46e5' : '#e5e5e5'}`,
+                    border: `1px solid ${selectedCard?.id === post.id ? '#1d4ed8' : '#e5e5e5'}`,
                     borderRadius: '8px', cursor: 'pointer',
                     display: 'flex', justifyContent: 'space-between', alignItems: 'center',
                     background: selectedCard?.id === post.id ? '#eff6ff' : '#fff'
                   }}
                 >
                   <div>
-                    <div style={{ fontSize: '13px', fontWeight: '600' }}>
-                      {post.title || `${post.type}: ${typeof post.content === 'string' ? post.content.slice(0, 30) : 'Custom Block'}...`}
-                    </div>
+                    <div style={{ fontSize: '13px', fontWeight: '600' }}>{post.title}</div>
                     <div style={{ fontSize: '11px', color: '#888' }}>
-                      {post.category || 'AI Block'} {post.author ? `· ${post.author}` : ''}
+                      {post.category} · {post.author}
                     </div>
                   </div>
-                  <span style={{ fontSize: '12px', color: '#4f46e5' }}>Edit →</span>
+                  <span style={{ fontSize: '12px', color: '#1d4ed8' }}>Edit →</span>
                 </div>
               ))}
             </div>
           )}
 
           {activeTab === 'settings' && (
-            <SettingsPanel settings={settings} onSettingsChange={setSettings} onSave={handleSaveClick} />
-          )}
-
-          {activeTab === 'ai-chat' && (
-            <AIChatPanel blogPosts={blogPosts} onUpdateLayout={handleAIGenerated} onSwitchToBuilder={() => setActiveTab('builder')} />
+            <SettingsPanel settings={settings} onSettingsChange={setSettings} setActiveTab={setActiveTab} />
           )}
 
           {activeTab === 'preview' && (
@@ -551,6 +642,11 @@ export default function BlogBuilderPage() {
       />
 
       {/* Other Modals */}
+      <AIGenerateModal
+        isOpen={aiOpen}
+        onClose={() => setAiOpen(false)}
+        onGenerated={handleAIGenerated}
+      />
       <PreviewModal
         isOpen={previewOpen}
         onClose={() => setPreviewOpen(false)}
@@ -562,6 +658,15 @@ export default function BlogBuilderPage() {
         onClose={() => setExportOpen(false)}
         blogPosts={blogPosts}
         contentMode={contentMode}
+      />
+
+      <PaywallModal
+        isOpen={isPaywallOpen}
+        onClose={() => {
+          setIsPaywallOpen(false);
+          window.location.href = '/admin/builder';
+        }}
+        cooldownRemaining={paywallCooldown}
       />
 
     </div>

@@ -1,416 +1,937 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { useRouter, useParams } from "next/navigation";
-import { ChevronDown, Star, Search, FileText, ImagePlus, X, Loader2, Library } from "lucide-react";
+import { 
+  ChevronDown, Star, Search, FileText, ImagePlus, X, Library, 
+  Eye, Type, Bold, Italic, Underline, Strikethrough,
+  List, ListOrdered, AlignLeft, AlignCenter, AlignRight, AlignJustify,
+  Quote, Code, Link as LinkIcon, Image as ImageIcon, LayoutGrid, Minus, RemoveFormatting, Tag, Loader2,
+  Upload,
+  ChevronLeft,
+  Check,
+  Plus,
+  Maximize2,
+  Settings,
+  Globe,
+  RotateCcw
+} from "lucide-react";
 import { cn } from "@/lib/utils";
 import MediaLibraryModal from "@/components/admin/MediaLibraryModal";
+import { api } from "@/lib/api";
+import PostPreviewModal from "@/components/admin/PostPreviewModal";
+import PostLayoutSelector from "@/components/admin/PostLayoutSelector";
+import { resolveAdminMediaUrl } from "@/lib/apiOrigin";
+import { attachQuillTooltips } from "@/lib/quillTooltips";
+import { useSite } from "@/components/admin/SiteContext";
+import dynamic from 'next/dynamic';
+import 'react-quill-new/dist/quill.snow.css';
+
+const ReactQuill = dynamic(() => import('react-quill-new'), { ssr: false });
+
+const quillModules = {
+  toolbar: {
+    container: [
+      ["undo", "redo"],
+      [{ header: [1, 2, 3, 4, 5, 6, false] }, { font: [] }, { size: [] }],
+      ["bold", "italic", "underline", "strike", { script: "sub" }, { script: "super" }],
+      [{ color: [] }, { background: [] }],
+      [{ list: "ordered" }, { list: "bullet" }, { indent: "-1" }, { indent: "+1" }],
+      [{ align: [] }],
+      ["blockquote", "code-block"],
+      ["link", "image", "video", "table"],
+      ["clean"],
+    ],
+    handlers: {
+      undo: function (this: any) { this.quill.history.undo(); },
+      redo: function (this: any) { this.quill.history.redo(); },
+      table: function (this: any) {
+        const range = this.quill.getSelection(true);
+        const rows = prompt("Enter number of rows (e.g. 3):", "3");
+        if (rows === null) return;
+        const cols = prompt("Enter number of columns (e.g. 3):", "3");
+        if (cols === null) return;
+        const numRows = Math.max(1, parseInt(rows, 10) || 3);
+        const numCols = Math.max(1, parseInt(cols, 10) || 3);
+
+        let bodyRows = "";
+        for (let r = 1; r <= numRows; r++) {
+          let rowCells = "";
+          for (let c = 1; c <= numCols; c++) {
+            const isFirstRow = r === 1;
+            const bgStyle = isFirstRow ? "background-color: #f8fafc; font-weight: 600;" : "";
+            rowCells += `<td style="border: 1px solid #cbd5e1; padding: 10px 14px; ${bgStyle}">Cell ${r}.${c}</td>`;
+          }
+          bodyRows += `<tr>${rowCells}</tr>`;
+        }
+
+        const tableHtml = `<div class="table-responsive my-4" style="overflow-x: auto; width: 100%; margin: 1.5rem 0;"><table style="width: 100%; border-collapse: collapse; border: 1px solid #cbd5e1; font-size: 14px;"><tbody>${bodyRows}</tbody></table></div><p><br></p>`;
+
+        this.quill.clipboard.dangerouslyPasteHTML(range.index, tableHtml);
+      },
+    },
+  },
+  history: {
+    delay: 1000,
+    maxStack: 100,
+    userOnly: true,
+  },
+};
+
+const quillFormats = [
+  "header", "font", "size",
+  "bold", "italic", "underline", "strike", "script",
+  "color", "background",
+  "list", "bullet", "indent",
+  "align",
+  "blockquote", "code-block",
+  "link", "image", "video"
+];
+
+function getLoggedInUser(): { id?: number | string; name?: string; email?: string } | null {
+  if (typeof window === "undefined") return null;
+  try {
+    const raw = localStorage.getItem("user");
+    if (!raw) return null;
+    return JSON.parse(raw);
+  } catch {
+    return null;
+  }
+}
+
+function mapSiteMembersToAuthors(members: any[]) {
+  const seen = new Set<string>();
+  const authors: { id: number | string; name: string; email?: string }[] = [];
+  for (const m of members) {
+    const id = m?.user?.id ?? m?.userId;
+    if (id == null || id === "") continue;
+    const key = String(id);
+    if (seen.has(key)) continue;
+    seen.add(key);
+    authors.push({
+      id,
+      name: m?.user?.name || m?.user?.email || `User #${id}`,
+      email: m?.user?.email,
+    });
+  }
+  return authors;
+}
 
 export default function EditPostPage() {
   const router = useRouter();
   const params = useParams();
-  const postId = params.id;
+  const postId = params.id as string;
+  const { currentSiteId } = useSite();
   
   const [formData, setFormData] = useState({
     title: "",
     slug: "",
     excerpt: "",
-    authorId: "1",
+    authorId: "",
     categories: [] as string[],
-    status: "Published",
+    status: "Draft",
     featured: false,
     content: "",
-    // Images
+    showToc: false,
+    allowComments: true,
     thumbnailUrl: "",
-    // SEO
     metaTitle: "",
     metaDescription: "",
     keywords: [] as string[],
+    useThumbnailAsFeatured: true,
     canonicalUrl: "",
-    structuredData: ""
+    structuredData: "",
+    layoutTemplateId: null as number | null,
   });
 
   const [keywordInput, setKeywordInput] = useState("");
+
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [users, setUsers] = useState<any[]>([]);
   const [error, setError] = useState<string | null>(null);
-  const [activeTab, setActiveTab] = useState("Content");
   const [isMediaModalOpen, setIsMediaModalOpen] = useState(false);
+  const [showPreview, setShowPreview] = useState(false);
+  const [activeTab, setActiveTab] = useState("Content");
+  const [availableCategories, setAvailableCategories] = useState<string[]>([]);
 
-  const availableCategories = ["Business", "Education", "Marketing", "StartUps", "Tech", "Lifestyle"];
-
+  // Fetch categories from DB
   useEffect(() => {
-    const fetchPost = async () => {
-      try {
-        const res = await fetch(`http://localhost:5000/api/posts/${postId}`);
-        if (!res.ok) throw new Error("Failed to fetch post data");
-        const data = await res.json();
-        
-        setFormData({
-          title: data.title || "",
-          slug: data.slug || "",
-          excerpt: data.excerpt || "",
-          authorId: String(data.authorId || "1"),
-          categories: data.categories || [],
-          status: data.status || "Published",
-          featured: data.featured || false,
-          content: data.content || "",
-          thumbnailUrl: data.coverImage || "",
-          metaTitle: data.metaTitle || "",
-          metaDescription: data.metaDescription || "",
-          keywords: data.keywords || [],
-          canonicalUrl: data.canonicalUrl || "",
-          structuredData: data.structuredData || ""
-        });
-      } catch (err: any) {
-        setError(err.message);
-      } finally {
-        setLoading(false);
-      }
-    };
+    api.getCategories()
+      .then((res: any) => {
+        const cats = res?.categories || res || [];
+        setAvailableCategories(cats.map((c: any) => c.name).filter(Boolean));
+      })
+      .catch(() => setAvailableCategories([]));
+  }, []);
 
-    if (postId) fetchPost();
-  }, [postId]);
-
-  const handleCategoryToggle = (cat: string) => {
-    setFormData(prev => ({
-      ...prev,
-      categories: prev.categories.includes(cat)
-        ? prev.categories.filter(c => c !== cat)
-        : [...prev.categories, cat]
-    }));
-  };
-
-  const handleAddKeyword = () => {
+  const addKeyword = () => {
     if (keywordInput.trim() && !formData.keywords.includes(keywordInput.trim())) {
-      setFormData(prev => ({
-        ...prev,
-        keywords: [...prev.keywords, keywordInput.trim()]
-      }));
+      setFormData(prev => ({ ...prev, keywords: [...prev.keywords, keywordInput.trim()] }));
       setKeywordInput("");
     }
   };
 
   const removeKeyword = (kw: string) => {
-    setFormData(prev => ({
-      ...prev,
-      keywords: prev.keywords.filter(k => k !== kw)
-    }));
+    setFormData(prev => ({ ...prev, keywords: prev.keywords.filter(k => k !== kw) }));
   };
 
-  const handleUpdatePost = async () => {
-    setSaving(true);
-    setError(null);
+  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    // Upload to media API — never store huge base64 in coverImage (DB/API fails)
     try {
-      const res = await fetch(`http://localhost:5000/api/posts/${postId}`, {
-        method: "PUT",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(formData),
+      setError(null);
+      const reader = new FileReader();
+      const base64Data: string = await new Promise((resolve, reject) => {
+        reader.onload = () => resolve(String(reader.result || ""));
+        reader.onerror = () => reject(new Error("Failed to read image"));
+        reader.readAsDataURL(file);
       });
 
-      if (!res.ok) {
-        const data = await res.json();
-        throw new Error(data.error || "Failed to update post");
+      const uploaded = await api.uploadMedia({
+        name: file.name,
+        type: file.type,
+        size: String(file.size),
+        base64Data,
+      });
+      const rawUrl = uploaded.media?.url || uploaded.url || "";
+      if (!rawUrl) throw new Error("Upload succeeded but no URL returned");
+      // Prefer relative /uploads/... path (fits DB + works with resolveMediaUrl)
+      setFormData((prev) => ({ ...prev, thumbnailUrl: rawUrl }));
+    } catch (err: any) {
+      console.error(err);
+      setError(err?.message || "Failed to upload cover image. Try Media Library instead.");
+    } finally {
+      e.target.value = "";
+    }
+  };
+
+  const fetchData = useCallback(async () => {
+    setLoading(true);
+    try {
+      const postData = await api.getPostById(postId);
+      const me = getLoggedInUser();
+      let authors: { id: number | string; name: string; email?: string }[] = [];
+
+      if (currentSiteId) {
+        try {
+          const res = await api.getSiteMembers(currentSiteId);
+          const members = Array.isArray(res?.members) ? res.members : [];
+          authors = mapSiteMembersToAuthors(members);
+        } catch (err) {
+          console.error("Failed to load site members for author list:", err);
+        }
       }
 
+      // Keep existing post author visible even if no longer a member
+      const existingAuthorId = postData.authorId || postData.author?.id;
+      const existingAuthorName =
+        postData.author?.name || postData.author_name || postData.author?.email;
+      if (
+        existingAuthorId != null &&
+        existingAuthorId !== "" &&
+        !authors.some((a) => String(a.id) === String(existingAuthorId))
+      ) {
+        authors = [
+          {
+            id: existingAuthorId,
+            name: existingAuthorName || `User #${existingAuthorId}`,
+            email: postData.author?.email,
+          },
+          ...authors,
+        ];
+      }
+
+      if (me?.id != null && !authors.some((a) => String(a.id) === String(me.id))) {
+        authors = [
+          {
+            id: me.id,
+            name: me.name || me.email || `User #${me.id}`,
+            email: me.email,
+          },
+          ...authors,
+        ];
+      }
+
+      setUsers(authors);
+      
+      let cats: string[] = [];
+      const rawCats = postData.categories || postData.category;
+      if (Array.isArray(rawCats)) cats = rawCats.map(String);
+      else if (typeof rawCats === 'string' && rawCats.trim()) {
+        try { cats = JSON.parse(rawCats); } catch(e) { cats = [rawCats]; }
+      }
+
+      setFormData({
+        title: postData.title || "",
+        slug: postData.slug || "",
+        excerpt: postData.excerpt || "",
+        authorId: String(postData.authorId || postData.author?.id || ""),
+        categories: cats,
+        status: postData.status || "Draft",
+        featured: !!postData.featured,
+        content: postData.content || "",
+        showToc: !!postData.show_toc || !!postData.showToc,
+        allowComments: postData.allow_comments !== false && postData.allowComments !== false,
+        thumbnailUrl: postData.thumbnailUrl || postData.coverImage || postData.featured_image || "",
+        metaTitle: postData.meta_title || postData.metaTitle || "",
+        metaDescription: postData.meta_description || postData.metaDescription || "",
+        keywords: Array.isArray(postData.tags)
+          ? postData.tags
+          : typeof postData.tags === "string" && postData.tags
+            ? postData.tags.split(",").map((t: string) => t.trim())
+            : [],
+        useThumbnailAsFeatured: true,
+        canonicalUrl: postData.canonicalUrl || "",
+        structuredData:
+          typeof postData.structuredData === "string"
+            ? postData.structuredData
+            : postData.structuredData
+              ? JSON.stringify(postData.structuredData, null, 2)
+              : "",
+        layoutTemplateId:
+          postData.layoutTemplateId != null ? Number(postData.layoutTemplateId) : null,
+      });
+    } catch (err: any) {
+      setError(err.message || "Failed to fetch post data");
+    } finally {
+      setLoading(false);
+    }
+  }, [postId, currentSiteId]);
+
+  useEffect(() => {
+    if (postId) fetchData();
+  }, [fetchData]);
+
+useEffect(() => {
+  if (activeTab === "Content") {
+    attachQuillTooltips();
+  }
+}, [activeTab]);
+
+
+
+  const calculateProgress = () => {
+    const fields = [
+      formData.title.trim().length > 0,
+      formData.slug.trim().length > 0,
+      formData.excerpt.trim().length > 0,
+      formData.authorId !== "",
+      formData.categories.length > 0,
+      formData.content.trim().length > 0,
+      formData.thumbnailUrl !== "",
+      formData.metaTitle !== "",
+      formData.metaDescription !== ""
+    ];
+    const completed = fields.filter(f => f).length;
+    return { completed, total: fields.length };
+  };
+
+  const { completed, total } = calculateProgress();
+  const progressPercent = (completed / total) * 100;
+
+  const handleUpdatePost = async (overrideStatus?: string) => {
+    if (!formData.title || !formData.content) {
+      setError("Title and Content are required.");
+      return;
+    }
+
+    setSaving(true);
+    setError(null);
+
+    const nextStatus = overrideStatus || formData.status;
+
+    // Reject base64 covers before API call (too large for old schema / payloads)
+    let cover = formData.thumbnailUrl || "";
+    if (cover.startsWith("data:")) {
+      setError(
+        "Cover image is still a temporary local preview. Re-upload via the image button or Media Library so it becomes a short /uploads/... URL, then save again.",
+      );
+      setSaving(false);
+      return;
+    }
+
+    const authorIdNum = parseInt(String(formData.authorId), 10);
+    const finalData: Record<string, any> = {
+      title: formData.title,
+      slug: formData.slug,
+      excerpt: formData.excerpt,
+      content: formData.content,
+      status: nextStatus,
+      category: formData.categories[0] || "General",
+      tags: formData.keywords,
+      thumbnailUrl: cover || null,
+      featured: formData.featured,
+      layoutTemplateId: formData.layoutTemplateId,
+      showToc: formData.showToc,
+      allowComments: formData.allowComments,
+      ...(Number.isFinite(authorIdNum) && authorIdNum > 0
+        ? { authorId: authorIdNum }
+        : {}),
+      ...(nextStatus === "Published"
+        ? { published_date: new Date().toISOString() }
+        : {}),
+    };
+
+    try {
+      await api.updatePost(postId, finalData);
+      if (nextStatus === "Published") {
+        api.notifySubscribersNewPost({
+          title: formData.title,
+          slug: formData.slug,
+          excerpt: formData.excerpt,
+          coverImage: cover || undefined,
+          siteSlug: "",
+          siteName: "Blog",
+          siteId: currentSiteId || undefined,
+        }).catch(() => {});
+      }
+      setFormData((prev) => ({ ...prev, status: nextStatus }));
       router.push("/admin/posts");
     } catch (err: any) {
-      setError(err.message);
+      setError(err.message || "Failed to update post");
     } finally {
       setSaving(false);
     }
   };
 
-  const completedFields = [
-    formData.title,
-    formData.slug,
-    formData.excerpt,
-    formData.authorId,
-    formData.categories.length > 0,
-    formData.content
-  ].filter(Boolean).length;
+  const handleQuickPublishToggle = async () => {
+    if (!formData.title || !formData.content) {
+      setError("Title and Content are required before publishing.");
+      return;
+    }
+    const goingLive = formData.status !== "Published";
+    setSaving(true);
+    setError(null);
+    try {
+      if (goingLive) {
+        await api.publishPost(postId);
+        setFormData((prev) => ({ ...prev, status: "Published" }));
+      } else {
+        await api.unpublishPost(postId, "Draft");
+        setFormData((prev) => ({ ...prev, status: "Draft" }));
+      }
+    } catch (err: any) {
+      setError(err.message || "Failed to update publish status");
+    } finally {
+      setSaving(false);
+    }
+  };
+
 
   if (loading) {
     return (
-      <div className="flex flex-col items-center justify-center min-h-[400px] space-y-4">
-        <Loader2 className="w-8 h-8 text-blue-600 animate-spin" />
-        <p className="text-gray-500 animate-pulse">Loading post data...</p>
+      <div className="min-h-screen bg-[#F4F7FA] flex flex-col items-center justify-center">
+        <Loader2 className="w-12 h-12 text-[#2563EB] animate-spin mb-4" />
+        <p className="text-[#64748B] font-bold">Fetching your masterpiece...</p>
       </div>
     );
   }
 
   return (
-    <div className="max-w-5xl mx-auto pb-24 space-y-6">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900">Edit Post</h1>
-          <p className="text-gray-500 text-sm mt-1">
-            Modify the details of your blog post
-          </p>
-        </div>
-        <div className="px-4 py-1.5 bg-blue-600 text-white rounded-full text-sm font-medium shadow-sm">
-          {formData.status}
-        </div>
-      </div>
-
-      {/* Progress */}
-      <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
-        <div className="flex justify-between items-center mb-3">
-          <span className="text-sm font-medium text-gray-700">Completion Progress</span>
-          <span className="text-sm text-gray-500">{completedFields}/6 fields completed</span>
-        </div>
-        <div className="h-2 w-full bg-gray-100 rounded-full overflow-hidden">
-          <div 
-            className="h-full bg-blue-600 transition-all duration-300" 
-            style={{ width: `${(completedFields / 6) * 100}%` }}
-          />
-        </div>
-      </div>
-
-      {/* Tabs */}
-      <div className="bg-white p-2 rounded-xl shadow-sm border border-gray-100 flex gap-2">
-        {[
-          { id: "Content", icon: FileText },
-          { id: "Images", icon: ImagePlus },
-          { id: "SEO", icon: Search }
-        ].map(tab => (
-          <button
-            key={tab.id}
-            onClick={() => setActiveTab(tab.id)}
-            className={cn(
-              "flex-1 py-2.5 px-4 text-sm font-medium rounded-lg transition-colors flex items-center justify-center gap-2",
-              activeTab === tab.id 
-                ? "bg-gray-50 text-gray-900 border border-gray-200" 
-                : "text-gray-500 hover:text-gray-700 hover:bg-gray-50/50"
-            )}
-          >
-            <tab.icon className="w-4 h-4" />
-            {tab.id}
-          </button>
-        ))}
-      </div>
-
-      {error && (
-        <div className="p-4 bg-red-50 text-red-600 rounded-xl text-sm border border-red-100">
-          {error}
-        </div>
-      )}
-
-      {/* Tab Content */}
-      <div className="bg-white p-8 rounded-xl shadow-sm border border-gray-100 min-h-[500px]">
-        {activeTab === "Content" && (
-          <div className="space-y-8 animate-in fade-in duration-300">
+    <div className="min-h-screen bg-[#F4F7FA] pb-32 pt-8 px-6">
+      <div className="max-w-[1200px] mx-auto space-y-6">
+        
+        {/* Top Header */}
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-4">
+            <button 
+              onClick={() => router.push('/admin/posts')}
+              className="p-2 bg-white border border-[#E2E8F0] rounded-lg text-[#64748B] hover:text-[#1E293B] shadow-sm transition-all"
+            >
+              <ChevronLeft className="w-5 h-5" />
+            </button>
             <div>
-              <h2 className="text-lg font-semibold text-gray-900">Basic Information</h2>
-              <p className="text-sm text-gray-500 mb-6">Enter the core details of your blog post</p>
+              <h1 className="text-[32px] font-bold text-[#1E293B]">Edit Post</h1>
+              <p className="text-[15px] text-[#64748B] mt-1">Make changes to your existing blog post</p>
+            </div>
+          </div>
+          <span className={cn(
+            "px-4 py-1.5 text-white text-[13px] font-bold rounded-full transition-colors",
+            formData.status === "Published" ? "bg-emerald-600" : "bg-[#94A3B8]"
+          )}>
+            {formData.status}
+          </span>
+        </div>
 
-              <div className="space-y-6">
+        {/* Progress Bar Card */}
+        <div className="bg-white rounded-[20px] p-6 border border-[#E2E8F0] shadow-sm">
+          <div className="flex items-center justify-between mb-3">
+            <span className="text-[14px] font-bold text-[#1E293B]">Completion Progress</span>
+            <span className="text-[13px] font-bold text-[#94A3B8]">{completed}/{total} fields completed</span>
+          </div>
+          <div className="w-full h-2 bg-[#F1F5F9] rounded-full overflow-hidden">
+            <div 
+              className="h-full bg-[#2563EB] transition-all duration-500 ease-out" 
+              style={{ width: `${progressPercent}%` }}
+            />
+          </div>
+        </div>
+
+        {/* Section Tabs */}
+        <div className="bg-[#F8FAFC] rounded-[16px] p-1.5 flex gap-2 border border-[#E2E8F0]">
+          {["Content", "Images", "Layout", "SEO"].map((tab) => (
+            <button
+              key={tab}
+              onClick={() => setActiveTab(tab)}
+              className={cn(
+                "flex-1 h-12 flex items-center justify-center gap-2 text-[14px] font-bold transition-all rounded-[12px]",
+                activeTab === tab 
+                  ? "bg-white text-[#2563EB] shadow-sm border border-[#E2E8F0]" 
+                  : "text-[#64748B] hover:text-[#475569]"
+              )}
+            >
+              {tab === "Content" && <FileText className="w-4 h-4" />}
+              {tab === "Images" && <ImageIcon className="w-4 h-4" />}
+              {tab === "Layout" && <LayoutGrid className="w-4 h-4" />}
+              {tab === "SEO" && <Search className="w-4 h-4" />}
+              {tab}
+            </button>
+          ))}
+        </div>
+
+        {error && (
+          <div className="p-4 bg-red-50 text-red-600 rounded-[12px] border border-red-100 flex items-center gap-3">
+            <X className="w-5 h-5" />
+            <span className="text-[14px] font-bold">{error}</span>
+          </div>
+        )}
+
+        {/* Main Form Content */}
+        <div className="bg-white rounded-[24px] border border-[#E2E8F0] shadow-sm overflow-hidden">
+          <div className="p-8">
+            
+            {/* CONTENT TAB */}
+            {activeTab === "Content" && (
+              <div className="space-y-10 animate-in fade-in duration-300">
+                <div className="space-y-6">
+                  <div>
+                    <h2 className="text-[20px] font-bold text-[#1E293B]">Basic Information</h2>
+                    <p className="text-[14px] text-[#64748B] mt-1">Refine the core details of your post</p>
+                  </div>
+
+                  <div className="space-y-2">
+                    <label className="text-[14px] font-bold text-[#1E293B]">Post Title <span className="text-red-500">*</span></label>
+                    <input 
+                      type="text"
+                      className="w-full h-12 bg-white border border-[#E2E8F0] rounded-[10px] px-4 text-[14px] focus:outline-none"
+                      value={formData.title}
+                      onChange={e => setFormData({...formData, title: e.target.value, slug: e.target.value.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)+/g, '')})}
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <label className="text-[14px] font-bold text-[#1E293B]">URL Slug <span className="text-red-500">*</span></label>
+                    <input 
+                      type="text"
+                      className="w-full h-12 bg-white border border-[#E2E8F0] rounded-[10px] px-4 text-[14px] focus:outline-none"
+                      value={formData.slug}
+                      onChange={e => setFormData({...formData, slug: e.target.value})}
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <label className="text-[14px] font-bold text-[#1E293B]">Excerpt <span className="text-red-500">*</span></label>
+                    <textarea 
+                      rows={3}
+                      className="w-full bg-white border border-[#E2E8F0] rounded-[10px] p-4 text-[14px] focus:outline-none"
+                      value={formData.excerpt}
+                      onChange={e => setFormData({...formData, excerpt: e.target.value})}
+                    />
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div className="space-y-2">
+                      <label className="text-[14px] font-bold text-[#1E293B]">Author <span className="text-red-500">*</span></label>
+                      <select 
+                        className="w-full h-12 bg-white border border-[#E2E8F0] rounded-[10px] px-4 text-[14px] appearance-none"
+                        value={formData.authorId}
+                        onChange={e => setFormData({...formData, authorId: e.target.value})}
+                      >
+                        {users.length === 0 && (
+                          <option value="">No authors for this site</option>
+                        )}
+                        {users.map(u => (
+                          <option key={u.id} value={u.id}>{u.name || u.email}</option>
+                        ))}
+                      </select>
+                    </div>
+                    <div className="space-y-2">
+                      <label className="text-[14px] font-bold text-[#1E293B]">Publish Status <span className="text-red-500">*</span></label>
+                      <select 
+                        className="w-full h-12 bg-white border border-[#E2E8F0] rounded-[10px] px-4 text-[14px]"
+                        value={formData.status}
+                        onChange={e => setFormData({...formData, status: e.target.value})}
+                      >
+                        <option value="Published">Published</option>
+                        <option value="Draft">Draft</option>
+                        <option value="Unpublished">Unpublished</option>
+                      </select>
+                    </div>
+                  </div>
+
+                  <div className="space-y-2">
+                    <label className="text-[14px] font-bold text-[#1E293B]">Categories <span className="text-red-500">*</span></label>
+                    <div className="flex flex-wrap gap-2 mb-2">
+                      {formData.categories.map(cat => (
+                        <span key={cat} className="px-3 py-1 bg-blue-50 text-blue-600 border border-blue-100 rounded-full text-[12px] font-bold flex items-center gap-1.5">
+                          {cat}
+                          <X className="w-3 h-3 cursor-pointer" onClick={() => setFormData({...formData, categories: formData.categories.filter(c => c !== cat)})} />
+                        </span>
+                      ))}
+                    </div>
+                    <select 
+                      className="w-full h-12 bg-white border border-[#E2E8F0] rounded-[10px] px-4 text-[14px]"
+                      onChange={(e) => {
+                        if (e.target.value && !formData.categories.includes(e.target.value)) {
+                          setFormData({...formData, categories: [...formData.categories, e.target.value]});
+                        }
+                      }}
+                      value=""
+                    >
+                      <option value="">Add category...</option>
+                      {availableCategories.map(cat => <option key={cat} value={cat}>{cat}</option>)}
+                    </select>
+                  </div>
+
+                  <div className="bg-[#F8FAFC] p-4 rounded-[12px] border border-[#E2E8F0] flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <Star className={cn("w-5 h-5", formData.featured ? "text-amber-500 fill-amber-500" : "text-slate-300")} />
+                      <div>
+                        <p className="text-[14px] font-bold text-[#1E293B]">Featured Post</p>
+                        <p className="text-[12px] text-[#64748B]">Promote this post to the homepage</p>
+                      </div>
+                    </div>
+                    <input 
+                      type="checkbox" 
+                      className="w-5 h-5 rounded border-[#E2E8F0]" 
+                      checked={formData.featured}
+                      onChange={e => setFormData({...formData, featured: e.target.checked})}
+                    />
+                  </div>
+
+                  <div className="space-y-4 pt-4 border-t border-[#F1F5F9]">
+                    <h2 className="text-[20px] font-bold text-[#1E293B]">Post Content <span className="text-red-500">*</span></h2>
+                    <div className="border border-[#E2E8F0] rounded-[16px] overflow-hidden">
+                      <ReactQuill 
+                        theme="snow"
+                        value={formData.content}
+                        onChange={(content) => setFormData({...formData, content})}
+                        modules={quillModules}
+                        formats={quillFormats}
+                        className="bg-white"
+                        style={{ height: '400px', paddingBottom: '42px' }}
+                      />
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* IMAGES TAB */}
+            {activeTab === "Images" && (
+              <div className="space-y-8 animate-in fade-in duration-300">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Post Title <span className="text-red-500">*</span></label>
-                  <input 
-                    type="text" 
-                    placeholder="Enter an engaging title"
-                    className="w-full px-4 py-2.5 bg-white border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all"
-                    value={formData.title}
-                    onChange={e => setFormData({...formData, title: e.target.value})}
-                  />
+                  <h2 className="text-[20px] font-bold text-[#1E293B]">Post Images</h2>
+                  <p className="text-[14px] text-[#64748B] mt-1">Upload thumbnail and featured images for your blog post</p>
                 </div>
 
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">URL Slug <span className="text-red-500">*</span></label>
-                  <input 
-                    type="text" 
-                    placeholder="url-friendly-slug"
-                    className="w-full px-4 py-2.5 bg-white border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all"
-                    value={formData.slug}
-                    onChange={e => setFormData({...formData, slug: e.target.value})}
-                  />
-                </div>
+                <div className="space-y-6">
+                   <div>
+                      <h3 className="text-[16px] font-bold text-[#1E293B]">Thumbnail Image</h3>
+                      <p className="text-[13px] text-[#64748B] mt-0.5">This image appears in blog listing pages and previews</p>
+                   </div>
 
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Summary</label>
-                  <textarea 
-                    rows={3}
-                    placeholder="Write a compelling summary"
-                    className="w-full px-4 py-2.5 bg-white border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all resize-none"
-                    value={formData.excerpt}
-                    onChange={e => setFormData({...formData, excerpt: e.target.value})}
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Categories <span className="text-red-500">*</span></label>
-                  <div className="flex flex-wrap gap-2">
-                    {availableCategories.map(cat => (
-                      <button
-                        key={cat}
-                        type="button"
-                        onClick={() => handleCategoryToggle(cat)}
+                    <div className="relative group">
+                      <div 
                         className={cn(
-                          "px-3 py-1.5 rounded-full text-sm font-medium transition-colors border",
-                          formData.categories.includes(cat)
-                            ? "bg-blue-50 border-blue-200 text-blue-700"
-                            : "bg-white border-gray-200 text-gray-600 hover:bg-gray-50"
+                          "w-full min-h-[300px] border-2 border-dashed rounded-[20px] flex flex-col items-center justify-center gap-4 transition-all overflow-hidden bg-[#F8FAFC]",
+                          formData.thumbnailUrl ? "border-blue-200 bg-blue-50/10" : "border-[#E2E8F0] hover:bg-[#F1F5F9] hover:border-[#CBD5E1]"
                         )}
                       >
-                        {cat}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Content <span className="text-red-500">*</span></label>
-                  <textarea 
-                    rows={15}
-                    placeholder="Write your content here..."
-                    className="w-full px-4 py-4 bg-white border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all"
-                    value={formData.content}
-                    onChange={e => setFormData({...formData, content: e.target.value})}
-                  />
-                </div>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {activeTab === "Images" && (
-          <div className="space-y-8 animate-in fade-in duration-300">
-            <div>
-              <h2 className="text-lg font-semibold text-gray-900">Post Images</h2>
-              <p className="text-sm text-gray-500 mb-6">Manage images for your blog post</p>
-
-              <div className="space-y-6">
-                <div>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div className="border-2 border-dashed border-gray-200 rounded-2xl p-10 flex flex-col items-center justify-center text-center hover:border-blue-400 hover:bg-blue-50/30 transition-all cursor-pointer group">
-                      <div className="w-14 h-14 bg-gray-50 rounded-2xl flex items-center justify-center mb-4 group-hover:bg-blue-100 transition-colors">
-                        <ImagePlus className="w-7 h-7 text-gray-400 group-hover:text-blue-600" />
+                        {formData.thumbnailUrl ? (
+                          <div className="relative w-full h-full flex items-center justify-center p-4">
+                            <img src={resolveAdminMediaUrl(formData.thumbnailUrl) || formData.thumbnailUrl} className="max-h-[400px] w-auto object-contain rounded-[12px] shadow-sm" alt="Thumbnail" />
+                            <button 
+                              onClick={(e) => { e.stopPropagation(); setFormData({...formData, thumbnailUrl: ""}); }}
+                              className="absolute top-6 right-6 p-2 bg-white/90 backdrop-blur-sm rounded-full text-red-500 shadow-md hover:bg-white transition-all"
+                            >
+                              <X className="w-5 h-5" />
+                            </button>
+                          </div>
+                        ) : (
+                          <>
+                            <div className="w-16 h-16 bg-white rounded-2xl shadow-sm border border-[#E2E8F0] flex items-center justify-center mb-1">
+                              <ImageIcon className="w-8 h-8 text-[#94A3B8]" />
+                            </div>
+                            <div className="text-center">
+                              <p className="text-[16px] font-bold text-[#1E293B]">Click to upload image</p>
+                              <p className="text-[13px] text-[#94A3B8] mt-1 font-medium">PNG, JPG, GIF up to 5MB</p>
+                            </div>
+                            <div className="flex items-center gap-3 mt-2">
+                                <button 
+                                  onClick={() => fileInputRef.current?.click()}
+                                  className="h-10 px-5 bg-white border border-[#E2E8F0] rounded-xl text-[13px] font-bold text-[#1E293B] shadow-sm hover:bg-slate-50 transition-all flex items-center gap-2"
+                                >
+                                  <Upload className="w-4 h-4 text-[#64748B]" />
+                                  Upload New
+                                </button>
+                                <button 
+                                  onClick={() => setIsMediaModalOpen(true)}
+                                  className="h-10 px-5 bg-white border border-[#E2E8F0] rounded-xl text-[13px] font-bold text-[#1E293B] shadow-sm hover:bg-slate-50 transition-all flex items-center gap-2"
+                                >
+                                  <Library className="w-4 h-4 text-[#64748B]" />
+                                  Choose from Library
+                                </button>
+                            </div>
+                          </>
+                        )}
                       </div>
-                      <span className="text-sm font-bold text-gray-900 mb-1">Upload from Device</span>
-                      <span className="text-[10px] text-gray-500 uppercase tracking-wider font-bold">PNG, JPG, GIF up to 5MB</span>
+                      <input 
+                        ref={fileInputRef}
+                        type="file" 
+                        className="hidden" 
+                        accept="image/*"
+                        onChange={handleImageUpload}
+                      />
                     </div>
 
-                    <div 
-                      onClick={() => setIsMediaModalOpen(true)}
-                      className="border-2 border-dashed border-gray-200 rounded-2xl p-10 flex flex-col items-center justify-center text-center hover:border-blue-400 hover:bg-blue-50/30 transition-all cursor-pointer group"
-                    >
-                      <div className="w-14 h-14 bg-gray-50 rounded-2xl flex items-center justify-center mb-4 group-hover:bg-blue-100 transition-colors">
-                        <Library className="w-7 h-7 text-gray-400 group-hover:text-blue-600" />
-                      </div>
-                      <span className="text-sm font-bold text-gray-900 mb-1">Choose from Library</span>
-                      <span className="text-[10px] text-gray-500 uppercase tracking-wider font-bold">Select existing media</span>
-                    </div>
-                  </div>
-
-                  {formData.thumbnailUrl && (
-                    <div className="mt-8 p-4 bg-gray-50 rounded-3xl border border-gray-100 flex items-center gap-6 animate-in slide-in-from-bottom-4 duration-500">
-                      <div className="w-24 h-24 rounded-2xl overflow-hidden border-2 border-white shadow-md shrink-0">
-                        <img src={formData.thumbnailUrl} className="w-full h-full object-cover" alt="Preview" />
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <p className="text-xs font-black text-gray-400 uppercase tracking-widest mb-1">Current Thumbnail</p>
-                        <p className="text-sm font-bold text-gray-900 truncate">{formData.thumbnailUrl}</p>
-                      </div>
-                      <button 
-                        onClick={() => setFormData({...formData, thumbnailUrl: ""})}
-                        className="p-3 bg-white hover:bg-red-50 text-gray-400 hover:text-red-500 rounded-xl transition-all shadow-sm"
+                    <div className={cn(
+                      "p-5 rounded-[16px] border flex items-center gap-4 transition-all",
+                      formData.useThumbnailAsFeatured ? "bg-white border-[#E2E8F0]" : "bg-white border-[#E2E8F0]"
+                    )}>
+                      <div 
+                        className={cn(
+                          "w-6 h-6 rounded-md border-2 flex items-center justify-center cursor-pointer transition-all",
+                          formData.useThumbnailAsFeatured ? "bg-[#2563EB] border-[#2563EB]" : "bg-white border-[#CBD5E1]"
+                        )}
+                        onClick={() => setFormData({...formData, useThumbnailAsFeatured: !formData.useThumbnailAsFeatured})}
                       >
-                        <X className="w-5 h-5" />
+                        {formData.useThumbnailAsFeatured && <Check className="w-4 h-4 text-white" />}
+                      </div>
+                      <div>
+                        <p className="text-[14px] font-bold text-[#1E293B]">Use thumbnail as featured image</p>
+                        <p className="text-[12px] text-[#64748B] mt-0.5">Uncheck to add a separate featured image or no featured image</p>
+                      </div>
+                    </div>
+                </div>
+              </div>
+            )}
+
+            {/* SEO TAB */}
+            {activeTab === "Layout" && (
+              <div className="animate-in fade-in duration-300">
+                <PostLayoutSelector
+                  siteId={currentSiteId}
+                  value={formData.layoutTemplateId}
+                  onChange={(layoutTemplateId) =>
+                    setFormData((current) => ({ ...current, layoutTemplateId }))
+                  }
+                />
+              </div>
+            )}
+
+            {/* SEO TAB */}
+            {activeTab === "SEO" && (
+              <div className="space-y-8 animate-in fade-in duration-300">
+                <div>
+                  <h2 className="text-[20px] font-bold text-[#1E293B]">SEO Optimization</h2>
+                  <p className="text-[14px] text-[#64748B] mt-1">Optimize your blog post for search engines and social media</p>
+                </div>
+
+                <div className="space-y-8 max-w-4xl">
+                  {/* Meta Title */}
+                  <div className="space-y-3">
+                    <div className="flex items-center justify-between">
+                      <label className="text-[14px] font-bold text-[#1E293B]">Meta Title</label>
+                      <span className={cn(
+                        "text-[12px] font-bold",
+                        formData.metaTitle.length > 60 ? "text-red-500" : "text-[#94A3B8]"
+                      )}>{formData.metaTitle.length}/60</span>
+                    </div>
+                    <input 
+                      type="text"
+                      className="w-full h-12 bg-white border border-[#E2E8F0] rounded-[12px] px-4 text-[14px] focus:outline-none focus:ring-2 focus:ring-blue-500/10 focus:border-blue-400 transition-all"
+                      placeholder="SEO optimized title (leave empty to use post title)"
+                      value={formData.metaTitle}
+                      onChange={e => setFormData({...formData, metaTitle: e.target.value})}
+                    />
+                    <p className="text-[12px] text-[#94A3B8] font-medium">Recommended: 50-60 characters</p>
+                  </div>
+
+                  {/* Meta Description */}
+                  <div className="space-y-3">
+                    <div className="flex items-center justify-between">
+                      <label className="text-[14px] font-bold text-[#1E293B]">Meta Description</label>
+                      <span className={cn(
+                        "text-[12px] font-bold",
+                        formData.metaDescription.length > 160 ? "text-red-500" : "text-[#94A3B8]"
+                      )}>{formData.metaDescription.length}/160</span>
+                    </div>
+                    <textarea 
+                      rows={3}
+                      className="w-full bg-white border border-[#E2E8F0] rounded-[12px] p-4 text-[14px] focus:outline-none focus:ring-2 focus:ring-blue-500/10 focus:border-blue-400 transition-all resize-none leading-relaxed"
+                      placeholder="Brief description for search engines (leave empty to use excerpt)"
+                      value={formData.metaDescription}
+                      onChange={e => setFormData({...formData, metaDescription: e.target.value})}
+                    />
+                    <p className="text-[12px] text-[#94A3B8] font-medium">Recommended: 150-160 characters</p>
+                  </div>
+
+                  {/* Focus Keywords */}
+                  <div className="space-y-3">
+                    <label className="text-[14px] font-bold text-[#1E293B]">Focus Keywords</label>
+                    <div className="flex gap-2">
+                      <input 
+                        type="text"
+                        className="flex-1 h-12 bg-white border border-[#E2E8F0] rounded-[12px] px-4 text-[14px] focus:outline-none focus:ring-2 focus:ring-blue-500/10 focus:border-blue-400 transition-all"
+                        placeholder="Type keyword and press Enter"
+                        value={keywordInput}
+                        onChange={e => setKeywordInput(e.target.value)}
+                        onKeyDown={e => e.key === 'Enter' && (e.preventDefault(), addKeyword())}
+                      />
+                      <button 
+                        type="button"
+                        onClick={addKeyword}
+                        className="h-12 px-6 bg-[#F8FAFC] border border-[#E2E8F0] rounded-[12px] text-[14px] font-bold text-[#64748B] hover:bg-slate-100 transition-all"
+                      >
+                        Add
                       </button>
                     </div>
-                  )}
+                    <div className="min-h-[60px] p-4 bg-[#F8FAFC] border border-[#E2E8F0] border-dashed rounded-[12px] flex flex-wrap gap-2">
+                      {formData.keywords.length > 0 ? (
+                        formData.keywords.map(kw => (
+                          <span key={kw} className="px-3 py-1.5 bg-white border border-[#E2E8F0] rounded-lg text-[13px] font-bold text-[#1E293B] flex items-center gap-2 shadow-sm">
+                            {kw}
+                            <X className="w-3.5 h-3.5 text-[#94A3B8] cursor-pointer hover:text-red-500" onClick={() => removeKeyword(kw)} />
+                          </span>
+                        ))
+                      ) : (
+                        <p className="text-[13px] text-[#94A3B8] font-medium m-auto">No keywords added yet. Type a keyword and press Enter or click Add.</p>
+                      )}
+                    </div>
+                    <p className="text-[12px] text-[#94A3B8] font-medium">Add keywords that help search engines understand your content. Press Enter or click Add after typing each keyword.</p>
+                  </div>
 
-                  <MediaLibraryModal 
-                    isOpen={isMediaModalOpen}
-                    onClose={() => setIsMediaModalOpen(false)}
-                    onSelect={(url) => setFormData({...formData, thumbnailUrl: url})}
-                  />
-                </div>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {activeTab === "SEO" && (
-          <div className="space-y-8 animate-in fade-in duration-300">
-            <div>
-              <h2 className="text-lg font-semibold text-gray-900">SEO Optimization</h2>
-              <p className="text-sm text-gray-500 mb-6">Optimize your blog post for search engines</p>
-
-              <div className="space-y-6">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Meta Title</label>
-                  <input 
-                    type="text" 
-                    placeholder="SEO title"
-                    className="w-full px-4 py-2.5 bg-white border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all"
-                    value={formData.metaTitle}
-                    onChange={e => setFormData({...formData, metaTitle: e.target.value})}
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Meta Description</label>
-                  <textarea 
-                    rows={4}
-                    placeholder="SEO description"
-                    className="w-full px-4 py-2.5 bg-white border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all resize-none"
-                    value={formData.metaDescription}
-                    onChange={e => setFormData({...formData, metaDescription: e.target.value})}
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Keywords</label>
-                  <div className="flex gap-2 mb-3">
+                  {/* Canonical URL */}
+                  <div className="space-y-3">
+                    <label className="text-[14px] font-bold text-[#1E293B]">Canonical URL</label>
                     <input 
-                      type="text" 
-                      placeholder="Add keyword"
-                      className="flex-1 px-4 py-2.5 bg-white border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all"
-                      value={keywordInput}
-                      onChange={e => setKeywordInput(e.target.value)}
-                      onKeyDown={e => e.key === 'Enter' && (e.preventDefault(), handleAddKeyword())}
+                      type="text"
+                      className="w-full h-12 bg-white border border-[#E2E8F0] rounded-[12px] px-4 text-[14px] focus:outline-none focus:ring-2 focus:ring-blue-500/10 focus:border-blue-400 transition-all"
+                      placeholder="https://example.com/blog/post-slug"
+                      value={formData.canonicalUrl}
+                      onChange={e => setFormData({...formData, canonicalUrl: e.target.value})}
                     />
-                    <button onClick={handleAddKeyword} className="px-4 py-2.5 bg-gray-50 border rounded-lg hover:bg-gray-100 transition-colors">Add</button>
+                    <p className="text-[12px] text-[#94A3B8] font-medium">Optional: Specify the preferred URL if this content exists elsewhere</p>
                   </div>
-                  <div className="flex flex-wrap gap-2">
-                    {formData.keywords.map(kw => (
-                      <span key={kw} className="px-3 py-1 bg-white border rounded-full text-xs font-medium flex items-center gap-2">
-                        {kw}
-                        <button onClick={() => removeKeyword(kw)}><X className="w-3 h-3 text-gray-400 hover:text-red-500" /></button>
-                      </span>
-                    ))}
+
+                  {/* Structured Data */}
+                  <div className="space-y-3">
+                    <div>
+                      <h3 className="text-[16px] font-bold text-[#1E293B]">Structured Data (JSON-LD)</h3>
+                      <p className="text-[13px] text-[#64748B] mt-0.5">Advanced: Add structured data for rich search results</p>
+                    </div>
+                    <textarea 
+                      rows={10}
+                      className="w-full bg-white border border-[#E2E8F0] rounded-[12px] p-6 text-[14px] font-mono focus:outline-none focus:ring-2 focus:ring-blue-500/10 focus:border-blue-400 transition-all leading-relaxed"
+                      placeholder={`{\n  "@context": "https://schema.org",\n  "@type": "Article",\n  "headline": "Article headline",\n  "description": "Article description",\n  "author": {\n    "@type": "Person",\n    "name": "Author Name"\n  }\n}`}
+                      value={formData.structuredData}
+                      onChange={e => setFormData({...formData, structuredData: e.target.value})}
+                    />
+                    <p className="text-[12px] text-[#94A3B8] font-medium">Optional: Valid JSON-LD markup for enhanced search appearance. Leave empty if not needed.</p>
                   </div>
                 </div>
               </div>
-            </div>
-          </div>
-        )}
-      </div>
+            )}
 
-      {/* Bottom Bar */}
-      <div className="fixed bottom-0 left-[280px] right-0 bg-white border-t border-gray-200 p-4 px-8 flex justify-between items-center z-10">
-        <button 
-          onClick={() => router.push('/admin/posts')}
-          className="px-6 py-2.5 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
-        >
-          Cancel
-        </button>
-        <div className="flex items-center gap-3">
-          <button 
-            onClick={handleUpdatePost}
-            disabled={saving}
-            className="px-6 py-2.5 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 transition-colors shadow-sm disabled:opacity-50 flex items-center gap-2"
-          >
-            {saving && <Loader2 className="w-4 h-4 animate-spin" />}
-            {saving ? "Saving Changes..." : "Update Post"}
-          </button>
+          </div>
         </div>
+
+        {/* Floating Action Bar */}
+        <div className="bg-white rounded-[16px] border border-[#E2E8F0] p-4 shadow-xl flex items-center justify-between sticky bottom-6 z-40 gap-3 flex-wrap">
+          <button 
+            onClick={() => router.push('/admin/posts')}
+            className="px-6 h-11 border border-[#E2E8F0] rounded-[10px] text-[14px] font-bold text-[#64748B] hover:bg-slate-50"
+          >
+            Cancel
+          </button>
+          <div className="flex items-center gap-3 flex-wrap justify-end">
+            <button
+              type="button"
+              onClick={() => setShowPreview(true)}
+              className="h-11 px-5 rounded-[10px] border border-[#E2E8F0] text-[14px] font-bold text-[#64748B] hover:bg-slate-50"
+            >
+              Preview
+            </button>
+            <button
+              type="button"
+              onClick={handleQuickPublishToggle}
+              disabled={saving}
+              className={cn(
+                "h-11 px-6 rounded-[10px] text-[14px] font-bold shadow-sm disabled:opacity-50 flex items-center gap-2 border transition-colors",
+                formData.status === "Published"
+                  ? "bg-amber-50 text-amber-700 border-amber-200 hover:bg-amber-100"
+                  : "bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-100"
+              )}
+            >
+              {saving ? (
+                <Loader2 className="w-4 h-4 animate-spin" />
+              ) : formData.status === "Published" ? (
+                "Unpublish"
+              ) : (
+                "Publish"
+              )}
+            </button>
+            <button 
+              onClick={() => handleUpdatePost()}
+              disabled={saving}
+              className="h-11 px-8 bg-[#2563EB] text-white rounded-[10px] text-[14px] font-bold hover:bg-[#1D4ED8] shadow-lg shadow-blue-500/20 disabled:opacity-50 flex items-center gap-2"
+            >
+              {saving && <Loader2 className="w-4 h-4 animate-spin" />}
+              {saving ? "Saving..." : "Save Changes"}
+            </button>
+            {formData.status !== "Published" && (
+              <button
+                type="button"
+                onClick={() => handleUpdatePost("Published")}
+                disabled={saving}
+                className="h-11 px-8 bg-emerald-600 text-white rounded-[10px] text-[14px] font-bold hover:bg-emerald-700 shadow-lg shadow-emerald-500/20 disabled:opacity-50 flex items-center gap-2"
+              >
+                Save & Publish
+              </button>
+            )}
+          </div>
+        </div>
+
       </div>
+      
+      <MediaLibraryModal 
+        isOpen={isMediaModalOpen}
+        onClose={() => setIsMediaModalOpen(false)}
+        onSelect={(url) => setFormData({...formData, thumbnailUrl: url})}
+      />
+
+      <PostPreviewModal
+        open={showPreview}
+        onClose={() => setShowPreview(false)}
+        post={{
+          title: formData.title,
+          slug: formData.slug,
+          excerpt: formData.excerpt,
+          content: formData.content,
+          status: formData.status,
+          categories: formData.categories,
+          thumbnailUrl: formData.thumbnailUrl,
+          authorName:
+            users.find((u) => String(u.id) === String(formData.authorId))?.name ||
+            undefined,
+        }}
+      />
     </div>
   );
 }

@@ -8,6 +8,7 @@ export default function LoadLayoutModal({
   onClose,
   layouts,
   onLoad,
+  onCompare,
   onDelete,
   loading
 }) {
@@ -56,14 +57,14 @@ export default function LoadLayoutModal({
           display: 'flex',
           justifyContent: 'space-between',
           alignItems: 'center',
-          background: 'linear-gradient(135deg, #eef2ff, #f5f3ff)'
+          backgroundImage: 'linear-gradient(135deg, #eef2ff, #f5f3ff)'
         }}>
           <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
             <div style={{
               width: '36px',
               height: '36px',
               borderRadius: '10px',
-              background: '#4f46e5',
+              background: '#1d4ed8',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center'
@@ -183,9 +184,32 @@ export default function LoadLayoutModal({
                 </div>
               </div>
 
-              <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onCompare(layout.id);
+                  }}
+                  style={{
+                    border: 'none',
+                    background: '#eff6ff',
+                    color: '#2563eb',
+                    fontSize: '12px',
+                    fontWeight: '600',
+                    padding: '5px 10px',
+                    borderRadius: '8px',
+                    cursor: 'pointer',
+                    transition: 'all 0.2s',
+                    fontFamily: 'inherit',
+                  }}
+                  onMouseEnter={e => e.currentTarget.style.background = '#dbeafe'}
+                  onMouseLeave={e => e.currentTarget.style.background = '#eff6ff'}
+                >
+                  Compare ⚖️
+                </button>
+
                 <span style={{
-                  color: '#4f46e5',
+                  color: '#1d4ed8',
                   fontSize: '13px',
                   fontWeight: '500'
                 }}>
@@ -220,7 +244,7 @@ export default function LoadLayoutModal({
               padding: '12px',
               borderRadius: '10px',
               border: 'none',
-              background: '#4f46e5',
+              background: '#1d4ed8',
               color: '#ffffff',
               fontWeight: '500',
               cursor: 'pointer'

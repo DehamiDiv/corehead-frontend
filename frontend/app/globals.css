@@ -50,3 +50,546 @@ body {
 ::-webkit-scrollbar-thumb:hover {
   background: #cbd5e1;
 }
+
+/* ReactQuill - Custom Undo/Redo toolbar buttons */
+.ql-toolbar .ql-undo::before {
+  content: "↩";
+  font-size: 16px;
+  line-height: 1;
+}
+
+.ql-toolbar .ql-redo::before {
+  content: "↪";
+  font-size: 16px;
+  line-height: 1;
+}
+
+.ql-toolbar .ql-table::before {
+  content: "⊞";
+  font-size: 17px;
+  line-height: 1;
+}
+
+.ql-toolbar .ql-undo,
+.ql-toolbar .ql-redo,
+.ql-toolbar .ql-table {
+  width: 28px;
+  height: 24px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 15px;
+  color: #444;
+  cursor: pointer;
+  border-radius: 6px;
+  transition: all 0.2s ease-in-out;
+}
+
+/* ReactQuill - Toolbar Blue Hover Effects & Active States */
+.ql-toolbar button,
+.ql-toolbar .ql-picker-label {
+  transition: all 0.2s ease-in-out !important;
+  border-radius: 6px !important;
+}
+
+.ql-toolbar button:hover,
+.ql-toolbar button.ql-active,
+.ql-toolbar .ql-picker-label:hover,
+.ql-toolbar .ql-picker-label.ql-active {
+  color: #2563eb !important;
+  background-color: #eff6ff !important;
+}
+
+.ql-toolbar button:hover .ql-stroke,
+.ql-toolbar button.ql-active .ql-stroke,
+.ql-toolbar .ql-picker-label:hover .ql-stroke,
+.ql-toolbar .ql-picker-label.ql-active .ql-stroke {
+  stroke: #2563eb !important;
+}
+
+.ql-toolbar button:hover .ql-fill,
+.ql-toolbar button.ql-active .ql-fill,
+.ql-toolbar .ql-picker-label:hover .ql-fill,
+.ql-toolbar .ql-picker-label.ql-active .ql-fill {
+  fill: #2563eb !important;
+}
+
+.ql-toolbar .ql-picker-item:hover {
+  color: #2563eb !important;
+}
+
+/* Premium Article Typography & Layout (.prose-public) */
+.prose-public {
+  font-size: 1.0625rem;
+  line-height: 1.8;
+  color: #334155;
+}
+
+.prose-public h1,
+.prose-public h2,
+.prose-public h3,
+.prose-public h4,
+.prose-public h5,
+.prose-public h6 {
+  color: #0f172a;
+  font-weight: 800;
+  line-height: 1.3;
+  margin-top: 2.25rem;
+  margin-bottom: 1rem;
+  letter-spacing: -0.015em;
+}
+
+.prose-public h1 { font-size: 2.25rem; }
+.prose-public h2 { font-size: 1.65rem; margin-top: 2.5rem; }
+.prose-public h3 { font-size: 1.35rem; margin-top: 2rem; }
+.prose-public h4 { font-size: 1.15rem; }
+
+.prose-public p {
+  margin-bottom: 1.5rem;
+  color: #334155;
+  word-break: break-word;
+}
+
+.prose-public img {
+  width: 100%;
+  max-width: 100%;
+  height: auto;
+  border-radius: 1rem;
+  margin-top: 2rem;
+  margin-bottom: 2rem;
+  object-fit: cover;
+  box-shadow: 0 10px 30px -10px rgba(0, 0, 0, 0.08);
+  border: 1px solid rgba(226, 232, 240, 0.8);
+}
+
+/* ============================================
+   ReactQuill Toolbar Styling & Alignment Fix
+   ============================================ */
+.ql-toolbar.ql-snow {
+  display: flex !important;
+  flex-wrap: wrap !important;
+  align-items: center !important;
+  gap: 2px 6px !important;
+  padding: 8px 12px !important;
+}
+
+.ql-toolbar.ql-snow .ql-formats {
+  display: inline-flex !important;
+  align-items: center !important;
+  margin-right: 4px !important;
+  margin-top: 0 !important;
+  margin-bottom: 0 !important;
+}
+
+.ql-toolbar.ql-snow button {
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  width: 28px !important;
+  height: 28px !important;
+  padding: 3px !important;
+  border-radius: 6px !important;
+}
+
+.ql-toolbar.ql-snow button:hover {
+  background-color: #e2e8f0 !important;
+}
+
+.ql-toolbar.ql-snow .ql-picker {
+  height: 28px !important;
+}
+
+.ql-toolbar.ql-snow .ql-picker-label {
+  display: inline-flex !important;
+  align-items: center !important;
+  height: 28px !important;
+  padding: 2px 8px !important;
+  border-radius: 6px !important;
+}
+
+/* Hide empty table responsive wrapper containers in Quill editor */
+.ql-editor .table-responsive:empty,
+.ql-editor .table-responsive:not(:has(table)) {
+  display: none !important;
+}
+
+.prose-public blockquote {
+  border-left: 4px solid #2563eb;
+  padding-left: 1.25rem;
+  margin-top: 1.75rem;
+  margin-bottom: 1.75rem;
+  font-style: italic;
+  color: #475569;
+  background-color: #f8fafc;
+  border-radius: 0 0.75rem 0.75rem 0;
+  padding-top: 0.75rem;
+  padding-bottom: 0.75rem;
+}
+
+.prose-public ul {
+  list-style-type: disc;
+  padding-left: 1.5rem;
+  margin-bottom: 1.5rem;
+}
+
+.prose-public ol {
+  list-style-type: decimal;
+  padding-left: 1.5rem;
+  margin-bottom: 1.5rem;
+}
+
+.prose-public li {
+  margin-bottom: 0.5rem;
+}
+
+.prose-public a {
+  color: #2563eb;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  font-weight: 500;
+}
+
+.prose-public a:hover {
+  color: #1d4ed8;
+}
+
+.prose-public code {
+  background-color: #f1f5f9;
+  color: #0f172a;
+  padding: 0.2rem 0.4rem;
+  border-radius: 0.375rem;
+  font-size: 0.875em;
+  font-family: monospace;
+}
+
+.prose-public pre {
+  background-color: #0f172a;
+  color: #e2e8f0;
+  padding: 1.25rem;
+  border-radius: 1rem;
+  overflow-x: auto;
+  margin-top: 1.5rem;
+  margin-bottom: 1.5rem;
+}
+
+.prose-public pre code {
+  background-color: transparent;
+  color: inherit;
+  padding: 0;
+}
+
+/* ============================================
+   Admin UI - Consistent Typography System
+   (Based on /admin/posts page style)
+   ============================================ */
+
+/* Page titles */
+.admin-title {
+  font-size: 32px;
+  font-weight: 700;
+  color: #0f172a;
+  line-height: 1;
+}
+
+/* Page subtitles */
+.admin-subtitle {
+  font-size: 15px;
+  color: #64748b;
+  font-weight: 500;
+  margin-top: 8px;
+}
+
+/* Primary action buttons (Create, etc.) */
+.admin-btn-primary {
+  font-size: 14px;
+  font-weight: 700;
+}
+
+/* Secondary buttons (Refresh, etc.) */
+.admin-btn-secondary {
+  font-size: 14px;
+  font-weight: 700;
+}
+
+/* Form inputs and selects */
+.admin-input {
+  font-size: 14px;
+  font-weight: 500;
+}
+
+/* Table header cells */
+.admin-table-th {
+  font-size: 13px;
+  font-weight: 700;
+  color: #64748b;
+}
+
+/* Table body cells - default */
+.admin-table-td {
+  font-size: 14px;
+  font-weight: 500;
+  color: #0f172a;
+}
+
+/* Table body cells - bold (titles, names) */
+.admin-table-td-bold {
+  font-size: 14px;
+  font-weight: 700;
+  color: #1e2937;
+}
+
+/* Small labels / badges */
+.admin-small {
+  font-size: 12px;
+  font-weight: 700;
+}
+
+/* Public single-post reading experience.
+   These rules intentionally override saved block colours only for the bound
+   article body, so every Appearance theme maintains accessible contrast. */
+.post-reading-surface {
+  width: 100%;
+  min-width: 0;
+}
+
+.post-reading-surface .public-renderer-wrapper {
+  width: 100%;
+  min-width: 0;
+  max-width: 100%;
+}
+
+.post-reading-surface .cms-post-body {
+  width: 100% !important;
+  min-width: 0 !important;
+  max-width: 46rem !important;
+  margin: 2rem auto 0 !important;
+  padding: clamp(1.25rem, 0.8rem + 2vw, 2.25rem) !important;
+  border: 1px solid color-mix(in srgb, var(--site-ink, #0f172a) 10%, transparent);
+  border-radius: calc(var(--site-radius, 1rem) + 0.35rem);
+  background: color-mix(in srgb, var(--site-surface, #ffffff) 94%, transparent);
+  box-shadow: 0 18px 50px color-mix(in srgb, var(--site-ink, #0f172a) 8%, transparent);
+  color: color-mix(
+    in srgb,
+    var(--site-ink, #0f172a) 82%,
+    var(--site-muted, #64748b)
+  ) !important;
+  font-size: clamp(1rem, 0.96rem + 0.2vw, 1.125rem);
+  font-weight: 450;
+  line-height: 1.85 !important;
+  letter-spacing: -0.005em;
+  overflow-wrap: anywhere;
+  word-break: normal;
+  overflow-x: hidden;
+}
+
+.post-reading-surface .cms-post-body *,
+.post-reading-surface .cms-post-body :where(p, h1, h2, h3, h4, h5, h6, li, blockquote) {
+  max-width: 100%;
+  white-space: normal !important;
+  overflow-wrap: anywhere;
+}
+
+.post-reading-surface .cms-post-body :where(p, ul, ol, blockquote, pre, table) {
+  margin-block: 0 1.35em;
+}
+
+.post-reading-surface .cms-post-body :where(p, li, figcaption) {
+  color: color-mix(
+    in srgb,
+    var(--site-ink, #0f172a) 82%,
+    var(--site-muted, #64748b)
+  ) !important;
+}
+
+.post-reading-surface .cms-post-body :where(h1, h2, h3, h4, h5, h6) {
+  margin-block: 1.65em 0.55em;
+  color: var(--site-ink, #0f172a) !important;
+  font-weight: 800;
+  line-height: 1.2;
+  letter-spacing: -0.025em;
+}
+
+.post-reading-surface .cms-post-body h1 {
+  font-size: clamp(2rem, 1.65rem + 1.5vw, 3rem);
+}
+
+.post-reading-surface .cms-post-body h2 {
+  font-size: clamp(1.5rem, 1.3rem + 0.8vw, 2rem);
+}
+
+.post-reading-surface .cms-post-body h3 {
+  font-size: clamp(1.2rem, 1.1rem + 0.45vw, 1.5rem);
+}
+
+.post-reading-surface .cms-post-body :where(ul, ol) {
+  padding-left: 1.5rem;
+}
+
+.post-reading-surface .cms-post-body ul {
+  list-style: disc;
+}
+
+.post-reading-surface .cms-post-body ol {
+  list-style: decimal;
+}
+
+.post-reading-surface .cms-post-body li {
+  margin-block: 0.45em;
+  padding-left: 0.25rem;
+}
+
+.post-reading-surface .cms-post-body :where(strong, b) {
+  color: var(--site-ink, #0f172a) !important;
+  font-weight: 750;
+}
+
+.post-reading-surface .cms-post-body a {
+  color: var(--site-primary, #2563eb) !important;
+  font-weight: 650;
+  text-decoration: underline;
+  text-decoration-thickness: 0.08em;
+  text-underline-offset: 0.18em;
+}
+
+.post-reading-surface .cms-post-body blockquote {
+  border-left: 4px solid var(--site-primary, #2563eb);
+  border-radius: 0 0.8rem 0.8rem 0;
+  background: color-mix(in srgb, var(--site-primary, #2563eb) 9%, transparent);
+  padding: 1rem 1.25rem;
+  color: var(--site-ink, #0f172a) !important;
+  font-style: italic;
+}
+
+.post-reading-surface .cms-post-body :where(img, video) {
+  max-width: 100%;
+  height: auto;
+  border-radius: 1rem;
+}
+
+.post-reading-surface .cms-post-body figure {
+  margin-block: 2rem;
+}
+
+.post-reading-surface .cms-post-body figcaption {
+  margin-top: -1.35rem;
+  text-align: center;
+  color: var(--site-muted, #64748b) !important;
+  font-size: 0.825rem;
+  line-height: 1.5;
+}
+
+.post-reading-surface .cms-post-body table {
+  display: block;
+  width: 100%;
+  max-width: 100%;
+  overflow-x: auto;
+  border-collapse: collapse;
+  border-radius: 0.75rem;
+  -webkit-overflow-scrolling: touch;
+}
+
+.post-reading-surface .cms-post-body :where(th, td) {
+  min-width: 8rem;
+  border: 1px solid color-mix(in srgb, var(--site-ink, #0f172a) 14%, transparent);
+  padding: 0.75rem 0.9rem;
+  text-align: left;
+}
+
+.post-reading-surface .cms-post-body th {
+  background: color-mix(in srgb, var(--site-ink, #0f172a) 6%, transparent);
+  color: var(--site-ink, #0f172a) !important;
+  font-weight: 750;
+}
+
+.post-reading-surface .cms-post-body > :first-child {
+  margin-top: 0;
+}
+
+.post-reading-surface .cms-post-body > :last-child {
+  margin-bottom: 0;
+}
+
+.post-reading-surface .cms-post-body img,
+.prose-public img,
+.ql-editor img {
+  max-width: 100%;
+  height: auto;
+  border-radius: 0.75rem;
+  transition: outline 0.15s ease;
+}
+
+.ql-editor img:hover {
+  outline: 2px dashed #2563eb;
+  outline-offset: 2px;
+  cursor: pointer;
+}
+
+.post-reading-surface .cms-post-body p::after,
+.prose-public p::after {
+  content: "";
+  display: table;
+  clear: both;
+}
+
+.post-reading-surface .cms-post-body pre {
+  max-width: 100%;
+  overflow-x: auto;
+  border: 1px solid color-mix(in srgb, var(--site-ink, #0f172a) 14%, transparent);
+  border-radius: 0.9rem;
+  background: color-mix(in srgb, var(--site-ink, #0f172a) 8%, transparent);
+  padding: 1rem;
+}
+
+.post-reading-surface .cms-post-body :not(pre) > code {
+  border-radius: 0.35rem;
+  background: color-mix(in srgb, var(--site-ink, #0f172a) 9%, transparent);
+  padding: 0.12em 0.35em;
+  color: var(--site-ink, #0f172a) !important;
+  font-size: 0.9em;
+}
+
+.post-reading-surface .cms-post-body hr {
+  margin-block: 2.5rem;
+  border-color: color-mix(in srgb, var(--site-ink, #0f172a) 14%, transparent);
+}
+
+/* ==========================================================================
+   Quill Editor Formatting Restores (Fixes bold, italic, underline, headers)
+   ========================================================================== */
+.ql-editor strong, .ql-editor b {
+  font-weight: 700 !important;
+}
+
+.ql-editor em, .ql-editor i {
+  font-style: italic !important;
+}
+
+.ql-editor u {
+  text-decoration: underline !important;
+}
+
+.ql-editor s, .ql-editor strike {
+  text-decoration: line-through !important;
+}
+
+.ql-editor h1 {
+  font-size: 2.25rem !important;
+  font-weight: 800 !important;
+  margin-top: 1.5rem !important;
+  margin-bottom: 0.75rem !important;
+}
+
+.ql-editor h2 {
+  font-size: 1.8rem !important;
+  font-weight: 700 !important;
+  margin-top: 1.25rem !important;
+  margin-bottom: 0.5rem !important;
+}
+
+.ql-editor h3 {
+  font-size: 1.5rem !important;
+  font-weight: 700 !important;
+  margin-top: 1rem !important;
+  margin-bottom: 0.5rem !important;
+}
+

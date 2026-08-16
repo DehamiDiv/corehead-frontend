@@ -10,6 +10,9 @@ import {
 } from "lucide-react";
 import { useBuilder } from "@/components/admin/builder/BuilderContext";
 import { useState } from "react";
+import { api } from "@/lib/api";
+import { resolveAdminMediaUrl } from "@/lib/apiOrigin";
+import { extractUploadedMediaUrl, normalizeMediaPath } from "@/lib/siteMedia";
 
 export default function SettingsPanel() {
   const { blocks, selectedBlockId, updateBlock, removeBlock, templateName, setTemplateName, templateType, setTemplateType } = useBuilder();
@@ -50,9 +53,10 @@ export default function SettingsPanel() {
             >
               <option value="Single Post">Single Post Template</option>
               <option value="Blog Archive">Blog Archive Template</option>
+              <option value="Home Page">Home Page Template</option>
             </select>
             <p className="text-[11px] text-slate-500 mt-1">
-              "Single Post" is used for individual articles. "Blog Archive" is used for category and index pages displaying lists.
+              Single Post controls articles, Blog Archive controls post listings, and Home Page controls the public site landing page.
             </p>
           </div>
 
@@ -330,10 +334,15 @@ export default function SettingsPanel() {
                   <option value="post.title">Post Title</option>
                   <option value="post.excerpt">Post Excerpt</option>
                   <option value="post.content">Post Body (Markdown)</option>
+                  <option value="post.contentHtml">Post Body (HTML)</option>
                   <option value="post.featured_image">Featured Image URL</option>
-                  <option value="post.author">Author Name</option>
-                  <option value="post.date">Publish Date</option>
+                  <option value="post.author.name">Author Name</option>
+                  <option value="post.publishedAt">Publish Date</option>
                   <option value="site.name">Site Name</option>
+                  <option value="site.tagline">Site Tagline</option>
+                  <option value="site.description">Site Description</option>
+                  <option value="site.logo">Site Logo</option>
+                  <option value="site.heroImage">Site Hero Image</option>
                 </select>
                 <p className="text-[10px] text-blue-600 mt-1">
                   Overrides static content with dynamic data.
@@ -385,22 +394,58 @@ function ContentTab({ selectedBlock, updateBlock }: any) {
       </div>
     );
   }
-  if (selectedBlock.type === "Image") {
-    return (
-      <div className="space-y-2">
-        <label className="text-sm text-slate-700">Image URL</label>
-        <input
-          type="text"
-          value={selectedBlock.content}
+      if (selectedBlock.type === "Image") {
+      const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = async () => {
+          const base64Data = reader.result as string;
+          try {
+            const uploaded = await api.uploadMedia({
+              name: file.name,
+              type: file.type,
+              size: String(file.size),
+              base64Data,
+            });
+            const rawUrl = extractUploadedMediaUrl(uploaded) || "";
+            const stored = normalizeMediaPath(rawUrl) || rawUrl;
+            updateBlock(selectedBlock.id, resolveAdminMediaUrl(stored) || stored);
+          } catch (err) {
+            console.error("Upload failed", err);
+          }
+        };
+        reader.readAsDataURL(file);
+      };
+
+      return (
+        <div className="space-y-2">
+          <div className="flex justify-between items-center mb-1">
+            <label className="text-sm text-slate-700">Image URL</label>
+            <label className="cursor-pointer text-xs font-semibold text-blue-600 bg-blue-50 px-2 py-1 rounded-md hover:bg-blue-100 transition-colors">
+              Upload from Device
+              <input type="file" className="hidden" accept="image/*" onChange={handleImageUpload} />
+            </label>
+          </div>
+          <input
+            type="text"
+            value={selectedBlock.content}
           onChange={(e) => updateBlock(selectedBlock.id, e.target.value)}
           className="w-full px-3 py-2 bg-slate-50 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 outline-none"
         />
-        <div className="mt-2 rounded-lg overflow-hidden border border-gray-200 aspect-video bg-slate-100 relative">
-          <img
-            src={selectedBlock.content}
-            alt="Preview"
-            className="w-full h-full object-cover"
-          />
+        <div className="mt-2 rounded-lg overflow-hidden border border-gray-200 aspect-video bg-slate-100 relative flex items-center justify-center">
+          {selectedBlock.content && typeof selectedBlock.content === "string" && selectedBlock.content.trim() !== "" ? (
+            <img
+              src={selectedBlock.content}
+              alt="Preview"
+              className="w-full h-full object-cover"
+            />
+          ) : (
+            <div className="text-center text-slate-400">
+              <ImageIcon className="w-8 h-8 mx-auto mb-1 opacity-60" />
+              <p className="text-xs">Preview will appear here</p>
+            </div>
+          )}
         </div>
       </div>
     );
@@ -558,23 +603,44 @@ function ContentTab({ selectedBlock, updateBlock }: any) {
   }
 
   if (selectedBlock.type === "Newsletter") {
+    const c = selectedBlock.content || {};
     return (
       <div className="space-y-4">
         <div className="space-y-2">
           <label className="text-sm text-slate-700">Form Title</label>
           <input
             type="text"
-            value={selectedBlock.content.title}
-            onChange={(e) => updateBlock(selectedBlock.id, { ...selectedBlock.content, title: e.target.value })}
+            value={c.title || ""}
+            onChange={(e) => updateBlock(selectedBlock.id, { ...c, title: e.target.value })}
             className="w-full px-3 py-2 bg-slate-50 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 outline-none"
+          />
+        </div>
+        <div className="space-y-2">
+          <label className="text-sm text-slate-700">Description</label>
+          <textarea
+            value={c.description || ""}
+            onChange={(e) => updateBlock(selectedBlock.id, { ...c, description: e.target.value })}
+            rows={2}
+            className="w-full px-3 py-2 bg-slate-50 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 outline-none resize-y"
+            placeholder="Stay updated with our latest stories..."
+          />
+        </div>
+        <div className="space-y-2">
+          <label className="text-sm text-slate-700">Placeholder</label>
+          <input
+            type="text"
+            value={c.placeholder || ""}
+            onChange={(e) => updateBlock(selectedBlock.id, { ...c, placeholder: e.target.value })}
+            className="w-full px-3 py-2 bg-slate-50 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 outline-none"
+            placeholder="your@email.com"
           />
         </div>
         <div className="space-y-2">
           <label className="text-sm text-slate-700">Button Text</label>
           <input
             type="text"
-            value={selectedBlock.content.buttonText}
-            onChange={(e) => updateBlock(selectedBlock.id, { ...selectedBlock.content, buttonText: e.target.value })}
+            value={c.buttonText || ""}
+            onChange={(e) => updateBlock(selectedBlock.id, { ...c, buttonText: e.target.value })}
             className="w-full px-3 py-2 bg-slate-50 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 outline-none"
           />
         </div>
@@ -632,3 +698,4 @@ function ContentTab({ selectedBlock, updateBlock }: any) {
     </p>
   );
 }
+

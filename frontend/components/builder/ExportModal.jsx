@@ -25,7 +25,7 @@ export default function ExportModal({ isOpen, onClose, blogPosts, contentMode })
     .card { background: #fff; border-radius: 16px; overflow: hidden; box-shadow: 0 2px 12px rgba(0,0,0,0.08); }
     .card img { width: 100%; height: 200px; object-fit: cover; }
     .card-body { padding: 20px; }
-    .category { font-size: 11px; text-transform: uppercase; letter-spacing: 1px; color: #667eea; font-weight: 600; margin-bottom: 8px; }
+    .category { font-size: 11px; text-transform: uppercase; letter-spacing: 1px; color: #1d4ed8; font-weight: 600; margin-bottom: 8px; }
     .card-body h2 { font-size: 1.1rem; margin-bottom: 8px; line-height: 1.4; }
     .card-body p { font-size: 0.875rem; color: #666; line-height: 1.6; margin-bottom: 16px; }
     .meta { font-size: 0.75rem; color: #aaa; display: flex; justify-content: space-between; padding-top: 12px; border-top: 1px solid #f0f0f0; }
@@ -97,13 +97,13 @@ export default function ExportModal({ isOpen, onClose, blogPosts, contentMode })
           padding: '20px 24px',
           borderBottom: '1px solid #f0f0f0',
           display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-          background: 'linear-gradient(135deg, rgba(102,126,234,0.08) 0%, rgba(118,75,162,0.08) 100%)',
+          backgroundImage: 'linear-gradient(135deg, rgba(29,78,216,0.08) 0%, rgba(118,75,162,0.08) 100%)',
           borderRadius: '20px 20px 0 0'
         }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
             <div style={{
               width: '36px', height: '36px', borderRadius: '10px',
-              background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+              backgroundImage: 'linear-gradient(135deg, #1d4ed8 0%, #1e3a8a 100%)',
               display: 'flex', alignItems: 'center', justifyContent: 'center'
             }}>
               <Download size={18} color="#fff" />
@@ -141,12 +141,12 @@ export default function ExportModal({ isOpen, onClose, blogPosts, contentMode })
                 onClick={() => setExportType(id)}
                 style={{
                   flex: 1, padding: '10px 16px',
-                  border: `2px solid ${exportType === id ? '#667eea' : '#e5e5e5'}`,
+                  border: `2px solid ${exportType === id ? '#1d4ed8' : '#e5e5e5'}`,
                   borderRadius: '10px', cursor: 'pointer',
                   background: exportType === id
-                    ? 'linear-gradient(135deg, rgba(102,126,234,0.08) 0%, rgba(118,75,162,0.08) 100%)'
+                    ? 'linear-gradient(135deg, rgba(29,78,216,0.08) 0%, rgba(118,75,162,0.08) 100%)'
                     : '#fff',
-                  color: exportType === id ? '#667eea' : '#555',
+                  color: exportType === id ? '#1d4ed8' : '#555',
                   fontWeight: exportType === id ? '700' : '500',
                   display: 'flex', alignItems: 'center',
                   justifyContent: 'center', gap: '8px',
@@ -217,7 +217,7 @@ export default function ExportModal({ isOpen, onClose, blogPosts, contentMode })
               flex: 2, padding: '11px',
               background: isEmpty
                 ? '#e5e5e5'
-                : 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                : 'linear-gradient(135deg, #1d4ed8 0%, #1e3a8a 100%)',
               color: isEmpty ? '#aaa' : '#fff',
               border: 'none', borderRadius: '10px',
               cursor: isEmpty ? 'not-allowed' : 'pointer',
@@ -225,7 +225,7 @@ export default function ExportModal({ isOpen, onClose, blogPosts, contentMode })
               display: 'flex', alignItems: 'center',
               justifyContent: 'center', gap: '8px',
               fontFamily: 'inherit',
-              boxShadow: isEmpty ? 'none' : '0 4px 12px rgba(102,126,234,0.4)',
+              boxShadow: isEmpty ? 'none' : '0 4px 12px rgba(29,78,216,0.4)',
               opacity: isEmpty ? 0.6 : 1
             }}
           >

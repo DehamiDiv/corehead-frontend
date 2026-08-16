@@ -16,82 +16,142 @@ import {
   LayoutTemplate,
   Sparkles,
   PanelLeft,
+  Globe2,
+  UserPlus,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { isPlatformAdmin } from "@/lib/rbac";
+import { getApiBaseUrl, resolveAdminMediaUrl } from "@/lib/apiOrigin";
 
 type NavItem = {
   label: string;
   href: string;
   Icon: any;
+  /** Platform super-admin only (not site owners) */
+  platformAdminOnly?: boolean;
 };
 
-export default function Sidebar() {
+export default function Sidebar({ isOpen = true }: { isOpen?: boolean }) {
   const pathname = usePathname();
+  const pathnameNormalized = pathname || "";
   const [settingsOpen, setSettingsOpen] = useState(true);
-  const [user, setUser] = useState<{ name?: string; role?: string; email?: string; createdAt?: string } | null>(null);
+  const [user, setUser] = useState<{
+    name?: string;
+    role?: string;
+    email?: string;
+    avatar?: string;
+    image?: string;
+  } | null>(null);
+  const [credits, setCredits] = useState<{ total: number; used: number; status: string } | null>(null);
 
   useEffect(() => {
-    const fetchUser = async () => {
-      try {
-        const storedUser = localStorage.getItem('user');
-        if (storedUser) {
-          try {
-            setUser(JSON.parse(storedUser));
-          } catch (e) {
-            console.error("Error parsing stored user:", e);
-            localStorage.removeItem('user');
-          }
+    const handleStorageChange = () => {
+      const stored = localStorage.getItem('user');
+      if (stored) {
+        try {
+          const parsed = JSON.parse(stored);
+          setUser(parsed);
+          setCredits({
+            total: parsed.ai_credits ?? 5,
+            used: parsed.ai_credits_used ?? 0,
+            status: parsed.subscription_status ?? "FREE"
+          });
+        } catch (e) {
+          console.error("Error parsing user inside Sidebar handler:", e);
         }
-      } catch (error) {
-        console.error("Failed to load user info:", error);
       }
     };
-    fetchUser();
+
+    handleStorageChange();
+
+    const token = localStorage.getItem('accessToken') || localStorage.getItem('token');
+    if (token) {
+      fetch(`${getApiBaseUrl()}/auth/me`, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      })
+        .then(res => res.json())
+        .then(data => {
+          if (data.user) {
+            setUser(data.user);
+            localStorage.setItem("user", JSON.stringify(data.user));
+            setCredits({
+              total: data.user.ai_credits ?? 5,
+              used: data.user.ai_credits_used ?? 0,
+              status: data.user.subscription_status ?? "FREE"
+            });
+          }
+        })
+        .catch(err => console.error("Error updating user info in Sidebar:", err));
+    }
+
+    window.addEventListener('storage', handleStorageChange);
+    window.addEventListener('local-storage-update', handleStorageChange);
+
+    return () => {
+      window.removeEventListener('storage', handleStorageChange);
+      window.removeEventListener('local-storage-update', handleStorageChange);
+    };
   }, []);
+
+  const displayName = user?.name || user?.email || "Admin";
+  const avatarSrc =
+    resolveAdminMediaUrl(user?.avatar || user?.image) ||
+    `https://ui-avatars.com/api/?name=${encodeURIComponent(displayName)}&background=0f172a&color=fff&bold=true&size=128`;
 
   const navItems: NavItem[] = useMemo(
     () => {
-      const allItems = [
-        { label: "AI Generator",   href: "/ai-prompt",        Icon: Sparkles       },
-        { label: "Posts",         href: "/admin/posts",      Icon: FileText       },
-        { label: "Layouts",       href: "/admin/layouts",    Icon: LayoutTemplate },
-        { label: "Visual Builder",href: "/admin/builder",    Icon: PanelLeft      },
-        { label: "Categories",    href: "/admin/categories", Icon: Tags,           adminOnly: true },
-        { label: "Media Library", href: "/admin/media",      Icon: ImageIcon      },
-        { label: "Interactions",  href: "/admin/comments",   Icon: MessageSquare, adminOnly: true },
-        { label: "Users",         href: "/admin/users",      Icon: Users,          adminOnly: true },
-        { label: "Pages",         href: "/admin/pages",      Icon: File,           adminOnly: true },
+      // R1-1: site CMS menus available to all site operators (not only platform admin).
+      // R1-2: only Users is platformAdminOnly.
+      const allItems: NavItem[] = [
+        { label: "AI Generator", href: "/ai-prompt", Icon: Sparkles },
+        { label: "My Sites", href: "/admin/sites", Icon: Globe2 },
+        { label: "Team", href: "/admin/team", Icon: UserPlus },
+        { label: "Posts", href: "/admin/posts", Icon: FileText },
+        { label: "Layouts", href: "/admin/layouts", Icon: LayoutTemplate },
+        { label: "Template Assign", href: "/admin/template-assignment", Icon: LayoutTemplate },
+        { label: "Visual Builder", href: "/admin/builder", Icon: PanelLeft },
+        { label: "Categories", href: "/admin/categories", Icon: Tags },
+        { label: "Media Library", href: "/admin/media", Icon: ImageIcon },
+        { label: "Interactions", href: "/admin/comments", Icon: MessageSquare },
+        // R3-1: site-scoped custom HTML pages
+        { label: "Pages", href: "/admin/pages", Icon: File },
+        { label: "Users", href: "/admin/users", Icon: Users, platformAdminOnly: true },
       ];
 
-      // If user is not admin, filter out adminOnly items
-      if (user?.role !== 'admin') {
-        return allItems.filter(item => !item.adminOnly);
+      if (!isPlatformAdmin(user?.role)) {
+        return allItems.filter((item) => !item.platformAdminOnly);
       }
       return allItems;
     },
     [user?.role]
   );
 
-  const isActive = (href: string) => pathname === href || pathname.startsWith(href + "/");
+  const isActive = (href: string) => {
+    const currentPath = pathname || "";
+    return currentPath === href || currentPath.startsWith(href + "/");
+  };
 
   return (
-    <aside className="fixed top-0 left-0 h-screen w-[280px] bg-white border-r border-gray-100 flex flex-col z-50">
-      {/* Logo */}
-      <div className="h-24 px-8 flex items-center">
-        <Link href="/" className="flex items-center">
-          <Image 
-            src="/logo.png" 
-            alt="CoreHead Logo" 
-            width={160} 
-            height={40} 
-            className="h-14 w-auto object-contain" 
+    <aside className={cn(
+      "fixed top-0 left-0 h-screen w-[250px] bg-white flex flex-col z-50 transition-transform duration-300 ease-in-out border-r border-slate-50",
+      !isOpen && "-translate-x-full"
+    )}>
+      {/* Logo Section */}
+      <div className="h-[100px] px-5 flex items-center justify-center">
+        <Link href="/" className="flex items-center justify-center transition-transform hover:scale-105 active:scale-95">
+          <Image
+            src="/logo.png"
+            alt="CoreHead Logo"
+            width={200}
+            height={56}
+            className="h-14 w-auto object-contain"
             priority
           />
         </Link>
       </div>
 
-      {/* Nav */}
-      <nav className="flex-1 px-4 py-4 space-y-1 overflow-y-auto custom-scrollbar">
+      {/* Navigation Menu */}
+      <nav className="flex-1 px-4 py-2 space-y-2 overflow-y-auto custom-scrollbar">
         {navItems.map(({ label, href, Icon }) => {
           const active = isActive(href);
 
@@ -100,70 +160,72 @@ export default function Sidebar() {
               key={href}
               href={href}
               className={cn(
-                "flex items-center gap-3 px-3 py-2.5 rounded-2xl text-[15px] font-semibold transition-all duration-200",
+                "flex items-center gap-3 px-3 h-[48px] rounded-xl transition-all duration-200 group",
                 active
-                  ? "bg-blue-50/50 text-blue-600 shadow-sm shadow-blue-50/20"
-                  : "text-slate-600 hover:bg-slate-50 hover:text-slate-900"
+                  ? "bg-[#E8F0FE] text-[#2563EB]"
+                  : "text-[#64748B] hover:bg-slate-50 hover:text-[#1E293B]"
               )}
             >
-              {/* icon chip */}
-              <span
+              <div
                 className={cn(
-                  "h-10 w-10 rounded-xl flex items-center justify-center transition-all duration-200",
+                  "h-8 w-8 rounded-lg flex items-center justify-center transition-all duration-200",
                   active
-                    ? "bg-blue-100 text-blue-600"
-                    : "bg-gray-50 text-gray-400 group-hover:bg-white border border-transparent group-hover:border-gray-100"
+                    ? "bg-[#C6D9FB] text-[#2563EB]"
+                    : "bg-slate-50 text-slate-400 group-hover:bg-white border border-transparent group-hover:border-gray-100"
                 )}
               >
-                <Icon size={20} />
-              </span>
+                <Icon size={20} strokeWidth={active ? 2.5 : 2} />
+              </div>
 
-              <span>{label}</span>
+              <span className={cn(
+                "text-[14px] font-bold tracking-tight",
+                active ? "text-[#2563EB]" : "text-[#1E293B]"
+              )}>{label}</span>
             </Link>
           );
         })}
 
-        {/* Settings row */}
+        {/* Settings Dropdown */}
         <div className="pt-2">
           <button
             onClick={() => setSettingsOpen((v) => !v)}
             className={cn(
-              "w-full flex items-center justify-between px-3 py-2.5 rounded-2xl text-[15px] font-semibold text-slate-600 hover:bg-slate-50 hover:text-slate-900 transition-all duration-200",
-              settingsOpen && "bg-slate-50/30"
+              "w-full flex items-center justify-between px-3 h-[48px] rounded-xl transition-all duration-200 group",
+              settingsOpen ? "text-[#1E293B]" : "text-[#64748B] hover:bg-slate-50 hover:text-[#1E293B]"
             )}
           >
             <span className="flex items-center gap-3">
-              <span className="h-10 w-10 rounded-xl bg-gray-50 flex items-center justify-center text-gray-400">
-                <SettingsIcon size={20} />
-              </span>
-              Settings
+              <div className="h-8 w-8 flex items-center justify-center">
+                <SettingsIcon size={20} strokeWidth={2} />
+              </div>
+              <span className="text-[14px] font-bold tracking-tight">Settings</span>
             </span>
             <ChevronDown
-              size={18}
-              className={cn("text-gray-400 transition-transform duration-300", settingsOpen && "rotate-180")}
+              size={16}
+              className={cn("text-slate-400 transition-transform duration-300", settingsOpen && "rotate-180")}
             />
           </button>
 
           {settingsOpen && (
-            <div className="mt-2 ml-4 space-y-1 animate-in slide-in-from-top-2 duration-300">
+            <div className="mt-1 space-y-1 animate-in slide-in-from-top-2 duration-300">
               {[
                 { label: "Profile Settings", href: "/admin/settings/profile" },
                 { label: "Website Settings", href: "/admin/settings/website" },
-                { label: "Appearance",       href: "/admin/settings/appearance" },
+                { label: "Appearance", href: "/admin/settings/appearance" },
               ].map((subItem) => (
                 <Link
                   key={subItem.href}
                   href={subItem.href}
                   className={cn(
-                    "flex items-center gap-3 px-10 py-2.5 rounded-xl text-sm font-semibold transition-all duration-200",
+                    "flex items-center gap-3 px-10 h-[38px] rounded-lg text-[13px] font-bold transition-all duration-200",
                     isActive(subItem.href)
-                      ? "text-blue-600"
-                      : "text-slate-500 hover:text-slate-900"
+                      ? "text-[#2563EB] bg-blue-50/50"
+                      : "text-[#64748B] hover:text-[#1E293B] hover:bg-slate-50/50"
                   )}
                 >
                   <div className={cn(
                     "w-1.5 h-1.5 rounded-full",
-                    isActive(subItem.href) ? "bg-blue-600" : "bg-gray-300"
+                    isActive(subItem.href) ? "bg-[#2563EB]" : "bg-slate-300"
                   )} />
                   {subItem.label}
                 </Link>
@@ -173,11 +235,59 @@ export default function Sidebar() {
         </div>
       </nav>
 
-      {/* Profile/Footer */}
-      <div className="p-6 border-t border-gray-50">
-        <div className="flex items-center gap-3 p-2 rounded-2xl hover:bg-gray-50 transition-colors cursor-pointer">
-          <div className="w-10 h-10 rounded-xl bg-gray-900 text-white flex items-center justify-center font-bold">
-            {user?.name?.charAt(0).toUpperCase() || user?.email?.charAt(0).toUpperCase() || "A"}
+      {/* Credit & Plan Info */}
+      <div className="px-6 py-4 border-t border-slate-50">
+        <div className="bg-slate-50 rounded-2xl p-4 space-y-3.5 border border-slate-100/50">
+          <div className="flex items-center justify-between">
+            <span className="text-[12px] font-bold text-slate-500">Plan Option</span>
+            <span className={cn(
+              "text-[10px] font-extrabold px-2.5 py-0.5 rounded-full uppercase tracking-wider",
+              credits?.status === "PRO" ? "bg-amber-100 text-amber-700" : "bg-slate-200 text-slate-600"
+            )}>
+              {credits?.status || "FREE"}
+            </span>
+          </div>
+          {credits?.status !== "PRO" && (
+            <>
+              <div className="space-y-1.5Packed">
+                <div className="flex justify-between items-center text-[11px] font-bold text-slate-500">
+                  <span>AI Generations</span>
+                  <span>{Math.min(credits?.used ?? 0, credits?.total ?? 5)} / {credits?.total ?? 5} used</span>
+                </div>
+                <div className="w-full h-1.5 bg-slate-200 rounded-full overflow-hidden">
+                  <div
+                    className="h-full bg-blue-600 transition-all duration-500 ease-out"
+                    style={{ width: `${Math.min(((credits?.used ?? 0) / (credits?.total ?? 5)) * 100, 100)}%` }}
+                  />
+                </div>
+              </div>
+              <Link
+                href="/pricing"
+                className="block text-center text-[12px] font-bold text-blue-600 hover:text-blue-700 hover:underline pt-0.5"
+              >
+                Upgrade to PRO 🚀
+              </Link>
+            </>
+          )}
+          {credits?.status === "PRO" && (
+            <p className="text-[11px] text-amber-700 font-bold flex items-center gap-1.5">
+              <Sparkles className="w-4 h-4 text-amber-500 animate-pulse" /> Unlimited AI Enabled
+            </p>
+          )}
+        </div>
+      </div>
+      <div className="p-6 border-t border-slate-50 mt-auto">
+        <Link
+          href="/admin/settings/profile"
+          className="flex items-center gap-3 p-2 rounded-2xl hover:bg-slate-50 transition-colors"
+        >
+          <div className="relative h-10 w-10 shrink-0 rounded-full overflow-hidden border-2 border-white ring-2 ring-slate-200 shadow-sm bg-slate-100">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src={avatarSrc}
+              alt={displayName}
+              className="absolute inset-0 h-full w-full object-cover object-center"
+            />
           </div>
           <div className="flex-1 min-w-0">
             <p className="text-sm font-bold text-slate-900 truncate">
@@ -187,168 +297,8 @@ export default function Sidebar() {
               {user?.role || "Account"}
             </p>
           </div>
-        </div>
-      </div>
-    </aside>
-  );
-}
-"use client";
-
-import Image from "next/image";
-import Link from "next/link";
-import { usePathname } from "next/navigation";
-import { useMemo, useState } from "react";
-import {
-  FileText,
-  Tags,
-  Image as ImageIcon,
-  MessageSquare,
-  Users,
-  File,
-  Settings as SettingsIcon,
-  ChevronDown,
-  LayoutTemplate,
-  Sparkles,
-} from "lucide-react";
-import { cn } from "@/lib/utils";
-
-type NavItem = {
-  label: string;
-  href: string;
-  Icon: any;
-};
-
-export default function Sidebar() {
-  const pathname = usePathname();
-  const [settingsOpen, setSettingsOpen] = useState(true);
-
-  const navItems: NavItem[] = useMemo(
-    () => [
-      { label: "Posts",         href: "/admin/posts",      Icon: FileText       },
-      { label: "Layouts",       href: "/admin/layouts",    Icon: LayoutTemplate },
-      { label: "Categories",    href: "/admin/categories", Icon: Tags           },
-      { label: "Media Library", href: "/admin/media",      Icon: ImageIcon      },
-      { label: "Interactions",  href: "/admin/comments",   Icon: MessageSquare  },
-      { label: "Users",         href: "/admin/users",      Icon: Users          },
-      { label: "Pages",         href: "/admin/pages",      Icon: File           },
-      { label: "AI Generator",  href: "/ai-prompt",        Icon: Sparkles       },
-    ],
-    []
-  );
-
-  const isActive = (href: string) => pathname === href || pathname.startsWith(href + "/");
-
-  return (
-    <aside className="fixed top-0 left-0 h-screen w-[280px] bg-white border-r border-gray-100 flex flex-col z-50">
-      {/* Logo */}
-      <div className="h-24 px-8 flex items-center">
-        <Link href="/" className="flex items-center">
-          <Image 
-            src="/logo.png" 
-            alt="CoreHead Logo" 
-            width={160} 
-            height={40} 
-            className="h-14 w-auto object-contain" 
-            priority
-          />
         </Link>
       </div>
-
-      {/* Nav */}
-      <nav className="flex-1 px-4 py-4 space-y-1 overflow-y-auto custom-scrollbar">
-        {navItems.map(({ label, href, Icon }) => {
-          const active = isActive(href);
-
-          return (
-            <Link
-              key={href}
-              href={href}
-              className={cn(
-                "flex items-center gap-3 px-3 py-2.5 rounded-2xl text-[15px] font-semibold transition-all duration-200",
-                active
-                  ? "bg-blue-50/50 text-blue-600 shadow-sm shadow-blue-50/20"
-                  : "text-slate-600 hover:bg-slate-50 hover:text-slate-900"
-              )}
-            >
-              {/* icon chip */}
-              <span
-                className={cn(
-                  "h-10 w-10 rounded-xl flex items-center justify-center transition-all duration-200",
-                  active
-                    ? "bg-blue-100 text-blue-600"
-                    : "bg-gray-50 text-gray-400 group-hover:bg-white border border-transparent group-hover:border-gray-100"
-                )}
-              >
-                <Icon size={20} />
-              </span>
-
-              <span>{label}</span>
-            </Link>
-          );
-        })}
-
-        {/* Settings row */}
-        <div className="pt-2">
-          <button
-            onClick={() => setSettingsOpen((v) => !v)}
-            className={cn(
-              "w-full flex items-center justify-between px-3 py-2.5 rounded-2xl text-[15px] font-semibold text-slate-600 hover:bg-slate-50 hover:text-slate-900 transition-all duration-200",
-              settingsOpen && "bg-slate-50/30"
-            )}
-          >
-            <span className="flex items-center gap-3">
-              <span className="h-10 w-10 rounded-xl bg-gray-50 flex items-center justify-center text-gray-400">
-                <SettingsIcon size={20} />
-              </span>
-              Settings
-            </span>
-            <ChevronDown
-              size={18}
-              className={cn("text-gray-400 transition-transform duration-300", settingsOpen && "rotate-180")}
-            />
-          </button>
-
-          {settingsOpen && (
-            <div className="mt-2 ml-4 space-y-1 animate-in slide-in-from-top-2 duration-300">
-              {[
-                { label: "Profile Settings", href: "/admin/settings/profile" },
-                { label: "Website Settings", href: "/admin/settings/website" },
-                { label: "Appearance",       href: "/admin/settings/appearance" },
-              ].map((subItem) => (
-                <Link
-                  key={subItem.href}
-                  href={subItem.href}
-                  className={cn(
-                    "flex items-center gap-3 px-10 py-2.5 rounded-xl text-sm font-semibold transition-all duration-200",
-                    isActive(subItem.href)
-                      ? "text-blue-600"
-                      : "text-slate-500 hover:text-slate-900"
-                  )}
-                >
-                  <div className={cn(
-                    "w-1.5 h-1.5 rounded-full",
-                    isActive(subItem.href) ? "bg-blue-600" : "bg-gray-300"
-                  )} />
-                  {subItem.label}
-                </Link>
-              ))}
-            </div>
-          )}
-        </div>
-      </nav>
-
-      {/* Profile/Footer */}
-      <div className="p-6 border-t border-gray-50">
-        <div className="flex items-center gap-3 p-2 rounded-2xl hover:bg-gray-50 transition-colors cursor-pointer">
-          <div className="w-10 h-10 rounded-xl bg-gray-900 text-white flex items-center justify-center font-bold">
-            D
-          </div>
-          <div className="flex-1 min-w-0">
-            <p className="text-sm font-bold text-slate-900 truncate">Dehami Div</p>
-            <p className="text-[11px] text-slate-400 truncate">Admin Account</p>
-          </div>
-        </div>
-      </div>
-    </aside>
+    </aside >
   );
 }

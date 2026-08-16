@@ -1,97 +1,313 @@
 "use client";
 
-import { MessageSquare, Check, X, Trash2 } from "lucide-react";
+import { useState, useEffect, useCallback, useMemo } from "react";
+import {
+  MessageSquare,
+  FileText,
+  RotateCcw,
+  ExternalLink,
+  Trash2,
+  Loader2,
+  ChevronRight,
+} from "lucide-react";
+import { cn } from "@/lib/utils";
+import { api } from "@/lib/api";
+import EmptyState from "@/components/ui/EmptyState";
 
-const comments = [
-  {
-    id: 1,
-    author: "Alice Johnson",
-    content: "Great guide! Very helpful for beginners.",
-    post: "Getting Started with React",
-    date: "2 hours ago",
-    status: "Pending",
-  },
-  {
-    id: 2,
-    author: "Bob Smith",
-    content: "I think you missed a point about hooks...",
-    post: "Advanced React Patterns",
-    date: "5 hours ago",
-    status: "Approved",
-  },
-];
+interface Comment {
+  id: number;
+  content: string;
+  status: string;
+  postTitle: string;
+  postSlug?: string;
+  userName: string;
+  userAvatar?: string;
+  createdAt: string;
+}
 
 export default function CommentsPage() {
+  const [comments, setComments] = useState<Comment[]>([]);
+  const [activeTab, setActiveTab] = useState("Recent Comments");
+  const [isLoading, setIsLoading] = useState(true);
+
+  const fetchComments = useCallback(async () => {
+    setIsLoading(true);
+    try {
+      const data = await api.getComments();
+      setComments(Array.isArray(data) ? data : []);
+    } catch (error) {
+      console.error("Failed to fetch comments:", error);
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchComments();
+  }, [fetchComments]);
+
+  const handleDelete = async (id: number) => {
+    if (!confirm("Are you sure you want to delete this comment?")) return;
+    try {
+      await api.deleteComment(id);
+      setComments((prev) => prev.filter((c) => c.id !== id));
+    } catch (error) {
+      console.error("Delete failed:", error);
+    }
+  };
+
+  // Comment text is read-only in admin (view + delete only)
+
+  const postInteractions = useMemo(() => {
+    const groups: Record<string, { postTitle: string; count: number; latestDate: string }> = {};
+    comments.forEach((c) => {
+      if (!groups[c.postTitle]) {
+        groups[c.postTitle] = { postTitle: c.postTitle, count: 0, latestDate: c.createdAt };
+      }
+      groups[c.postTitle].count++;
+      if (new Date(c.createdAt) > new Date(groups[c.postTitle].latestDate)) {
+        groups[c.postTitle].latestDate = c.createdAt;
+      }
+    });
+    return Object.values(groups).sort((a, b) => b.count - a.count);
+  }, [comments]);
+
+  const formatDate = (dateStr: string) => {
+    const d = new Date(dateStr);
+    return {
+      date: d.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }),
+      time: d.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
+    };
+  };
+
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
+    <div className="max-w-[1200px] mx-auto pt-8 pb-32 px-6">
+      {/* Header */}
+      <div className="flex items-center justify-between mb-6">
         <div>
-          <h1 className="text-2xl font-bold text-slate-800">Comments</h1>
-          <p className="text-slate-500 mt-1">Moderate user comments.</p>
+          <h1 className="admin-title">Interactions</h1>
+          <p className="text-[14px] text-[#64748B] mt-0.5">
+            View and manage blog interactions
+          </p>
         </div>
+        <button
+          onClick={fetchComments}
+          className="p-2.5 bg-white border border-[#E2E8F0] rounded-xl text-[#64748B] hover:text-[#1E293B] hover:bg-slate-50 transition-all shadow-sm active:scale-95"
+          title="Refresh"
+        >
+          <RotateCcw className={cn("w-4 h-4", isLoading && "animate-spin")} />
+        </button>
       </div>
 
-      <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
-        <ul className="divide-y divide-slate-100">
-          {comments.map((comment) => (
-            <li
-              key={comment.id}
-              className="p-6 hover:bg-slate-50 transition-colors"
-            >
-              <div className="flex justify-between items-start">
-                <div className="flex gap-4">
-                  <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 font-bold shrink-0">
-                    {comment.author[0]}
-                  </div>
-                  <div>
-                    <div className="flex items-center gap-2 mb-1">
-                      <span className="font-semibold text-slate-700">
-                        {comment.author}
-                      </span>
-                      <span className="text-xs text-slate-400">
-                        • {comment.date}
-                      </span>
-                    </div>
-                    <p className="text-slate-600 text-sm mb-2">
-                      {comment.content}
-                    </p>
-                    <div className="text-xs text-slate-500">
-                      On:{" "}
-                      <span className="font-medium text-blue-600">
-                        {comment.post}
-                      </span>
-                    </div>
-                  </div>
-                </div>
+      {/* Tabs */}
+      <div className="flex items-center gap-1 border-b border-[#E2E8F0] mb-1">
+        {["Recent Comments", "Post Interactions"].map((tab) => (
+          <button
+            key={tab}
+            onClick={() => setActiveTab(tab)}
+            className={cn(
+              "flex items-center gap-2 px-4 py-3 admin-btn-secondary text-[14px] font-semibold border-b-2 -mb-[1px] transition-all",
+              activeTab === tab
+                ? "border-[#1E293B] text-[#1E293B]"
+                : "border-transparent text-[#64748B] hover:text-[#475569]"
+            )}
+          >
+            {tab === "Recent Comments" ? (
+              <MessageSquare className="w-4 h-4" />
+            ) : (
+              <FileText className="w-4 h-4" />
+            )}
+            {tab}
+          </button>
+        ))}
+      </div>
 
-                <div className="flex items-center gap-2">
-                  {comment.status === "Pending" && (
-                    <>
-                      <button
-                        className="p-2 text-green-600 bg-green-50 hover:bg-green-100 rounded-lg transition-colors"
-                        title="Approve"
+      {/* Sub-description */}
+      <p className="text-[13px] admin-small text-[#2563EB] mb-4 mt-3">
+        {activeTab === "Recent Comments"
+          ? "View and manage all recent comments across all posts"
+          : "View interaction summary grouped by post"}
+      </p>
+
+      {/* Table */}
+      <div className="bg-white rounded-[12px] border border-[#E2E8F0] shadow-sm overflow-hidden">
+        {isLoading ? (
+          <div className="py-24 flex flex-col items-center justify-center">
+            <Loader2 className="w-8 h-8 text-[#2563EB] animate-spin mb-3" />
+            <p className="text-[#94A3B8] text-sm">Loading...</p>
+          </div>
+        ) : activeTab === "Recent Comments" ? (
+          <div className="overflow-x-auto">
+            <table className="w-full text-left">
+              <thead>
+                <tr className="border-b border-[#E2E8F0]">
+                  <th className="px-6 py-4 text-[13px] font-semibold text-[#64748B]">User</th>
+                  <th className="px-6 py-4 text-[13px] font-semibold text-[#64748B]">Comment</th>
+                  <th className="px-6 py-4 text-[13px] font-semibold text-[#64748B]">Blog Post</th>
+                  <th className="px-6 py-4 text-[13px] font-semibold text-[#64748B]">Date</th>
+                  <th className="px-6 py-4 text-[13px] font-semibold text-[#64748B] text-right">Actions</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-[#F1F5F9]">
+                {comments.length === 0 ? (
+                  <tr>
+                    <td colSpan={5} className="p-6">
+                      <EmptyState
+                        compact
+                        icon={MessageSquare}
+                        title="No comments yet"
+                        description="When readers leave comments on this site’s published posts, they’ll show up here for moderation."
+                        actions={[
+                          {
+                            label: "View posts",
+                            href: "/admin/posts",
+                            variant: "secondary",
+                          },
+                        ]}
+                      />
+                    </td>
+                  </tr>
+                ) : (
+                  comments.map((comment) => {
+                    const { date, time } = formatDate(comment.createdAt);
+                    return (
+                      <tr
+                        key={comment.id}
+                        className="hover:bg-[#F8FAFC] transition-colors"
                       >
-                        <Check className="w-4 h-4" />
-                      </button>
-                      <button
-                        className="p-2 text-red-600 bg-red-50 hover:bg-red-100 rounded-lg transition-colors"
-                        title="Reject"
+                        {/* User */}
+                        <td className="px-6 py-4">
+                          <div className="flex items-center gap-3">
+                            <div className="w-9 h-9 rounded-full bg-[#E8F0FE] flex items-center justify-center overflow-hidden shrink-0 border border-[#E2E8F0]">
+                              {comment.userAvatar ? (
+                                <img
+                                  src={comment.userAvatar}
+                                  alt=""
+                                  className="w-full h-full object-cover"
+                                />
+                              ) : (
+                                <span className="text-[#2563EB] font-bold text-sm">
+                                  {comment.userName.charAt(0).toUpperCase()}
+                                </span>
+                              )}
+                            </div>
+                            <span className="admin-btn-secondary text-[14px] font-semibold text-[#1E293B] whitespace-nowrap">
+                              {comment.userName}
+                            </span>
+                          </div>
+                        </td>
+
+                        {/* Comment (read-only — no edit) */}
+                        <td className="px-6 py-4 max-w-[280px]">
+                          <p className="text-[14px] text-[#475569] line-clamp-3">
+                            {comment.content}
+                          </p>
+                        </td>
+
+                        {/* Blog Post */}
+                        <td className="px-6 py-4 max-w-[200px]">
+                          <span className="text-[14px] text-[#2563EB] line-clamp-2 cursor-pointer hover:underline">
+                            {comment.postTitle}
+                          </span>
+                        </td>
+
+                        {/* Date */}
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <span className="text-[13px] text-[#64748B]">
+                            {date},<br />
+                            {time}
+                          </span>
+                        </td>
+
+                        {/* Actions */}
+                        <td className="px-6 py-4">
+                          <div className="flex items-center justify-end gap-1">
+                            <button
+                              onClick={() => window.open(`/blog/${comment.postSlug || ""}`, "_blank")}
+                              className="p-2 text-[#94A3B8] hover:text-[#1E293B] hover:bg-slate-100 rounded-lg transition-all"
+                              title="View post"
+                            >
+                              <ExternalLink className="w-4 h-4" />
+                            </button>
+                            <button
+                              onClick={() => handleDelete(comment.id)}
+                              className="p-2 text-red-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-all"
+                              title="Delete"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    );
+                  })
+                )}
+              </tbody>
+            </table>
+          </div>
+        ) : (
+          // Post Interactions Tab
+          <div className="overflow-x-auto">
+            <table className="w-full text-left">
+              <thead>
+                <tr className="border-b border-[#E2E8F0]">
+                  <th className="px-6 py-4 text-[13px] font-semibold text-[#64748B]">Blog Post</th>
+                  <th className="px-6 py-4 text-[13px] font-semibold text-[#64748B]">Interactions</th>
+                  <th className="px-6 py-4 text-[13px] font-semibold text-[#64748B]">Latest Activity</th>
+                  <th className="px-6 py-4 text-[13px] font-semibold text-[#64748B] text-right">Actions</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-[#F1F5F9]">
+                {postInteractions.length === 0 ? (
+                  <tr>
+                    <td colSpan={4} className="py-20 text-center">
+                      <p className="text-[#94A3B8]">No engagement data found</p>
+                    </td>
+                  </tr>
+                ) : (
+                  postInteractions.map((post) => {
+                    const { date, time } = formatDate(post.latestDate);
+                    return (
+                      <tr
+                        key={post.postTitle}
+                        className="hover:bg-[#F8FAFC] transition-colors"
                       >
-                        <X className="w-4 h-4" />
-                      </button>
-                    </>
-                  )}
-                  <button
-                    className="p-2 text-slate-400 hover:text-red-600 hover:bg-slate-100 rounded-lg transition-colors"
-                    title="Delete"
-                  >
-                    <Trash2 className="w-4 h-4" />
-                  </button>
-                </div>
-              </div>
-            </li>
-          ))}
-        </ul>
+                        <td className="px-6 py-5">
+                          <div className="flex items-center gap-3">
+                            <div className="w-9 h-9 rounded-xl bg-blue-50 flex items-center justify-center text-blue-500 border border-blue-100 shrink-0">
+                              <FileText className="w-4 h-4" />
+                            </div>
+                            <span className="admin-btn-secondary text-[14px] font-semibold text-[#1E293B] max-w-[400px] line-clamp-1">
+                              {post.postTitle}
+                            </span>
+                          </div>
+                        </td>
+                        <td className="px-6 py-5">
+                          <span className="px-3 py-1 bg-[#F1F5F9] text-[#475569] rounded-full text-[13px] font-semibold border border-[#E2E8F0]">
+                            {post.count} comments
+                          </span>
+                        </td>
+                        <td className="px-6 py-5">
+                          <span className="text-[13px] text-[#64748B]">
+                            {date}, {time}
+                          </span>
+                        </td>
+                        <td className="px-6 py-5 text-right">
+                          <button
+                            onClick={() => setActiveTab("Recent Comments")}
+                            className="text-[13px] font-semibold text-[#2563EB] hover:underline flex items-center justify-end gap-1 ml-auto"
+                          >
+                            View Threads <ChevronRight className="w-3 h-3" />
+                          </button>
+                        </td>
+                      </tr>
+                    );
+                  })
+                )}
+              </tbody>
+            </table>
+          </div>
+        )}
       </div>
     </div>
   );
