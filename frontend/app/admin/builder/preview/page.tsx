@@ -65,19 +65,15 @@ export default function BuilderPreviewPage() {
           layoutBlocks = doc.blocks as BuilderBlock[];
           setLayoutDocument(doc);
           setLayoutIssues([
-<<<<<<< HEAD
             ...(normalized.warnings || []),
             ...structural.issues,
-            ...semantic.issues.filter((issue) => !structural.issues.some((item) => item.code === issue.code && item.path === issue.path)),
+            ...semantic.issues.filter(
+              (issue) =>
+                !structural.issues.some(
+                  (item) => item.code === issue.code && item.path === issue.path,
+                ),
+            ),
           ].map((issue) => `${issue.path}: ${issue.message}`));
-=======
-            ...normalized.warnings.map((w: any) => `normalize: ${w.code}`),
-            ...structural.issues.map((i: any) => `${i.path}: ${i.message}`),
-            ...semantic.issues
-              .filter((issue: any) => !structural.issues.some((item: any) => item.code === issue.code && item.path === issue.path))
-              .map((i: any) => `${i.path}: ${i.message}`),
-          ]);
->>>>>>> 2d29246f281a8c6f70323f39c98cbb78d6a59e33
           if (!structural.valid) {
             setError("The saved layout has structural validation errors.");
           }
