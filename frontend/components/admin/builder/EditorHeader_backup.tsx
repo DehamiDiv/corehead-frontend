@@ -1,7 +1,6 @@
 "use client";
 
 import Link from "next/link";
-import { motion, AnimatePresence } from "framer-motion";
 import {
   Save,
   Eye,
@@ -9,7 +8,7 @@ import {
   Tablet,
   Smartphone,
   Loader2,
-  Send, FileText,
+  Send,
   Download,
   Upload,
   Trash2,
@@ -52,7 +51,6 @@ export default function EditorHeader() {
   const [tempName, setTempName] = useState(templateName);
   const [saveStatus, setSaveStatus] = useState("draft");
   const [isActionsOpen, setIsActionsOpen] = useState(false);
-  const [showClearConfirm, setShowClearConfirm] = useState(false);
   const router = useRouter();
 
   const handleSaveClick = (status: string) => {
@@ -61,33 +59,17 @@ export default function EditorHeader() {
     setShowSaveModal(true);
   };
 
-      const handleConfirmSave = async () => {
-      if (!tempName || tempName.trim() === "") {
-        alert("Please enter a name for your layout.");
-        return;
-      }
-  
-      setShowSaveModal(false);
-      setIsSaving(true);
-  
-      try {
-        if (saveStatus === "post") {
-          const site = getCurrentSite();
-          const layoutDataStr = JSON.stringify(serializeLayout());
-          // Create the post
-          await api.createPost({
-            title: tempName.trim(),
-            slug: tempName.trim().toLowerCase().replace(/[^a-z0-9]+/g, "-"),
-            content: layoutDataStr,
-            status: "Published",
-          }, site?.id);
-          
-          alert("Blog Post Published Successfully!");
-          router.push("/admin/posts");
-          return;
-        }
+  const handleConfirmSave = async () => {
+    if (!tempName || tempName.trim() === "") {
+      alert("Please enter a name for your layout.");
+      return;
+    }
 
-        const result = await saveToBackend(saveStatus, {
+    setShowSaveModal(false);
+    setIsSaving(true);
+
+    try {
+      const result = await saveToBackend(saveStatus, {
         name: tempName.trim(),
         type: templateType,
       });
@@ -326,13 +308,13 @@ export default function EditorHeader() {
   };
 
   const handleClear = () => {
-    setShowClearConfirm(true);
-  };
-
-  const confirmClear = () => {
-    loadLayout("[]");
-    setShowClearConfirm(false);
-    setIsActionsOpen(false);
+    if (
+      confirm(
+        "Are you sure you want to clear the entire canvas? This cannot be undone.",
+      )
+    ) {
+      loadLayout("[]");
+    }
   };
 
   return (
@@ -521,57 +503,7 @@ export default function EditorHeader() {
             Publish
           </button>
         </div>
-  
-      <AnimatePresence>
-        {showClearConfirm && (
-          <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4">
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm"
-              onClick={() => setShowClearConfirm(false)}
-            />
-            
-            <motion.div
-              initial={{ opacity: 0, scale: 0.95, y: 20 }}
-              animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.95, y: 20 }}
-              transition={{ type: "spring", duration: 0.4 }}
-              className="relative w-full max-w-sm bg-white rounded-3xl p-6 shadow-2xl border border-slate-100/50 flex flex-col items-center text-center"
-            >
-              <div className="w-12 h-12 rounded-2xl bg-red-50 text-red-600 flex items-center justify-center mb-4">
-                <Trash2 size={24} />
-              </div>
-              
-              <h4 className="text-base font-extrabold text-slate-900 mb-2 uppercase tracking-tight">
-                Clear Canvas
-              </h4>
-              
-              <p className="text-[15px] leading-relaxed text-slate-600 mb-6 px-2">
-                Are you sure you want to clear the entire canvas? This cannot be undone.
-              </p>
-              
-              <div className="flex gap-3 w-full">
-                <button
-                  onClick={() => setShowClearConfirm(false)}
-                  className="flex-1 py-3 px-4 rounded-xl font-semibold text-slate-600 bg-slate-50 hover:bg-slate-100 transition-colors"
-                >
-                  Cancel
-                </button>
-                <button
-                  onClick={confirmClear}
-                  className="flex-1 py-3 px-4 rounded-xl font-semibold text-white bg-red-600 hover:bg-red-700 transition-colors shadow-[0_4px_12px_rgba(220,38,38,0.25)] hover:shadow-[0_6px_16px_rgba(220,38,38,0.35)]"
-                >
-                  Clear All
-                </button>
-              </div>
-            </motion.div>
-          </div>
-        )}
-      </AnimatePresence>
-
-    </header>
+      </header>
 
       {showSaveModal && (
         <div className="fixed inset-0 z-[200] flex items-center justify-center p-4">
@@ -586,10 +518,8 @@ export default function EditorHeader() {
                   Save <span className="text-blue-600">Layout</span>
                 </h3>
                 <p className="text-slate-500 text-sm font-semibold">
-                                    {saveStatus === "published"
+                  {saveStatus === "published"
                     ? "Publish this layout for your site"
-                    : saveStatus === "post"
-                    ? "Publish as a new Blog Post"
                     : "Save as a draft template"}
                 </p>
               </div>
@@ -649,7 +579,7 @@ export default function EditorHeader() {
                 onClick={handleConfirmSave}
                 className="flex-[2] py-4 px-4 bg-slate-900 text-white rounded-2xl text-[14px] font-black hover:bg-slate-800 transition-all shadow-xl active:scale-95 flex items-center justify-center gap-2"
               >
-                                {saveStatus === "published" ? "Publish Now" : saveStatus === "post" ? "Create Post" : "Save as Draft"}
+                {saveStatus === "published" ? "Publish Now" : "Save as Draft"}
                 <ArrowRight size={16} />
               </button>
             </div>
@@ -659,5 +589,4 @@ export default function EditorHeader() {
     </>
   );
 }
-
 

@@ -117,6 +117,47 @@ export default function SettingsPanel() {
               <h4 className="text-xs font-semibold text-slate-500 uppercase tracking-wider flex items-center gap-2">
                 <Type className="w-3 h-3" /> Typography
               </h4>
+              <div className="space-y-1">
+                <label className="text-xs text-slate-600">Font Family</label>
+                <select
+                  className="w-full px-2 py-1.5 bg-slate-50 border border-gray-200 rounded text-sm"
+                  value={selectedBlock.styles?.fontFamily || ""}
+                  onChange={(e) =>
+                    updateBlock(selectedBlock.id, selectedBlock.content, {
+                      fontFamily: e.target.value,
+                    })
+                  }
+                >
+                  <option value="">Default</option>
+                  <optgroup label="Sans Serif">
+                    <option value="'Inter', sans-serif">Inter</option>
+                    <option value="'Roboto', sans-serif">Roboto</option>
+                    <option value="'Open Sans', sans-serif">Open Sans</option>
+                    <option value="'Lato', sans-serif">Lato</option>
+                    <option value="'Montserrat', sans-serif">Montserrat</option>
+                    <option value="'Poppins', sans-serif">Poppins</option>
+                    <option value="'Outfit', sans-serif">Outfit</option>
+                    <option value="'Nunito', sans-serif">Nunito</option>
+                  </optgroup>
+                  <optgroup label="Serif">
+                    <option value="'Georgia', serif">Georgia</option>
+                    <option value="'Playfair Display', serif">Playfair Display</option>
+                    <option value="'Merriweather', serif">Merriweather</option>
+                    <option value="'Lora', serif">Lora</option>
+                    <option value="'EB Garamond', serif">EB Garamond</option>
+                  </optgroup>
+                  <optgroup label="Monospace">
+                    <option value="'JetBrains Mono', monospace">JetBrains Mono</option>
+                    <option value="'Fira Code', monospace">Fira Code</option>
+                    <option value="'Space Mono', monospace">Space Mono</option>
+                  </optgroup>
+                  <optgroup label="Display">
+                    <option value="'Bebas Neue', cursive">Bebas Neue</option>
+                    <option value="'Pacifico', cursive">Pacifico</option>
+                    <option value="'Righteous', cursive">Righteous</option>
+                  </optgroup>
+                </select>
+              </div>
               <div className="grid grid-cols-2 gap-3">
                 <div className="space-y-1">
                   <label className="text-xs text-slate-600">
