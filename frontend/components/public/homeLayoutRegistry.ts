@@ -25,7 +25,11 @@ const DEDICATED_HOME_RENDERERS: Readonly<
 
 export function getDedicatedHomeRenderer(homeStyle: unknown) {
   const registration = getHomeLayoutRegistration(String(homeStyle || ""));
-  const Renderer = DEDICATED_HOME_RENDERERS[registration.renderer];
+  // Older deployed appearance contracts did not expose `renderer`. Layout IDs
+  // are canonical and intentionally match the dedicated renderer keys, so use
+  // the ID as a compatibility fallback instead of silently rendering Classic.
+  const rendererKey = registration.renderer || registration.id;
+  const Renderer = DEDICATED_HOME_RENDERERS[rendererKey];
   if (!Renderer) return null;
   return function RegisteredHomeRenderer(props: HomeLayoutProps) {
     return createElement(Renderer, normalizeHomeLayoutProps(props));
@@ -34,9 +38,10 @@ export function getDedicatedHomeRenderer(homeStyle: unknown) {
 
 export function hasRegisteredHomeRenderer(homeStyle: unknown): boolean {
   const registration = getHomeLayoutRegistration(String(homeStyle || ""));
+  const rendererKey = registration.renderer || registration.id;
   return (
-    registration.renderer === "classic" ||
-    registration.renderer === "nature" ||
-    Boolean(DEDICATED_HOME_RENDERERS[registration.renderer])
+    rendererKey === "classic" ||
+    rendererKey === "nature" ||
+    Boolean(DEDICATED_HOME_RENDERERS[rendererKey])
   );
 }

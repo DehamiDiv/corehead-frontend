@@ -53,10 +53,23 @@ export const THEME_PRESETS = THEME_REGISTRY as Readonly<
   Record<string, ThemePreset>
 >;
 
+export const HOME_LAYOUT_DISPLAY_NAMES: Readonly<Record<HomeStyle, string>> =
+  Object.freeze({
+    classic: "Executive Editorial",
+    nature: "Immersive Storyscape",
+    bloom: "Wellness & Services",
+    portals: "Digital Innovation",
+    bento: "Modern Bento Showcase",
+    studio: "Creative Portfolio Studio",
+    paper: "Professional Newsroom",
+    glass: "Executive Newsletter",
+  });
+
 export const HOME_LAYOUT_OPTIONS = Object.values(HOME_LAYOUT_REGISTRY).map(
   (layout) => ({
     id: layout.id,
-    name: layout.name,
+    name:
+      HOME_LAYOUT_DISPLAY_NAMES[layout.id as HomeStyle] || layout.name,
     description: layout.description,
     suitableFor: layout.suitableFor,
     previewAsset: layout.previewAsset,
