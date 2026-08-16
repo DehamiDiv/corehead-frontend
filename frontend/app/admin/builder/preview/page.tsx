@@ -64,7 +64,7 @@ export default function BuilderPreviewPage() {
           layoutBlocks = normalized.document.blocks as BuilderBlock[];
           setLayoutDocument(normalized.document);
           setLayoutIssues([
-            ...normalized.warnings,
+            ...(normalized.warnings || []),
             ...structural.issues,
             ...semantic.issues.filter((issue) => !structural.issues.some((item) => item.code === issue.code && item.path === issue.path)),
           ].map((issue) => `${issue.path}: ${issue.message}`));

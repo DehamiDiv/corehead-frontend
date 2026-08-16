@@ -425,3 +425,44 @@ body {
   margin-block: 2.5rem;
   border-color: color-mix(in srgb, var(--site-ink, #0f172a) 14%, transparent);
 }
+
+/* ==========================================================================
+   Quill Editor Formatting Restores (Fixes bold, italic, underline, headers)
+   ========================================================================== */
+.ql-editor strong, .ql-editor b {
+  font-weight: 700 !important;
+}
+
+.ql-editor em, .ql-editor i {
+  font-style: italic !important;
+}
+
+.ql-editor u {
+  text-decoration: underline !important;
+}
+
+.ql-editor s, .ql-editor strike {
+  text-decoration: line-through !important;
+}
+
+.ql-editor h1 {
+  font-size: 2.25rem !important;
+  font-weight: 800 !important;
+  margin-top: 1.5rem !important;
+  margin-bottom: 0.75rem !important;
+}
+
+.ql-editor h2 {
+  font-size: 1.8rem !important;
+  font-weight: 700 !important;
+  margin-top: 1.25rem !important;
+  margin-bottom: 0.5rem !important;
+}
+
+.ql-editor h3 {
+  font-size: 1.5rem !important;
+  font-weight: 700 !important;
+  margin-top: 1rem !important;
+  margin-bottom: 0.5rem !important;
+}
+

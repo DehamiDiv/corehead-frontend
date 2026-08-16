@@ -1,6 +1,7 @@
 import type { ReactNode } from "react";
 import { Plus_Jakarta_Sans } from "next/font/google";
 import ToastProvider from "@/components/ui/ToastProvider";
+import GlobalAlert from "@/components/GlobalAlert";
 import "./globals.css";
 
 const plusJakartaSans = Plus_Jakarta_Sans({
@@ -20,6 +21,7 @@ export default function RootLayout({ children }: { children: ReactNode }) {
     <html lang="en" className={plusJakartaSans.variable}>
       <body className="min-h-screen bg-slate-50 font-sans antialiased text-slate-900">
         <ToastProvider />
+        <GlobalAlert />
         <div className="min-h-screen">
           {children}
         </div>
