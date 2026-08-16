@@ -12,6 +12,9 @@ export default function GlobalAlert() {
       window.alert = (message: any) => {
         setAlertText(String(message));
       };
+      // Suppress native confirm/prompt browser popups
+      window.confirm = (_message?: string) => true;
+      window.prompt = (_message?: string, _defaultValue?: string) => null;
     }
   }, []);
 
