@@ -75,7 +75,7 @@ export default function AdminNavbar() {
         {/* LEFT — larger logo + Dashboard (shifted left of center) */}
         <div className="flex items-center gap-2 sm:gap-3 min-w-0 z-10">
           <Link
-            href="/admin"
+            href="/"
             className="flex items-center shrink-0 hover:opacity-90 transition-opacity"
           >
             <Image
