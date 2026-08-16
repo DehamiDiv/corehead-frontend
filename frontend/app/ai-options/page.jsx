@@ -37,6 +37,11 @@ export default function AIOptionsPage() {
       id: 'blog-archive', 
       name: 'Blog Archive', 
       description: 'Post listing page with grid or list view' 
+    },
+    {
+      id: 'home-page',
+      name: 'Home Page',
+      description: 'Public site landing page with brand identity and latest published posts'
     }
   ];
 

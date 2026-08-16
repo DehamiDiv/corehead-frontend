@@ -20,6 +20,7 @@ import {
   type ContentLayoutKind,
   type ContentLayoutOption,
 } from "@/lib/contentLayoutAssignments";
+import ContentLayoutMiniPreview from "@/components/admin/appearance/ContentLayoutMiniPreview";
 
 const { layoutKindFromTemplate } = classification;
 
@@ -245,6 +246,10 @@ export default function AppearanceContentLayoutGallery({
                         <span>•</span>
                         {layout.layoutJson?.blocks?.length || 0} blocks
                       </div>
+                      <ContentLayoutMiniPreview
+                        blocks={layout.layoutJson?.blocks}
+                        selected={selected}
+                      />
                       <button
                         type="button"
                         disabled={!siteId || selected || busyId !== null}

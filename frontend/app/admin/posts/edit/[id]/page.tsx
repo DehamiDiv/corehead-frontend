@@ -20,6 +20,7 @@ import { cn } from "@/lib/utils";
 import MediaLibraryModal from "@/components/admin/MediaLibraryModal";
 import { api } from "@/lib/api";
 import PostPreviewModal from "@/components/admin/PostPreviewModal";
+import PostLayoutSelector from "@/components/admin/PostLayoutSelector";
 import { resolveAdminMediaUrl } from "@/lib/apiOrigin";
 import { useSite } from "@/components/admin/SiteContext";
 import dynamic from 'next/dynamic';
@@ -115,6 +116,7 @@ export default function EditPostPage() {
     useThumbnailAsFeatured: true,
     canonicalUrl: "",
     structuredData: "",
+    layoutTemplateId: null as number | null,
   });
 
   const [keywordInput, setKeywordInput] = useState("");
@@ -266,6 +268,8 @@ export default function EditPostPage() {
             : postData.structuredData
               ? JSON.stringify(postData.structuredData, null, 2)
               : "",
+        layoutTemplateId:
+          postData.layoutTemplateId != null ? Number(postData.layoutTemplateId) : null,
       });
     } catch (err: any) {
       setError(err.message || "Failed to fetch post data");
@@ -331,6 +335,7 @@ export default function EditPostPage() {
       tags: formData.keywords,
       thumbnailUrl: cover || null,
       featured: formData.featured,
+      layoutTemplateId: formData.layoutTemplateId,
       showToc: formData.showToc,
       allowComments: formData.allowComments,
       ...(Number.isFinite(authorIdNum) && authorIdNum > 0
@@ -427,7 +432,7 @@ export default function EditPostPage() {
 
         {/* Section Tabs */}
         <div className="bg-[#F8FAFC] rounded-[16px] p-1.5 flex gap-2 border border-[#E2E8F0]">
-          {["Content", "Images", "SEO"].map((tab) => (
+          {["Content", "Images", "Layout", "SEO"].map((tab) => (
             <button
               key={tab}
               onClick={() => setActiveTab(tab)}
@@ -440,6 +445,7 @@ export default function EditPostPage() {
             >
               {tab === "Content" && <FileText className="w-4 h-4" />}
               {tab === "Images" && <ImageIcon className="w-4 h-4" />}
+              {tab === "Layout" && <LayoutGrid className="w-4 h-4" />}
               {tab === "SEO" && <Search className="w-4 h-4" />}
               {tab}
             </button>
@@ -671,6 +677,19 @@ export default function EditPostPage() {
                       </div>
                     </div>
                 </div>
+              </div>
+            )}
+
+            {/* SEO TAB */}
+            {activeTab === "Layout" && (
+              <div className="animate-in fade-in duration-300">
+                <PostLayoutSelector
+                  siteId={currentSiteId}
+                  value={formData.layoutTemplateId}
+                  onChange={(layoutTemplateId) =>
+                    setFormData((current) => ({ ...current, layoutTemplateId }))
+                  }
+                />
               </div>
             )}
 

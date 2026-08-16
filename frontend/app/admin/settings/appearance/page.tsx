@@ -3410,8 +3410,9 @@ export default function AppearancePage() {
 
               <AppearanceHomeLayoutGallery
                 activeLayout={homeLayout}
+                siteId={currentSite?.id}
                 disabled={!currentSite || isSavingHomeLayout}
-                onSelect={(layout) => void applyLayout(layout)}
+                onSelect={(layout) => applyLayout(layout)}
                 onEdit={(layoutId) => openHomeContentEditor(layoutId)}
               />
 

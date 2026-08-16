@@ -41,11 +41,32 @@ test("single-post bodies use a constrained theme-aware reading surface", async (
 
   assert.match(post, /prose-public post-reading-surface/);
   assert.match(renderer, /className="cms-post-body/);
+  assert.match(renderer, /isBodyBinding\s*\?\s*"cms-post-body my-4 max-w-none"/);
+  assert.match(renderer, /isBodyBinding \? preparePostHtml\(rawHtml\) : rawHtml/);
   assert.match(styles, /\.post-reading-surface \.cms-post-body/);
   assert.match(styles, /max-width: 46rem !important/);
+  assert.match(styles, /var\(--site-surface, #ffffff\) 94%/);
+  assert.match(styles, /overflow-x: hidden/);
   assert.match(styles, /var\(--site-ink, #0f172a\) 82%/);
   assert.match(styles, /line-height: 1\.85 !important/);
   assert.match(styles, /overflow-wrap: anywhere/);
+  assert.match(styles, /\.post-reading-surface \.cms-post-body table/);
+  assert.match(styles, /\.post-reading-surface \.cms-post-body figcaption/);
+});
+
+test("single-post fallback renders a real cover and templates hide empty bound images", async () => {
+  const [post, renderer, tenantLayout] = await Promise.all([
+    source("../app/s/[siteSlug]/blog/[postSlug]/page.tsx"),
+    source("../components/Renderer/PublicPageRenderer.tsx"),
+    source("../lib/tenantLayout.ts"),
+  ]);
+
+  assert.match(post, /const renderedLayoutHasImage = blocksForRender\.some/);
+  assert.match(post, /coverSrc && !renderedLayoutHasImage/);
+  assert.match(post, /data-layout-source=\{layout\.source\}/);
+  assert.match(renderer, /if \(block\.bindings\?\.content && !rawSrc\) return null/);
+  assert.match(renderer, /var\(--site-ink,#0f172a\)/);
+  assert.match(tenantLayout, /name: post\.author\?\.name \|\| post\.authorName/);
 });
 
 test("Appearance theme activation remains independent from homepage layout selection", async () => {
@@ -54,6 +75,21 @@ test("Appearance theme activation remains independent from homepage layout selec
   assert.match(appearance, /preserveHomeLayoutForThemeChange/);
   assert.match(appearance, /api\.updateSetting\("active_theme", \{ themeId \}\)/);
   assert.match(appearance, /api\.updateSetting\("home_layout"/);
+});
+
+test("public home prefers an assigned custom Home Page document and preserves preset fallback", async () => {
+  const [home, tenantLayout] = await Promise.all([
+    source("../app/s/[siteSlug]/page.tsx"),
+    source("../lib/tenantLayout.ts"),
+  ]);
+
+  assert.match(home, /resolveAssignedHomeLayout\(site\.id\)/);
+  assert.match(home, /layout=\{assignedHomeLayout\.document\}/);
+  assert.match(home, /<PublicPageRenderer/);
+  assert.match(home, /data-home-layout="custom"/);
+  assert.match(tenantLayout, /\["Home Page", "home-page", "homepage", "home_page", "home"\]/);
+  assert.match(tenantLayout, /return null/);
+  assert.match(home, /getDedicatedHomeRenderer\(homeStyle\)/);
 });
 
 test("public and Appearance-preview headers keep logo, navigation, and actions aligned", async () => {

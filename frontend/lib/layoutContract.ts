@@ -7,7 +7,7 @@ import { normalizeLayoutDocumentV1 } from "../../../contracts/layout-normalizer-
 import { prepareRenderableLayout } from "../../../contracts/renderable-layout-v1.js";
 
 export const LAYOUT_SCHEMA_VERSION = "1.0" as const;
-export const LAYOUT_KINDS = ["single-post", "blog-archive"] as const;
+export const LAYOUT_KINDS = ["single-post", "blog-archive", "home-page"] as const;
 export const LAYOUT_BLOCK_TYPES = [
   "Heading",
   "Paragraph",
@@ -43,6 +43,9 @@ export const LAYOUT_BINDING_PATHS = [
   "site.name",
   "site.slug",
   "site.logo",
+  "site.description",
+  "site.tagline",
+  "site.heroImage",
 ] as const;
 
 export type LayoutKind = (typeof LAYOUT_KINDS)[number];

@@ -20,7 +20,7 @@ const STYLE_COLORS = {
   minimalist: { bg: 'rgba(107,114,128,0.10)', color: '#6b7280', border: 'rgba(107,114,128,0.25)', label: '⬜ Minimalist' },
 };
 
-const LAYOUT_ICONS = { 'blog-archive': '🗂️', 'single-post': '📄' };
+const LAYOUT_ICONS = { 'blog-archive': '🗂️', 'single-post': '📄', 'home-page': '🏠' };
 
 export default function AIHistoryPage() {
   const router = useRouter();
@@ -100,7 +100,11 @@ export default function AIHistoryPage() {
         localStorage.setItem('corehead_builder_layout', JSON.stringify(normalized.document));
         localStorage.setItem('corehead_builder_meta', JSON.stringify({
           name: normalized.document.name,
-          type: normalized.document.kind === 'blog-archive' ? 'Blog Archive' : 'Single Post',
+          type: normalized.document.kind === 'blog-archive'
+            ? 'Blog Archive'
+            : normalized.document.kind === 'home-page'
+              ? 'Home Page'
+              : 'Single Post',
           id: null,
         }));
         router.push('/admin/builder');

@@ -1,6 +1,7 @@
 "use client";
 
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useId } from "react";
+import { usePathname } from "next/navigation";
 import { ChevronDown, Globe2, Check, Loader2 } from "lucide-react";
 import { useOptionalSite } from "@/components/admin/SiteContext";
 import { cn } from "@/lib/utils";
@@ -9,14 +10,27 @@ export default function SiteSwitcher() {
   const siteCtx = useOptionalSite();
   const [open, setOpen] = useState(false);
   const rootRef = useRef<HTMLDivElement>(null);
+  const menuId = useId();
+  const pathname = usePathname();
 
   useEffect(() => {
     const onDocClick = (e: MouseEvent) => {
       if (!rootRef.current?.contains(e.target as Node)) setOpen(false);
     };
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setOpen(false);
+    };
     document.addEventListener("mousedown", onDocClick);
-    return () => document.removeEventListener("mousedown", onDocClick);
+    document.addEventListener("keydown", onKeyDown);
+    return () => {
+      document.removeEventListener("mousedown", onDocClick);
+      document.removeEventListener("keydown", onKeyDown);
+    };
   }, []);
+
+  useEffect(() => {
+    setOpen(false);
+  }, [pathname]);
 
   if (!siteCtx) return null;
 
@@ -45,10 +59,13 @@ export default function SiteSwitcher() {
   }
 
   return (
-    <div className="relative w-full min-w-0" ref={rootRef}>
+    <div className="relative z-[110] w-full min-w-0" ref={rootRef}>
       <button
         type="button"
         onClick={() => setOpen((v) => !v)}
+        aria-expanded={open}
+        aria-haspopup="menu"
+        aria-controls={menuId}
         className={cn(
           "flex items-center gap-2 px-3 h-10 w-full rounded-xl border text-sm font-semibold transition-all",
           "bg-white/90 border-slate-200/80 text-slate-700 hover:bg-white hover:border-blue-200 hover:shadow-sm"
@@ -68,19 +85,26 @@ export default function SiteSwitcher() {
       </button>
 
       {open && (
-        <div className="absolute right-0 sm:right-0 left-0 sm:left-auto mt-2 w-full sm:w-64 min-w-[200px] bg-white rounded-xl border border-slate-100 shadow-xl shadow-slate-200/50 py-1 z-50 overflow-hidden">
+        <div
+          id={menuId}
+          role="menu"
+          aria-label="Switch active site"
+          className="absolute right-0 top-full mt-2 w-[min(20rem,calc(100vw-2rem))] min-w-[240px] isolate z-[120] overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-[0_24px_70px_rgba(15,23,42,0.22)]"
+        >
           <div className="px-3 py-2 border-b border-slate-50">
             <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
               Your sites
             </p>
           </div>
-          <ul className="max-h-64 overflow-y-auto py-1">
+          <ul className="max-h-[min(16rem,42vh)] overflow-y-auto overscroll-contain py-1">
             {sites.map((site) => {
               const active = currentSite?.id === site.id;
               return (
                 <li key={site.id}>
                   <button
                     type="button"
+                    role="menuitemradio"
+                    aria-checked={active}
                     onClick={() => {
                       if (!active) setSite(site);
                       setOpen(false);

@@ -31,3 +31,27 @@ test("normalization of raw blocks is idempotent after canonicalization", () => {
   assert.deepEqual(second.document, first.document);
   assert.equal(second.sourceFormat, "layout-document-v1");
 });
+
+test("normalization preserves an explicit Home Page kind and site bindings", () => {
+  const result = normalizeLayoutDocumentV1([
+    { type: "Heading", content: "{site.name}" },
+    { type: "Paragraph", content: "{site.tagline}" },
+    { type: "Collection List", content: { limit: 6, category: "" } },
+  ], { kind: "home-page", name: "Home" });
+
+  assert.equal(result.document.kind, "home-page");
+  assert.equal(result.document.blocks[0].bindings.content, "site.name");
+  assert.equal(result.document.blocks[1].bindings.content, "site.tagline");
+  assert.equal(validateLayoutDocumentV1(result.document).valid, true);
+});
+
+test("normalization keeps legacy Home Page aliases backward compatible", () => {
+  for (const kind of ["Home Page", "home_page", "homepage", "home-page"]) {
+    const result = normalizeLayoutDocumentV1([
+      { id: "site-name", type: "Heading", content: "{site.name}" },
+      { id: "posts", type: "Collection List", content: { limit: 6, category: "" } },
+    ], { kind, name: "Legacy Home" });
+    assert.equal(result.document.kind, "home-page");
+    assert.equal(validateLayoutDocumentV1(result.document).valid, true);
+  }
+});

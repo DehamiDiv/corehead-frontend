@@ -377,12 +377,14 @@ export const api = {
   async resolveActiveLayout(
     templateType: string,
     categoryId?: string | null,
-    siteId?: number | null
+    siteId?: number | null,
+    templateId?: number | null,
   ) {
     const qs = new URLSearchParams();
     qs.set('templateType', templateType);
     if (categoryId) qs.set('categoryId', String(categoryId));
     if (siteId != null) qs.set('siteId', String(siteId));
+    if (templateId != null) qs.set('templateId', String(templateId));
 
     const headers: Record<string, string> = {};
     if (siteId != null) headers['X-Site-Id'] = String(siteId);

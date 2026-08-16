@@ -1,7 +1,11 @@
 "use client";
 
-import { CheckCircle2, LayoutTemplate, Pencil } from "lucide-react";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { CheckCircle2, LayoutTemplate, Loader2, Pencil, Sparkles } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { api } from "@/lib/api";
+import ContentLayoutMiniPreview from "@/components/admin/appearance/ContentLayoutMiniPreview";
+import classification from "../../../../../contracts/template-classification-v1.js";
 import {
   HOME_LAYOUT_OPTIONS,
   getHomeLayoutPalette,
@@ -10,10 +14,22 @@ import type { HomeStyle } from "@/lib/appearanceModel";
 
 type Props = {
   activeLayout: HomeStyle;
+  siteId?: number | null;
   disabled?: boolean;
-  onSelect: (layout: (typeof HOME_LAYOUT_OPTIONS)[number]) => void;
+  onSelect: (layout: (typeof HOME_LAYOUT_OPTIONS)[number]) => void | Promise<void>;
   onEdit: (layoutId: HomeStyle) => void;
 };
+
+type CustomHomeLayout = {
+  id: number;
+  name: string;
+  type: string;
+  status: string;
+  category?: string | null;
+  layoutJson?: { kind?: string; blocks?: any[]; metadata?: { origin?: string } };
+};
+
+const { isPublishedTemplate, layoutKindFromTemplate } = classification;
 
 function LayoutPreview({
   id,
@@ -52,19 +68,94 @@ function LayoutPreview({
 
 export default function AppearanceHomeLayoutGallery({
   activeLayout,
+  siteId,
   disabled,
   onSelect,
   onEdit,
 }: Props) {
+  const [customLayouts, setCustomLayouts] = useState<CustomHomeLayout[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [busyId, setBusyId] = useState<number | "preset" | null>(null);
+  const [message, setMessage] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
+
+  const loadCustomLayouts = useCallback(async () => {
+    if (!siteId) {
+      setCustomLayouts([]);
+      return;
+    }
+    setLoading(true);
+    setError(null);
+    try {
+      const response = await api.getTemplates();
+      const rows = Array.isArray(response) ? response : response?.templates || [];
+      setCustomLayouts(rows.filter(
+        (template: CustomHomeLayout) =>
+          isPublishedTemplate(template) && layoutKindFromTemplate(template) === "home-page",
+      ));
+    } catch (err: any) {
+      setError(err?.message || "Failed to load custom Home Page layouts.");
+    } finally {
+      setLoading(false);
+    }
+  }, [siteId]);
+
+  useEffect(() => {
+    void loadCustomLayouts();
+  }, [loadCustomLayouts]);
+
+  const activeCustom = useMemo(
+    () => customLayouts.find((layout) => layout.category === "global_default") || null,
+    [customLayouts],
+  );
+
+  const selectCustom = async (layout: CustomHomeLayout) => {
+    setBusyId(layout.id);
+    setError(null);
+    setMessage(null);
+    try {
+      await api.assignTemplate(String(layout.id), { isGlobalDefault: true });
+      setCustomLayouts((current) => current.map((item) => ({
+        ...item,
+        category: item.id === layout.id ? "global_default" : item.category === "global_default" ? null : item.category,
+      })));
+      setMessage(`${layout.name} is now the public Home Page layout.`);
+    } catch (err: any) {
+      setError(err?.message || "Failed to select the custom Home Page layout.");
+    } finally {
+      setBusyId(null);
+    }
+  };
+
+  const selectPreset = async (layout: (typeof HOME_LAYOUT_OPTIONS)[number]) => {
+    setBusyId("preset");
+    setError(null);
+    setMessage(null);
+    try {
+      if (activeCustom) {
+        await api.assignTemplate(String(activeCustom.id), { isGlobalDefault: false });
+        setCustomLayouts((current) => current.map((item) => item.id === activeCustom.id ? { ...item, category: null } : item));
+      }
+      await onSelect(layout);
+      setMessage(`${layout.name} preset is now the public Home Page layout.`);
+    } catch (err: any) {
+      setError(err?.message || "Failed to select the Home Page preset.");
+    } finally {
+      setBusyId(null);
+    }
+  };
+
   return (
     <div className="space-y-4">
       <div className="inline-flex items-center gap-2 rounded-full bg-emerald-50 px-3 py-1 text-[11px] font-bold uppercase tracking-wide text-emerald-700">
         <LayoutTemplate className="h-3.5 w-3.5" />
         Page structure
       </div>
+      {message ? <p className="rounded-xl border border-emerald-100 bg-emerald-50 px-4 py-2 text-xs font-semibold text-emerald-700">{message}</p> : null}
+      {error ? <p className="rounded-xl border border-red-100 bg-red-50 px-4 py-2 text-xs font-semibold text-red-700">{error}</p> : null}
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
         {HOME_LAYOUT_OPTIONS.map((layout) => {
-          const selected = activeLayout === layout.id;
+          const selected = !activeCustom && activeLayout === layout.id;
           const palette = getHomeLayoutPalette(layout.id);
           return (
             <article
@@ -98,9 +189,9 @@ export default function AppearanceHomeLayoutGallery({
               <div className="mt-3 flex gap-2">
                 <button
                   type="button"
-                  disabled={disabled || selected}
-                  onClick={() => onSelect(layout)}
-                  className="h-9 flex-1 rounded-xl bg-slate-900 text-xs font-bold text-white hover:bg-slate-800 disabled:opacity-50"
+                  disabled={disabled || selected || busyId !== null}
+                  onClick={() => void selectPreset(layout)}
+                  className="h-9 flex-1 rounded-xl bg-blue-600 text-xs font-bold text-white shadow-lg shadow-blue-200 transition-all hover:bg-blue-700 disabled:opacity-50"
                 >
                   {selected ? "Selected" : "Use layout"}
                 </button>
@@ -117,6 +208,51 @@ export default function AppearanceHomeLayoutGallery({
             </article>
           );
         })}
+      </div>
+
+      <div className="border-t border-slate-200 pt-5">
+        <div className="mb-3 flex items-center justify-between gap-3">
+          <div>
+            <h4 className="text-sm font-black text-slate-900">Published custom layouts</h4>
+            <p className="mt-1 text-xs text-slate-500">Home Page layouts created manually or by AI appear here after publication.</p>
+          </div>
+          {loading ? <Loader2 className="h-4 w-4 animate-spin text-blue-600" /> : null}
+        </div>
+        {!loading && customLayouts.length === 0 ? (
+          <div className="rounded-2xl border border-dashed border-slate-200 bg-slate-50 p-5 text-sm text-slate-500">
+            No published custom Home Page layout yet.
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+            {customLayouts.map((layout) => {
+              const selected = layout.id === activeCustom?.id;
+              const busy = busyId === layout.id;
+              const origin = layout.layoutJson?.metadata?.origin || "manual";
+              return (
+                <article key={layout.id} className={cn("rounded-2xl border-2 bg-white p-4", selected ? "border-blue-600 ring-2 ring-blue-100" : "border-slate-100")}>
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="inline-flex items-center gap-1 text-[10px] font-bold uppercase tracking-wide text-slate-400">
+                      {origin === "ai" ? <Sparkles className="h-3 w-3 text-violet-500" /> : <LayoutTemplate className="h-3 w-3" />}
+                      {origin === "ai" ? "AI generated" : "Manual"}
+                    </span>
+                    {selected ? <span className="rounded-full bg-blue-600 px-2 py-1 text-[10px] font-bold uppercase text-white">Active</span> : null}
+                  </div>
+                  <h5 className="mt-3 text-sm font-black text-slate-900">{layout.name}</h5>
+                  <ContentLayoutMiniPreview blocks={layout.layoutJson?.blocks} selected={selected} />
+                  <button
+                    type="button"
+                    disabled={disabled || selected || busyId !== null}
+                    onClick={() => void selectCustom(layout)}
+                    className="mt-3 inline-flex h-9 w-full items-center justify-center gap-2 rounded-xl bg-blue-600 text-xs font-bold text-white shadow-lg shadow-blue-200 transition-all hover:bg-blue-700 disabled:opacity-50"
+                  >
+                    {busy ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : null}
+                    {selected ? "Selected" : "Use custom layout"}
+                  </button>
+                </article>
+              );
+            })}
+          </div>
+        )}
       </div>
     </div>
   );

@@ -52,3 +52,23 @@ test("Appearance lists only published templates and assigns selected defaults", 
   assert.match(gallery, /Advanced global and category-specific assignments remain available/);
   assert.match(gallery, /href="\/admin\/template-assignment"/);
 });
+
+test("Appearance previews published layouts from their canonical blocks", async () => {
+  const [gallery, preview] = await Promise.all([
+    readFile(
+      new URL("../components/admin/appearance/AppearanceContentLayoutGallery.tsx", import.meta.url),
+      "utf8",
+    ),
+    readFile(
+      new URL("../components/admin/appearance/ContentLayoutMiniPreview.tsx", import.meta.url),
+      "utf8",
+    ),
+  ]);
+
+  assert.match(gallery, /<ContentLayoutMiniPreview/);
+  assert.match(gallery, /blocks=\{layout\.layoutJson\?\.blocks\}/);
+  assert.match(preview, /aria-label="Layout structure preview"/);
+  assert.match(preview, /binding === "post\.title"/);
+  assert.match(preview, /binding\.includes\("content"\)/);
+  assert.doesNotMatch(preview, /dangerouslySetInnerHTML/);
+});

@@ -9,7 +9,12 @@ const { normalizeLayoutDocumentV1 } = normalizer;
 const { validateLayoutDocumentV1 } = validator;
 
 function prepareLikeFrontend(input, { name, type, status }) {
-  const kind = String(type).toLowerCase().includes("archive") ? "blog-archive" : "single-post";
+  const normalizedType = String(type).toLowerCase();
+  const kind = normalizedType.includes("home")
+    ? "home-page"
+    : normalizedType.includes("archive")
+      ? "blog-archive"
+      : "single-post";
   const normalized = normalizeLayoutDocumentV1(input, { name, kind, origin: "manual" });
   const document = { ...normalized.document, name, kind };
   const validation = validateLayoutDocumentV1(document, { semantic: status === "published" });
@@ -27,6 +32,16 @@ test("manual and visual block input produce a canonical persisted document", asy
 
   assert.equal(prepared.document.schemaVersion, "1.0");
   assert.equal(prepared.document.name, "Builder Post");
+  assert.equal(prepared.validation.valid, true);
+});
+
+test("manual Home Page input saves with the canonical kind", () => {
+  const prepared = prepareLikeFrontend([
+    { id: "site-name", type: "Heading", content: "", bindings: { content: "site.name" } },
+    { id: "posts", type: "Collection List", content: { limit: 6, category: "" } },
+  ], { name: "Custom Home", type: "Home Page", status: "published" });
+
+  assert.equal(prepared.document.kind, "home-page");
   assert.equal(prepared.validation.valid, true);
 });
 

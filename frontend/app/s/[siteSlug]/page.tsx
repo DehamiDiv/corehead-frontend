@@ -36,6 +36,8 @@ import {
   Globe2,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { resolveAssignedHomeLayout } from "@/lib/tenantLayout";
+import { PublicPageRenderer } from "@/components/Renderer/PublicPageRenderer";
 
 /** Always re-read branding.homeStyle after Appearance → Use layout */
 export const dynamic = "force-dynamic";
@@ -129,6 +131,38 @@ export default async function PublicSiteHomePage({ params }: Props) {
         featured?.featured_image
     ) ||
     null;
+
+  const assignedHomeLayout = await resolveAssignedHomeLayout(site.id);
+  if (assignedHomeLayout) {
+    return (
+      <main
+        className="w-full"
+        data-theme={branding.themeId}
+        data-home-style={homeStyle}
+        data-home-layout="custom"
+        data-layout-source="template"
+        data-template-id={assignedHomeLayout.templateId}
+      >
+        <PublicPageRenderer
+          layout={assignedHomeLayout.document}
+          data={{
+            posts,
+            siteSlug: site.slug,
+            site: {
+              id: site.id,
+              name: site.name,
+              slug: site.slug,
+              logo,
+              tagline,
+              description: tagline,
+              heroImage,
+            },
+          }}
+          siteBasePath={`/s/${site.slug}`}
+        />
+      </main>
+    );
+  }
 
   const captions = siteHomeCaptions(branding, site.name);
   const sections = siteHomeSections(site.name, branding);

@@ -10,7 +10,11 @@ import React, {
 } from "react";
 import { api } from "@/lib/api";
 import { normalizeLayoutDocumentV1 } from "@/lib/layoutContract";
-import { prepareLayoutForSave } from "@/lib/templateLayout";
+import {
+  kindToTemplateType,
+  prepareLayoutForSave,
+  templateTypeToKind,
+} from "@/lib/templateLayout";
 import PaywallModal from "@/components/admin/PaywallModal";
 
 export type BlockType =
@@ -34,10 +38,13 @@ export interface BuilderBlock {
   id: string;
   type: BlockType;
   content: any; // Text content, image URL, etc.
+  level?: 1 | 2 | 3; // Canonical Heading block level
   styles?: Record<string, string>;
   bindings?: Record<string, string>; // e.g. { content: "post.title" }
   parentId?: string;
 }
+
+export type BuilderTemplateType = "Single Post" | "Blog Archive" | "Home Page";
 
 interface BuilderContextType {
   blocks: BuilderBlock[];
@@ -59,13 +66,13 @@ interface BuilderContextType {
   loadLayout: (json: string) => void;
   saveToBackend: (
     status: string,
-    overrides?: { name?: string; type?: "Single Post" | "Blog Archive" },
+    overrides?: { name?: string; type?: BuilderTemplateType },
   ) => Promise<any>;
   // FR-07: The system shall allow selecting template type
   templateName: string;
   setTemplateName: (name: string) => void;
-  templateType: "Single Post" | "Blog Archive";
-  setTemplateType: (type: "Single Post" | "Blog Archive") => void;
+  templateType: BuilderTemplateType;
+  setTemplateType: (type: BuilderTemplateType) => void;
   templateId: string | null;
   setTemplateId: (id: string | null) => void;
   activeSidebar: "chat" | "blocks" | "settings" | "cms";
@@ -97,7 +104,7 @@ export function BuilderProvider({ children }: { children: ReactNode }) {
   // Template Database Metadata (Stored in real PostgreSQL via backend API)
   const [templateId, setTemplateId] = useState<string | null>(null);
   const [templateName, setTemplateName] = useState("New Layout");
-  const [templateType, setTemplateType] = useState<"Single Post" | "Blog Archive">("Single Post");
+  const [templateType, setTemplateType] = useState<BuilderTemplateType>("Single Post");
 
   const [activeSidebar, setActiveSidebar] = useState<"chat" | "blocks" | "settings" | "cms">("chat");
   const [deviceMode, setDeviceMode] = useState<"desktop" | "tablet" | "mobile">("desktop");
@@ -168,8 +175,12 @@ export function BuilderProvider({ children }: { children: ReactNode }) {
             setBlocks(normalized.document.blocks as BuilderBlock[]);
             setTemplateId(String(template.id));
             setTemplateName(template.name);
-            const tType =
-              template.type === "Blog Archive" ? "Blog Archive" : "Single Post";
+            const tType: BuilderTemplateType =
+              template.type === "Blog Archive"
+                ? "Blog Archive"
+                : template.type === "Home Page"
+                  ? "Home Page"
+                  : "Single Post";
             setTemplateType(tType);
             persistMeta(template.name, tType, String(template.id));
           }
@@ -235,7 +246,7 @@ export function BuilderProvider({ children }: { children: ReactNode }) {
           if (rawMeta) {
             const m = JSON.parse(rawMeta);
             if (m.name) setTemplateName(m.name);
-            if (m.type === "Single Post" || m.type === "Blog Archive") {
+            if (m.type === "Single Post" || m.type === "Blog Archive" || m.type === "Home Page") {
               setTemplateType(m.type);
             }
             if (m.id) setTemplateId(String(m.id));
@@ -524,7 +535,7 @@ export function BuilderProvider({ children }: { children: ReactNode }) {
   // Optional overrides avoid stale React state when the save modal sets a new name.
   const saveToBackend = async (
     status: string,
-    overrides?: { name?: string; type?: "Single Post" | "Blog Archive" },
+    overrides?: { name?: string; type?: BuilderTemplateType },
   ) => {
     const name = (overrides?.name ?? templateName).trim() || templateName;
     const type = overrides?.type ?? templateType;
@@ -578,7 +589,9 @@ export function BuilderProvider({ children }: { children: ReactNode }) {
 
     setIsAnalyzing(true);
     try {
-      const type = options?.layoutType || (templateType === "Blog Archive" ? "blog-archive" : "single-post");
+      const type = options?.layoutType || templateTypeToKind(templateType);
+      const generatedTemplateType = kindToTemplateType(templateTypeToKind(type));
+      setTemplateType(generatedTemplateType);
       const style = options?.designStyle || "modern";
 
       const data = await api.generateLayout({
@@ -591,7 +604,7 @@ export function BuilderProvider({ children }: { children: ReactNode }) {
       if (data.blocks) {
         const prepared = prepareLayoutForSave(data.blocks, {
           name: templateName,
-          type: templateType,
+          type: generatedTemplateType,
           status: "draft",
           origin: "ai",
         });

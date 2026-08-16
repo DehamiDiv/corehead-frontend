@@ -62,10 +62,10 @@ export default function AdminNavbar() {
     );
 
   return (
-    <div className="w-full flex justify-center pt-6 sm:pt-8 px-4 sm:px-6">
+    <div className="relative z-[100] isolate w-full flex justify-center pt-6 sm:pt-8 px-4 sm:px-6">
       <nav
         className={cn(
-          "relative w-full max-w-5xl",
+          "relative z-[100] w-full max-w-5xl overflow-visible",
           "bg-white/70 backdrop-blur-xl border border-white/50",
           "rounded-2xl sm:rounded-full shadow-[0_8px_40px_rgba(0,0,0,0.06)]",
           "flex items-center justify-between gap-3",

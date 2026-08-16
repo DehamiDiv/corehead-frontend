@@ -50,9 +50,10 @@ export default function SettingsPanel() {
             >
               <option value="Single Post">Single Post Template</option>
               <option value="Blog Archive">Blog Archive Template</option>
+              <option value="Home Page">Home Page Template</option>
             </select>
             <p className="text-[11px] text-slate-500 mt-1">
-              "Single Post" is used for individual articles. "Blog Archive" is used for category and index pages displaying lists.
+              Single Post controls articles, Blog Archive controls post listings, and Home Page controls the public site landing page.
             </p>
           </div>
 
@@ -330,10 +331,15 @@ export default function SettingsPanel() {
                   <option value="post.title">Post Title</option>
                   <option value="post.excerpt">Post Excerpt</option>
                   <option value="post.content">Post Body (Markdown)</option>
+                  <option value="post.contentHtml">Post Body (HTML)</option>
                   <option value="post.featured_image">Featured Image URL</option>
-                  <option value="post.author">Author Name</option>
-                  <option value="post.date">Publish Date</option>
+                  <option value="post.author.name">Author Name</option>
+                  <option value="post.publishedAt">Publish Date</option>
                   <option value="site.name">Site Name</option>
+                  <option value="site.tagline">Site Tagline</option>
+                  <option value="site.description">Site Description</option>
+                  <option value="site.logo">Site Logo</option>
+                  <option value="site.heroImage">Site Hero Image</option>
                 </select>
                 <p className="text-[10px] text-blue-600 mt-1">
                   Overrides static content with dynamic data.
