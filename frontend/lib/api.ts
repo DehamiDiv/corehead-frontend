@@ -545,7 +545,15 @@ export const api = {
     });
     if (!res.ok) {
       const err = await res.json();
-      throw new Error(err.error || 'Login failed');
+      const loginError = new Error(err.error || 'Login failed') as Error & {
+        code?: string;
+        email?: string;
+        status?: number;
+      };
+      loginError.code = err.code;
+      loginError.email = err.email;
+      loginError.status = res.status;
+      throw loginError;
     }
     return res.json();
   },

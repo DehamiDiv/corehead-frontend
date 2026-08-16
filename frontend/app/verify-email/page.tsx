@@ -41,7 +41,7 @@ function VerifyEmailForm() {
         setDevOtp(stored);
         setOtp(stored.split(""));
         setInfo(
-          "SMTP is not configured on the backend, so no real email was sent. Use the verification code below (also printed in the backend console as [AUTH] Verification OTP).",
+          "Resend is not configured on the backend, so no real email was sent. Use the verification code below (also printed in the backend console as [AUTH] Verification OTP).",
         );
       }
       const emailErr = sessionStorage.getItem(
@@ -166,7 +166,7 @@ function VerifyEmailForm() {
           /* ignore */
         }
         setInfo(
-          "SMTP is not configured — a new code was generated and is shown below (and in the backend console). Configure EMAIL_HOST / EMAIL_USER / EMAIL_PASS in CoreHead-Backend/.env for real Gmail delivery.",
+          "Resend is not configured — a new code was generated and is shown below (and in the backend console). Configure RESEND_API_KEY and EMAIL_FROM for email delivery.",
         );
         setSuccess("New verification code ready (dev mode).");
       } else if (realMail) {
@@ -177,7 +177,7 @@ function VerifyEmailForm() {
         setInfo(
           res.emailError ||
             res.message ||
-            "Email was not delivered. Check backend console for [AUTH] Verification OTP, or configure SMTP.",
+            "Email was not delivered. Check backend console for [AUTH] Verification OTP, or configure Resend.",
         );
         setSuccess(res.message || "OTP regenerated.");
       }
@@ -248,7 +248,7 @@ function VerifyEmailForm() {
           {devOtp && (
             <div className="bg-slate-900 text-white rounded-xl px-4 py-4 mb-5 shadow-lg">
               <p className="text-[10px] uppercase tracking-wider text-slate-400 font-bold mb-1">
-                Dev OTP (SMTP not configured)
+                Dev OTP (Resend not configured)
               </p>
               <div className="flex items-center justify-between gap-3">
                 <p className="text-3xl font-black tracking-[0.35em] font-mono">
@@ -268,12 +268,10 @@ function VerifyEmailForm() {
                 </button>
               </div>
               <p className="text-[11px] text-slate-400 mt-2">
-                For real Gmail delivery: set{" "}
-                <code className="text-slate-300">EMAIL_HOST</code>,{" "}
-                <code className="text-slate-300">EMAIL_USER</code>,{" "}
-                <code className="text-slate-300">EMAIL_PASS</code> in{" "}
-                <code className="text-slate-300">CoreHead-Backend/.env</code>{" "}
-                (Gmail App Password) and restart the backend.
+                For email delivery, configure{" "}
+                <code className="text-slate-300">RESEND_API_KEY</code> and{" "}
+                <code className="text-slate-300">EMAIL_FROM</code>, then restart
+                or redeploy the backend.
               </p>
             </div>
           )}

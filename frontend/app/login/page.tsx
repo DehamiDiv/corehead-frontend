@@ -15,6 +15,13 @@ export default function LoginPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const callbackUrl = searchParams.get('callback');
+  const safeCallback =
+    callbackUrl?.startsWith('/') && !callbackUrl.startsWith('//')
+      ? callbackUrl
+      : '';
+  const signupHref = safeCallback
+    ? `/signup?callback=${encodeURIComponent(safeCallback)}`
+    : '/signup';
   const { toasts, remove, success: toastSuccess, error: toastError, info: toastInfo } = useToast();
 
   const [showPassword, setShowPassword] = useState(false);
@@ -125,6 +132,18 @@ export default function LoginPage() {
         router.push(destination);
       }, 900);
     } catch (err: any) {
+      if (err?.code === 'EMAIL_NOT_VERIFIED') {
+        const verifyQs = new URLSearchParams({ email: err.email || email });
+        if (safeCallback) {
+          verifyQs.set('callback', safeCallback);
+        }
+        toastInfo(
+          'Enter the verification code sent to your email before signing in.',
+          'Email verification required'
+        );
+        router.push(`/verify-email?${verifyQs.toString()}`);
+        return;
+      }
       const message = err?.response?.data?.error || err.message || "Login failed. Please check your credentials and try again.";
       toastError(message, "Login Failed");
     } finally {
@@ -155,7 +174,7 @@ export default function LoginPage() {
         <div className="flex items-center gap-4">
           <span className="hidden sm:inline text-sm text-slate-700">Don't have an account?</span>
           <Link
-            href="/signup"
+            href={signupHref}
             className="px-5 py-2 text-sm font-bold text-blue-700 transition-all bg-white/50 backdrop-blur-md border border-white/50 rounded-full hover:bg-white/80 shadow-sm"
           >
             Sign Up
@@ -264,7 +283,7 @@ export default function LoginPage() {
             <p className="text-center text-sm text-slate-600 mt-2">
               Don&apos;t have an account?{" "}
               <Link
-                href="/signup"
+                href={signupHref}
                 className="font-semibold text-blue-700 hover:text-blue-800 transition-colors"
               >
                 Sign Up

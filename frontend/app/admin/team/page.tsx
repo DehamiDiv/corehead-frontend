@@ -102,7 +102,7 @@ export default function TeamPage() {
         email: email.trim(),
         role,
       });
-      // Only treat real SMTP as success for "delivered"
+      // Only treat a provider-accepted email as successfully delivered.
       if (res.emailSent === true && res.emailRealDelivery !== false) {
         setSuccess(
           res.message ||
@@ -114,7 +114,7 @@ export default function TeamPage() {
         setSuccess(res.message || "Invite saved.");
         setError(
           res.emailError ||
-            "Email was NOT delivered to a real inbox. Configure EMAIL_HOST / EMAIL_USER / EMAIL_PASS in CoreHead-Backend/.env (Gmail App Password), restart backend, then invite again. You can still copy the invite link below.",
+            "Email was NOT delivered. Configure RESEND_API_KEY and EMAIL_FROM in CoreHead-Backend, redeploy, then invite again. You can still copy the invite link below.",
         );
       }
       if (res.inviteLink) setLastInviteLink(res.inviteLink);
