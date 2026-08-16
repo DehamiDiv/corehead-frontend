@@ -14,7 +14,7 @@ import {
 } from "lucide-react";
 import { api } from "@/lib/api";
 import { useToast, ToastContainer } from "@/components/ui/Toast";
-import FloatingBubbles from "@/components/auth/FloatingBubbles";
+
 
 function SignupForm() {
   const router = useRouter();
@@ -338,8 +338,7 @@ function SignupForm() {
       {/* Toast Notifications */}
       <ToastContainer toasts={toasts} onRemove={remove} />
 
-      {/* Floating Animated Bubbles Background */}
-      <FloatingBubbles />
+
 
       {/* Navbar matching Login page style */}
       <nav className="w-full px-6 py-4 flex items-center justify-between mx-auto max-w-7xl relative z-10">

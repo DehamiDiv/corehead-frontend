@@ -113,6 +113,7 @@ export default function Canvas() {
 
   const handleDropRoot = (e: React.DragEvent) => {
     e.preventDefault();
+    e.stopPropagation();
     setIsDragging(false);
     setDropTarget(null);
 
@@ -919,3 +920,5 @@ function renderBlockContent(block: BuilderBlock, isSelected: boolean) {
       return <div className="text-red-500">Unknown block type</div>;
   }
 }
+
+

@@ -109,7 +109,7 @@ export function BuilderProvider({ children }: { children: ReactNode }) {
   const [templateName, setTemplateName] = useState("New Layout");
   const [templateType, setTemplateType] = useState<BuilderTemplateType>("Single Post");
 
-  const [activeSidebar, setActiveSidebar] = useState<"chat" | "blocks" | "settings" | "cms">("chat");
+  const [activeSidebar, setActiveSidebar] = useState<"chat" | "blocks" | "settings" | "cms">("blocks");
   const [deviceMode, setDeviceMode] = useState<"desktop" | "tablet" | "mobile">("desktop");
   const [isAnalyzing, setIsAnalyzing] = useState(false);
 
@@ -1055,3 +1055,4 @@ function getTemplateInitialBlocks(templateId: string): BuilderBlock[] {
       return [];
   }
 }
+

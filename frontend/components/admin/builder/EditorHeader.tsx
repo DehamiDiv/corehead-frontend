@@ -16,12 +16,14 @@ import {
   Undo,
   Redo,
   FileCode,
+  ChevronDown,
 } from "lucide-react";
 import { useBuilder } from "./BuilderContext";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { getCurrentSite } from "@/lib/siteStorage";
 import { api } from "@/lib/api";
+import { cn } from "@/lib/utils";
 import { aiApi } from "@/services/aiApi";
 
 const SAVE_META_KEY = "corehead_builder_save_meta";
@@ -48,6 +50,7 @@ export default function EditorHeader() {
   const [showSaveModal, setShowSaveModal] = useState(false);
   const [tempName, setTempName] = useState(templateName);
   const [saveStatus, setSaveStatus] = useState("draft");
+  const [isActionsOpen, setIsActionsOpen] = useState(false);
   const router = useRouter();
 
   const handleSaveClick = (status: string) => {
@@ -329,16 +332,26 @@ export default function EditorHeader() {
               className="h-10 w-auto object-contain"
             />
           </Link>
+          
+          <Link
+            href="/admin"
+            className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-slate-50 hover:bg-slate-100 text-slate-500 hover:text-slate-700 text-xs font-bold transition-all"
+          >
+            ← Exit to Dashboard
+          </Link>
+
+          <div className="h-8 w-px bg-slate-100 hidden sm:block mx-1" />
+
           <div className="flex flex-col">
             <div className="flex items-center gap-2">
-              <span className="text-[16px] font-black text-slate-900 leading-tight tracking-tight">
+              <span className="text-[15px] font-black text-slate-900 leading-tight tracking-tight">
                 {templateName}
               </span>
               <span className="px-2 py-0.5 bg-blue-50 text-blue-600 text-[10px] font-black uppercase tracking-widest rounded-md border border-blue-100">
-                Editing
+                {templateType}
               </span>
             </div>
-            <span className="text-[12px] font-bold text-slate-400 leading-tight mt-0.5">
+            <span className="text-[11px] font-bold text-slate-400 leading-tight mt-0.5">
               Auto-saving enabled
             </span>
           </div>
@@ -387,7 +400,7 @@ export default function EditorHeader() {
           {isSaving && <Loader2 className="animate-spin text-blue-500" size={18} />}
 
           {/* Undo/Redo Buttons */}
-          <div className="flex items-center gap-1 bg-slate-50 p-1 rounded-xl border border-slate-100 mr-1">
+          <div className="flex items-center gap-1 bg-slate-50 p-1 rounded-xl border border-slate-100">
             <button
               type="button"
               onClick={undo}
@@ -408,40 +421,56 @@ export default function EditorHeader() {
             </button>
           </div>
 
-          <div className="flex items-center gap-1 bg-slate-50 p-1 rounded-xl border border-slate-100 mr-2">
+          {/* Actions Dropdown */}
+          <div className="relative">
             <button
               type="button"
-              onClick={handleClear}
-              title="Clear Canvas"
-              className="p-2 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-all cursor-pointer"
+              onClick={() => setIsActionsOpen(!isActionsOpen)}
+              className="flex items-center gap-1.5 px-3.5 py-2.5 bg-slate-50 hover:bg-slate-100 border border-slate-100 rounded-xl text-[13px] font-bold text-slate-600 transition-all cursor-pointer"
             >
-              <Trash2 size={18} />
+              <span>Actions</span>
+              <ChevronDown size={14} className={cn("transition-transform duration-200", isActionsOpen && "rotate-180")} />
             </button>
-            <label className="p-2 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-all cursor-pointer">
-              <Upload size={18} />
-              <input
-                type="file"
-                accept=".json"
-                className="hidden"
-                onChange={handleImport}
-              />
-            </label>
-            <button
-              type="button"
-              onClick={handleExport}
-              title="Export JSON"
-              className="p-2 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-all cursor-pointer"
-            >
-              <Download size={18} />
-            </button>
-            <button
-              type="button"
-              onClick={handleExportHtml}
-              title="Export HTML/CSS"
-              className="p-2 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-all cursor-pointer"
-            >
-              <FileCode size={18} />
-            </button>
+            
+            {isActionsOpen && (
+              <>
+                <div className="fixed inset-0 z-40" onClick={() => setIsActionsOpen(false)} />
+                <div className="absolute right-0 mt-2 w-48 bg-white border border-slate-200 rounded-2xl shadow-xl py-2 z-50 animate-in fade-in slide-in-from-top-2 duration-200">
+                  <button
+                    onClick={() => { handleClear(); setIsActionsOpen(false); }}
+                    className="w-full text-left px-4 py-2.5 text-xs font-bold text-red-600 hover:bg-red-50 flex items-center gap-2 transition-colors cursor-pointer"
+                  >
+                    <Trash2 size={14} />
+                    Clear Canvas
+                  </button>
+                  <div className="h-px bg-slate-100 my-1" />
+                  <label className="w-full text-left px-4 py-2.5 text-xs font-bold text-slate-600 hover:bg-slate-50 flex items-center gap-2 transition-colors cursor-pointer">
+                    <Upload size={14} />
+                    Import JSON
+                    <input
+                      type="file"
+                      accept=".json"
+                      className="hidden"
+                      onChange={(e) => { handleImport(e); setIsActionsOpen(false); }}
+                    />
+                  </label>
+                  <button
+                    onClick={() => { handleExport(); setIsActionsOpen(false); }}
+                    className="w-full text-left px-4 py-2.5 text-xs font-bold text-slate-600 hover:bg-slate-50 flex items-center gap-2 transition-colors cursor-pointer"
+                  >
+                    <Download size={14} />
+                    Export JSON
+                  </button>
+                  <button
+                    onClick={() => { handleExportHtml(); setIsActionsOpen(false); }}
+                    className="w-full text-left px-4 py-2.5 text-xs font-bold text-slate-600 hover:bg-slate-50 flex items-center gap-2 transition-colors cursor-pointer"
+                  >
+                    <FileCode size={14} />
+                    Export HTML/CSS
+                  </button>
+                </div>
+              </>
+            )}
           </div>
 
           <button
@@ -560,3 +589,4 @@ export default function EditorHeader() {
     </>
   );
 }
+

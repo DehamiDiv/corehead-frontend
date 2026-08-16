@@ -107,7 +107,7 @@ function AdminShell({ children }: { children: React.ReactNode }) {
   const isBuilder = pathname?.startsWith("/admin/builder");
 
   if (isDashboard || isBuilder) {
-    return <main>{children}</main>;
+    return <main key={pathname} className="animate-in fade-in duration-500 h-full">{children}</main>;
   }
 
   return (
@@ -119,7 +119,12 @@ function AdminShell({ children }: { children: React.ReactNode }) {
         }`}
       >
         <Header onToggleSidebar={() => setIsSidebarOpen(!isSidebarOpen)} />
-        <main className="flex-1 p-6 overflow-y-auto">{children}</main>
+        <main 
+          key={pathname}
+          className="flex-1 p-6 overflow-y-auto animate-in fade-in slide-in-from-bottom-1 duration-500"
+        >
+          {children}
+        </main>
       </div>
     </div>
   );

@@ -5,7 +5,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { AlertCircle, Loader2, ArrowLeft, Mail } from "lucide-react";
 import { api } from "@/lib/api";
-import FloatingBubbles from "@/components/auth/FloatingBubbles";
+
 import { useToast, ToastContainer } from "@/components/ui/Toast";
 
 export default function ForgotPasswordPage() {
@@ -33,9 +33,7 @@ export default function ForgotPasswordPage() {
 
   return (
     <div className="min-h-screen w-full bg-gradient-to-br from-blue-200 via-blue-300 to-blue-400 flex flex-col font-sans relative overflow-hidden">
-      {/* Floating Animated Bubbles Background */}
       <ToastContainer toasts={toasts} onRemove={remove} />
-      <FloatingBubbles />
 
       <nav className="w-full px-6 py-4 flex items-center justify-between mx-auto max-w-7xl relative z-10">
         <Link href="/" className="flex items-center">

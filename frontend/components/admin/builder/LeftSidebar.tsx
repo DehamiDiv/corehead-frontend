@@ -14,19 +14,6 @@ export default function LeftSidebar() {
       {/* Icon Rail */}
       <div className="w-16 flex flex-col items-center py-6 gap-6 border-r border-slate-100 bg-[#f8fafc]">
         <button
-          onClick={() => setActiveSidebar("chat")}
-          className={`p-3 rounded-2xl transition-all duration-300 relative group ${activeSidebar === "chat"
-              ? "bg-blue-600 text-white shadow-lg shadow-blue-200"
-              : "text-slate-400 hover:bg-slate-50 hover:text-slate-600"
-            }`}
-          title="AI Assistant"
-        >
-          <MessageSquare size={22} />
-          {activeSidebar === "chat" && (
-            <div className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-6 bg-blue-600 rounded-r-full shadow-[2px_0_10px_rgba(37,99,235,0.4)]" />
-          )}
-        </button>
-        <button
           onClick={() => setActiveSidebar("blocks")}
           className={`p-3 rounded-2xl transition-all duration-300 relative group ${activeSidebar === "blocks"
               ? "bg-blue-600 text-white shadow-lg shadow-blue-200"
@@ -36,6 +23,19 @@ export default function LeftSidebar() {
         >
           <LayoutGrid size={22} />
           {activeSidebar === "blocks" && (
+            <div className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-6 bg-blue-600 rounded-r-full shadow-[2px_0_10px_rgba(37,99,235,0.4)]" />
+          )}
+        </button>
+        <button
+          onClick={() => setActiveSidebar("chat")}
+          className={`p-3 rounded-2xl transition-all duration-300 relative group ${activeSidebar === "chat"
+              ? "bg-blue-600 text-white shadow-lg shadow-blue-200"
+              : "text-slate-400 hover:bg-slate-50 hover:text-slate-600"
+            }`}
+          title="AI Assistant"
+        >
+          <MessageSquare size={22} />
+          {activeSidebar === "chat" && (
             <div className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-6 bg-blue-600 rounded-r-full shadow-[2px_0_10px_rgba(37,99,235,0.4)]" />
           )}
         </button>

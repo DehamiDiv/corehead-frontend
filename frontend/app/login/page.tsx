@@ -8,7 +8,7 @@ import { Eye, EyeOff, LayoutGrid, BookOpen, Settings, Loader2 } from "lucide-rea
 import { api } from "@/lib/api";
 import { resolvePostAuthDestination } from "@/lib/postAuthRedirect";
 import { persistSession } from "@/lib/authSession";
-import FloatingBubbles from "@/components/auth/FloatingBubbles";
+
 import { useToast, ToastContainer } from "@/components/ui/Toast";
 
 export default function LoginPage() {
@@ -80,7 +80,7 @@ export default function LoginPage() {
 
   const handleGoogleLoginCallback = async (response: any) => {
     try {
-      const data = await api.googleLogin(response.credential);
+      const data = await api.googleLogin({ credential: response.credential });
       persistSession({
         accessToken: data.accessToken,
         refreshToken: data.refreshToken,
@@ -137,8 +137,7 @@ export default function LoginPage() {
       {/* Toast Notifications */}
       <ToastContainer toasts={toasts} onRemove={remove} />
 
-      {/* Floating Animated Bubbles Background */}
-      <FloatingBubbles />
+
 
       {/* Custom Navbar for Login Page */}
       <nav className="w-full px-6 py-4 flex items-center justify-between mx-auto max-w-7xl relative z-10">
