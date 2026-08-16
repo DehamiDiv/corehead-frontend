@@ -21,7 +21,7 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { isPlatformAdmin } from "@/lib/rbac";
-import { resolveAdminMediaUrl } from "@/lib/apiOrigin";
+import { getApiBaseUrl, resolveAdminMediaUrl } from "@/lib/apiOrigin";
 
 type NavItem = {
   label: string;
@@ -66,7 +66,7 @@ export default function Sidebar({ isOpen = true }: { isOpen?: boolean }) {
 
     const token = localStorage.getItem('accessToken') || localStorage.getItem('token');
     if (token) {
-      fetch('http://localhost:5000/api/auth/me', {
+      fetch(`${getApiBaseUrl()}/auth/me`, {
         headers: { 'Authorization': `Bearer ${token}` }
       })
         .then(res => res.json())

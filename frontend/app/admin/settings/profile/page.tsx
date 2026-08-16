@@ -67,6 +67,9 @@ export default function ProfileSettingsPage() {
               lastUpdated: new Date().toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' }),
               avatar: avatar
             };
+            // Heal stale login/session data so sidebar and header reflect the
+            // canonical database profile even when it was saved before this fix.
+            updateStoredUser(dbUser);
             setUser(userState);
             setFormData(userState);
           }
