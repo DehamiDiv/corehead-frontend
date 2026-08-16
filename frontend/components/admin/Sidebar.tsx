@@ -22,6 +22,7 @@ import {
 import { cn } from "@/lib/utils";
 import { isPlatformAdmin } from "@/lib/rbac";
 import { getApiBaseUrl, resolveAdminMediaUrl } from "@/lib/apiOrigin";
+import { useOptionalSite } from "@/components/admin/SiteContext";
 
 type NavItem = {
   label: string;
@@ -33,6 +34,7 @@ type NavItem = {
 
 export default function Sidebar({ isOpen = true }: { isOpen?: boolean }) {
   const pathname = usePathname();
+  const siteContext = useOptionalSite();
   const pathnameNormalized = pathname || "";
   const [settingsOpen, setSettingsOpen] = useState(true);
   const [user, setUser] = useState<{
@@ -94,6 +96,9 @@ export default function Sidebar({ isOpen = true }: { isOpen?: boolean }) {
   }, []);
 
   const displayName = user?.name || user?.email || "Admin";
+  const displayRole = isPlatformAdmin(user?.role)
+    ? String(user?.role || "ADMIN").toUpperCase()
+    : String(siteContext?.currentSite?.siteRole || user?.role || "Account").toUpperCase();
   const avatarSrc =
     resolveAdminMediaUrl(user?.avatar || user?.image) ||
     `https://ui-avatars.com/api/?name=${encodeURIComponent(displayName)}&background=0f172a&color=fff&bold=true&size=128`;
@@ -294,7 +299,7 @@ export default function Sidebar({ isOpen = true }: { isOpen?: boolean }) {
               {user?.name || "Admin"}
             </p>
             <p className="text-[11px] text-slate-400 truncate uppercase tracking-tight font-semibold">
-              {user?.role || "Account"}
+              {displayRole}
             </p>
           </div>
         </Link>

@@ -15,6 +15,7 @@ export type StoredSite = {
   status?: string;
   logo?: string | null;
   ownerId?: number;
+  siteRole?: string | null;
 };
 
 const isBrowser = () => typeof window !== "undefined";
@@ -57,6 +58,7 @@ export function setCurrentSite(site: StoredSite | null): void {
       status: site.status,
       logo: site.logo ?? null,
       ownerId: site.ownerId,
+      siteRole: site.siteRole ?? null,
     })
   );
 }

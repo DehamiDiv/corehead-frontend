@@ -12,6 +12,7 @@ export type SiteSummary = {
   status?: string;
   logo?: string | null;
   ownerId?: number;
+  siteRole?: "OWNER" | "EDITOR" | "AUTHOR" | string | null;
   /** R6 */
   customDomain?: string | null;
   domainStatus?: string;

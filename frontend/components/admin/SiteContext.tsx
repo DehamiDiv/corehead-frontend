@@ -39,6 +39,7 @@ function toStored(site: SiteSummary | StoredSite): StoredSite {
     status: site.status,
     logo: site.logo ?? null,
     ownerId: "ownerId" in site ? site.ownerId : undefined,
+    siteRole: site.siteRole ?? null,
   };
 }
 
