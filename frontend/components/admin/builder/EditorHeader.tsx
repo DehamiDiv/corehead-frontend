@@ -8,7 +8,7 @@ import {
   Tablet,
   Smartphone,
   Loader2,
-  Send,
+  Send, FileText,
   Download,
   Upload,
   Trash2,
@@ -59,17 +59,33 @@ export default function EditorHeader() {
     setShowSaveModal(true);
   };
 
-  const handleConfirmSave = async () => {
-    if (!tempName || tempName.trim() === "") {
-      alert("Please enter a name for your layout.");
-      return;
-    }
+      const handleConfirmSave = async () => {
+      if (!tempName || tempName.trim() === "") {
+        alert("Please enter a name for your layout.");
+        return;
+      }
+  
+      setShowSaveModal(false);
+      setIsSaving(true);
+  
+      try {
+        if (saveStatus === "post") {
+          const site = getCurrentSite();
+          const layoutDataStr = JSON.stringify(serializeLayout());
+          // Create the post
+          await api.createPost({
+            title: tempName.trim(),
+            slug: tempName.trim().toLowerCase().replace(/[^a-z0-9]+/g, "-"),
+            content: layoutDataStr,
+            status: "Published",
+          }, site?.id);
+          
+          alert("Blog Post Published Successfully!");
+          router.push("/admin/posts");
+          return;
+        }
 
-    setShowSaveModal(false);
-    setIsSaving(true);
-
-    try {
-      const result = await saveToBackend(saveStatus, {
+        const result = await saveToBackend(saveStatus, {
         name: tempName.trim(),
         type: templateType,
       });
@@ -518,8 +534,10 @@ export default function EditorHeader() {
                   Save <span className="text-blue-600">Layout</span>
                 </h3>
                 <p className="text-slate-500 text-sm font-semibold">
-                  {saveStatus === "published"
+                                    {saveStatus === "published"
                     ? "Publish this layout for your site"
+                    : saveStatus === "post"
+                    ? "Publish as a new Blog Post"
                     : "Save as a draft template"}
                 </p>
               </div>
@@ -579,7 +597,7 @@ export default function EditorHeader() {
                 onClick={handleConfirmSave}
                 className="flex-[2] py-4 px-4 bg-slate-900 text-white rounded-2xl text-[14px] font-black hover:bg-slate-800 transition-all shadow-xl active:scale-95 flex items-center justify-center gap-2"
               >
-                {saveStatus === "published" ? "Publish Now" : "Save as Draft"}
+                                {saveStatus === "published" ? "Publish Now" : saveStatus === "post" ? "Create Post" : "Save as Draft"}
                 <ArrowRight size={16} />
               </button>
             </div>
@@ -589,4 +607,5 @@ export default function EditorHeader() {
     </>
   );
 }
+
 
