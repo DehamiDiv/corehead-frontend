@@ -326,14 +326,8 @@ export default function EditorHeader() {
   };
 
   const handleClear = () => {
-    if (
-      confirm(
-        "Are you sure you want to clear the entire canvas? This cannot be undone.",
-      )
-    ) {
-      loadLayout("[]");
-    }
-  };
+      setShowClearConfirm(true);
+    };
 
   return (
     <>
