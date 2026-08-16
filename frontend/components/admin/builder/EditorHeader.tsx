@@ -329,6 +329,12 @@ export default function EditorHeader() {
       setShowClearConfirm(true);
     };
 
+    const confirmClear = () => {
+      loadLayout("[]");
+      setShowClearConfirm(false);
+      setIsActionsOpen(false);
+    };
+
   return (
     <>
       <header className="h-[72px] bg-white border-b border-slate-100 flex items-center justify-between px-8 sticky top-0 z-50 shadow-[0_1px_10px_rgba(0,0,0,0.02)]">
