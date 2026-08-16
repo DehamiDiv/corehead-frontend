@@ -212,7 +212,7 @@ export default function PublicSiteHeader({ site }: { site: PublicSite }) {
         background: `color-mix(in srgb, var(--site-header-bg, var(--site-surface, #fff)) 92%, transparent)`,
       }}
     >
-      <div className="grid h-[72px] w-full grid-cols-[minmax(0,1fr)_auto] items-center gap-4 px-4 sm:px-6 lg:grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] lg:px-10 xl:px-14">
+      <div className="grid h-[var(--site-header-mobile-height,64px)] w-full grid-cols-[minmax(0,1fr)_auto] items-center gap-4 px-4 transition-[height] sm:px-6 lg:h-[var(--site-header-height,72px)] lg:grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] lg:px-10 xl:px-14">
         <Link
           href={homeHref}
           className="group flex h-12 min-w-0 items-center gap-2.5 justify-self-start"

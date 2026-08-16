@@ -105,13 +105,14 @@ test("public and Appearance-preview headers keep logo, navigation, and actions a
     header,
     /lg:grid-cols-\[minmax\(0,1fr\)_auto_minmax\(0,1fr\)\]/,
   );
-  assert.match(header, /grid h-\[72px\] w-full/);
+  assert.match(header, /h-\[var\(--site-header-mobile-height,64px\)\]/);
+  assert.match(header, /lg:h-\[var\(--site-header-height,72px\)\]/);
   assert.doesNotMatch(header, /max-w-6xl/);
   assert.match(header, /items-center justify-center[^\"]*justify-self-center lg:flex/);
   assert.match(header, /items-center justify-end justify-self-end lg:flex/);
   assert.match(
     appearance,
-    /grid min-h-16 grid-cols-\[minmax\(0,1fr\)_auto_minmax\(0,1fr\)\] items-center/,
+    /grid grid-cols-\[minmax\(0,1fr\)_auto_minmax\(0,1fr\)\] items-center/,
   );
   assert.match(appearance, /justify-self-center text-\[10px\]/);
   assert.match(appearance, /justify-self-end rounded-full/);
