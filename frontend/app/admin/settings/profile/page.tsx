@@ -5,83 +5,80 @@ import { Edit2, Save, X, Camera } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { api } from "@/lib/api";
 import { updateStoredUser } from "@/lib/authSession";
+import { resolveAdminMediaUrl } from "@/lib/apiOrigin";
+
+type ProfileState = {
+  id: number;
+  name: string;
+  email: string;
+  role: string;
+  status: string;
+  designation: string;
+  bio: string;
+  userId: string;
+  accountCreated: string;
+  lastUpdated: string;
+  avatar: string;
+};
+
+const formatAccountDate = (value?: string | Date | null) => {
+  const date = value ? new Date(value) : new Date();
+  return Number.isNaN(date.getTime())
+    ? "Not available"
+    : date.toLocaleDateString("en-US", {
+        month: "long",
+        day: "numeric",
+        year: "numeric",
+      });
+};
+
+const toProfileState = (account: any): ProfileState => ({
+  id: Number(account.id),
+  name: account.name || "Account User",
+  email: account.email || "",
+  role: String(account.role || "ACCOUNT").toUpperCase(),
+  status: account.status || "active",
+  designation: account.designation || "",
+  bio: account.bio || "No bio added yet.",
+  userId: `#${account.id}`,
+  accountCreated: formatAccountDate(account.createdAt),
+  lastUpdated: formatAccountDate(account.updatedAt || account.createdAt),
+  avatar: account.avatar || account.image || "",
+});
 
 export default function ProfileSettingsPage() {
   const [isEditing, setIsEditing] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
-
-  const [user, setUser] = useState({
-    name: "Dehami Div",
-    email: "admin@corehead.dev",
-    role: "ADMIN",
-    status: "Active",
-    designation: "System Administrator",
-    bio: "Lead developer and system administrator for CoreHead CMS. Passionate about building robust web applications and seamless user experiences.",
-    userId: "#1",
-    accountCreated: "December 30, 2025",
-    lastUpdated: "January 12, 2026",
-    avatar: "" // added avatar property
-  });
-
-  const [formData, setFormData] = useState(user);
+  const [user, setUser] = useState<ProfileState | null>(null);
+  const [formData, setFormData] = useState<ProfileState | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [loadError, setLoadError] = useState("");
 
   // Load from backend database
   useEffect(() => {
     const fetchUser = async () => {
       try {
-        const token = localStorage.getItem('accessToken');
-        if (!token) return;
-        const payload = JSON.parse(atob(token.split('.')[1]));
-        const currentUserId = payload.id;
-        if (!currentUserId) return;
-
-        const res = await api.getUsers();
-        const usersList = Array.isArray(res) ? res : (res.users || []);
-
-        if (usersList.length > 0) {
-          const dbUser = usersList.find((u: any) => u.id === currentUserId);
-          if (dbUser) {
-            let bio = dbUser.bio || "No bio added yet.";
-            let avatar = dbUser.avatar || "";
-
-            // Check localStorage for demo public profile overriding
-            const localDataRaw = localStorage.getItem('corehead_author_data_' + (dbUser.name || "Admin User"));
-            if (localDataRaw) {
-              try {
-                const localData = JSON.parse(localDataRaw);
-                if (localData.bio) bio = localData.bio;
-                if (localData.avatar) avatar = localData.avatar;
-                if (localData.designation) dbUser.designation = localData.designation;
-              } catch (e) { }
-            }
-
-            const userState = {
-              name: dbUser.name || "Admin User",
-              email: dbUser.email,
-              role: dbUser.role.toUpperCase(),
-              status: "Active",
-              designation: dbUser.designation || "Developer",
-              bio: bio,
-              userId: `#${dbUser.id}`,
-              accountCreated: new Date(dbUser.createdAt).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' }),
-              lastUpdated: new Date().toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' }),
-              avatar: avatar
-            };
-            // Heal stale login/session data so sidebar and header reflect the
-            // canonical database profile even when it was saved before this fix.
-            updateStoredUser(dbUser);
-            setUser(userState);
-            setFormData(userState);
-          }
+        const currentUser = await api.getCurrentUser();
+        if (!currentUser?.id) {
+          throw new Error("Authenticated user profile was not returned.");
         }
-      } catch (e) {
+
+        const userState = toProfileState(currentUser);
+        updateStoredUser(currentUser);
+        setUser(userState);
+        setFormData(userState);
+      } catch (e: any) {
         console.error("Failed to load user from backend", e);
+        setLoadError(e?.message || "Unable to load your account profile.");
+      } finally {
+        setIsLoading(false);
       }
     };
     fetchUser();
   }, []);
 
   const handleEditToggle = () => {
+    if (!user || !formData) return;
     if (isEditing) {
       // Cancel edit
       setFormData(user);
@@ -90,34 +87,23 @@ export default function ProfileSettingsPage() {
   };
 
   const handleSave = async () => {
+    if (!user || !formData) return;
     try {
-      const token = localStorage.getItem('accessToken');
-      if (token) {
-        const payload = JSON.parse(atob(token.split('.')[1]));
-        const currentUserId = payload.id;
-
-        if (currentUserId) {
-          // ALSO SAVE TO LOCALSTORAGE FOR DEMO PUBLIC PROFILE
-          localStorage.setItem('corehead_author_data_' + formData.name, JSON.stringify({
-            bio: formData.bio,
-            avatar: formData.avatar,
-            designation: formData.designation
-          }));
-
-          // Email is locked on profile — never send it on update
-          const savedUser = await api.updateUser(currentUserId, {
-            name: formData.name,
-            designation: formData.designation,
-            bio: formData.bio,
-            avatar: formData.avatar
-          });
-          updateStoredUser(savedUser);
-        }
-      }
+      const savedUser = await api.updateUser(user.id, {
+        name: formData.name,
+        designation: formData.designation,
+        bio: formData.bio,
+        avatar: formData.avatar,
+      });
+      updateStoredUser(savedUser);
 
       const updatedUser = {
         ...formData,
-        lastUpdated: new Date().toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })
+        name: savedUser.name ?? formData.name,
+        designation: savedUser.designation ?? formData.designation,
+        bio: savedUser.bio ?? formData.bio,
+        avatar: savedUser.avatar ?? formData.avatar,
+        lastUpdated: formatAccountDate(savedUser.updatedAt),
       };
       setUser(updatedUser);
       setIsEditing(false);
@@ -129,6 +115,7 @@ export default function ProfileSettingsPage() {
   };
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+    if (!formData) return;
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
@@ -137,11 +124,39 @@ export default function ProfileSettingsPage() {
     if (file) {
       const reader = new FileReader();
       reader.onloadend = () => {
+        if (!formData) return;
         setFormData({ ...formData, avatar: reader.result as string });
       };
       reader.readAsDataURL(file);
     }
   };
+
+  if (isLoading) {
+    return (
+      <div className="mx-auto max-w-4xl px-4 py-16 text-center text-sm font-semibold text-gray-500">
+        Loading your account profile…
+      </div>
+    );
+  }
+
+  if (loadError || !user || !formData) {
+    return (
+      <div className="mx-auto max-w-4xl px-4 py-16">
+        <div className="rounded-2xl border border-red-100 bg-red-50 p-6 text-center">
+          <h1 className="text-lg font-bold text-red-800">Profile unavailable</h1>
+          <p className="mt-2 text-sm text-red-600">{loadError || "Unable to load your account profile."}</p>
+        </div>
+      </div>
+    );
+  }
+
+  const displayedName = isEditing ? formData.name : user.name;
+  const displayedAvatar = resolveAdminMediaUrl(
+    isEditing ? formData.avatar : user.avatar,
+  );
+  const avatarSrc =
+    displayedAvatar ||
+    `https://ui-avatars.com/api/?name=${encodeURIComponent(displayedName)}&background=2563eb&color=fff&bold=true&size=192`;
 
   return (
     <div className="space-y-6 max-w-4xl mx-auto pb-10 px-4">
@@ -191,8 +206,8 @@ export default function ProfileSettingsPage() {
             <div className="relative group">
               <div className="w-24 h-24 rounded-full overflow-hidden border-4 border-white shadow-xl bg-gray-50">
                 <img
-                  src={(isEditing ? formData.avatar : user.avatar) || `https://api.dicebear.com/7.x/initials/svg?seed=${isEditing ? formData.name : user.name}`}
-                  alt="Avatar"
+                  src={avatarSrc}
+                  alt={`${displayedName} profile picture`}
                   className="w-full h-full object-cover"
                 />
               </div>

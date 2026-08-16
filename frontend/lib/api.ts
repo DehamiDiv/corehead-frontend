@@ -122,6 +122,14 @@ export const api = {
     return execute();
   },
 
+  async getCurrentUser() {
+    const response = await this.fetchWithAuth(`${BASE_URL}/auth/me`, {
+      skipSite: true,
+      cache: 'no-store',
+    });
+    return response?.user ?? null;
+  },
+
   // ── Sites (T3/T7) — no X-Site-Id on list/create ──────────────────────────
   async getMySites() {
     return this.fetchWithAuth(`${BASE_URL}/sites`, {
