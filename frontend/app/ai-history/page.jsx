@@ -102,6 +102,7 @@ export default function AIHistoryPage() {
           name: normalized.document.name,
           type: normalized.document.kind === 'blog-archive' ? 'Blog Archive' : 'Single Post',
           id: null,
+          ai_history_id: item.id
         }));
         router.push('/admin/builder');
         return;

@@ -72,7 +72,7 @@ export const THEME_OPTIONS = Object.values(THEME_PRESETS).map((theme) => {
     id: theme.id,
     name: theme.name,
     description: `A complete visual system recommended with ${recommendedLayout.name}.`,
-    preview: THEME_PREVIEW_ASSETS[theme.id],
+    preview: (THEME_PREVIEW_ASSETS as any)[theme.id],
     recommendedHomeStyle: theme.recommendedHomeStyle,
   };
 });

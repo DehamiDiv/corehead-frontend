@@ -88,14 +88,15 @@ export function prepareLayoutForSave(
     kind: templateTypeToKind(options.type),
     origin: options.origin || "manual",
   });
+  const doc = normalized.document as unknown as LayoutDocumentV1;
   const document: LayoutDocumentV1 = {
-    ...normalized.document,
+    ...doc,
     name: options.name.trim(),
     kind: templateTypeToKind(options.type),
-    blocks: normalized.document.blocks as LayoutBlockV1[],
+    blocks: doc.blocks as LayoutBlockV1[],
     metadata: {
-      ...normalized.document.metadata,
-      origin: normalized.document.metadata?.origin || options.origin || "manual",
+      ...doc.metadata,
+      origin: doc.metadata?.origin || options.origin || "manual",
     },
   };
   const validation = validateLayoutDocumentV1(document, {
@@ -103,7 +104,7 @@ export function prepareLayoutForSave(
   });
   if (!validation.valid) {
     const error = new Error(
-      validation.errors.map((issue) => `${issue.path}: ${issue.message}`).join("\n"),
+      validation.errors.map((issue: any) => `${issue.path || "validate"}: ${issue.message}`).join("\n"),
     );
     error.name = "LayoutValidationError";
     throw error;

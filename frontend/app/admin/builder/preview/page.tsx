@@ -59,15 +59,18 @@ export default function BuilderPreviewPage() {
             kind: parsed?.kind,
             origin: parsed?.metadata?.origin || "manual",
           });
-          const structural = prepareRenderableLayout(normalized.document, { semantic: false });
-          const semantic = prepareRenderableLayout(normalized.document, { semantic: true });
-          layoutBlocks = normalized.document.blocks as BuilderBlock[];
-          setLayoutDocument(normalized.document);
+          const doc = normalized.document as unknown as LayoutDocumentV1;
+          const structural = prepareRenderableLayout(doc, { semantic: false });
+          const semantic = prepareRenderableLayout(doc, { semantic: true });
+          layoutBlocks = doc.blocks as BuilderBlock[];
+          setLayoutDocument(doc);
           setLayoutIssues([
-            ...normalized.warnings,
-            ...structural.issues,
-            ...semantic.issues.filter((issue) => !structural.issues.some((item) => item.code === issue.code && item.path === issue.path)),
-          ].map((issue) => `${issue.path}: ${issue.message}`));
+            ...normalized.warnings.map((w: any) => `normalize: ${w.code}`),
+            ...structural.issues.map((i: any) => `${i.path}: ${i.message}`),
+            ...semantic.issues
+              .filter((issue: any) => !structural.issues.some((item: any) => item.code === issue.code && item.path === issue.path))
+              .map((i: any) => `${i.path}: ${i.message}`),
+          ]);
           if (!structural.valid) {
             setError("The saved layout has structural validation errors.");
           }
@@ -142,7 +145,7 @@ export default function BuilderPreviewPage() {
         if (!cancelled) {
           setError(
             err?.message ||
-              "Failed to load site posts. Check that a site is selected.",
+            "Failed to load site posts. Check that a site is selected.",
           );
           setBindData({
             posts: [],
@@ -201,11 +204,10 @@ export default function BuilderPreviewPage() {
           <button
             type="button"
             onClick={() => setDevice("desktop")}
-            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
-              device === "desktop"
-                ? "bg-white shadow text-blue-600"
-                : "text-slate-400 hover:text-slate-600"
-            }`}
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${device === "desktop"
+              ? "bg-white shadow text-blue-600"
+              : "text-slate-400 hover:text-slate-600"
+              }`}
           >
             <Monitor className="w-4 h-4" />
             Desktop
@@ -213,11 +215,10 @@ export default function BuilderPreviewPage() {
           <button
             type="button"
             onClick={() => setDevice("mobile")}
-            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
-              device === "mobile"
-                ? "bg-white shadow text-blue-600"
-                : "text-slate-400 hover:text-slate-600"
-            }`}
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${device === "mobile"
+              ? "bg-white shadow text-blue-600"
+              : "text-slate-400 hover:text-slate-600"
+              }`}
           >
             <Smartphone className="w-4 h-4" />
             Mobile
@@ -227,11 +228,10 @@ export default function BuilderPreviewPage() {
 
       <div className="py-8 px-4 flex justify-center">
         <div
-          className={`w-full bg-white shadow-xl border border-slate-200/80 overflow-hidden transition-all duration-300 ${
-            device === "mobile"
-              ? "max-w-[390px] rounded-[2rem] min-h-[640px]"
-              : "max-w-5xl rounded-2xl min-h-[480px]"
-          }`}
+          className={`w-full bg-white shadow-xl border border-slate-200/80 overflow-hidden transition-all duration-300 ${device === "mobile"
+            ? "max-w-[390px] rounded-[2rem] min-h-[640px]"
+            : "max-w-5xl rounded-2xl min-h-[480px]"
+            }`}
         >
           {loading ? (
             <div className="flex flex-col items-center justify-center py-32 text-slate-400 gap-3">

@@ -17,7 +17,7 @@ export default function BlogCard({ post, isSelected, onClick, contentMode, setti
   };
 
   return (
-    <article 
+    <article
       className={`blog-card ${isSelected ? 'selected' : ''} ${contentMode === 'dynamic' ? 'dynamic' : ''} card-layout-${cardLayout}`}
       onClick={onClick}
       style={cardStyle}
@@ -25,13 +25,20 @@ export default function BlogCard({ post, isSelected, onClick, contentMode, setti
       {contentMode === 'dynamic' && (
         <div className="card-badge" style={{ background: activeGradient }}>Dynamic Block</div>
       )}
-      
+
       {/* Image section — hidden via CSS for minimal, shown for all others */}
       <div className="card-image">
-        <img src={post.image} alt={post.title} />
+        <img
+          src={post.image && post.image.trim() !== '' ? post.image : `https://picsum.photos/seed/${encodeURIComponent(post.title || 'card')}/400/250`}
+          alt={post.title}
+          onError={(e) => {
+            e.currentTarget.onerror = null;
+            e.currentTarget.src = `https://picsum.photos/seed/${encodeURIComponent(post.title || 'fallback')}/400/250`;
+          }}
+        />
         <div className="card-category" style={{ background: activeGradient }}>{post.category}</div>
       </div>
-      
+
       <div className="card-content">
         {/* Show category as inline text for minimal layout */}
         {cardLayout === 'minimal' && (
@@ -41,7 +48,7 @@ export default function BlogCard({ post, isSelected, onClick, contentMode, setti
         )}
         <h3 className="card-title" style={{ fontFamily: fontStyle }}>{post.title}</h3>
         <p className="card-excerpt" style={{ fontFamily: fontStyle }}>{post.excerpt}</p>
-        
+
         <div className="card-meta">
           <div className="meta-item" style={{ color: '#64748b' }}>
             <User size={14} color={activePrimary} />
@@ -49,10 +56,10 @@ export default function BlogCard({ post, isSelected, onClick, contentMode, setti
           </div>
           <div className="meta-item" style={{ color: '#64748b' }}>
             <Clock size={14} color={activePrimary} />
-            <span>{post.date ? new Date(post.date).toLocaleDateString('en-US', { 
-              month: 'short', 
-              day: 'numeric', 
-              year: 'numeric' 
+            <span>{post.date ? new Date(post.date).toLocaleDateString('en-US', {
+              month: 'short',
+              day: 'numeric',
+              year: 'numeric'
             }) : 'No Date'}</span>
           </div>
         </div>

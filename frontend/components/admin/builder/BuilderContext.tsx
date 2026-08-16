@@ -68,6 +68,8 @@ interface BuilderContextType {
   setTemplateType: (type: "Single Post" | "Blog Archive") => void;
   templateId: string | null;
   setTemplateId: (id: string | null) => void;
+  aiHistoryId: string | null;
+  setAiHistoryId: (id: string | null) => void;
   activeSidebar: "chat" | "blocks" | "settings" | "cms";
   setActiveSidebar: (tab: "chat" | "blocks" | "settings" | "cms") => void;
   deviceMode: "desktop" | "tablet" | "mobile";
@@ -96,6 +98,7 @@ export function BuilderProvider({ children }: { children: ReactNode }) {
 
   // Template Database Metadata (Stored in real PostgreSQL via backend API)
   const [templateId, setTemplateId] = useState<string | null>(null);
+  const [aiHistoryId, setAiHistoryId] = useState<string | null>(null);
   const [templateName, setTemplateName] = useState("New Layout");
   const [templateType, setTemplateType] = useState<"Single Post" | "Blog Archive">("Single Post");
 
@@ -139,11 +142,12 @@ export function BuilderProvider({ children }: { children: ReactNode }) {
     name: string,
     type: string,
     id: string | null,
+    historyId?: string | null,
   ) => {
     try {
       localStorage.setItem(
         "corehead_builder_meta",
-        JSON.stringify({ name, type, id }),
+        JSON.stringify({ name, type, id, ai_history_id: historyId ?? aiHistoryId }),
       );
     } catch {
       /* ignore quota */
@@ -165,7 +169,8 @@ export function BuilderProvider({ children }: { children: ReactNode }) {
               kind: template.type,
               origin: template.layoutJson?.metadata?.origin || "migrated",
             });
-            setBlocks(normalized.document.blocks as BuilderBlock[]);
+            const doc = normalized.document as any;
+            setBlocks(doc.blocks as BuilderBlock[]);
             setTemplateId(String(template.id));
             setTemplateName(template.name);
             const tType =
@@ -218,6 +223,28 @@ export function BuilderProvider({ children }: { children: ReactNode }) {
           }
         }
 
+        // Check for ai_generated_layout key (set by ai-history page)
+        const aiGeneratedLayout = localStorage.getItem("ai_generated_layout");
+        if (aiGeneratedLayout) {
+          try {
+            const parsed = JSON.parse(aiGeneratedLayout);
+            // handle { cards: [...] } shape
+            const rawBlocks = parsed.cards || parsed.blocks || parsed;
+            const normalized = normalizeLayoutDocumentV1(rawBlocks, {
+              name: "AI History Layout",
+              kind: "single-post",
+            });
+            const doc = normalized.document as any;
+            setBlocks(doc.blocks as BuilderBlock[]);
+            localStorage.removeItem("ai_generated_layout");
+            setIsLoaded(true);
+            return;
+          } catch (e) {
+            console.error("Failed to load ai_generated_layout", e);
+            localStorage.removeItem("ai_generated_layout");
+          }
+        }
+
         const saved = localStorage.getItem("corehead_builder_layout");
         if (saved) {
           try {
@@ -225,7 +252,8 @@ export function BuilderProvider({ children }: { children: ReactNode }) {
               name: templateName,
               kind: templateType,
             });
-            setBlocks(normalized.document.blocks as BuilderBlock[]);
+            const doc = normalized.document as any;
+            setBlocks(doc.blocks as BuilderBlock[]);
           } catch (e) {
             console.error("Failed to parse saved layout", e);
           }
@@ -239,6 +267,7 @@ export function BuilderProvider({ children }: { children: ReactNode }) {
               setTemplateType(m.type);
             }
             if (m.id) setTemplateId(String(m.id));
+            if (m.ai_history_id) setAiHistoryId(String(m.ai_history_id));
           }
         } catch {
           /* ignore */
@@ -296,7 +325,7 @@ export function BuilderProvider({ children }: { children: ReactNode }) {
     const handleKeyDown = (e: KeyboardEvent) => {
       const target = e.target as HTMLElement;
       const isInput = target?.tagName === "INPUT" || target?.tagName === "TEXTAREA" || target?.isContentEditable;
-      
+
       if ((e.ctrlKey || e.metaKey) && !e.shiftKey) {
         if (e.key === "z" || e.key === "Z") {
           if (!isInput) {
@@ -513,7 +542,8 @@ export function BuilderProvider({ children }: { children: ReactNode }) {
         name: templateName,
         kind: templateType,
       });
-      setBlocks(normalized.document.blocks as BuilderBlock[]);
+      const doc = normalized.document as any;
+      setBlocks(doc.blocks as BuilderBlock[]);
       localStorage.setItem("corehead_builder_layout", JSON.stringify(normalized.document));
     } catch (e) {
       console.error("Failed to parse layout string", e);
@@ -683,6 +713,8 @@ export function BuilderProvider({ children }: { children: ReactNode }) {
         setTemplateType,
         templateId,
         setTemplateId,
+        aiHistoryId,
+        setAiHistoryId,
         activeSidebar,
         setActiveSidebar,
         deviceMode,

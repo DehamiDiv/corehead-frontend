@@ -10,7 +10,8 @@ import { Menu, X } from "lucide-react";
 const navLinks = [
   { name: "Home", href: "/" },
   { name: "Features", href: "/#features" },
-  { name: "Pricing", href: "/#pricing" },
+  { name: "Pricing", href: "/pricing" },
+  { name: "Blogs", href: "/blog" },
   { name: "Guide", href: "/guides" },
 ];
 
@@ -25,7 +26,7 @@ export default function Navbar() {
       if (storedUser) {
         try {
           setUser(JSON.parse(storedUser));
-        } catch (e) {}
+        } catch (e) { }
       }
     }
   }, []);

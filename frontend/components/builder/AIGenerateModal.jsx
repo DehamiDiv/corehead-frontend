@@ -48,9 +48,9 @@ export default function AIGenerateModal({ isOpen, onClose, onGenerated }) {
 
       // Pass generated layout back to builder page
       if (result.layout?.cards) {
-        onGenerated(result.layout.cards);
+        onGenerated(result.layout.cards, result.id);
       } else if (result.blocks) {
-        onGenerated(result.blocks);
+        onGenerated(result.blocks, result.id);
       } else {
         // Fallback — add a single AI post card
         onGenerated([{
@@ -61,7 +61,7 @@ export default function AIGenerateModal({ isOpen, onClose, onGenerated }) {
           date: new Date().toISOString().split('T')[0],
           image: 'https://picsum.photos/400/250?random=' + Math.floor(Math.random() * 100),
           category: layoutType
-        }]);
+        }], result.id);
       }
 
       onClose();

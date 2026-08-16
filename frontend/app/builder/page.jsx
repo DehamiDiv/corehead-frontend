@@ -14,6 +14,7 @@ import SaveLayoutModal from '@/components/builder/SaveLayoutModal';
 import LoadLayoutModal from '@/components/builder/LoadLayoutModal';
 import './page.css';
 import { builderApi } from '@/services/builderApi';
+import { aiApi } from '@/services/aiApi';
 import PaywallModal from '@/components/admin/PaywallModal';
 
 const defaultSettings = {
@@ -58,6 +59,7 @@ export default function BlogBuilderPage() {
 
   const [blogPosts, setBlogPosts] = useState([]);
   const [isGenerating, setIsGenerating] = useState(false);
+  const [currentAiHistoryId, setCurrentAiHistoryId] = useState(null);
 
   const [cmsFields] = useState({
     post: ['Title', 'Excerpt', 'Content', 'Featured Image', 'Category', 'Tags'],
@@ -87,8 +89,10 @@ export default function BlogBuilderPage() {
 
           if (result.layout?.cards) {
             setBlogPosts(result.layout.cards);
+            if (result.id) setCurrentAiHistoryId(result.id);
           } else if (result.blocks) {
             setBlogPosts(result.blocks);
+            if (result.id) setCurrentAiHistoryId(result.id);
           }
         } catch (err) {
           console.warn('AI Flow error:', err.message);
@@ -112,6 +116,7 @@ export default function BlogBuilderPage() {
         try {
           const parsed = JSON.parse(aiLayout);
           if (parsed.cards) setBlogPosts(parsed.cards);
+          if (parsed.history_id) setCurrentAiHistoryId(parsed.history_id);
           localStorage.removeItem('ai_generated_layout');
         } catch (e) {
           console.error('Failed to load AI layout:', e);
@@ -135,6 +140,15 @@ export default function BlogBuilderPage() {
         content_mode: contentMode,
         grid_layout: 'grid'
       });
+
+      if (currentAiHistoryId) {
+        try {
+          await aiApi.promoteHistory(currentAiHistoryId, name);
+        } catch (e) {
+          console.error('Failed to promote AI history:', e);
+        }
+      }
+
       setSaveModalOpen(false);
       setSaveStatus('saved');
       setTimeout(() => setSaveStatus(null), 2500);
@@ -203,9 +217,10 @@ export default function BlogBuilderPage() {
   };
 
   // AI generated posts — store separately, enable compare mode
-  const handleAIGenerated = (newCards) => {
+  const handleAIGenerated = (newCards, historyId) => {
     setAiPosts(newCards);
     setCompareMode(true);
+    if (historyId) setCurrentAiHistoryId(historyId);
   };
 
   return (
@@ -287,8 +302,21 @@ export default function BlogBuilderPage() {
               let finalLayout = [];
 
               if (isAlreadyBlocks) {
-                // If it is already a block structure, export directly
-                finalLayout = postsToSync;
+                // Keep AI block structure, but ensure Image blocks have a real src stored
+                // (BlockRenderer shows computed placeholders that aren't stored in content)
+                finalLayout = postsToSync.map(block => {
+                  if (block.type === 'Image') {
+                    const hasRealUrl = typeof block.content === 'string' && block.content.trim() !== '';
+                    if (!hasRealUrl) {
+                      // Compute same seed used by BlockRenderer
+                      const seed = Math.abs(
+                        (block.id || '').toString().split('').reduce((a, c) => a + c.charCodeAt(0), 42)
+                      );
+                      return { ...block, content: `https://picsum.photos/seed/ai-${seed}/800/400` };
+                    }
+                  }
+                  return block;
+                });
               } else {
                 // Otherwise wrap cards in container blocks
                 const mainBuilderBlocks = postsToSync.map((post, idx) => ({

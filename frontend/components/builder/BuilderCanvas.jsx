@@ -106,10 +106,11 @@ export default function BuilderCanvas({ blogPosts, contentMode, selectedCard, se
 
           {/* Blog Cards Grid / Blocks */}
           <div className="blog-grid" style={gridStyle}>
-            {blogPosts.map((item) => (
-              item.type && ['Heading', 'Paragraph', 'Image', 'Quote', 'Divider', 'Button', 'Collection List'].includes(item.type) ? (
+            {blogPosts.map((item, index) => {
+              const itemKey = item.id || `item-${index}`;
+              return item.type && ['Heading', 'Paragraph', 'Image', 'Quote', 'Divider', 'Button', 'Collection List'].includes(item.type) ? (
                 <BlockRenderer
-                  key={item.id}
+                  key={itemKey}
                   block={item}
                   isSelected={selectedCard?.id === item.id}
                   onClick={() => setSelectedCard(item)}
@@ -117,7 +118,7 @@ export default function BuilderCanvas({ blogPosts, contentMode, selectedCard, se
                 />
               ) : (
                 <BlogCard
-                  key={item.id}
+                  key={itemKey}
                   post={item}
                   isSelected={selectedCard?.id === item.id}
                   onClick={() => setSelectedCard(item)}
@@ -125,8 +126,8 @@ export default function BuilderCanvas({ blogPosts, contentMode, selectedCard, se
                   settings={settings}
                   cardLayout={cardLayout}
                 />
-              )
-            ))}
+              );
+            })}
           </div>
 
           {contentMode === 'dynamic' && (

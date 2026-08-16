@@ -10,8 +10,38 @@ export default function PreviewModal({ isOpen, onClose, blogPosts, contentMode }
 
   const viewportWidths = {
     desktop: '100%',
-    tablet:  '768px',
-    mobile:  '375px',
+    tablet: '768px',
+    mobile: '375px',
+  };
+
+  const isBlocks = blogPosts.some(p => p.type && typeof p.type === 'string' &&
+    ['Heading', 'Paragraph', 'Image', 'Quote', 'Button', 'Divider', 'Collection List', 'Container'].includes(p.type));
+
+  const renderBlockHTML = (block) => {
+    const c = typeof block.content === 'string' ? block.content : JSON.stringify(block.content || '');
+    const seed = Math.abs((block.id || '').split('').reduce((a, ch) => a + ch.charCodeAt(0), 42));
+    switch (block.type) {
+      case 'Heading':
+        return `<h2 style="font-size:2rem;font-weight:800;color:#1e1e2e;margin:0 0 12px;line-height:1.3;">${c}</h2>`;
+      case 'Paragraph':
+        return `<p style="font-size:1rem;color:#475569;line-height:1.8;margin:0 0 16px;">${c}</p>`;
+      case 'Image': {
+        const imgSrc = c.trim() !== '' ? c : `https://picsum.photos/seed/ai-${seed}/800/400`;
+        return `<img src="${imgSrc}" alt="block image" onerror="this.src='https://picsum.photos/seed/ai-${seed}/800/400'" style="width:100%;border-radius:12px;margin:0 0 16px;display:block;" />`;
+      }
+      case 'Quote':
+        return `<blockquote style="border-left:4px solid #4f46e5;padding:16px 24px;background:#f5f3ff;border-radius:0 12px 12px 0;font-style:italic;color:#374151;margin:0 0 16px;">${c}</blockquote>`;
+      case 'Button': {
+        const label = typeof block.content === 'object' ? (block.content?.text || 'Click Here') : c;
+        return `<button style="padding:12px 28px;background:linear-gradient(135deg,#4f46e5,#3730a3);color:#fff;border:none;border-radius:8px;font-weight:700;font-size:14px;cursor:pointer;margin:0 0 16px;">${label}</button>`;
+      }
+      case 'Divider':
+        return `<hr style="border:none;border-top:1px solid #e2e8f0;margin:20px 0;" />`;
+      case 'Collection List':
+        return `<div style="padding:20px;background:#f8fafc;border-radius:12px;border:1px dashed #cbd5e1;text-align:center;color:#64748b;margin:0 0 16px;">🗂️ Collection List Block</div>`;
+      default:
+        return `<div style="padding:12px;background:#f8fafc;border-radius:8px;margin:0 0 12px;color:#64748b;">${c}</div>`;
+    }
   };
 
   const previewHTML = `
@@ -85,32 +115,35 @@ export default function PreviewModal({ isOpen, onClose, blogPosts, contentMode }
           font-weight: 600;
           margin-bottom: 24px;
         }
+        .blocks-container { max-width: 760px; margin: 0 auto; }
       </style>
     </head>
     <body>
       <div class="page-title">Blog Posts</div>
       ${contentMode === 'dynamic'
-        ? '<div class="dynamic-badge">⚡ Dynamic Mode — fields bound to CMS</div>'
-        : '<div class="dynamic-badge">📌 Static Mode</div>'
-      }
-      <div class="grid">
+      ? '<div class="dynamic-badge">⚡ Dynamic Mode — fields bound to CMS</div>'
+      : '<div class="dynamic-badge">📌 Static Mode</div>'
+    }
+      ${isBlocks
+      ? `<div class="blocks-container">${blogPosts.map(renderBlockHTML).join('')}</div>`
+      : `<div class="grid">
         ${blogPosts.map(post => `
           <div class="card">
-            <img src="${post.image || 'https://picsum.photos/400/250?random=' + post.id}"
-                 alt="${post.title}"
-                 onerror="this.src='https://picsum.photos/400/250?random=${post.id}'" />
+            <img src="${post.image || 'https://picsum.photos/seed/' + encodeURIComponent(post.title || 'post') + '/400/250'}"
+                 alt="${post.title || ''}"
+                 onerror="this.src='https://picsum.photos/seed/fallback/400/250'" />
             <div class="card-body">
               <div class="category">${post.category || 'General'}</div>
-              <h2>${post.title}</h2>
-              <p>${post.excerpt}</p>
+              <h2>${post.title || ''}</h2>
+              <p>${post.excerpt || ''}</p>
               <div class="meta">
-                <span>✍️ ${post.author}</span>
-                <span>📅 ${post.date}</span>
+                <span>✍️ ${post.author || ''}</span>
+                <span>📅 ${post.date || ''}</span>
               </div>
             </div>
           </div>
         `).join('')}
-      </div>
+      </div>`}
     </body>
     </html>
   `;
@@ -132,9 +165,9 @@ export default function PreviewModal({ isOpen, onClose, blogPosts, contentMode }
       }}>
         <div style={{ display: 'flex', gap: '8px' }}>
           {[
-            ['desktop', Monitor,     'Desktop'],
-            ['tablet',  Tablet,      'Tablet'],
-            ['mobile',  Smartphone,  'Mobile'],
+            ['desktop', Monitor, 'Desktop'],
+            ['tablet', Tablet, 'Tablet'],
+            ['mobile', Smartphone, 'Mobile'],
           ].map(([key, Icon, label]) => (
             <button
               key={key}
