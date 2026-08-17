@@ -60,6 +60,12 @@ export async function POST(req: NextRequest) {
       host,
       port,
       secure: port === 465,
+      pool: true,
+      maxConnections: 5,
+      maxMessages: 100,
+      connectionTimeout: 8000,
+      greetingTimeout: 5000,
+      socketTimeout: 10000,
       auth: { user, pass },
     });
 
@@ -110,20 +116,20 @@ export async function POST(req: NextRequest) {
 
     console.log(`[Post Broadcast] Sending alerts to ${recipients.length} subscriber(s):`, recipients);
 
-    // Send broadcast email to all site subscribers
-    for (const recipient of recipients) {
-      try {
-        await transporter.sendMail({
-          from: `"${fromName}" <${fromEmail}>`,
-          to: recipient,
-          subject,
-          html,
-          text: `New post on ${siteName}: ${title}\n\nRead here: ${postUrl}`,
-        });
-      } catch (e: any) {
-        console.error(`[Post Broadcast] Failed sending to ${recipient}:`, e.message);
-      }
-    }
+    // Send broadcast email to all site subscribers in parallel
+    const emailPromises = recipients.map((recipient) =>
+      transporter.sendMail({
+        from: `"${fromName}" <${fromEmail}>`,
+        to: recipient,
+        subject,
+        html,
+        text: `New post on ${siteName}: ${title}\n\nRead here: ${postUrl}`,
+      }).catch((e: any) => {
+        console.error(`[Post Broadcast] Failed sending to ${recipient}:`, e?.message || e);
+      })
+    );
+
+    await Promise.allSettled(emailPromises);
 
     return NextResponse.json({
       success: true,

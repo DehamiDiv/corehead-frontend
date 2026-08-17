@@ -38,6 +38,12 @@ async function sendSubscriptionEmail(to: string, siteName: string, siteSlug?: st
     host,
     port,
     secure: port === 465, // true for 465, false for 587
+    pool: true,
+    maxConnections: 5,
+    maxMessages: 100,
+    connectionTimeout: 8000,
+    greetingTimeout: 5000,
+    socketTimeout: 10000,
     auth: {
       user,
       pass,
@@ -128,15 +134,14 @@ export async function POST(req: NextRequest) {
     // Register subscriber for this site
     addSubscriber(email, siteSlug);
 
-    // Send welcome email to the subscriber
-    const result = await sendSubscriptionEmail(email, siteName, siteSlug);
+    // Fire welcome email asynchronously in background so response returns instantly
+    sendSubscriptionEmail(email, siteName, siteSlug).catch((err) => {
+      console.error('[Newsletter] Async welcome email error:', err?.message || err);
+    });
 
     return NextResponse.json({
       success: true,
-      message: result.simulated 
-        ? 'Subscribed (email simulated - set EMAIL_USER/EMAIL_PASS to send real emails)' 
-        : 'Subscription successful. Welcome email sent.',
-      simulated: !!result.simulated,
+      message: 'Subscription successful. Welcome email dispatched.',
     });
   } catch (error: any) {
     console.error('Newsletter subscribe error:', error);
