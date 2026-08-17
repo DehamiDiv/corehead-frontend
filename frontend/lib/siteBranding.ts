@@ -22,6 +22,8 @@ export type SiteBranding = {
   header?: {
     headerBg?: string | null;
     headerFont?: string | null;
+    headerHeight?: number | null;
+    headerMobileHeight?: number | null;
     headerLogo?: string | null;
     navLinks?: Array<{ id?: number; name: string; link: string }> | null;
     ctaText?: string | null;
@@ -32,6 +34,8 @@ export type SiteBranding = {
   footer?: {
     footerBg?: string | null;
     footerFont?: string | null;
+    footerPadding?: number | null;
+    footerMobilePadding?: number | null;
     footerLogo?: string | null;
     footerDescription?: string | null;
     quickLinks?: Array<{ id?: number; name: string; link: string }> | null;
@@ -133,6 +137,19 @@ function softColor(hex: string, alpha = 0.12): string {
   return `rgba(${r},${g},${b},${alpha})`;
 }
 
+function boundedPixels(
+  value: number | null | undefined,
+  fallback: number,
+  minimum: number,
+  maximum: number,
+): string {
+  const numeric = Number(value);
+  const safeValue = Number.isFinite(numeric)
+    ? Math.min(maximum, Math.max(minimum, numeric))
+    : fallback;
+  return `${safeValue}px`;
+}
+
 /** Resolve branding with theme preset fill-ins for public CSS. */
 export function resolvePublicBranding(
   branding?: SiteBranding | null
@@ -165,8 +182,12 @@ export function brandingToCssVars(branding?: SiteBranding | null): Record<string
     "--site-muted": muted,
     "--site-header-bg": full.header?.headerBg || card,
     "--site-header-fg": full.header?.headerFont || fg,
+    "--site-header-height": boundedPixels(full.header?.headerHeight, 72, 56, 120),
+    "--site-header-mobile-height": boundedPixels(full.header?.headerMobileHeight, 64, 52, 88),
     "--site-footer-bg": full.footer?.footerBg || card,
     "--site-footer-fg": full.footer?.footerFont || muted,
+    "--site-footer-padding": boundedPixels(full.footer?.footerPadding, 56, 24, 96),
+    "--site-footer-mobile-padding": boundedPixels(full.footer?.footerMobilePadding, 40, 20, 72),
     "--site-font": fontFamily,
     "--site-accent": c.accent || primary,
     "--site-card-fg": c.cardForeground || fg,

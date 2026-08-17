@@ -158,6 +158,8 @@ export default function AppearancePage() {
   const [activeTab, setActiveTab] = useState("header");
   const [headerBg, setHeaderBg] = useState("#ffffff");
   const [headerFont, setHeaderFont] = useState("#000000");
+  const [headerHeight, setHeaderHeight] = useState(72);
+  const [headerMobileHeight, setHeaderMobileHeight] = useState(64);
   // Empty until loaded — never default tenant sites to CoreHead placeholder
   const [headerLogo, setHeaderLogo] = useState("");
   const [headerAlt, setHeaderAlt] = useState("header-logo");
@@ -177,6 +179,8 @@ export default function AppearancePage() {
   // Footer State
   const [footerBg, setFooterBg] = useState("#10172e");
   const [footerFont, setFooterFont] = useState("#ffffff");
+  const [footerPadding, setFooterPadding] = useState(56);
+  const [footerMobilePadding, setFooterMobilePadding] = useState(40);
   const [footerLogo, setFooterLogo] = useState("");
   const [footerAlt, setFooterAlt] = useState("footer-logo");
   const [footerDescription, setFooterDescription] = useState("Blogs by CoreHead");
@@ -528,6 +532,8 @@ export default function AppearancePage() {
         if (headerData) {
           setHeaderBg(headerData.headerBg || (activeTheme === "theme-1" ? "#000000" : "#ffffff"));
           setHeaderFont(headerData.headerFont || (activeTheme === "theme-1" ? "#ffffff" : "#000000"));
+          setHeaderHeight(Number(headerData.headerHeight) || 72);
+          setHeaderMobileHeight(Number(headerData.headerMobileHeight) || 64);
           setHeaderLogo(
             usableLogoUrl(headerData.headerLogo) ||
               usableLogoUrl(currentSite?.logo) ||
@@ -546,6 +552,8 @@ export default function AppearancePage() {
         } else {
           setHeaderBg(activeTheme === "theme-1" ? "#000000" : "#ffffff");
           setHeaderFont(activeTheme === "theme-1" ? "#ffffff" : "#000000");
+          setHeaderHeight(72);
+          setHeaderMobileHeight(64);
           setHeaderLogo(usableLogoUrl(currentSite?.logo) || "");
           setHeaderAlt("header-logo");
           setNavLinks(DEFAULT_THEME_NAV_LINKS);
@@ -559,6 +567,8 @@ export default function AppearancePage() {
         if (footerData) {
           setFooterBg(footerData.footerBg || "#10172e");
           setFooterFont(footerData.footerFont || "#ffffff");
+          setFooterPadding(Number(footerData.footerPadding) || 56);
+          setFooterMobilePadding(Number(footerData.footerMobilePadding) || 40);
           setFooterLogo(
             usableLogoUrl(footerData.footerLogo) ||
               usableLogoUrl(currentSite?.logo) ||
@@ -580,6 +590,11 @@ export default function AppearancePage() {
             { id: 3, platform: "Instagram", url: "/" },
           ]);
           setCopyrightText(footerData.copyrightText || "© 2026 CoreHead by SeekaHost Technologies Ltd. All rights reserved");
+        } else {
+          setFooterBg("#10172e");
+          setFooterFont("#ffffff");
+          setFooterPadding(56);
+          setFooterMobilePadding(40);
         }
 
         const colourData =
@@ -797,6 +812,8 @@ export default function AppearancePage() {
       const headerSettings = {
         headerBg,
         headerFont,
+        headerHeight,
+        headerMobileHeight,
         headerLogo: logoPath,
         headerAlt,
         navLinks,
@@ -1213,6 +1230,8 @@ export default function AppearancePage() {
       const footerSettings = {
         footerBg,
         footerFont,
+        footerPadding,
+        footerMobilePadding,
         footerLogo: logoPath,
         footerAlt,
         footerDescription,
@@ -2630,6 +2649,43 @@ export default function AppearancePage() {
                   </div>
                 </div>
 
+                <div className="grid grid-cols-1 gap-6 border-t border-gray-100 pt-6 md:grid-cols-2">
+                  <div>
+                    <div className="mb-2 flex items-center justify-between gap-4">
+                      <label htmlFor="header-height" className="text-sm font-bold text-gray-900">Desktop Height</label>
+                      <span className="rounded-lg bg-blue-50 px-2.5 py-1 text-xs font-bold text-blue-700">{headerHeight}px</span>
+                    </div>
+                    <input
+                      id="header-height"
+                      type="range"
+                      min="56"
+                      max="120"
+                      step="4"
+                      value={headerHeight}
+                      onChange={(e) => setHeaderHeight(Number(e.target.value))}
+                      className="w-full accent-blue-600"
+                    />
+                    <p className="mt-2 text-xs text-gray-500">Controls the header height on tablets and desktop screens.</p>
+                  </div>
+                  <div>
+                    <div className="mb-2 flex items-center justify-between gap-4">
+                      <label htmlFor="header-mobile-height" className="text-sm font-bold text-gray-900">Mobile Height</label>
+                      <span className="rounded-lg bg-blue-50 px-2.5 py-1 text-xs font-bold text-blue-700">{headerMobileHeight}px</span>
+                    </div>
+                    <input
+                      id="header-mobile-height"
+                      type="range"
+                      min="52"
+                      max="88"
+                      step="4"
+                      value={headerMobileHeight}
+                      onChange={(e) => setHeaderMobileHeight(Number(e.target.value))}
+                      className="w-full accent-blue-600"
+                    />
+                    <p className="mt-2 text-xs text-gray-500">Keeps the mobile navigation compact and touch friendly.</p>
+                  </div>
+                </div>
+
                 <div className="border border-gray-200 rounded-3xl overflow-hidden shadow-sm mt-4">
                   <div className="bg-gray-50 px-4 py-2.5 border-b border-gray-100 flex items-center justify-between">
                     <span className="text-[10px] font-black uppercase tracking-wider text-gray-400">Interactive Header Preview</span>
@@ -2640,8 +2696,8 @@ export default function AppearancePage() {
                     </div>
                   </div>
                   <nav 
-                    className="grid min-h-16 grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center gap-4 px-6 py-3 transition-colors"
-                    style={{ backgroundColor: headerBg, color: headerFont }}
+                    className="grid grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center gap-4 px-6 transition-all"
+                    style={{ backgroundColor: headerBg, color: headerFont, height: `${headerHeight}px` }}
                   >
                     {/* Logo Area */}
                     <div className="flex min-w-0 items-center gap-2 justify-self-start">
@@ -2931,7 +2987,47 @@ export default function AppearancePage() {
                   </div>
                 </div>
 
-                <div className="border border-gray-100 rounded-2xl p-6 text-center" style={{ backgroundColor: footerBg, color: footerFont }}>
+                <div className="grid grid-cols-1 gap-6 border-t border-gray-100 pt-6 md:grid-cols-2">
+                  <div>
+                    <div className="mb-2 flex items-center justify-between gap-4">
+                      <label htmlFor="footer-padding" className="text-sm font-bold text-gray-900">Desktop Vertical Spacing</label>
+                      <span className="rounded-lg bg-blue-50 px-2.5 py-1 text-xs font-bold text-blue-700">{footerPadding}px</span>
+                    </div>
+                    <input
+                      id="footer-padding"
+                      type="range"
+                      min="24"
+                      max="96"
+                      step="4"
+                      value={footerPadding}
+                      onChange={(e) => setFooterPadding(Number(e.target.value))}
+                      className="w-full accent-blue-600"
+                    />
+                    <p className="mt-2 text-xs text-gray-500">Adds equal space above and below the desktop footer content.</p>
+                  </div>
+                  <div>
+                    <div className="mb-2 flex items-center justify-between gap-4">
+                      <label htmlFor="footer-mobile-padding" className="text-sm font-bold text-gray-900">Mobile Vertical Spacing</label>
+                      <span className="rounded-lg bg-blue-50 px-2.5 py-1 text-xs font-bold text-blue-700">{footerMobilePadding}px</span>
+                    </div>
+                    <input
+                      id="footer-mobile-padding"
+                      type="range"
+                      min="20"
+                      max="72"
+                      step="4"
+                      value={footerMobilePadding}
+                      onChange={(e) => setFooterMobilePadding(Number(e.target.value))}
+                      className="w-full accent-blue-600"
+                    />
+                    <p className="mt-2 text-xs text-gray-500">Controls footer spacing on phones without crowding content.</p>
+                  </div>
+                </div>
+
+                <div
+                  className="mt-6 border border-gray-100 rounded-2xl text-center transition-all"
+                  style={{ backgroundColor: footerBg, color: footerFont, padding: `${Math.max(20, footerPadding / 2)}px 24px` }}
+                >
                   <p className="font-bold text-sm">Footer Preview</p>
                 </div>
               </div>

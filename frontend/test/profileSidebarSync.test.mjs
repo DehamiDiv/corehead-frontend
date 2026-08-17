@@ -20,9 +20,14 @@ const headerSource = readFileSync(
 );
 
 test("saving a profile synchronizes the cached user across admin chrome", () => {
+  assert.match(profileSource, /const currentUser = await api\.getCurrentUser\(\)/);
+  assert.doesNotMatch(profileSource, /api\.getUsers\(\)/);
+  assert.doesNotMatch(profileSource, /corehead_author_data_/);
+  assert.doesNotMatch(profileSource, /admin@corehead\.(?:com|dev)/);
   assert.match(profileSource, /const savedUser = await api\.updateUser/);
   assert.match(profileSource, /updateStoredUser\(savedUser\)/);
-  assert.match(profileSource, /updateStoredUser\(dbUser\)/);
+  assert.match(profileSource, /updateStoredUser\(currentUser\)/);
+  assert.match(profileSource, /resolveAdminMediaUrl/);
   assert.match(sessionSource, /localStorage\.setItem\("user", JSON\.stringify\(updatedUser\)\)/);
   assert.match(sessionSource, /dispatchEvent\(new Event\("local-storage-update"\)\)/);
   assert.match(sidebarSource, /addEventListener\('local-storage-update', handleStorageChange\)/);

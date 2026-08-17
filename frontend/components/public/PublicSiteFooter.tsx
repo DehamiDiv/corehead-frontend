@@ -55,7 +55,7 @@ export default function PublicSiteFooter({ site }: { site: PublicSite }) {
 
   return (
     <footer className="mt-auto border-t border-black/10" style={footerStyle}>
-      <div className="max-w-6xl mx-auto px-4 sm:px-6 py-14">
+      <div className="max-w-6xl mx-auto px-4 py-[var(--site-footer-mobile-padding,40px)] transition-[padding] sm:px-6 lg:py-[var(--site-footer-padding,56px)]">
         <div className="grid gap-10 sm:grid-cols-2 lg:grid-cols-4">
           {/* Brand */}
           <div className="sm:col-span-2 lg:col-span-2 max-w-md">

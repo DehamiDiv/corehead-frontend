@@ -240,21 +240,20 @@ export default function Sidebar({ isOpen = true }: { isOpen?: boolean }) {
         </div>
       </nav>
 
-      {/* Credit & Plan Info */}
       <div className="px-6 py-4 border-t border-slate-50">
         <div className="bg-slate-50 rounded-2xl p-4 space-y-3.5 border border-slate-100/50">
           <div className="flex items-center justify-between">
             <span className="text-[12px] font-bold text-slate-500">Plan Option</span>
             <span className={cn(
               "text-[10px] font-extrabold px-2.5 py-0.5 rounded-full uppercase tracking-wider",
-              credits?.status === "PRO" ? "bg-amber-100 text-amber-700" : "bg-slate-200 text-slate-600"
+              (credits?.status === "PRO" || credits?.status === "ENTERPRISE") ? "bg-amber-100 text-amber-700" : "bg-slate-200 text-slate-600"
             )}>
               {credits?.status || "FREE"}
             </span>
           </div>
-          {credits?.status !== "PRO" && (
+          {(credits?.status !== "PRO" && credits?.status !== "ENTERPRISE") && (
             <>
-              <div className="space-y-1.5Packed">
+              <div className="space-y-1.5">
                 <div className="flex justify-between items-center text-[11px] font-bold text-slate-500">
                   <span>AI Generations</span>
                   <span>{Math.min(credits?.used ?? 0, credits?.total ?? 5)} / {credits?.total ?? 5} used</span>
@@ -274,7 +273,7 @@ export default function Sidebar({ isOpen = true }: { isOpen?: boolean }) {
               </Link>
             </>
           )}
-          {credits?.status === "PRO" && (
+          {(credits?.status === "PRO" || credits?.status === "ENTERPRISE") && (
             <p className="text-[11px] text-amber-700 font-bold flex items-center gap-1.5">
               <Sparkles className="w-4 h-4 text-amber-500 animate-pulse" /> Unlimited AI Enabled
             </p>
