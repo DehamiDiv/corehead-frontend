@@ -175,6 +175,21 @@ export default function CommentsSection({
     }
   };
 
+  const [currentPath, setCurrentPath] = useState("");
+
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      setCurrentPath(window.location.pathname);
+    }
+  }, []);
+
+  const loginLink = currentPath
+    ? `/login?callback=${encodeURIComponent(currentPath)}`
+    : "/login";
+  const signupLink = currentPath
+    ? `/signup?callback=${encodeURIComponent(currentPath)}`
+    : "/signup";
+
   return (
     <section className="comments-section !mt-0 !pt-0 !border-0">
       <div className="comments-header">
@@ -224,7 +239,7 @@ export default function CommentsSection({
                   fontWeight: 500,
                 }}
               >
-                🔒 Registered users only — click below to log in or register to comment.
+                🔒 Registered readers only — click below to log in or register to comment.
               </p>
             )}
 
@@ -299,19 +314,19 @@ export default function CommentsSection({
               Registration Required
             </h3>
             <p className="text-slate-600 text-sm text-center mb-6 leading-relaxed">
-              Only registered users can post comments. Please log in or register a new account to join the discussion.
+              Only registered readers can post comments. Please log in or register a new account to join the discussion.
             </p>
 
             <div className="flex flex-col gap-2.5">
               <div className="flex flex-col sm:flex-row gap-2.5">
                 <Link
-                  href="/login"
+                  href={loginLink}
                   className="flex-1 py-2.5 px-4 bg-blue-600 hover:bg-blue-700 text-white font-bold text-sm rounded-xl text-center transition-all shadow-sm active:scale-95"
                 >
                   Log In
                 </Link>
                 <Link
-                  href="/signup"
+                  href={signupLink}
                   className="flex-1 py-2.5 px-4 bg-slate-900 hover:bg-slate-800 text-white font-bold text-sm rounded-xl text-center transition-all shadow-sm active:scale-95"
                 >
                   Sign Up

@@ -156,7 +156,11 @@ export default function LoginPage() {
         <div className="flex items-center gap-4">
           <span className="hidden sm:inline text-sm text-slate-700">Don't have an account?</span>
           <Link
-            href="/signup"
+            href={
+              callbackUrl && callbackUrl.startsWith("/")
+                ? `/signup?callback=${encodeURIComponent(callbackUrl)}`
+                : "/signup"
+            }
             className="px-5 py-2 text-sm font-bold text-blue-700 transition-all bg-white/50 backdrop-blur-md border border-white/50 rounded-full hover:bg-white/80 shadow-sm"
           >
             Sign Up
@@ -265,7 +269,11 @@ export default function LoginPage() {
             <p className="text-center text-sm text-slate-600 mt-2">
               Don&apos;t have an account?{" "}
               <Link
-                href="/signup"
+                href={
+                  callbackUrl && callbackUrl.startsWith("/")
+                    ? `/signup?callback=${encodeURIComponent(callbackUrl)}`
+                    : "/signup"
+                }
                 className="font-semibold text-blue-700 hover:text-blue-800 transition-colors"
               >
                 Sign Up

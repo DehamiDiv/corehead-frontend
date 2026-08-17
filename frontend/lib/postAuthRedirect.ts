@@ -29,8 +29,8 @@ export async function resolvePostAuthDestination(
     callback !== "/login" &&
     callback !== "/signup";
 
-  // R1-3: invite accept links must work even when the user has zero sites yet
-  if (safeCallback && callback.startsWith("/invite/")) {
+  // Public reader callbacks (sub-site blog posts & invites) return directly to destination
+  if (safeCallback && (callback.startsWith("/invite/") || callback.startsWith("/s/") || callback.startsWith("/blog/"))) {
     return callback;
   }
 
