@@ -109,7 +109,7 @@ function mapSiteMembersToAuthors(members: any[]) {
 
 export default function CreatePostPage() {
   const router = useRouter();
-  const { currentSiteId, loading: siteLoading } = useSite();
+  const { currentSiteId, currentSite, loading: siteLoading } = useSite();
 
   const [formData, setFormData] = useState({
     title: "",
@@ -334,13 +334,15 @@ export default function CreatePostPage() {
     try {
       await api.createPost(finalData, currentSiteId);
       if (nextStatus === "Published") {
+        const siteSlug = currentSite?.slug || "";
+        const siteName = currentSite?.name || "Blog";
         api.notifySubscribersNewPost({
           title: formData.title,
           slug: formData.slug,
           excerpt: formData.excerpt,
           coverImage: cover || undefined,
-          siteSlug: "",
-          siteName: "Blog",
+          siteSlug,
+          siteName,
           siteId: currentSiteId || undefined,
         }).catch(() => {});
       }
