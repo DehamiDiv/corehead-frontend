@@ -185,6 +185,20 @@ export default function PostsPage() {
             : p
         )
       );
+
+      // Trigger post publication email alert to site subscribers
+      const targetPost = postsArray.find((p) => p.id === id);
+      const siteSlug = siteCtx?.currentSite?.slug || "";
+      const siteName = siteCtx?.currentSite?.name || "Blog";
+      api.notifySubscribersNewPost({
+        title: updated?.title || targetPost?.title || "New Story Published",
+        slug: updated?.slug || targetPost?.slug || "",
+        excerpt: updated?.excerpt || targetPost?.excerpt || "",
+        coverImage: updated?.thumbnailUrl || targetPost?.thumbnailUrl || undefined,
+        siteSlug,
+        siteName,
+        siteId: currentSiteId || undefined,
+      }).catch(() => {});
     } catch (err: any) {
       console.error("Publish failed:", err);
       alert(err?.message || "Failed to publish post");
