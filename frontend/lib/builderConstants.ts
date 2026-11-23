@@ -24,7 +24,7 @@ export const initialMockPosts = [
     excerpt: 'Learn the fundamentals of React and start building amazing web applications.',
     author: 'John Doe',
     date: '2024-02-10',
-    image: 'https://picsum.photos/400/250?random=1',
+    image: '',
     category: 'Development'
   },
   {
@@ -33,7 +33,7 @@ export const initialMockPosts = [
     excerpt: 'Master modern CSS features and create stunning designs with ease.',
     author: 'Jane Smith',
     date: '2024-02-12',
-    image: 'https://picsum.photos/400/250?random=2',
+    image: '',
     category: 'Design'
   },
   {
@@ -42,7 +42,7 @@ export const initialMockPosts = [
     excerpt: 'Explore the latest features in JavaScript and how to use them effectively.',
     author: 'Mike Johnson',
     date: '2024-02-13',
-    image: 'https://picsum.photos/400/250?random=3',
+    image: '',
     category: 'Development'
   }
 ];
