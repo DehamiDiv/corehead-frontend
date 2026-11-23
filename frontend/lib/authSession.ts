@@ -20,6 +20,22 @@ export function setAuthCookies(accessToken: string, role?: string | null) {
   }
 }
 
+export function clearBuilderDraft() {
+  if (!isBrowser()) return;
+  localStorage.removeItem("corehead_builder_layout");
+  localStorage.removeItem("corehead_builder_meta");
+  localStorage.removeItem("corehead_builder_save_meta");
+  localStorage.removeItem("ai_generated_layout");
+  localStorage.removeItem("ai_options");
+  localStorage.removeItem("ai_prompt");
+  localStorage.removeItem("selected_template");
+  try {
+    sessionStorage.removeItem("corehead_builder_save_meta");
+  } catch {
+    /* ignore */
+  }
+}
+
 export function clearAuthCookies() {
   if (!isBrowser()) return;
   document.cookie = "auth_token=; path=/; max-age=0; SameSite=Lax";
@@ -29,9 +45,23 @@ export function clearAuthCookies() {
 export function persistSession(data: {
   accessToken: string;
   refreshToken?: string;
-  user?: { role?: string; [key: string]: unknown };
+  user?: { role?: string; id?: string | number; [key: string]: unknown };
 }) {
   if (!isBrowser()) return;
+
+  // If a new or different user is logging in, always reset old builder canvas drafts
+  try {
+    const prevRaw = localStorage.getItem("user");
+    const prevUser = prevRaw ? JSON.parse(prevRaw) : null;
+    const prevId = prevUser?.id || prevUser?._id;
+    const nextId = (data.user as any)?.id || (data.user as any)?._id;
+    if (!prevId || !nextId || String(prevId) !== String(nextId)) {
+      clearBuilderDraft();
+    }
+  } catch {
+    clearBuilderDraft();
+  }
+
   localStorage.setItem("accessToken", data.accessToken);
   if (data.refreshToken) {
     localStorage.setItem("refreshToken", data.refreshToken);
@@ -89,4 +119,5 @@ export function clearSession() {
   localStorage.removeItem("token"); // legacy key
   clearCurrentSite();
   clearAuthCookies();
+  clearBuilderDraft();
 }
