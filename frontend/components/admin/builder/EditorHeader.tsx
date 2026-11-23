@@ -228,8 +228,17 @@ export default function EditorHeader() {
           return `<h2 class="heading-block" ${styleAttr}>${block.content || "Heading Text"}</h2>`;
         case "Paragraph":
           return `<p class="paragraph-block" ${styleAttr}>${block.content || "Paragraph text content..."}</p>`;
-        case "Image":
-          return `<img class="image-block" src="${block.content || "https://images.unsplash.com/photo-1499750310107-5fef28a66643?w=800"}" alt="Layout Image" ${styleAttr} />`;
+        case "Image": {
+          const imgSrc = typeof block.content === "string" ? block.content : block.content?.url;
+          const isMock = imgSrc && (
+            imgSrc.includes("photo-1501504905252") ||
+            imgSrc.includes("photo-1499750310107") ||
+            imgSrc.includes("picsum.photos")
+          );
+          return imgSrc && !isMock
+            ? `<img class="image-block" src="${imgSrc}" alt="Layout Image" ${styleAttr} />`
+            : "";
+        }
         case "Quote":
           return `<blockquote class="quote-block" ${styleAttr}>${block.content || "Quote text"}</blockquote>`;
         case "Divider":
@@ -297,12 +306,12 @@ export default function EditorHeader() {
   <title>${title} - CoreHead Export</title>
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&display=swap" rel="stylesheet">
   <style>
-    \${cssContent}
+    ${cssContent}
   </style>
 </head>
 <body>
   <div class="layout-container">
-    \${bodyHtml}
+    ${bodyHtml}
   </div>
 </body>
 </html>
@@ -501,14 +510,12 @@ export default function EditorHeader() {
             Save
           </button>
 
-          <Link href="/admin/builder/preview">
-            <button
-              type="button"
-              className="flex items-center gap-2 px-4 py-2.5 bg-blue-50 text-blue-600 rounded-xl text-[14px] font-bold hover:bg-blue-100 transition-all active:scale-95"
-            >
-              <Eye size={16} />
-              Preview
-            </button>
+          <Link
+            href="/admin/builder/preview"
+            className="flex items-center gap-2 px-4 py-2.5 bg-blue-50 text-blue-600 rounded-xl text-[14px] font-bold hover:bg-blue-100 transition-all active:scale-95"
+          >
+            <Eye size={16} />
+            Preview
           </Link>
 
           <button
