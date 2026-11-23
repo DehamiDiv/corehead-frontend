@@ -27,7 +27,6 @@ async function sendSubscriptionEmail(to: string, siteName: string, siteSlug?: st
 
   let nodemailer: any;
   try {
-    // @ts-ignore
     nodemailer = await import('nodemailer');
   } catch {
     console.warn('[Newsletter] nodemailer package not installed. Simulating subscription.');
