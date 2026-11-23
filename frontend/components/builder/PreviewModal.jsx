@@ -23,7 +23,7 @@ export default function PreviewModal({ isOpen, onClose, blogPosts, contentMode }
       case 'Heading':
         return `<h2 style="font-size:2rem;font-weight:800;color:#1e1e2e;margin:0 0 12px;line-height:1.3;">${c}</h2>`;
       case 'Paragraph':
-        return `<p style="font-size:1rem;color:#475569;line-height:1.8;margin:0 0 16px;">${c}</p>`;
+        return `<p style="font-size:1rem;color:#475569;line-height:1.8;margin:0 0 16px;white-space:pre-wrap;word-break:break-word;">${c}</p>`;
       case 'Image': {
         const imgSrc = c.trim() !== '' && !c.includes('picsum.photos') ? c : null;
         return imgSrc

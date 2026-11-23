@@ -63,7 +63,7 @@ export default function BlockRenderer({ block, isSelected, onClick, settings }) 
             <div style={{ fontSize: '10px', fontWeight: '700', color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.8px', marginBottom: '8px' }}>
               PARAGRAPH
             </div>
-            <p style={{ margin: 0, fontSize: styles.fontSize || '14px', color: styles.color || '#475569', lineHeight: '1.7', fontFamily: fontStyle }}>
+            <p style={{ margin: 0, fontSize: styles.fontSize || '14px', color: styles.color || '#475569', lineHeight: '1.7', fontFamily: fontStyle, whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}>
               {text}
             </p>
           </div>

@@ -423,15 +423,26 @@ function ContentTab({ selectedBlock, updateBlock }: any) {
     );
   }
   if (selectedBlock.type === "Paragraph") {
+    const paragraphVal =
+      typeof selectedBlock.content === "object"
+        ? selectedBlock.content?.text || ""
+        : (selectedBlock.content ?? "");
     return (
       <div className="space-y-2">
-        <label className="text-sm text-slate-700">Paragraph Text</label>
+        <div className="flex justify-between items-center">
+          <label className="text-sm font-semibold text-slate-700">Paragraph Text</label>
+          <span className="text-[11px] text-blue-600 font-medium">Preserves formatting & emojis</span>
+        </div>
         <textarea
-          rows={6}
-          value={selectedBlock.content}
+          rows={8}
+          value={paragraphVal}
           onChange={(e) => updateBlock(selectedBlock.id, e.target.value)}
-          className="w-full px-3 py-2 bg-slate-50 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 outline-none"
+          placeholder="Paste or type text here (line breaks, indentation & emojis are preserved)..."
+          className="w-full px-3 py-2 bg-slate-50 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 outline-none whitespace-pre-wrap font-sans leading-relaxed"
         />
+        <p className="text-[11px] text-slate-500">
+          Line breaks, tabs, multiple spaces, and emojis are rendered exactly as entered.
+        </p>
       </div>
     );
   }

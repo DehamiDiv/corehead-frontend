@@ -175,8 +175,8 @@ export default function EditorHeader() {
         margin: 0 auto;
         padding: 3rem 1.5rem;
       }
-      .heading-block { font-size: 2.25rem; font-weight: 800; tracking: -0.025em; color: #0f172a; margin-top: 2rem; margin-bottom: 1rem; }
-      .paragraph-block { color: #475569; margin-bottom: 1.5rem; font-size: 1.125rem; line-height: 1.75; }
+      .heading-block { font-size: 2.25rem; font-weight: 800; tracking: -0.025em; color: #0f172a; margin-top: 2rem; margin-bottom: 1rem; white-space: pre-wrap; word-break: break-word; }
+      .paragraph-block { color: #475569; margin-bottom: 1.5rem; font-size: 1.125rem; line-height: 1.75; white-space: pre-wrap; word-break: break-word; }
       .image-block { border-radius: 1.5rem; overflow: hidden; margin: 2rem 0; width: 100%; max-height: 500px; object-fit: cover; }
       .quote-block { border-left: 4px solid #2563eb; padding-left: 1.5rem; font-style: italic; color: #1e293b; margin: 2.5rem 0; font-size: 1.35rem; }
       .divider-block { border: 0; border-top: 1px solid #e2e8f0; margin: 3rem 0; }
@@ -226,8 +226,10 @@ export default function EditorHeader() {
       switch (block.type) {
         case "Heading":
           return `<h2 class="heading-block" ${styleAttr}>${block.content || "Heading Text"}</h2>`;
-        case "Paragraph":
-          return `<p class="paragraph-block" ${styleAttr}>${block.content || "Paragraph text content..."}</p>`;
+        case "Paragraph": {
+          const rawText = typeof block.content === "object" ? block.content?.text || "" : (block.content || "Paragraph text content...");
+          return `<p class="paragraph-block" ${styleAttr}>${rawText}</p>`;
+        }
         case "Image": {
           const imgSrc = typeof block.content === "string" ? block.content : block.content?.url;
           const isMock = imgSrc && (

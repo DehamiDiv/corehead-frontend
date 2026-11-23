@@ -708,19 +708,22 @@ function renderBlockContent(block: BuilderBlock, isSelected: boolean) {
   switch (block.type) {
     case "Heading":
       return (
-        <h2 className="text-3xl font-bold text-slate-800" style={styleString}>
+        <h2 className="text-3xl font-bold text-slate-800 whitespace-pre-wrap break-words" style={{ whiteSpace: "pre-wrap", wordBreak: "break-word", ...styleString }}>
           {contentToRender}
         </h2>
       );
-    case "Paragraph":
+    case "Paragraph": {
+      const rawContent = typeof block.content === "object" ? block.content?.text || "" : (block.content ?? "");
+      const isBinding = !!block.bindings?.content;
       return (
         <p
-          className="text-slate-600 leading-relaxed text-lg"
-          style={styleString}
+          className="text-slate-600 leading-relaxed text-lg whitespace-pre-wrap break-words"
+          style={{ whiteSpace: "pre-wrap", wordBreak: "break-word", ...styleString }}
         >
-          {contentToRender}
+          {isBinding ? contentToRender : rawContent}
         </p>
       );
+    }
     case "Image": {
       const bindingKey = block.bindings?.content || block.bindings?.src;
       const hasBinding = !!bindingKey;
@@ -769,8 +772,8 @@ function renderBlockContent(block: BuilderBlock, isSelected: boolean) {
     case "Quote":
       return (
         <blockquote
-          className="border-l-4 border-blue-500 pl-4 italic text-slate-700 text-xl"
-          style={styleString}
+          className="border-l-4 border-blue-500 pl-4 italic text-slate-700 text-xl whitespace-pre-wrap break-words"
+          style={{ whiteSpace: "pre-wrap", wordBreak: "break-word", ...styleString }}
         >
           {contentToRender}
         </blockquote>

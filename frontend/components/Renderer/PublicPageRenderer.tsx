@@ -340,8 +340,8 @@ export function PublicPageRenderer({
         return (
           <p
             key={block.id}
-            style={styleString}
-            className="mb-4 leading-relaxed text-[color-mix(in_srgb,var(--site-ink,#0f172a)_82%,var(--site-muted,#64748b))]"
+            style={{ whiteSpace: "pre-wrap", wordBreak: "break-word", ...styleString }}
+            className="mb-4 leading-relaxed whitespace-pre-wrap break-words text-[color-mix(in_srgb,var(--site-ink,#0f172a)_82%,var(--site-muted,#64748b))]"
           >
             {typeof content === "object" ? content?.text || "" : content}
           </p>
