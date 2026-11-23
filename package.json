@@ -1,0 +1,15 @@
+{
+  "name": "corehead-workspace",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Corehead workspace root",
+  "scripts": {
+    "dev": "npm --prefix frontend run dev",
+    "dev:frontend": "npm --prefix frontend run dev",
+    "dev:backend": "npm --prefix ../Corehead-Backend run dev",
+    "build": "npm --prefix frontend run build",
+    "start": "npm --prefix frontend start",
+    "lint": "npm --prefix frontend run lint",
+    "test": "npm --prefix frontend test"
+  }
+}
