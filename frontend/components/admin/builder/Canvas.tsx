@@ -722,46 +722,46 @@ function renderBlockContent(block: BuilderBlock, isSelected: boolean) {
         </p>
       );
     case "Image": {
-      const hasBinding = !!block.bindings?.content;
-      const imageSrc = typeof block.content === "string" && block.content.trim() !== ""
-        ? block.content
-        : null;
-      const seed = Math.abs((block.id || '').split('').reduce((a: number, c: string) => a + c.charCodeAt(0), 42));
-      const placeholderUrl = `https://picsum.photos/seed/ai-${seed}/800/400`;
+      const bindingKey = block.bindings?.content || block.bindings?.src;
+      const hasBinding = !!bindingKey;
+      const rawImage = typeof block.content === "string" ? block.content.trim() : (typeof block.content === "object" ? block.content?.url : "");
+      const isMockImage =
+        !rawImage ||
+        rawImage.includes("photo-1501504905252") ||
+        rawImage.includes("photo-1499750310107") ||
+        rawImage.includes("photo-1497366811353") ||
+        rawImage.includes("photo-1455390582262") ||
+        rawImage.includes("picsum.photos");
+      const imageSrc = isMockImage ? null : rawImage;
 
       return (
-        <div style={styleString} className="bg-slate-100 rounded-lg overflow-hidden min-h-[120px] flex items-center justify-center">
+        <div style={styleString} className="rounded-xl overflow-hidden min-h-[140px] flex items-center justify-center">
           {hasBinding ? (
-            <div className="relative w-full">
-              <img
-                src={placeholderUrl}
-                alt="Bound image preview"
-                className="w-full h-auto rounded-lg opacity-60"
-              />
-              <div className="absolute inset-0 flex flex-col items-center justify-center text-blue-700 bg-blue-50/60 rounded-lg">
-                <ImageIcon className="w-6 h-6 mb-1" />
-                <span className="text-xs font-bold">Bound to: {`{${block.bindings?.content}}`}</span>
+            <div className="w-full py-12 px-6 flex flex-col items-center justify-center text-center bg-blue-50/40 border-2 border-dashed border-blue-200 rounded-2xl">
+              <div className="w-12 h-12 bg-blue-100 text-blue-600 rounded-2xl flex items-center justify-center mb-3 shadow-xs">
+                <ImageIcon className="w-6 h-6" />
               </div>
+              <p className="text-sm font-bold text-blue-900">Dynamic Image Field</p>
+              <code className="text-xs bg-blue-100/80 text-blue-700 px-2 py-0.5 rounded font-mono font-semibold mt-1">
+                {`{${bindingKey}}`}
+              </code>
             </div>
           ) : imageSrc ? (
             <img
               src={imageSrc}
               alt="Block"
-              className="w-full h-auto rounded-lg"
-              onError={(e) => {
-                (e.currentTarget as HTMLImageElement).onerror = null;
-                (e.currentTarget as HTMLImageElement).src = placeholderUrl;
-              }}
+              className="w-full h-auto rounded-xl object-cover max-h-[500px]"
             />
           ) : (
-            <img
-              src={placeholderUrl}
-              alt="Image placeholder"
-              className="w-full h-auto rounded-lg"
-              onError={(e) => {
-                (e.currentTarget as HTMLImageElement).onerror = null;
-              }}
-            />
+            <div className="w-full py-14 px-6 flex flex-col items-center justify-center text-center bg-slate-50 border-2 border-dashed border-slate-200 rounded-2xl hover:border-blue-300 hover:bg-blue-50/10 transition-colors">
+              <div className="w-12 h-12 bg-white rounded-2xl shadow-xs border border-slate-200 flex items-center justify-center text-slate-400 mb-2">
+                <ImageIcon className="w-6 h-6" />
+              </div>
+              <p className="text-sm font-bold text-slate-700">No Image Uploaded</p>
+              <p className="text-xs text-slate-400 max-w-xs mt-0.5">
+                Click this block to upload an image from your device or set an image URL in the settings panel.
+              </p>
+            </div>
           )}
         </div>
       );
@@ -785,7 +785,7 @@ function renderBlockContent(block: BuilderBlock, isSelected: boolean) {
           className="px-6 py-2 bg-blue-600 text-white rounded-lg font-medium"
           style={styleString}
         >
-          {block.content?.text || "Click Me"}
+          {typeof block.content === "string" ? block.content : block.content?.text || "Click Me"}
         </button>
       );
     case "Container":
