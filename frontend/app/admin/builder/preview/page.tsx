@@ -128,10 +128,8 @@ export default function BuilderPreviewPage() {
             title: "Sample Post Title",
             excerpt: "This is placeholder copy used when your site has no posts yet.",
             category: "Preview",
-            coverImage:
-              "https://images.unsplash.com/photo-1499750310107-5fef28a66643?w=1200&q=80",
-            featured_image:
-              "https://images.unsplash.com/photo-1499750310107-5fef28a66643?w=1200&q=80",
+            coverImage: "",
+            featured_image: "",
             content:
               "Add and publish posts for this site to see real content in preview.",
             contentHtml:
