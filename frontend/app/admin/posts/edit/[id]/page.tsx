@@ -346,7 +346,7 @@ useEffect(() => {
     const nextStatus = overrideStatus || formData.status;
 
     // Reject base64 covers before API call (too large for old schema / payloads)
-    let cover = formData.thumbnailUrl || "";
+    const cover = formData.thumbnailUrl || "";
     if (cover.startsWith("data:")) {
       setError(
         "Cover image is still a temporary local preview. Re-upload via the image button or Media Library so it becomes a short /uploads/... URL, then save again.",
