@@ -9,7 +9,8 @@ import {
   Tablet,
   Smartphone,
   Loader2,
-  Send, FileText,
+  Send,
+  FileText,
   Download,
   Upload,
   Trash2,
@@ -61,33 +62,39 @@ export default function EditorHeader() {
     setShowSaveModal(true);
   };
 
-      const handleConfirmSave = async () => {
-      if (!tempName || tempName.trim() === "") {
-        alert("Please enter a name for your layout.");
-        return;
-      }
-  
-      setShowSaveModal(false);
-      setIsSaving(true);
-  
-      try {
-        if (saveStatus === "post") {
-          const site = getCurrentSite();
-          const layoutDataStr = JSON.stringify(serializeLayout());
-          // Create the post
-          await api.createPost({
+  const handleConfirmSave = async () => {
+    if (!tempName || tempName.trim() === "") {
+      alert("Please enter a name for your layout.");
+      return;
+    }
+
+    setShowSaveModal(false);
+    setIsSaving(true);
+
+    try {
+      if (saveStatus === "post") {
+        const site = getCurrentSite();
+        const layoutDataStr = JSON.stringify(serializeLayout());
+        // Create the post
+        await api.createPost(
+          {
             title: tempName.trim(),
-            slug: tempName.trim().toLowerCase().replace(/[^a-z0-9]+/g, "-"),
+            slug: tempName
+              .trim()
+              .toLowerCase()
+              .replace(/[^a-z0-9]+/g, "-"),
             content: layoutDataStr,
             status: "Published",
-          }, site?.id);
-          
-          alert("Blog Post Published Successfully!");
-          router.push("/admin/posts");
-          return;
-        }
+          },
+          site?.id,
+        );
 
-        const result = await saveToBackend(saveStatus, {
+        alert("Blog Post Published Successfully!");
+        router.push("/admin/posts");
+        return;
+      }
+
+      const result = await saveToBackend(saveStatus, {
         name: tempName.trim(),
         type: templateType,
       });
@@ -110,7 +117,10 @@ export default function EditorHeader() {
 
       if (aiHistoryId) {
         try {
-          await aiApi.promoteHistory(aiHistoryId, result?.name ?? tempName.trim());
+          await aiApi.promoteHistory(
+            aiHistoryId,
+            result?.name ?? tempName.trim(),
+          );
         } catch (e) {
           console.error("Failed to update AI history library:", e);
         }
@@ -215,7 +225,10 @@ export default function EditorHeader() {
     const getStyleAttr = (styles: any) => {
       if (!styles) return "";
       return Object.entries(styles)
-        .map(([k, v]) => `${k.replace(/[A-Z]/g, m => "-" + m.toLowerCase())}: ${v}`)
+        .map(
+          ([k, v]) =>
+            `${k.replace(/[A-Z]/g, (m) => "-" + m.toLowerCase())}: ${v}`,
+        )
         .join("; ");
     };
 
@@ -231,12 +244,15 @@ export default function EditorHeader() {
           return `<p class="paragraph-block" ${styleAttr}>${rawText}</p>`;
         }
         case "Image": {
-          const imgSrc = typeof block.content === "string" ? block.content : block.content?.url;
-          const isMock = imgSrc && (
-            imgSrc.includes("photo-1501504905252") ||
-            imgSrc.includes("photo-1499750310107") ||
-            imgSrc.includes("picsum.photos")
-          );
+          const imgSrc =
+            typeof block.content === "string"
+              ? block.content
+              : block.content?.url;
+          const isMock =
+            imgSrc &&
+            (imgSrc.includes("photo-1501504905252") ||
+              imgSrc.includes("photo-1499750310107") ||
+              imgSrc.includes("picsum.photos"));
           return imgSrc && !isMock
             ? `<img class="image-block" src="${imgSrc}" alt="Layout Image" ${styleAttr} />`
             : "";
@@ -281,11 +297,14 @@ export default function EditorHeader() {
           `;
         case "Container":
         case "Columns":
-          const children = blocksData.filter(b => b.parentId === block.id);
-          const childrenHtml = children.map(b => renderBlockHtml(b)).join("\n");
-          const gridStyle = block.type === "Columns" 
-            ? `grid-template-columns: repeat(${block.content || 2}, minmax(0, 1fr))` 
-            : "";
+          const children = blocksData.filter((b) => b.parentId === block.id);
+          const childrenHtml = children
+            .map((b) => renderBlockHtml(b))
+            .join("\n");
+          const gridStyle =
+            block.type === "Columns"
+              ? `grid-template-columns: repeat(${block.content || 2}, minmax(0, 1fr))`
+              : "";
           return `
             <div class="${block.type === "Columns" ? "columns-block" : "container-block"}" style="${gridStyle}; ${styleStr}">
               ${childrenHtml}
@@ -296,8 +315,8 @@ export default function EditorHeader() {
       }
     };
 
-    const rootBlocks = blocksData.filter(b => !b.parentId);
-    const bodyHtml = rootBlocks.map(b => renderBlockHtml(b)).join("\n");
+    const rootBlocks = blocksData.filter((b) => !b.parentId);
+    const bodyHtml = rootBlocks.map((b) => renderBlockHtml(b)).join("\n");
 
     return `
 <!DOCTYPE html>
@@ -361,7 +380,7 @@ export default function EditorHeader() {
               className="h-10 w-auto object-contain"
             />
           </Link>
-          
+
           <Link
             href="/admin"
             className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-slate-50 hover:bg-slate-100 text-slate-500 hover:text-slate-700 text-xs font-bold transition-all"
@@ -426,7 +445,9 @@ export default function EditorHeader() {
         </div>
 
         <div className="flex items-center gap-3">
-          {isSaving && <Loader2 className="animate-spin text-blue-500" size={18} />}
+          {isSaving && (
+            <Loader2 className="animate-spin text-blue-500" size={18} />
+          )}
 
           {/* Undo/Redo Buttons */}
           <div className="flex items-center gap-1 bg-slate-50 p-1 rounded-xl border border-slate-100">
@@ -458,15 +479,27 @@ export default function EditorHeader() {
               className="flex items-center gap-1.5 px-3.5 py-2.5 bg-slate-50 hover:bg-slate-100 border border-slate-100 rounded-xl text-[13px] font-bold text-slate-600 transition-all cursor-pointer"
             >
               <span>Actions</span>
-              <ChevronDown size={14} className={cn("transition-transform duration-200", isActionsOpen && "rotate-180")} />
+              <ChevronDown
+                size={14}
+                className={cn(
+                  "transition-transform duration-200",
+                  isActionsOpen && "rotate-180",
+                )}
+              />
             </button>
-            
+
             {isActionsOpen && (
               <>
-                <div className="fixed inset-0 z-40" onClick={() => setIsActionsOpen(false)} />
+                <div
+                  className="fixed inset-0 z-40"
+                  onClick={() => setIsActionsOpen(false)}
+                />
                 <div className="absolute right-0 mt-2 w-48 bg-white border border-slate-200 rounded-2xl shadow-xl py-2 z-50 animate-in fade-in slide-in-from-top-2 duration-200">
                   <button
-                    onClick={() => { handleClear(); setIsActionsOpen(false); }}
+                    onClick={() => {
+                      handleClear();
+                      setIsActionsOpen(false);
+                    }}
                     className="w-full text-left px-4 py-2.5 text-xs font-bold text-red-600 hover:bg-red-50 flex items-center gap-2 transition-colors cursor-pointer"
                   >
                     <Trash2 size={14} />
@@ -480,18 +513,27 @@ export default function EditorHeader() {
                       type="file"
                       accept=".json"
                       className="hidden"
-                      onChange={(e) => { handleImport(e); setIsActionsOpen(false); }}
+                      onChange={(e) => {
+                        handleImport(e);
+                        setIsActionsOpen(false);
+                      }}
                     />
                   </label>
                   <button
-                    onClick={() => { handleExport(); setIsActionsOpen(false); }}
+                    onClick={() => {
+                      handleExport();
+                      setIsActionsOpen(false);
+                    }}
                     className="w-full text-left px-4 py-2.5 text-xs font-bold text-slate-600 hover:bg-slate-50 flex items-center gap-2 transition-colors cursor-pointer"
                   >
                     <Download size={14} />
                     Export JSON
                   </button>
                   <button
-                    onClick={() => { handleExportHtml(); setIsActionsOpen(false); }}
+                    onClick={() => {
+                      handleExportHtml();
+                      setIsActionsOpen(false);
+                    }}
                     className="w-full text-left px-4 py-2.5 text-xs font-bold text-slate-600 hover:bg-slate-50 flex items-center gap-2 transition-colors cursor-pointer"
                   >
                     <FileCode size={14} />
@@ -530,57 +572,57 @@ export default function EditorHeader() {
             Publish
           </button>
         </div>
-  
-      <AnimatePresence>
-        {showClearConfirm && (
-          <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4">
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm"
-              onClick={() => setShowClearConfirm(false)}
-            />
-            
-            <motion.div
-              initial={{ opacity: 0, scale: 0.95, y: 20 }}
-              animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.95, y: 20 }}
-              transition={{ type: "spring", duration: 0.4 }}
-              className="relative w-full max-w-sm bg-white rounded-3xl p-6 shadow-2xl border border-slate-100/50 flex flex-col items-center text-center"
-            >
-              <div className="w-12 h-12 rounded-2xl bg-red-50 text-red-600 flex items-center justify-center mb-4">
-                <Trash2 size={24} />
-              </div>
-              
-              <h4 className="text-base font-extrabold text-slate-900 mb-2 uppercase tracking-tight">
-                Clear Canvas
-              </h4>
-              
-              <p className="text-[15px] leading-relaxed text-slate-600 mb-6 px-2">
-                Are you sure you want to clear the entire canvas? This cannot be undone.
-              </p>
-              
-              <div className="flex gap-3 w-full">
-                <button
-                  onClick={() => setShowClearConfirm(false)}
-                  className="flex-1 py-3 px-4 rounded-xl font-semibold text-slate-600 bg-slate-50 hover:bg-slate-100 transition-colors"
-                >
-                  Cancel
-                </button>
-                <button
-                  onClick={confirmClear}
-                  className="flex-1 py-3 px-4 rounded-xl font-semibold text-white bg-red-600 hover:bg-red-700 transition-colors shadow-[0_4px_12px_rgba(220,38,38,0.25)] hover:shadow-[0_6px_16px_rgba(220,38,38,0.35)]"
-                >
-                  Clear All
-                </button>
-              </div>
-            </motion.div>
-          </div>
-        )}
-      </AnimatePresence>
 
-    </header>
+        <AnimatePresence>
+          {showClearConfirm && (
+            <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4">
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm"
+                onClick={() => setShowClearConfirm(false)}
+              />
+
+              <motion.div
+                initial={{ opacity: 0, scale: 0.95, y: 20 }}
+                animate={{ opacity: 1, scale: 1, y: 0 }}
+                exit={{ opacity: 0, scale: 0.95, y: 20 }}
+                transition={{ type: "spring", duration: 0.4 }}
+                className="relative w-full max-w-sm bg-white rounded-3xl p-6 shadow-2xl border border-slate-100/50 flex flex-col items-center text-center"
+              >
+                <div className="w-12 h-12 rounded-2xl bg-red-50 text-red-600 flex items-center justify-center mb-4">
+                  <Trash2 size={24} />
+                </div>
+
+                <h4 className="text-base font-extrabold text-slate-900 mb-2 uppercase tracking-tight">
+                  Clear Canvas
+                </h4>
+
+                <p className="text-[15px] leading-relaxed text-slate-600 mb-6 px-2">
+                  Are you sure you want to clear the entire canvas? This cannot
+                  be undone.
+                </p>
+
+                <div className="flex gap-3 w-full">
+                  <button
+                    onClick={() => setShowClearConfirm(false)}
+                    className="flex-1 py-3 px-4 rounded-xl font-semibold text-slate-600 bg-slate-50 hover:bg-slate-100 transition-colors"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    onClick={confirmClear}
+                    className="flex-1 py-3 px-4 rounded-xl font-semibold text-white bg-red-600 hover:bg-red-700 transition-colors shadow-[0_4px_12px_rgba(220,38,38,0.25)] hover:shadow-[0_6px_16px_rgba(220,38,38,0.35)]"
+                  >
+                    Clear All
+                  </button>
+                </div>
+              </motion.div>
+            </div>
+          )}
+        </AnimatePresence>
+      </header>
 
       {showSaveModal && (
         <div className="fixed inset-0 z-[200] flex items-center justify-center p-4">
@@ -595,11 +637,11 @@ export default function EditorHeader() {
                   Save <span className="text-blue-600">Layout</span>
                 </h3>
                 <p className="text-slate-500 text-sm font-semibold">
-                                    {saveStatus === "published"
+                  {saveStatus === "published"
                     ? "Publish this layout for your site"
                     : saveStatus === "post"
-                    ? "Publish as a new Blog Post"
-                    : "Save as a draft template"}
+                      ? "Publish as a new Blog Post"
+                      : "Save as a draft template"}
                 </p>
               </div>
               <div className="w-12 h-12 bg-blue-50 rounded-2xl flex items-center justify-center">
@@ -627,20 +669,22 @@ export default function EditorHeader() {
                   Layout Type
                 </label>
                 <div className="grid grid-cols-3 gap-3">
-                  {(["Single Post", "Blog Archive", "Home Page"] as const).map((type) => (
-                    <button
-                      key={type}
-                      type="button"
-                      onClick={() => setTemplateType(type)}
-                      className={`py-3 px-4 rounded-xl text-[13px] font-black transition-all border ${
-                        templateType === type
-                          ? "bg-blue-600 border-blue-600 text-white shadow-lg shadow-blue-200"
-                          : "bg-white border-slate-100 text-slate-600 hover:border-slate-300"
-                      }`}
-                    >
-                      {type}
-                    </button>
-                  ))}
+                  {(["Single Post", "Blog Archive", "Home Page"] as const).map(
+                    (type) => (
+                      <button
+                        key={type}
+                        type="button"
+                        onClick={() => setTemplateType(type)}
+                        className={`py-3 px-4 rounded-xl text-[13px] font-black transition-all border ${
+                          templateType === type
+                            ? "bg-blue-600 border-blue-600 text-white shadow-lg shadow-blue-200"
+                            : "bg-white border-slate-100 text-slate-600 hover:border-slate-300"
+                        }`}
+                      >
+                        {type}
+                      </button>
+                    ),
+                  )}
                 </div>
               </div>
             </div>
@@ -658,7 +702,11 @@ export default function EditorHeader() {
                 onClick={handleConfirmSave}
                 className="flex-[2] py-4 px-4 bg-slate-900 text-white rounded-2xl text-[14px] font-black hover:bg-slate-800 transition-all shadow-xl active:scale-95 flex items-center justify-center gap-2"
               >
-                                {saveStatus === "published" ? "Publish Now" : saveStatus === "post" ? "Create Post" : "Save as Draft"}
+                {saveStatus === "published"
+                  ? "Publish Now"
+                  : saveStatus === "post"
+                    ? "Create Post"
+                    : "Save as Draft"}
                 <ArrowRight size={16} />
               </button>
             </div>
@@ -668,5 +716,3 @@ export default function EditorHeader() {
     </>
   );
 }
-
-

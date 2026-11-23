@@ -86,10 +86,10 @@ export default function Canvas() {
 
     const typesArray = Array.from(e.dataTransfer.types);
     const isSidebarDrag = typesArray.some(
-      (t) => t.toLowerCase() === "application/react-dnd"
+      (t) => t.toLowerCase() === "application/react-dnd",
     );
     const isInternalDrag = typesArray.some(
-      (t) => t.toLowerCase() === "sourceblockid"
+      (t) => t.toLowerCase() === "sourceblockid",
     );
 
     if (isSidebarDrag || isInternalDrag) {
@@ -144,7 +144,7 @@ export default function Canvas() {
     e: React.DragEvent,
     block: BuilderBlock,
     levelIndex: number,
-    parentId?: string
+    parentId?: string,
   ) => {
     e.preventDefault();
     e.stopPropagation();
@@ -164,7 +164,7 @@ export default function Canvas() {
   const handleExecuteDrop = (
     e: React.DragEvent,
     targetParentId?: string,
-    targetIndex?: number
+    targetIndex?: number,
   ) => {
     e.preventDefault();
     e.stopPropagation();
@@ -184,7 +184,7 @@ export default function Canvas() {
   const handleQuickInsert = (
     type: BlockType,
     parentId?: string,
-    targetIndex?: number
+    targetIndex?: number,
   ) => {
     addBlock(type, parentId, targetIndex);
     setInsertPickerTarget(null);
@@ -193,10 +193,10 @@ export default function Canvas() {
   const renderBlockTree = (
     blocksList: BuilderBlock[],
     parentId?: string,
-    isInteractive = true
+    isInteractive = true,
   ) => {
     const levelBlocks = blocksList.filter(
-      (b) => b.parentId === parentId || (!b.parentId && !parentId)
+      (b) => b.parentId === parentId || (!b.parentId && !parentId),
     );
 
     return (
@@ -229,12 +229,13 @@ export default function Canvas() {
                     });
                   }}
                   onDrop={(e) => handleExecuteDrop(e, parentId, index)}
-                  className={`transition-all duration-200 relative flex items-center justify-center ${isDropTargetBefore
-                    ? "h-10 my-2 bg-blue-500/10 border-2 border-blue-500 rounded-xl"
-                    : isDragging
-                      ? "h-3 -my-1.5 opacity-0 hover:opacity-100 hover:bg-blue-200"
-                      : "h-2 -my-1 opacity-0 group-hover/block:opacity-100"
-                    }`}
+                  className={`transition-all duration-200 relative flex items-center justify-center ${
+                    isDropTargetBefore
+                      ? "h-10 my-2 bg-blue-500/10 border-2 border-blue-500 rounded-xl"
+                      : isDragging
+                        ? "h-3 -my-1.5 opacity-0 hover:opacity-100 hover:bg-blue-200"
+                        : "h-2 -my-1 opacity-0 group-hover/block:opacity-100"
+                  }`}
                 >
                   {isDropTargetBefore ? (
                     <div className="flex items-center gap-2 px-3 py-1 bg-blue-600 text-white rounded-full text-xs font-bold shadow-lg animate-pulse">
@@ -264,14 +265,15 @@ export default function Canvas() {
                 }
                 onDragEnd={handleBlockDragEnd}
                 onDragOver={(e) =>
-                  isInteractive && handleBlockDragOver(e, block, index, parentId)
+                  isInteractive &&
+                  handleBlockDragOver(e, block, index, parentId)
                 }
                 onDrop={(e) => {
                   if (isInteractive && dropTarget) {
                     handleExecuteDrop(
                       e,
                       dropTarget.parentId,
-                      dropTarget.targetIndex
+                      dropTarget.targetIndex,
                     );
                   }
                 }}
@@ -281,19 +283,23 @@ export default function Canvas() {
                     selectBlock(block.id);
                   }
                 }}
-                className={`relative transition-all duration-200 ${isInteractive ? "cursor-pointer" : ""
-                  } ${isCurrentlyDragging
+                className={`relative transition-all duration-200 ${
+                  isInteractive ? "cursor-pointer" : ""
+                } ${
+                  isCurrentlyDragging
                     ? "opacity-25 scale-[0.98] border-2 border-dashed border-blue-500"
                     : ""
-                  } ${isInteractive && isSelected && !isCurrentlyDragging
+                } ${
+                  isInteractive && isSelected && !isCurrentlyDragging
                     ? "ring-2 ring-blue-600 bg-blue-50/20 shadow-xl rounded-2xl z-20"
                     : isInteractive && !isCurrentlyDragging
                       ? "hover:ring-1 hover:ring-blue-300 rounded-2xl"
                       : ""
-                  } ${block.type === "Container" || block.type === "Columns"
+                } ${
+                  block.type === "Container" || block.type === "Columns"
                     ? "p-5 border-2 border-dashed border-slate-200 rounded-2xl min-h-[140px] bg-slate-50/30"
                     : "p-6 rounded-2xl border-2 border-transparent hover:bg-slate-50/80"
-                  }`}
+                }`}
               >
                 {/* Floating Action Toolbar for Selected Block */}
                 {isInteractive && isSelected && !isCurrentlyDragging && (
@@ -390,17 +396,18 @@ export default function Canvas() {
                 {/* Nested Containers / Columns */}
                 {(block.type === "Container" || block.type === "Columns") && (
                   <div
-                    className={`mt-4 p-5 min-h-[90px] bg-white/80 rounded-xl gap-4 border-2 border-dashed border-slate-200 transition-all ${isDragging
-                      ? "border-blue-400 bg-blue-50/20 ring-2 ring-blue-200"
-                      : ""
-                      } ${block.type === "Columns" ? "grid" : "flex flex-col"
-                      }`}
+                    className={`mt-4 p-5 min-h-[90px] bg-white/80 rounded-xl gap-4 border-2 border-dashed border-slate-200 transition-all ${
+                      isDragging
+                        ? "border-blue-400 bg-blue-50/20 ring-2 ring-blue-200"
+                        : ""
+                    } ${block.type === "Columns" ? "grid" : "flex flex-col"}`}
                     style={
                       block.type === "Columns"
                         ? {
-                          gridTemplateColumns: `repeat(${block.content || 2
+                            gridTemplateColumns: `repeat(${
+                              block.content || 2
                             }, minmax(0, 1fr))`,
-                        }
+                          }
                         : {}
                     }
                     onDragOver={(e) => {
@@ -412,13 +419,13 @@ export default function Canvas() {
                         position: "inside",
                         parentId: block.id,
                         targetIndex: blocksList.filter(
-                          (b) => b.parentId === block.id
+                          (b) => b.parentId === block.id,
                         ).length,
                       });
                     }}
                     onDrop={(e) => {
                       const childCount = blocksList.filter(
-                        (b) => b.parentId === block.id
+                        (b) => b.parentId === block.id,
                       ).length;
                       handleExecuteDrop(e, block.id, childCount);
                     }}
@@ -427,13 +434,13 @@ export default function Canvas() {
 
                     {blocksList.filter((b) => b.parentId === block.id)
                       .length === 0 && (
-                        <div className="text-sm text-slate-400 text-center py-6 border-2 border-dashed border-slate-200 rounded-xl flex flex-col items-center justify-center gap-2 bg-slate-50/50">
-                          <LayoutGrid size={18} className="text-slate-300" />
-                          <span className="font-medium text-xs">
-                            Drop components inside this {block.type}
-                          </span>
-                        </div>
-                      )}
+                      <div className="text-sm text-slate-400 text-center py-6 border-2 border-dashed border-slate-200 rounded-xl flex flex-col items-center justify-center gap-2 bg-slate-50/50">
+                        <LayoutGrid size={18} className="text-slate-300" />
+                        <span className="font-medium text-xs">
+                          Drop components inside this {block.type}
+                        </span>
+                      </div>
+                    )}
                   </div>
                 )}
               </div>
@@ -452,12 +459,13 @@ export default function Canvas() {
                     });
                   }}
                   onDrop={(e) => handleExecuteDrop(e, parentId, index + 1)}
-                  className={`transition-all duration-200 relative flex items-center justify-center ${isDropTargetAfter
-                    ? "h-10 my-2 bg-blue-500/10 border-2 border-blue-500 rounded-xl"
-                    : isDragging
-                      ? "h-3 -my-1.5 opacity-0 hover:opacity-100 hover:bg-blue-200"
-                      : "h-2 -my-1 opacity-0 group-hover/block:opacity-100"
-                    }`}
+                  className={`transition-all duration-200 relative flex items-center justify-center ${
+                    isDropTargetAfter
+                      ? "h-10 my-2 bg-blue-500/10 border-2 border-blue-500 rounded-xl"
+                      : isDragging
+                        ? "h-3 -my-1.5 opacity-0 hover:opacity-100 hover:bg-blue-200"
+                        : "h-2 -my-1 opacity-0 group-hover/block:opacity-100"
+                  }`}
                 >
                   {isDropTargetAfter ? (
                     <div className="flex items-center gap-2 px-3 py-1 bg-blue-600 text-white rounded-full text-xs font-bold shadow-lg animate-pulse">
@@ -576,8 +584,9 @@ export default function Canvas() {
 
         {/* Builder Content */}
         <div
-          className={`p-12 md:p-20 ${compareMode && aiBlocks.length > 0 ? "pt-24" : ""
-            }`}
+          className={`p-12 md:p-20 ${
+            compareMode && aiBlocks.length > 0 ? "pt-24" : ""
+          }`}
         >
           {compareMode && aiBlocks.length > 0 ? (
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-10 divide-x divide-slate-100">
@@ -622,7 +631,8 @@ export default function Canvas() {
                 Your Canvas is Ready
               </h3>
               <p className="text-slate-500 max-w-xs mb-6 text-sm">
-                Drag components from the sidebar or click below to start building your page.
+                Drag components from the sidebar or click below to start
+                building your page.
               </p>
               <button
                 type="button"
@@ -632,7 +642,9 @@ export default function Canvas() {
               </button>
             </div>
           ) : (
-            <div className="space-y-1">{renderBlockTree(blocks, undefined, true)}</div>
+            <div className="space-y-1">
+              {renderBlockTree(blocks, undefined, true)}
+            </div>
           )}
         </div>
       </div>
@@ -673,7 +685,7 @@ export default function Canvas() {
                     handleQuickInsert(
                       tool.type,
                       insertPickerTarget.parentId,
-                      insertPickerTarget.targetIndex
+                      insertPickerTarget.targetIndex,
                     )
                   }
                   className="flex flex-col items-center justify-center gap-2 p-3 bg-slate-50 hover:bg-blue-50 border border-slate-100 hover:border-blue-300 rounded-2xl text-center transition-all group hover:shadow-md"
@@ -727,7 +739,12 @@ function renderBlockContent(block: BuilderBlock, isSelected: boolean) {
     case "Image": {
       const bindingKey = block.bindings?.content || block.bindings?.src;
       const hasBinding = !!bindingKey;
-      const rawImage = typeof block.content === "string" ? block.content.trim() : (typeof block.content === "object" ? block.content?.url : "");
+      const rawImage =
+        typeof block.content === "string"
+          ? block.content.trim()
+          : typeof block.content === "object"
+            ? block.content?.url
+            : "";
       const isMockImage =
         !rawImage ||
         rawImage.includes("photo-1501504905252") ||
@@ -738,13 +755,18 @@ function renderBlockContent(block: BuilderBlock, isSelected: boolean) {
       const imageSrc = isMockImage ? null : rawImage;
 
       return (
-        <div style={styleString} className="rounded-xl overflow-hidden min-h-[140px] flex items-center justify-center">
+        <div
+          style={styleString}
+          className="rounded-xl overflow-hidden min-h-[140px] flex items-center justify-center"
+        >
           {hasBinding ? (
             <div className="w-full py-12 px-6 flex flex-col items-center justify-center text-center bg-blue-50/40 border-2 border-dashed border-blue-200 rounded-2xl">
               <div className="w-12 h-12 bg-blue-100 text-blue-600 rounded-2xl flex items-center justify-center mb-3 shadow-xs">
                 <ImageIcon className="w-6 h-6" />
               </div>
-              <p className="text-sm font-bold text-blue-900">Dynamic Image Field</p>
+              <p className="text-sm font-bold text-blue-900">
+                Dynamic Image Field
+              </p>
               <code className="text-xs bg-blue-100/80 text-blue-700 px-2 py-0.5 rounded font-mono font-semibold mt-1">
                 {`{${bindingKey}}`}
               </code>
@@ -760,9 +782,12 @@ function renderBlockContent(block: BuilderBlock, isSelected: boolean) {
               <div className="w-12 h-12 bg-white rounded-2xl shadow-xs border border-slate-200 flex items-center justify-center text-slate-400 mb-2">
                 <ImageIcon className="w-6 h-6" />
               </div>
-              <p className="text-sm font-bold text-slate-700">No Image Uploaded</p>
+              <p className="text-sm font-bold text-slate-700">
+                No Image Uploaded
+              </p>
               <p className="text-xs text-slate-400 max-w-xs mt-0.5">
-                Click this block to upload an image from your device or set an image URL in the settings panel.
+                Click this block to upload an image from your device or set an
+                image URL in the settings panel.
               </p>
             </div>
           )}
@@ -788,7 +813,9 @@ function renderBlockContent(block: BuilderBlock, isSelected: boolean) {
           className="px-6 py-2 bg-blue-600 text-white rounded-lg font-medium"
           style={styleString}
         >
-          {typeof block.content === "string" ? block.content : block.content?.text || "Click Me"}
+          {typeof block.content === "string"
+            ? block.content
+            : block.content?.text || "Click Me"}
         </button>
       );
     case "Container":
@@ -923,5 +950,3 @@ function renderBlockContent(block: BuilderBlock, isSelected: boolean) {
       return <div className="text-red-500">Unknown block type</div>;
   }
 }
-
-
