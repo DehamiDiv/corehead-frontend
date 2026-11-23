@@ -1,17 +1,21 @@
-export function normalizeLayoutDocumentV1(input: any, options?: any): {
-  document: {
-    schemaVersion: "1.0";
-    kind: any;
-    name: any;
-    blocks: any[];
-    metadata: { origin: any };
-  };
-  warnings: any[];
-  issues: any[];
-  sourceFormat: string;
-};
+import type { LayoutDocumentV1, LayoutKind, LayoutOrigin } from "../corehead-frontend/frontend/lib/layoutContract";
+import type { LayoutValidationIssue } from "./layout-validator-v1";
 
-const _default: {
-  normalizeLayoutDocumentV1: typeof normalizeLayoutDocumentV1;
-};
-export default _default;
+export interface LayoutNormalizationResult {
+  document: LayoutDocumentV1;
+  warnings: LayoutValidationIssue[];
+  sourceFormat: "layout-document-v1" | "block-array" | "blocks-object" | "legacy-sections" | "ai-history";
+}
+
+export function normalizeLayoutDocumentV1(
+  input: unknown,
+  options?: {
+    name?: string;
+    kind?: LayoutKind | string;
+    origin?: LayoutOrigin;
+    description?: string;
+    designStyle?: string;
+  },
+): LayoutNormalizationResult;
+
+export function bindingFromPlaceholder(value: unknown): string | null;
