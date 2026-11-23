@@ -12,7 +12,7 @@ const componentBlocks = [
       excerpt: 'Add your hero description here.',
       author: 'Author Name',
       date: new Date().toISOString().split('T')[0],
-      image: 'https://picsum.photos/800/400?random=' + Math.floor(Math.random() * 100),
+      image: '',
       category: 'Hero',
       type: 'hero'
     }
@@ -28,7 +28,7 @@ const componentBlocks = [
       excerpt: 'Write your blog post excerpt here.',
       author: 'Author Name',
       date: new Date().toISOString().split('T')[0],
-      image: 'https://picsum.photos/400/250?random=' + Math.floor(Math.random() * 100),
+      image: '',
       category: 'General',
       type: 'card'
     }
@@ -44,7 +44,7 @@ const componentBlocks = [
       excerpt: 'This is an important announcement for your readers.',
       author: 'Admin',
       date: new Date().toISOString().split('T')[0],
-      image: 'https://picsum.photos/800/200?random=' + Math.floor(Math.random() * 100),
+      image: '',
       category: 'Banner',
       type: 'banner'
     }
@@ -60,7 +60,7 @@ const componentBlocks = [
       excerpt: 'This is a featured post that stands out from the rest.',
       author: 'Editor',
       date: new Date().toISOString().split('T')[0],
-      image: 'https://picsum.photos/600/350?random=' + Math.floor(Math.random() * 100),
+      image: '',
       category: 'Featured',
       type: 'featured'
     }
@@ -76,7 +76,7 @@ const componentBlocks = [
       excerpt: '"This is an inspiring quote that will motivate your readers to take action."',
       author: 'Quote Author',
       date: new Date().toISOString().split('T')[0],
-      image: 'https://picsum.photos/400/250?random=' + Math.floor(Math.random() * 100),
+      image: '',
       category: 'Quote',
       type: 'quote'
     }
@@ -92,7 +92,7 @@ const componentBlocks = [
       excerpt: 'Get the latest posts delivered straight to your inbox. No spam, ever.',
       author: 'CoreHead',
       date: new Date().toISOString().split('T')[0],
-      image: 'https://picsum.photos/400/250?random=' + Math.floor(Math.random() * 100),
+      image: '',
       category: 'Newsletter',
       type: 'newsletter'
     }
