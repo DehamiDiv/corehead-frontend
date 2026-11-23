@@ -1,549 +1,158 @@
-export const THEME_REGISTRY = {
-  default: {
-    id: "default",
-    name: "Classic Slate",
-    colours: {
-      primary: "#2563eb",
-      background: "#ffffff",
-      foreground: "#0f172a",
-      accent: "#eff6ff",
-      card: "#ffffff",
-      cardForeground: "#0f172a",
-      muted: "#64748b",
-    },
-    header: {
-      headerBg: "#ffffff",
-      headerFont: "inter",
-      ctaBg: "#2563eb",
-      ctaColor: "#ffffff",
-      ctaText: "Get Started",
-    },
-    footer: {
-      footerBg: "#0f172a",
-      footerFont: "inter",
-      footerDescription: "Modern blog publishing platform.",
-    },
-    font: "inter",
-    tokens: {
-      radius: "12px",
-      shadow: "0 4px 20px -2px rgba(0,0,0,0.05)",
-      buttonStyle: "pill",
-      containerWidth: "1200px",
-      sectionSpacing: "64px",
-      headerVariant: "light",
-      footerVariant: "solid",
-    },
-    homeStyle: "classic",
-    recommendedHomeStyle: "classic",
-  },
-  "theme-1": {
-    id: "theme-1",
-    name: "Verdura Emerald",
-    colours: {
-      primary: "#14532d",
-      background: "#f8f7f4",
-      foreground: "#1c1917",
-      accent: "#dcfce7",
-      card: "#ffffff",
-      cardForeground: "#1c1917",
-      muted: "#475569",
-    },
-    header: {
-      headerBg: "#14532d",
-      headerFont: "dm-sans",
-      ctaBg: "#166534",
-      ctaColor: "#ffffff",
-      ctaText: "Subscribe",
-    },
-    footer: {
-      footerBg: "#052e16",
-      footerFont: "dm-sans",
-      footerDescription: "Stories inspired by nature and vibrant living.",
-    },
-    font: "dm-sans",
-    tokens: {
-      radius: "16px",
-      shadow: "0 10px 30px -5px rgba(20, 83, 45, 0.08)",
-      buttonStyle: "pill",
-      containerWidth: "1280px",
-      sectionSpacing: "72px",
-      headerVariant: "dark",
-      footerVariant: "solid",
-    },
-    homeStyle: "nature",
-    recommendedHomeStyle: "nature",
-  },
-  "theme-2": {
-    id: "theme-2",
-    name: "Minimalist Mono",
-    colours: {
-      primary: "#18181b",
-      background: "#ffffff",
-      foreground: "#09090b",
-      accent: "#f4f4f5",
-      card: "#ffffff",
-      cardForeground: "#09090b",
-      muted: "#71717a",
-    },
-    header: {
-      headerBg: "#ffffff",
-      headerFont: "inter",
-      ctaBg: "#18181b",
-      ctaColor: "#ffffff",
-      ctaText: "Explore",
-    },
-    footer: {
-      footerBg: "#09090b",
-      footerFont: "#a1a1aa",
-      footerDescription: "Pure focus on words and visual clarity.",
-    },
-    font: "inter",
-    tokens: {
-      radius: "4px",
-      shadow: "0 1px 3px 0 rgba(0,0,0,0.02)",
-      buttonStyle: "square",
-      containerWidth: "1100px",
-      sectionSpacing: "56px",
-      headerVariant: "light",
-      footerVariant: "solid",
-    },
-    homeStyle: "glass",
-    recommendedHomeStyle: "glass",
-  },
-  "theme-3": {
-    id: "theme-3",
-    name: "Warm Editorial",
-    colours: {
-      primary: "#9a3412",
-      background: "#fef3c7",
-      foreground: "#451a03",
-      accent: "#fde68a",
-      card: "#fffbeb",
-      cardForeground: "#451a03",
-      muted: "#78350f",
-    },
-    header: {
-      headerBg: "#fffbeb",
-      headerFont: "georgia",
-      ctaBg: "#9a3412",
-      ctaColor: "#ffffff",
-      ctaText: "Read Edition",
-    },
-    footer: {
-      footerBg: "#451a03",
-      footerFont: "#fef3c7",
-      footerDescription: "Classic broadsheet journalism & essays.",
-    },
-    font: "georgia",
-    tokens: {
-      radius: "8px",
-      shadow: "0 2px 10px rgba(154, 52, 18, 0.05)",
-      buttonStyle: "square",
-      containerWidth: "1200px",
-      sectionSpacing: "64px",
-      headerVariant: "light",
-      footerVariant: "solid",
-    },
-    homeStyle: "paper",
-    recommendedHomeStyle: "paper",
-  },
-  "theme-4": {
-    id: "theme-4",
-    name: "Soft Bloom",
-    colours: {
-      primary: "#7B6B9A",
-      background: "#F8F6FA",
-      foreground: "#2C2835",
-      accent: "#C4A882",
-      card: "#FFFFFF",
-      cardForeground: "#2C2835",
-      muted: "#8A8496",
-    },
-    header: {
-      headerBg: "#F8F6FA",
-      headerFont: "dm-sans",
-      ctaBg: "#7B6B9A",
-      ctaColor: "#F8F6FA",
-      ctaText: "Start reading",
-    },
-    footer: {
-      footerBg: "#2C2835",
-      footerFont: "dm-sans",
-      footerDescription: "A calm space for wellness, reflection, and stories.",
-    },
-    font: "dm-sans",
-    tokens: {
-      radius: "20px",
-      shadow: "0 8px 25px rgba(123, 107, 154, 0.08)",
-      buttonStyle: "pill",
-      containerWidth: "1200px",
-      sectionSpacing: "64px",
-      headerVariant: "light",
-      footerVariant: "solid",
-    },
-    homeStyle: "bloom",
-    recommendedHomeStyle: "bloom",
-  },
-  "theme-5": {
-    id: "theme-5",
-    name: "Travel Teal",
-    colours: {
-      primary: "#0f766e",
-      background: "#f0fdfa",
-      foreground: "#134e4a",
-      accent: "#14b8a6",
-      card: "#ffffff",
-      cardForeground: "#115e59",
-      muted: "#0f766e",
-    },
-    header: {
-      headerBg: "#134e4a",
-      headerFont: "ibm-plex",
-      ctaBg: "#14b8a6",
-      ctaColor: "#042f2e",
-      ctaText: "Stories",
-    },
-    footer: {
-      footerBg: "#042f2e",
-      footerFont: "ibm-plex",
-      footerDescription: "Wanderlust and written journeys.",
-    },
-    font: "ibm-plex",
-    tokens: {
-      radius: "12px",
-      shadow: "0 4px 20px rgba(15, 118, 110, 0.08)",
-      buttonStyle: "pill",
-      containerWidth: "1240px",
-      sectionSpacing: "64px",
-      headerVariant: "dark",
-      footerVariant: "solid",
-    },
-    homeStyle: "classic",
-    recommendedHomeStyle: "classic",
-  },
-  "theme-6": {
-    id: "theme-6",
-    name: "Fitness Dark",
-    colours: {
-      primary: "#22c55e",
-      background: "#0a0a0a",
-      foreground: "#fafafa",
-      accent: "#4ade80",
-      card: "#171717",
-      cardForeground: "#fafafa",
-      muted: "#a3a3a3",
-    },
-    header: {
-      headerBg: "#000000",
-      headerFont: "inter",
-      ctaBg: "#22c55e",
-      ctaColor: "#052e16",
-      ctaText: "Train hard",
-    },
-    footer: {
-      footerBg: "#000000",
-      footerFont: "inter",
-      footerDescription: "Strength, discipline, results.",
-    },
-    font: "inter",
-    tokens: {
-      radius: "10px",
-      shadow: "0 8px 30px rgba(0,0,0,0.5)",
-      buttonStyle: "square",
-      containerWidth: "1280px",
-      sectionSpacing: "72px",
-      headerVariant: "dark",
-      footerVariant: "solid",
-    },
-    homeStyle: "studio",
-    recommendedHomeStyle: "studio",
-  },
-  "theme-7": {
-    id: "theme-7",
-    name: "Portfolio Blue",
-    colours: {
-      primary: "#1d4ed8",
-      background: "#eff6ff",
-      foreground: "#1e3a8a",
-      accent: "#3b82f6",
-      card: "#ffffff",
-      cardForeground: "#1e3a8a",
-      muted: "#3b82f6",
-    },
-    header: {
-      headerBg: "#ffffff",
-      headerFont: "ibm-plex",
-      ctaBg: "#1d4ed8",
-      ctaColor: "#ffffff",
-      ctaText: "About me",
-    },
-    footer: {
-      footerBg: "#1e3a8a",
-      footerFont: "ibm-plex",
-      footerDescription: "Professional portfolio & insights.",
-    },
-    font: "ibm-plex",
-    tokens: {
-      radius: "14px",
-      shadow: "0 4px 20px rgba(29, 78, 216, 0.08)",
-      buttonStyle: "pill",
-      containerWidth: "1200px",
-      sectionSpacing: "64px",
-      headerVariant: "light",
-      footerVariant: "solid",
-    },
-    homeStyle: "studio",
-    recommendedHomeStyle: "studio",
-  },
-  "theme-8": {
-    id: "theme-8",
-    name: "Corporate Red",
-    colours: {
-      primary: "#b91c1c",
-      background: "#f8fafc",
-      foreground: "#0f172a",
-      accent: "#dc2626",
-      card: "#ffffff",
-      cardForeground: "#0f172a",
-      muted: "#64748b",
-    },
-    header: {
-      headerBg: "#0f172a",
-      headerFont: "inter",
-      ctaBg: "#b91c1c",
-      ctaColor: "#ffffff",
-      ctaText: "Contact",
-    },
-    footer: {
-      footerBg: "#020617",
-      footerFont: "inter",
-      footerDescription: "Consulting insights that scale.",
-    },
-    font: "inter",
-    tokens: {
-      radius: "8px",
-      shadow: "0 4px 15px rgba(0,0,0,0.05)",
-      buttonStyle: "square",
-      containerWidth: "1200px",
-      sectionSpacing: "64px",
-      headerVariant: "dark",
-      footerVariant: "solid",
-    },
-    homeStyle: "classic",
-    recommendedHomeStyle: "classic",
-  },
-  "theme-9": {
-    id: "theme-9",
-    name: "Editorial Teal",
-    colours: {
-      primary: "#0d9488",
-      background: "#ffffff",
-      foreground: "#134e4a",
-      accent: "#2dd4bf",
-      card: "#f0fdfa",
-      cardForeground: "#115e59",
-      muted: "#5eead4",
-    },
-    header: {
-      headerBg: "#ffffff",
-      headerFont: "georgia",
-      ctaBg: "#0d9488",
-      ctaColor: "#ffffff",
-      ctaText: "Categories",
-    },
-    footer: {
-      footerBg: "#134e4a",
-      footerFont: "georgia",
-      footerDescription: "Clean editorial for curious minds.",
-    },
-    font: "georgia",
-    tokens: {
-      radius: "12px",
-      shadow: "0 4px 20px rgba(13, 148, 136, 0.06)",
-      buttonStyle: "pill",
-      containerWidth: "1200px",
-      sectionSpacing: "64px",
-      headerVariant: "light",
-      footerVariant: "solid",
-    },
-    homeStyle: "paper",
-    recommendedHomeStyle: "paper",
-  },
-  "theme-10": {
-    id: "theme-10",
-    name: "Magazine Blue",
-    colours: {
-      primary: "#0369a1",
-      background: "#f0f9ff",
-      foreground: "#0c4a6e",
-      accent: "#0ea5e9",
-      card: "#ffffff",
-      cardForeground: "#075985",
-      muted: "#0284c7",
-    },
-    header: {
-      headerBg: "#0c4a6e",
-      headerFont: "dm-sans",
-      ctaBg: "#0ea5e9",
-      ctaColor: "#082f49",
-      ctaText: "Magazine",
-    },
-    footer: {
-      footerBg: "#082f49",
-      footerFont: "dm-sans",
-      footerDescription: "News, culture, and long reads.",
-    },
-    font: "dm-sans",
-    tokens: {
-      radius: "12px",
-      shadow: "0 4px 20px rgba(3, 105, 161, 0.08)",
-      buttonStyle: "pill",
-      containerWidth: "1240px",
-      sectionSpacing: "64px",
-      headerVariant: "dark",
-      footerVariant: "solid",
-    },
-    homeStyle: "paper",
-    recommendedHomeStyle: "paper",
-  },
-  "theme-11": {
-    id: "theme-11",
-    name: "Modern Dark",
-    colours: {
-      primary: "#ef4444",
-      background: "#09090b",
-      foreground: "#fafafa",
-      accent: "#f87171",
-      card: "#18181b",
-      cardForeground: "#fafafa",
-      muted: "#a1a1aa",
-    },
-    header: {
-      headerBg: "#09090b",
-      headerFont: "inter",
-      ctaBg: "#ef4444",
-      ctaColor: "#ffffff",
-      ctaText: "Get started",
-    },
-    footer: {
-      footerBg: "#000000",
-      footerFont: "inter",
-      footerDescription: "Modern dark experience.",
-    },
-    font: "inter",
-    tokens: {
-      radius: "16px",
-      shadow: "0 8px 30px rgba(0,0,0,0.4)",
-      buttonStyle: "pill",
-      containerWidth: "1200px",
-      sectionSpacing: "64px",
-      headerVariant: "dark",
-      footerVariant: "solid",
-    },
-    homeStyle: "glass",
-    recommendedHomeStyle: "glass",
-  },
-};
+'use strict';
 
-export const HOME_LAYOUT_REGISTRY = {
-  classic: {
-    id: "classic",
-    name: "Classic Grid",
-    description: "Clean blog layout with hero and grid stories",
-    suitableFor: ["General", "Tech", "News"],
-    previewAsset: "/demo/classic-preview.png",
-    recommendedThemeIds: ["default"],
-  },
-  nature: {
-    id: "nature",
-    name: "Nature Editorial",
-    description: "Editorial layout with rich hero",
-    suitableFor: ["Lifestyle", "Nature"],
-    previewAsset: "/demo/nature-preview.png",
-    recommendedThemeIds: ["theme-1"],
-  },
-  paper: {
-    id: "paper",
-    name: "Paper Broadsheet",
-    description: "Newspaper multi-column editorial",
-    suitableFor: ["Journalism", "Opinion"],
-    previewAsset: "/demo/paper-preview.png",
-    recommendedThemeIds: ["theme-3"],
-  },
-  glass: {
-    id: "glass",
-    name: "Glassmorphic Grid",
-    description: "Modern semi-transparent frosted cards",
-    suitableFor: ["Design", "Tech"],
-    previewAsset: "/demo/glass-preview.png",
-    recommendedThemeIds: ["theme-2"],
-  },
-  bloom: {
-    id: "bloom",
-    name: "Soft Bloom",
-    description: "Serene wellness and lifestyle layout",
-    suitableFor: ["Wellness", "Lifestyle"],
-    previewAsset: "/demo/bloom-preview.png",
-    recommendedThemeIds: ["theme-4"],
-  },
-  studio: {
-    id: "studio",
-    name: "Studio Dark",
-    description: "High impact portfolio & dark theme",
-    suitableFor: ["Fitness", "Portfolio"],
-    previewAsset: "/demo/studio-preview.png",
-    recommendedThemeIds: ["theme-6"],
-  },
-  bento: {
-    id: "bento",
-    name: "Bento Box",
-    description: "Asymmetric grid layout for showcases",
-    suitableFor: ["Products", "Tech"],
-    previewAsset: "/demo/bento-preview.png",
-    recommendedThemeIds: ["default"],
-  },
-  portals: {
-    id: "portals",
-    name: "Portals Magazine",
-    description: "Feature-rich magazine layout",
-    suitableFor: ["News", "Culture"],
-    previewAsset: "/demo/portals-preview.png",
-    recommendedThemeIds: ["theme-10"],
-  },
-};
+const { HOME_LAYOUT_IDS, normalizeHomeStyle } = require('./appearance-model-v1');
 
-export const THEME_PREVIEW_ASSETS = {
-  default: "/demo/classic-theme.png",
-  "theme-1": "/demo/verdura-theme.png",
-  "theme-2": "/demo/mono-theme.png",
-  "theme-3": "/demo/editorial-theme.png",
-  "theme-4": "/demo/bloom-theme.png",
-  "theme-5": "/demo/travel-theme.png",
-  "theme-6": "/demo/fitness-theme.png",
-  "theme-7": "/demo/portfolio-theme.png",
-  "theme-8": "/demo/corporate-theme.png",
-  "theme-9": "/demo/teal-theme.png",
-  "theme-10": "/demo/magazine-theme.png",
-  "theme-11": "/demo/dark-theme.png",
-};
-
-export function getHomeLayoutRegistration(id) {
-  return HOME_LAYOUT_REGISTRY[id] || HOME_LAYOUT_REGISTRY.classic;
+function theme(id, name, colours, header, footer, font, recommendedHomeStyle) {
+  const editorial = ['theme-3', 'theme-9', 'theme-10'].includes(id);
+  const dark = ['theme-6', 'theme-11'].includes(id);
+  return Object.freeze({
+    id,
+    name,
+    colours: Object.freeze(colours),
+    header: Object.freeze(header),
+    footer: Object.freeze(footer),
+    font,
+    tokens: Object.freeze({
+      radius: editorial ? '0.25rem' : dark ? '0.75rem' : '1rem',
+      shadow: editorial ? 'none' : '0 18px 45px rgba(15, 23, 42, 0.12)',
+      buttonStyle: editorial ? 'square' : 'pill',
+      containerWidth: editorial ? '78rem' : '72rem',
+      sectionSpacing: editorial ? '3rem' : '4rem',
+      headerVariant: dark ? 'dark' : 'light',
+      footerVariant: 'solid',
+    }),
+    recommendedHomeStyle: normalizeHomeStyle(recommendedHomeStyle),
+    // Compatibility only. Selection logic must not treat this as ownership.
+    homeStyle: normalizeHomeStyle(recommendedHomeStyle),
+  });
 }
 
-export function getThemeRegistration(id) {
-  return THEME_REGISTRY[id] || THEME_REGISTRY.default;
+const THEME_REGISTRY = Object.freeze({
+  default: theme('default', 'Nordic Blue',
+    { primary: '#2563eb', background: '#f8fafc', foreground: '#0f172a', accent: '#3b82f6', card: '#ffffff', cardForeground: '#0f172a', muted: '#64748b' },
+    { headerBg: '#ffffff', headerFont: '#0f172a', ctaBg: '#2563eb', ctaColor: '#ffffff', ctaText: 'Latest posts' },
+    { footerBg: '#0f172a', footerFont: '#94a3b8', footerDescription: 'Stories and updates from our team.' },
+    'dm-sans', 'classic'),
+  'theme-1': theme('theme-1', 'Forest Journal',
+    { primary: '#166534', background: '#f0fdf4', foreground: '#14532d', accent: '#22c55e', card: '#ffffff', cardForeground: '#14532d', muted: '#4d7c5a' },
+    { headerBg: '#14532d', headerFont: '#f0fdf4', ctaBg: '#22c55e', ctaColor: '#052e16', ctaText: 'Explore' },
+    { footerBg: '#052e16', footerFont: '#86efac', footerDescription: 'Inspired by nature and growth.' },
+    'dm-sans', 'nature'),
+  'theme-2': theme('theme-2', 'Terracotta Mosaic',
+    { primary: '#ea580c', background: '#fff7ed', foreground: '#7c2d12', accent: '#f97316', card: '#ffffff', cardForeground: '#9a3412', muted: '#c2410c' },
+    { headerBg: '#ffffff', headerFont: '#9a3412', ctaBg: '#ea580c', ctaColor: '#ffffff', ctaText: 'Featured' },
+    { footerBg: '#7c2d12', footerFont: '#fed7aa', footerDescription: 'Bold stories, bright ideas.' },
+    'inter', 'bento'),
+  'theme-3': theme('theme-3', 'Ink & Paper',
+    { primary: '#dc2626', background: '#fafafa', foreground: '#171717', accent: '#ef4444', card: '#ffffff', cardForeground: '#171717', muted: '#737373' },
+    { headerBg: '#ffffff', headerFont: '#171717', ctaBg: '#dc2626', ctaColor: '#ffffff', ctaText: 'Read more' },
+    { footerBg: '#171717', footerFont: '#a3a3a3', footerDescription: 'Elegant editorial for modern readers.' },
+    'georgia', 'paper'),
+  'theme-4': theme('theme-4', 'Lavender Calm',
+    { primary: '#7B6B9A', background: '#F8F6FA', foreground: '#2C2835', accent: '#C4A882', card: '#FFFFFF', cardForeground: '#2C2835', muted: '#8A8496' },
+    { headerBg: '#F8F6FA', headerFont: '#2C2835', ctaBg: '#7B6B9A', ctaColor: '#F8F6FA', ctaText: 'Start reading' },
+    { footerBg: '#2C2835', footerFont: '#D4CFE0', footerDescription: 'A calm space for wellness, reflection, and stories that help you breathe.' },
+    'dm-sans', 'bloom'),
+  'theme-5': theme('theme-5', 'Ocean Teal',
+    { primary: '#0f766e', background: '#f0fdfa', foreground: '#134e4a', accent: '#14b8a6', card: '#ffffff', cardForeground: '#115e59', muted: '#0f766e' },
+    { headerBg: '#134e4a', headerFont: '#ccfbf1', ctaBg: '#14b8a6', ctaColor: '#042f2e', ctaText: 'Stories' },
+    { footerBg: '#042f2e', footerFont: '#5eead4', footerDescription: 'Wanderlust and written journeys.' },
+    'ibm-plex', 'classic'),
+  'theme-6': theme('theme-6', 'Midnight Energy',
+    { primary: '#22c55e', background: '#0a0a0a', foreground: '#fafafa', accent: '#4ade80', card: '#171717', cardForeground: '#fafafa', muted: '#a3a3a3' },
+    { headerBg: '#000000', headerFont: '#fafafa', ctaBg: '#22c55e', ctaColor: '#052e16', ctaText: 'Train hard' },
+    { footerBg: '#000000', footerFont: '#737373', footerDescription: 'Strength, discipline, results.' },
+    'inter', 'studio'),
+  'theme-7': theme('theme-7', 'Portfolio Blue',
+    { primary: '#1d4ed8', background: '#eff6ff', foreground: '#1e3a8a', accent: '#3b82f6', card: '#ffffff', cardForeground: '#1e3a8a', muted: '#3b82f6' },
+    { headerBg: '#ffffff', headerFont: '#1e3a8a', ctaBg: '#1d4ed8', ctaColor: '#ffffff', ctaText: 'About me' },
+    { footerBg: '#1e3a8a', footerFont: '#bfdbfe', footerDescription: 'Professional portfolio and insights.' },
+    'ibm-plex', 'studio'),
+  'theme-8': theme('theme-8', 'Executive Navy',
+    { primary: '#b91c1c', background: '#f8fafc', foreground: '#0f172a', accent: '#dc2626', card: '#ffffff', cardForeground: '#0f172a', muted: '#64748b' },
+    { headerBg: '#0f172a', headerFont: '#f8fafc', ctaBg: '#b91c1c', ctaColor: '#ffffff', ctaText: 'Contact' },
+    { footerBg: '#020617', footerFont: '#94a3b8', footerDescription: 'Consulting insights that scale.' },
+    'inter', 'classic'),
+  'theme-9': theme('theme-9', 'Editorial Teal',
+    { primary: '#0d9488', background: '#ffffff', foreground: '#134e4a', accent: '#2dd4bf', card: '#f0fdfa', cardForeground: '#115e59', muted: '#5eead4' },
+    { headerBg: '#ffffff', headerFont: '#134e4a', ctaBg: '#0d9488', ctaColor: '#ffffff', ctaText: 'Categories' },
+    { footerBg: '#134e4a', footerFont: '#99f6e4', footerDescription: 'Clean editorial for curious minds.' },
+    'georgia', 'paper'),
+  'theme-10': theme('theme-10', 'Newsroom Blue',
+    { primary: '#0369a1', background: '#f0f9ff', foreground: '#0c4a6e', accent: '#0ea5e9', card: '#ffffff', cardForeground: '#075985', muted: '#0284c7' },
+    { headerBg: '#0c4a6e', headerFont: '#e0f2fe', ctaBg: '#0ea5e9', ctaColor: '#082f49', ctaText: 'Magazine' },
+    { footerBg: '#082f49', footerFont: '#7dd3fc', footerDescription: 'News, culture, and long reads.' },
+    'dm-sans', 'paper'),
+  'theme-11': theme('theme-11', 'Midnight Red',
+    { primary: '#ef4444', background: '#09090b', foreground: '#fafafa', accent: '#f87171', card: '#18181b', cardForeground: '#fafafa', muted: '#a1a1aa' },
+    { headerBg: '#09090b', headerFont: '#fafafa', ctaBg: '#ef4444', ctaColor: '#ffffff', ctaText: 'Get started' },
+    { footerBg: '#000000', footerFont: '#71717a', footerDescription: 'Modern dark experience.' },
+    'inter', 'glass'),
+});
+
+const THEME_PREVIEW_ASSETS = Object.freeze({
+  default: 'https://images.unsplash.com/photo-1492144534655-ae79c964c9d7?w=900&q=80',
+  'theme-1': 'https://images.unsplash.com/photo-1437622368342-7a3d73a34c8f?w=900&q=80',
+  'theme-2': 'https://images.unsplash.com/photo-1522202176988-66273c2fd55f?w=900&q=80',
+  'theme-3': 'https://images.unsplash.com/photo-1523240795612-9a054b0db644?w=900&q=80',
+  'theme-4': 'https://images.unsplash.com/photo-1487412947147-5cebf100ffc2?w=900&q=80',
+  'theme-5': 'https://images.unsplash.com/photo-1469854523086-cc02fe5d8800?w=900&q=80',
+  'theme-6': 'https://images.unsplash.com/photo-1534438327276-14e5300c3a48?w=900&q=80',
+  'theme-7': 'https://images.unsplash.com/photo-1454165804606-c3d57bc86b40?w=900&q=80',
+  'theme-8': 'https://images.unsplash.com/photo-1497366216548-37526070297c?w=900&q=80',
+  'theme-9': 'https://images.unsplash.com/photo-1551632811-561732d1e306?w=900&q=80',
+  'theme-10': 'https://images.unsplash.com/photo-1504674900247-0877df9cc836?w=900&q=80',
+  'theme-11': 'https://images.unsplash.com/photo-1486312338219-ce68d2c6f44d?w=900&q=80',
+});
+
+const HOME_LAYOUT_REGISTRY = Object.freeze({
+  classic: Object.freeze({ id: 'classic', name: 'Corporate Editorial', description: 'A polished brand hero, featured insight, supporting stories, value pillars, and conversion CTA.', suitableFor: ['Company blogs', 'Consultancies', 'Professional services'], renderer: 'classic', previewAsset: 'layout-preview:classic', defaultContentKey: 'classic', recommendedThemeIds: ['default', 'theme-5', 'theme-8'] }),
+  nature: Object.freeze({ id: 'nature', name: 'Immersive Editorial', description: 'An oversized visual cover with curated categories, lead stories, and field-note storytelling.', suitableFor: ['Travel', 'Nature', 'Photography'], renderer: 'nature', previewAsset: 'layout-preview:nature', defaultContentKey: 'nature', recommendedThemeIds: ['theme-1'] }),
+  bloom: Object.freeze({ id: 'bloom', name: 'Wellness & Services', description: 'A calm conversion hero, service pillars, expert content, and a reassuring closing CTA.', suitableFor: ['Health', 'Beauty', 'Wellness'], renderer: 'bloom', previewAsset: 'layout-preview:bloom', defaultContentKey: 'bloom', recommendedThemeIds: ['theme-4'] }),
+  portals: Object.freeze({ id: 'portals', name: 'Technology Showcase', description: 'A high-contrast innovation homepage with capability cards, featured insight, and strong CTAs.', suitableFor: ['SaaS', 'Technology', 'Startups'], renderer: 'portals', previewAsset: 'layout-preview:portals', defaultContentKey: 'portals', recommendedThemeIds: ['theme-11'] }),
+  bento: Object.freeze({ id: 'bento', name: 'Modern Content Grid', description: 'An asymmetric editorial grid that gives featured and supporting content clear visual hierarchy.', suitableFor: ['Creative brands', 'Modern publications'], renderer: 'bento', previewAsset: 'layout-preview:bento', defaultContentKey: 'bento', recommendedThemeIds: ['theme-2'] }),
+  studio: Object.freeze({ id: 'studio', name: 'Portfolio Showcase', description: 'A cinematic introduction and responsive project gallery for visually led storytelling.', suitableFor: ['Designers', 'Photographers', 'Personal brands'], renderer: 'studio', previewAsset: 'layout-preview:studio', defaultContentKey: 'studio', recommendedThemeIds: ['theme-6', 'theme-7'] }),
+  paper: Object.freeze({ id: 'paper', name: 'Professional Newsroom', description: 'A credible masthead, prominent lead story, and structured editorial columns for frequent publishing.', suitableFor: ['News', 'Reviews', 'High-volume publishing'], renderer: 'paper', previewAsset: 'layout-preview:paper', defaultContentKey: 'paper', recommendedThemeIds: ['theme-3', 'theme-9', 'theme-10'] }),
+  glass: Object.freeze({ id: 'glass', name: 'Executive Newsletter', description: 'A focused authority hero, translucent insight cards, and an archive-first newsletter experience.', suitableFor: ['Writers', 'Newsletters', 'Personal brands'], renderer: 'glass', previewAsset: 'layout-preview:glass', defaultContentKey: 'glass', recommendedThemeIds: ['default', 'theme-11'] }),
+});
+
+function getThemeRegistration(themeId) {
+  return THEME_REGISTRY[String(themeId || 'default')] || THEME_REGISTRY.default;
 }
 
-export function getThemePreset(id) {
-  return getThemeRegistration(id);
+function getHomeLayoutRegistration(homeStyle) {
+  return HOME_LAYOUT_REGISTRY[normalizeHomeStyle(homeStyle)] || HOME_LAYOUT_REGISTRY.classic;
 }
 
-export default {
-  THEME_REGISTRY,
+function validateAppearanceRegistry() {
+  const errors = [];
+  for (const id of HOME_LAYOUT_IDS) {
+    const item = HOME_LAYOUT_REGISTRY[id];
+    if (!item) errors.push(`Missing homepage layout registration: ${id}`);
+    else for (const field of ['name', 'description', 'renderer', 'previewAsset', 'defaultContentKey']) {
+      if (!item[field]) errors.push(`Homepage layout ${id} is missing ${field}`);
+    }
+  }
+  for (const [id, item] of Object.entries(THEME_REGISTRY)) {
+    if (item.id !== id) errors.push(`Theme key mismatch: ${id}`);
+    for (const field of ['primary', 'background', 'foreground', 'accent', 'card', 'cardForeground', 'muted']) {
+      if (!item.colours[field]) errors.push(`Theme ${id} is missing colours.${field}`);
+    }
+    if (!item.header.headerBg || !item.header.headerFont || !item.footer.footerBg || !item.footer.footerFont || !item.font) {
+      errors.push(`Theme ${id} has incomplete chrome or typography tokens`);
+    }
+    for (const field of ['radius', 'shadow', 'buttonStyle', 'containerWidth', 'sectionSpacing', 'headerVariant', 'footerVariant']) {
+      if (!item.tokens[field]) errors.push(`Theme ${id} is missing tokens.${field}`);
+    }
+  }
+  return { valid: errors.length === 0, errors };
+}
+
+module.exports = {
   HOME_LAYOUT_REGISTRY,
   THEME_PREVIEW_ASSETS,
+  THEME_REGISTRY,
   getHomeLayoutRegistration,
   getThemeRegistration,
-  getThemePreset,
+  validateAppearanceRegistry,
 };
