@@ -1,11 +1,15 @@
-export function prepareRenderableLayout(input: any, options?: any): {
-  document: any;
-  blocks: any[];
-  issues: Array<{ code: string; path: string; message: string }>;
-  valid: boolean;
-};
+import type { LayoutDocumentV1, LayoutKind, LayoutOrigin } from "../corehead-frontend/frontend/lib/layoutContract";
+import type { LayoutValidationIssue } from "./layout-validator-v1";
 
-const _default: {
-  prepareRenderableLayout: typeof prepareRenderableLayout;
+export function prepareRenderableLayout(input: unknown, options?: {
+  name?: string;
+  kind?: LayoutKind;
+  origin?: LayoutOrigin;
+  designStyle?: string;
+  semantic?: boolean;
+}): {
+  document: LayoutDocumentV1;
+  valid: boolean;
+  sourceFormat: string;
+  issues: LayoutValidationIssue[];
 };
-export default _default;
