@@ -118,7 +118,7 @@ export default function BlogsPage() {
         <div>
           <h1 className="text-2xl font-bold text-gray-900">Posts</h1>
           <p className="text-gray-500 text-sm mt-1">
-            Welcome back! Here's your Blog Posts.
+            Welcome back! Here&apos;s your Blog Posts.
           </p>
         </div>
         <div className="flex items-center gap-3">
