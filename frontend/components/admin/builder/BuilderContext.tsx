@@ -99,6 +99,38 @@ interface BuilderContextType {
 
 const BuilderContext = createContext<BuilderContextType | undefined>(undefined);
 
+const MOCK_PATTERNS = [
+  "photo-1501504905252",
+  "photo-1499750310107",
+  "photo-1497366811353",
+  "photo-1455390582262",
+  "picsum.photos",
+];
+
+export function sanitizeBlock(block: BuilderBlock): BuilderBlock {
+  let content = block.content;
+  if (block.type === "Image") {
+    if (typeof content === "string") {
+      if (MOCK_PATTERNS.some((pat) => content.includes(pat))) {
+        content = "";
+      }
+    } else if (content && typeof content === "object") {
+      if (typeof content.url === "string" && MOCK_PATTERNS.some((pat) => content.url.includes(pat))) {
+        content = { ...content, url: "" };
+      }
+    }
+  }
+  return {
+    ...block,
+    content,
+  };
+}
+
+export function sanitizeBlocks(blocks: BuilderBlock[]): BuilderBlock[] {
+  if (!Array.isArray(blocks)) return [];
+  return blocks.map(sanitizeBlock);
+}
+
 export function BuilderProvider({ children }: { children: ReactNode }) {
   const [blocks, setBlocks] = useState<BuilderBlock[]>([]);
   const [selectedBlockId, setSelectedBlockId] = useState<string | null>(null);
@@ -152,9 +184,16 @@ export function BuilderProvider({ children }: { children: ReactNode }) {
     historyId?: string | null,
   ) => {
     try {
+      let userId: string | number | null = null;
+      try {
+        const u = JSON.parse(localStorage.getItem("user") || "{}");
+        userId = u?.id || u?._id || null;
+      } catch {
+        /* ignore */
+      }
       localStorage.setItem(
         "corehead_builder_meta",
-        JSON.stringify({ name, type, id, ai_history_id: historyId ?? aiHistoryId }),
+        JSON.stringify({ name, type, id, userId, ai_history_id: historyId ?? aiHistoryId }),
       );
     } catch {
       /* ignore quota */
@@ -167,30 +206,74 @@ export function BuilderProvider({ children }: { children: ReactNode }) {
       const urlParams = new URLSearchParams(window.location.search);
       const id = urlParams.get("id");
 
+      let currentUserId: string | number | null = null;
+      try {
+        const u = JSON.parse(localStorage.getItem("user") || "{}");
+        currentUserId = u?.id || u?._id || null;
+      } catch {
+        /* ignore */
+      }
+
       if (id) {
+        // Check if localStorage already has this template (returning from preview/deploy)
+        let restoredFromLocal = false;
         try {
-          const template = await api.getTemplateById(id);
-          if (template && template.layoutJson) {
-            const normalized = normalizeLayoutDocumentV1(template.layoutJson, {
-              name: template.name,
-              kind: template.type,
-              origin: template.layoutJson?.metadata?.origin || "migrated",
-            });
-            const doc = normalized.document as any;
-            setBlocks(doc.blocks as BuilderBlock[]);
-            setTemplateId(String(template.id));
-            setTemplateName(template.name);
-            const tType: BuilderTemplateType =
-              template.type === "Blog Archive"
-                ? "Blog Archive"
-                : template.type === "Home Page"
-                  ? "Home Page"
-                  : "Single Post";
-            setTemplateType(tType);
-            persistMeta(template.name, tType, String(template.id));
+          const rawMeta = localStorage.getItem("corehead_builder_meta");
+          if (rawMeta) {
+            const localMeta = JSON.parse(rawMeta);
+            const userMatches = !localMeta.userId || !currentUserId || String(localMeta.userId) === String(currentUserId);
+            if (String(localMeta.id) === String(id) && userMatches) {
+              // Same template ID and same user → return to existing session
+              // Prefer localStorage layout over re-fetching from API
+              const savedLayout = localStorage.getItem("corehead_builder_layout");
+              if (savedLayout) {
+                const parsed = JSON.parse(savedLayout);
+                const normalized = normalizeLayoutDocumentV1(parsed, {
+                  name: localMeta.name || parsed?.name || "Builder Layout",
+                  kind: localMeta.type || parsed?.kind,
+                  origin: parsed?.metadata?.origin || "manual",
+                });
+                const doc = normalized.document as any;
+                setBlocks(sanitizeBlocks(doc.blocks as BuilderBlock[]));
+                setTemplateId(String(id));
+                if (localMeta.name) setTemplateName(localMeta.name);
+                if (localMeta.type === "Single Post" || localMeta.type === "Blog Archive" || localMeta.type === "Home Page") {
+                  setTemplateType(localMeta.type);
+                }
+                if (localMeta.ai_history_id) setAiHistoryId(String(localMeta.ai_history_id));
+                restoredFromLocal = true;
+              }
+            }
           }
-        } catch (error) {
-          console.error("Failed to fetch template by ID", error);
+        } catch {
+          /* localStorage parse error — fall through to API fetch */
+        }
+
+        if (!restoredFromLocal) {
+          try {
+            const template = await api.getTemplateById(id);
+            if (template && template.layoutJson) {
+              const normalized = normalizeLayoutDocumentV1(template.layoutJson, {
+                name: template.name,
+                kind: template.type,
+                origin: template.layoutJson?.metadata?.origin || "migrated",
+              });
+              const doc = normalized.document as any;
+              setBlocks(sanitizeBlocks(doc.blocks as BuilderBlock[]));
+              setTemplateId(String(template.id));
+              setTemplateName(template.name);
+              const tType: BuilderTemplateType =
+                template.type === "Blog Archive"
+                  ? "Blog Archive"
+                  : template.type === "Home Page"
+                    ? "Home Page"
+                    : "Single Post";
+              setTemplateType(tType);
+              persistMeta(template.name, tType, String(template.id));
+            }
+          } catch (error) {
+            console.error("Failed to fetch template by ID", error);
+          }
         }
       } else {
         const selectedTemplateStr = localStorage.getItem("selected_template");
@@ -198,7 +281,7 @@ export function BuilderProvider({ children }: { children: ReactNode }) {
           try {
             const temp = JSON.parse(selectedTemplateStr);
             const initialBlocks = getTemplateInitialBlocks(temp.id);
-            setBlocks(initialBlocks);
+            setBlocks(sanitizeBlocks(initialBlocks));
             setTemplateName(temp.name);
             const tType = temp.id === "card-grid" ? "Blog Archive" : "Single Post";
             setTemplateType(tType);
@@ -256,32 +339,51 @@ export function BuilderProvider({ children }: { children: ReactNode }) {
           }
         }
 
-        const saved = localStorage.getItem("corehead_builder_layout");
-        if (saved) {
+        const rawMeta = localStorage.getItem("corehead_builder_meta");
+        let userMatches = true;
+        if (rawMeta) {
           try {
-            const normalized = normalizeLayoutDocumentV1(JSON.parse(saved), {
-              name: templateName,
-              kind: templateType,
-            });
-            const doc = normalized.document as any;
-            setBlocks(doc.blocks as BuilderBlock[]);
-          } catch (e) {
-            console.error("Failed to parse saved layout", e);
+            const m = JSON.parse(rawMeta);
+            if (m.userId && currentUserId && String(m.userId) !== String(currentUserId)) {
+              userMatches = false;
+            }
+          } catch {
+            /* ignore */
           }
         }
-        try {
-          const rawMeta = localStorage.getItem("corehead_builder_meta");
-          if (rawMeta) {
-            const m = JSON.parse(rawMeta);
-            if (m.name) setTemplateName(m.name);
-            if (m.type === "Single Post" || m.type === "Blog Archive" || m.type === "Home Page") {
-              setTemplateType(m.type);
+
+        // If from another user or an unrecognized account, clear old drafts and keep canvas blank!
+        if (!userMatches) {
+          localStorage.removeItem("corehead_builder_layout");
+          localStorage.removeItem("corehead_builder_meta");
+          setBlocks([]);
+        } else {
+          const saved = localStorage.getItem("corehead_builder_layout");
+          if (saved) {
+            try {
+              const normalized = normalizeLayoutDocumentV1(JSON.parse(saved), {
+                name: templateName,
+                kind: templateType,
+              });
+              const doc = normalized.document as any;
+              setBlocks(sanitizeBlocks(doc.blocks as BuilderBlock[]));
+            } catch (e) {
+              console.error("Failed to parse saved layout", e);
             }
-            if (m.id) setTemplateId(String(m.id));
-            if (m.ai_history_id) setAiHistoryId(String(m.ai_history_id));
           }
-        } catch {
-          /* ignore */
+          if (rawMeta) {
+            try {
+              const m = JSON.parse(rawMeta);
+              if (m.name) setTemplateName(m.name);
+              if (m.type === "Single Post" || m.type === "Blog Archive" || m.type === "Home Page") {
+                setTemplateType(m.type);
+              }
+              if (m.id) setTemplateId(String(m.id));
+              if (m.ai_history_id) setAiHistoryId(String(m.ai_history_id));
+            } catch {
+              /* ignore */
+            }
+          }
         }
       }
       setIsLoaded(true);
@@ -783,7 +885,7 @@ function getDefaultContent(type: BlockType): any {
     case "Paragraph":
       return "Start typing your paragraph here...";
     case "Image":
-      return "https://images.unsplash.com/photo-1501504905252-473c47e087f8?q=80&w=2000&auto=format&fit=crop";
+      return "";
     case "Quote":
       return "Insert your quote here.";
     case "Button":
@@ -845,7 +947,7 @@ function getTemplateInitialBlocks(templateId: string): BuilderBlock[] {
         {
           id: imageId,
           type: "Image",
-          content: "https://images.unsplash.com/photo-1542435503-956c469947f6?q=80&w=1000&auto=format&fit=crop",
+          content: "",
           styles: { width: "100%", height: "400px", objectFit: "cover", borderRadius: "8px", marginBottom: "30px" },
           bindings: { src: "post.coverImage" },
           parentId: containerId,
@@ -897,7 +999,7 @@ function getTemplateInitialBlocks(templateId: string): BuilderBlock[] {
         {
           id: imageId,
           type: "Image",
-          content: "https://images.unsplash.com/photo-1504711434969-e33886168f5c?q=80&w=1000&auto=format&fit=crop",
+          content: "",
           styles: { width: "100%", height: "300px", objectFit: "cover", borderRadius: "12px", marginBottom: "20px" },
           bindings: { src: "post.coverImage" },
           parentId: colLeftId,
@@ -1039,14 +1141,14 @@ function getTemplateInitialBlocks(templateId: string): BuilderBlock[] {
         {
           id: p1,
           type: "Image",
-          content: "https://images.unsplash.com/photo-1460661419201-fd4cecdf8a8b?q=80&w=800&auto=format&fit=crop",
+          content: "",
           styles: { width: "100%", height: "350px", objectFit: "cover", borderRadius: "8px" },
           parentId: imageGridId,
         },
         {
           id: p2,
           type: "Image",
-          content: "https://images.unsplash.com/photo-1513364776144-60967b0f800f?q=80&w=800&auto=format&fit=crop",
+          content: "",
           styles: { width: "100%", height: "350px", objectFit: "cover", borderRadius: "8px" },
           parentId: imageGridId,
         },
