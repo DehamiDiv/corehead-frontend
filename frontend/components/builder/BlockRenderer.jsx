@@ -71,20 +71,21 @@ export default function BlockRenderer({ block, isSelected, onClick, settings }) 
       }
 
       case 'Image': {
-        const imgSrc = typeof content === 'string' && content.trim() !== '' ? content : null;
-        const seed = Math.abs((block.id || '').toString().split('').reduce((a, c) => a + c.charCodeAt(0), 42));
-        const placeholderSrc = `https://picsum.photos/seed/ai-${seed}/800/400`;
+        const imgSrc = typeof content === 'string' && content.trim() !== '' && !content.includes('picsum.photos') ? content : null;
         return (
-          <div style={{ width: '100%', overflow: 'hidden', borderRadius: '10px', minHeight: '140px', background: '#f1f5f9', ...styles }}>
-            <img
-              src={imgSrc || placeholderSrc}
-              alt="AI Generated"
-              style={{ width: '100%', height: 'auto', display: 'block', borderRadius: '10px' }}
-              onError={(e) => {
-                e.currentTarget.onerror = null;
-                e.currentTarget.src = placeholderSrc;
-              }}
-            />
+          <div style={{ width: '100%', overflow: 'hidden', borderRadius: '10px', minHeight: '140px', background: '#f1f5f9', display: 'flex', alignItems: 'center', justifyContent: 'center', ...styles }}>
+            {imgSrc ? (
+              <img
+                src={imgSrc}
+                alt="Uploaded"
+                style={{ width: '100%', height: 'auto', display: 'block', borderRadius: '10px' }}
+              />
+            ) : (
+              <div style={{ padding: '30px', textAlign: 'center', color: '#94a3b8' }}>
+                <span style={{ fontSize: '28px', display: 'block', marginBottom: '6px' }}>🖼️</span>
+                <span style={{ fontSize: '13px', fontWeight: 600 }}>No Image Uploaded</span>
+              </div>
+            )}
           </div>
         );
       }

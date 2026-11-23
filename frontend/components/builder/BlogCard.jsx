@@ -1,74 +1,103 @@
-'use client';
+"use client";
 
-import { Calendar, User, Clock } from 'lucide-react';
-import './BlogCard.css';
+import { Calendar, User, Clock } from "lucide-react";
+import "./BlogCard.css";
 
-export default function BlogCard({ post, isSelected, onClick, contentMode, settings, cardLayout = 'grid' }) {
-  const activePrimary = settings?.colors?.primary || '#1d4ed8';
-  const activeGradient = settings?.colors?.gradient || 'linear-gradient(135deg, #1d4ed8 0%, #1e3a8a 100%)';
-  const fontStyle = settings?.fontStyle || 'inherit';
-  const borderRadius = settings?.radiusValue || '16px';
+export default function BlogCard({
+  post,
+  isSelected,
+  onClick,
+  contentMode,
+  settings,
+  cardLayout = "grid",
+}) {
+  const activePrimary = settings?.colors?.primary || "#1d4ed8";
+  const activeGradient =
+    settings?.colors?.gradient ||
+    "linear-gradient(135deg, #1d4ed8 0%, #1e3a8a 100%)";
+  const fontStyle = settings?.fontStyle || "inherit";
+  const borderRadius = settings?.radiusValue || "16px";
 
   const cardStyle = {
     fontFamily: fontStyle,
     borderRadius: borderRadius,
-    borderColor: isSelected ? activePrimary : (contentMode === 'dynamic' ? '#a78bfa' : '#e0e0e0'),
-    boxShadow: isSelected ? `0 8px 20px ${activePrimary}33` : 'none',
+    borderColor: isSelected
+      ? activePrimary
+      : contentMode === "dynamic"
+        ? "#a78bfa"
+        : "#e0e0e0",
+    boxShadow: isSelected ? `0 8px 20px ${activePrimary}33` : "none",
   };
 
   return (
     <article
-      className={`blog-card ${isSelected ? 'selected' : ''} ${contentMode === 'dynamic' ? 'dynamic' : ''} card-layout-${cardLayout}`}
+      className={`blog-card ${isSelected ? "selected" : ""} ${contentMode === "dynamic" ? "dynamic" : ""} card-layout-${cardLayout}`}
       onClick={onClick}
       style={cardStyle}
     >
-      {contentMode === 'dynamic' && (
-        <div className="card-badge" style={{ background: activeGradient }}>Dynamic Block</div>
+      {contentMode === "dynamic" && (
+        <div className="card-badge" style={{ background: activeGradient }}>
+          Dynamic Block
+        </div>
       )}
 
       {/* Image section — hidden via CSS for minimal, shown for all others */}
-      <div className="card-image">
-        <img
-          src={post.image && post.image.trim() !== '' ? post.image : `https://picsum.photos/seed/${encodeURIComponent(post.title || 'card')}/400/250`}
-          alt={post.title}
-          onError={(e) => {
-            e.currentTarget.onerror = null;
-            e.currentTarget.src = `https://picsum.photos/seed/${encodeURIComponent(post.title || 'fallback')}/400/250`;
-          }}
-        />
-        <div className="card-category" style={{ background: activeGradient }}>{post.category}</div>
-      </div>
+      {post.image &&
+        post.image.trim() !== "" &&
+        !post.image.includes("picsum.photos") && (
+          <div className="card-image">
+            <img src={post.image} alt={post.title} />
+            <div
+              className="card-category"
+              style={{ background: activeGradient }}
+            >
+              {post.category}
+            </div>
+          </div>
+        )}
 
       <div className="card-content">
         {/* Show category as inline text for minimal layout */}
-        {cardLayout === 'minimal' && (
+        {cardLayout === "minimal" && (
           <span className="card-category-text" style={{ color: activePrimary }}>
             {post.category}
           </span>
         )}
-        <h3 className="card-title" style={{ fontFamily: fontStyle }}>{post.title}</h3>
-        <p className="card-excerpt" style={{ fontFamily: fontStyle }}>{post.excerpt}</p>
+        <h3 className="card-title" style={{ fontFamily: fontStyle }}>
+          {post.title}
+        </h3>
+        <p className="card-excerpt" style={{ fontFamily: fontStyle }}>
+          {post.excerpt}
+        </p>
 
         <div className="card-meta">
-          <div className="meta-item" style={{ color: '#64748b' }}>
+          <div className="meta-item" style={{ color: "#64748b" }}>
             <User size={14} color={activePrimary} />
-            <span style={{ fontWeight: '500' }}>{post.author || 'Anonymous'}</span>
+            <span style={{ fontWeight: "500" }}>
+              {post.author || "Anonymous"}
+            </span>
           </div>
-          <div className="meta-item" style={{ color: '#64748b' }}>
+          <div className="meta-item" style={{ color: "#64748b" }}>
             <Clock size={14} color={activePrimary} />
-            <span>{post.date ? new Date(post.date).toLocaleDateString('en-US', {
-              month: 'short',
-              day: 'numeric',
-              year: 'numeric'
-            }) : 'No Date'}</span>
+            <span>
+              {post.date
+                ? new Date(post.date).toLocaleDateString("en-US", {
+                    month: "short",
+                    day: "numeric",
+                    year: "numeric",
+                  })
+                : "No Date"}
+            </span>
           </div>
         </div>
       </div>
 
       {isSelected && (
-        <div className="selection-indicator" style={{ borderColor: activePrimary, borderRadius: borderRadius }}></div>
+        <div
+          className="selection-indicator"
+          style={{ borderColor: activePrimary, borderRadius: borderRadius }}
+        ></div>
       )}
     </article>
   );
 }
-
