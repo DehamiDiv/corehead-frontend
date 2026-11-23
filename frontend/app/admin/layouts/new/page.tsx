@@ -100,9 +100,9 @@ export default function CreateLayoutPage() {
             }
             if (posts.length === 0) {
                 posts = [
-                    { id: "sample-1", slug: "sample-story", title: "A sample story for your new home page", excerpt: "Published posts from the selected site will appear here.", category: "Journal", coverImage: "https://images.unsplash.com/photo-1499750310107-5fef28a66643?w=1200&q=80" },
-                    { id: "sample-2", slug: "second-story", title: "Designing a thoughtful publishing experience", excerpt: "Use this preview to check hierarchy, spacing, and responsive behavior.", category: "Design", coverImage: "https://images.unsplash.com/photo-1497366811353-6870744d04b2?w=1200&q=80" },
-                    { id: "sample-3", slug: "third-story", title: "Ideas worth sharing", excerpt: "Your readers will see the latest published content in this collection.", category: "Ideas", coverImage: "https://images.unsplash.com/photo-1455390582262-044cdead277a?w=1200&q=80" },
+                    { id: "sample-1", slug: "sample-story", title: "A sample story for your new home page", excerpt: "Published posts from the selected site will appear here.", category: "Journal", coverImage: "" },
+                    { id: "sample-2", slug: "second-story", title: "Designing a thoughtful publishing experience", excerpt: "Use this preview to check hierarchy, spacing, and responsive behavior.", category: "Design", coverImage: "" },
+                    { id: "sample-3", slug: "third-story", title: "Ideas worth sharing", excerpt: "Your readers will see the latest published content in this collection.", category: "Ideas", coverImage: "" },
                 ];
             }
             const previewSite = {
@@ -112,7 +112,7 @@ export default function CreateLayoutPage() {
                 logo: site?.logo || "",
                 tagline: "Stories, ideas, and updates from our team.",
                 description: "A publication created with CoreHead.",
-                heroImage: "https://images.unsplash.com/photo-1499750310107-5fef28a66643?w=1600&q=80",
+                heroImage: "",
             };
             setPreviewData({ posts, site: previewSite, siteSlug: previewSite.slug });
             setPreviewDocument(prepared.document);
