@@ -1,17 +1,39 @@
-export const THEME_REGISTRY: Record<string, any>;
-export const HOME_LAYOUT_REGISTRY: Record<string, any>;
-export const THEME_PREVIEW_ASSETS: Record<string, string>;
+import type { HomeStyle } from './appearance-model-v1.js';
 
-export function getHomeLayoutRegistration(id: string): any;
-export function getThemeRegistration(id: string): any;
-export function getThemePreset(id: string): any;
+export interface ThemeRegistration {
+  id: string;
+  name: string;
+  colours: Record<'primary' | 'background' | 'foreground' | 'accent' | 'card' | 'cardForeground' | 'muted', string>;
+  header: { headerBg: string; headerFont: string; ctaBg: string; ctaColor: string; ctaText: string };
+  footer: { footerBg: string; footerFont: string; footerDescription: string };
+  font: string;
+  tokens: {
+    radius: string;
+    shadow: string;
+    buttonStyle: 'pill' | 'square';
+    containerWidth: string;
+    sectionSpacing: string;
+    headerVariant: 'light' | 'dark';
+    footerVariant: 'solid';
+  };
+  recommendedHomeStyle: HomeStyle;
+  homeStyle: HomeStyle;
+}
 
-const _default: {
-  THEME_REGISTRY: typeof THEME_REGISTRY;
-  HOME_LAYOUT_REGISTRY: typeof HOME_LAYOUT_REGISTRY;
-  THEME_PREVIEW_ASSETS: typeof THEME_PREVIEW_ASSETS;
-  getHomeLayoutRegistration: typeof getHomeLayoutRegistration;
-  getThemeRegistration: typeof getThemeRegistration;
-  getThemePreset: typeof getThemePreset;
-};
-export default _default;
+export interface HomeLayoutRegistration {
+  id: HomeStyle;
+  name: string;
+  description: string;
+  suitableFor: readonly string[];
+  renderer: string;
+  previewAsset: string;
+  defaultContentKey: string;
+  recommendedThemeIds: readonly string[];
+}
+
+export const THEME_REGISTRY: Readonly<Record<string, ThemeRegistration>>;
+export const THEME_PREVIEW_ASSETS: Readonly<Record<string, string>>;
+export const HOME_LAYOUT_REGISTRY: Readonly<Record<HomeStyle, HomeLayoutRegistration>>;
+export function getThemeRegistration(themeId?: unknown): ThemeRegistration;
+export function getHomeLayoutRegistration(homeStyle?: unknown): HomeLayoutRegistration;
+export function validateAppearanceRegistry(): { valid: boolean; errors: string[] };
