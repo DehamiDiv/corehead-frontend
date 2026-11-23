@@ -6,6 +6,15 @@ import { Check, Sparkles, Zap, Loader2 } from "lucide-react";
 import Script from "next/script";
 import { api } from "@/lib/api";
 
+// Clean light check icon matching the brand blue theme
+function CheckIcon({ color = "text-blue-600 bg-blue-50" }: { color?: string }) {
+  return (
+    <div className={`w-5 h-5 rounded-full ${color} flex items-center justify-center flex-shrink-0`}>
+      <Check className="w-3.5 h-3.5 stroke-[3]" />
+    </div>
+  );
+}
+
 export default function Pricing() {
   const router = useRouter();
   const [token, setToken] = useState<string | null>(null);
@@ -113,13 +122,6 @@ export default function Pricing() {
   };
 
   const isPro = user?.subscription_status === "PRO";
-
-  // Clean light check icon matching the brand blue theme
-  const CheckIcon = ({ color = "text-blue-600 bg-blue-50" }) => (
-    <div className={`w-5 h-5 rounded-full ${color} flex items-center justify-center flex-shrink-0`}>
-      <Check className="w-3.5 h-3.5 stroke-[3]" />
-    </div>
-  );
 
   if (!mounted) {
     return (
