@@ -59,7 +59,7 @@ export default function AIGenerateModal({ isOpen, onClose, onGenerated }) {
           excerpt: 'Layout generated with style: ' + designStyle,
           author: 'AI Author',
           date: new Date().toISOString().split('T')[0],
-          image: 'https://picsum.photos/400/250?random=' + Math.floor(Math.random() * 100),
+          image: '',
           category: layoutType
         }], result.id);
       }

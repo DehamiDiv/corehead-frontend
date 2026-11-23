@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 
 import { X, Monitor, Tablet, Smartphone } from 'lucide-react';
 import { useState } from 'react';
@@ -19,15 +19,16 @@ export default function PreviewModal({ isOpen, onClose, blogPosts, contentMode }
 
   const renderBlockHTML = (block) => {
     const c = typeof block.content === 'string' ? block.content : JSON.stringify(block.content || '');
-    const seed = Math.abs((block.id || '').split('').reduce((a, ch) => a + ch.charCodeAt(0), 42));
     switch (block.type) {
       case 'Heading':
         return `<h2 style="font-size:2rem;font-weight:800;color:#1e1e2e;margin:0 0 12px;line-height:1.3;">${c}</h2>`;
       case 'Paragraph':
         return `<p style="font-size:1rem;color:#475569;line-height:1.8;margin:0 0 16px;">${c}</p>`;
       case 'Image': {
-        const imgSrc = c.trim() !== '' ? c : `https://picsum.photos/seed/ai-${seed}/800/400`;
-        return `<img src="${imgSrc}" alt="block image" onerror="this.src='https://picsum.photos/seed/ai-${seed}/800/400'" style="width:100%;border-radius:12px;margin:0 0 16px;display:block;" />`;
+        const imgSrc = c.trim() !== '' && !c.includes('picsum.photos') ? c : null;
+        return imgSrc
+          ? `<img src="${imgSrc}" alt="block image" style="width:100%;border-radius:12px;margin:0 0 16px;display:block;" />`
+          : `<div style="width:100%;height:140px;background:#f1f5f9;border-radius:12px;margin:0 0 16px;display:flex;align-items:center;justify-content:center;color:#94a3b8;font-size:13px;font-weight:600;">No Image Uploaded</div>`;
       }
       case 'Quote':
         return `<blockquote style="border-left:4px solid #1d4ed8;padding:16px 24px;background:#f5f3ff;border-radius:0 12px 12px 0;font-style:italic;color:#374151;margin:0 0 16px;">${c}</blockquote>`;
@@ -129,9 +130,7 @@ export default function PreviewModal({ isOpen, onClose, blogPosts, contentMode }
       : `<div class="grid">
         ${blogPosts.map(post => `
           <div class="card">
-            <img src="${post.image || 'https://picsum.photos/seed/' + encodeURIComponent(post.title || 'post') + '/400/250'}"
-                 alt="${post.title || ''}"
-                 onerror="this.src='https://picsum.photos/seed/fallback/400/250'" />
+            ${post.image && post.image.trim() !== '' && !post.image.includes('picsum.photos') ? `<img src="${post.image}" alt="${post.title || ''}" />` : ''}
             <div class="card-body">
               <div class="category">${post.category || 'General'}</div>
               <h2>${post.title || ''}</h2>
