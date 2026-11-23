@@ -45,7 +45,6 @@ export async function POST(req: NextRequest) {
 
     let nodemailer: any;
     try {
-      // @ts-ignore
       nodemailer = await import("nodemailer");
     } catch {
       return NextResponse.json({
