@@ -1,10 +1,9 @@
 "use client";
 
-import { MessageSquare, LayoutGrid, Bot, User, CornerDownLeft, Sparkles, AlertCircle, Database } from "lucide-react";
+import { LayoutGrid, Bot, User, CornerDownLeft, Sparkles, Database } from "lucide-react";
 import { useBuilder } from "./BuilderContext";
 import Toolbox from "./Toolbox";
 import { useState } from "react";
-import { api } from "@/lib/api";
 
 export default function LeftSidebar() {
   const { activeSidebar, setActiveSidebar, setIsAnalyzing } = useBuilder();
@@ -14,11 +13,27 @@ export default function LeftSidebar() {
       {/* Icon Rail */}
       <div className="w-16 flex flex-col items-center py-6 gap-6 border-r border-slate-100 bg-[#f8fafc]">
         <button
-          onClick={() => setActiveSidebar("blocks")}
-          className={`p-3 rounded-2xl transition-all duration-300 relative group ${activeSidebar === "blocks"
+          onClick={() => setActiveSidebar("chat")}
+          className={`p-3 rounded-2xl transition-all duration-300 relative group ${
+            activeSidebar === "chat"
               ? "bg-blue-600 text-white shadow-lg shadow-blue-200"
               : "text-slate-400 hover:bg-slate-50 hover:text-slate-600"
-            }`}
+          }`}
+          title="AI Assistant Chat"
+        >
+          <Sparkles size={22} />
+          {activeSidebar === "chat" && (
+            <div className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-6 bg-blue-600 rounded-r-full shadow-[2px_0_10px_rgba(37,99,235,0.4)]" />
+          )}
+        </button>
+
+        <button
+          onClick={() => setActiveSidebar("blocks")}
+          className={`p-3 rounded-2xl transition-all duration-300 relative group ${
+            activeSidebar === "blocks"
+              ? "bg-blue-600 text-white shadow-lg shadow-blue-200"
+              : "text-slate-400 hover:bg-slate-50 hover:text-slate-600"
+          }`}
           title="Drag & Drop Blocks"
         >
           <LayoutGrid size={22} />
@@ -29,10 +44,11 @@ export default function LeftSidebar() {
         
         <button
           onClick={() => setActiveSidebar("cms")}
-          className={`p-3 rounded-2xl transition-all duration-300 relative group ${activeSidebar === "cms"
+          className={`p-3 rounded-2xl transition-all duration-300 relative group ${
+            activeSidebar === "cms"
               ? "bg-blue-600 text-white shadow-lg shadow-blue-200"
               : "text-slate-400 hover:bg-slate-50 hover:text-slate-600"
-            }`}
+          }`}
           title="CMS Fields"
         >
           <Database size={22} />
@@ -44,7 +60,9 @@ export default function LeftSidebar() {
 
       {/* Active Panel */}
       <div className="w-80 bg-white flex flex-col shadow-[1px_0_10px_rgba(0,0,0,0.02)]">
-        {activeSidebar === "blocks" ? (
+        {activeSidebar === "chat" ? (
+          <ChatPanel onAnalyze={() => setIsAnalyzing(true)} onDone={() => setIsAnalyzing(false)} />
+        ) : activeSidebar === "blocks" ? (
           <Toolbox />
         ) : activeSidebar === "cms" ? (
           <CMSPanel />
@@ -63,25 +81,25 @@ function CMSPanel() {
     {
       group: "📰 Post Fields",
       fields: [
-        { label: "Post Title", key: "post.title", testVal: "AI Revolution in Medicine" },
-        { label: "Post Excerpt", key: "post.excerpt", testVal: "Explore how neural networks are reshaping treatment options." },
-        { label: "Post Content", key: "post.content", testVal: "# Introduction..." },
-        { label: "Featured Image URL", key: "post.featured_image", testVal: "/images/med-ai.jpg" },
-        { label: "Publish Date", key: "post.publishedAt", testVal: "2026-08-07" },
+        { label: "Post Title", key: "post.title", testVal: "Post Title" },
+        { label: "Post Excerpt", key: "post.excerpt", testVal: "Post excerpt..." },
+        { label: "Post Content", key: "post.content", testVal: "Post content..." },
+        { label: "Featured Image URL", key: "post.featured_image", testVal: "/uploads/cover.jpg" },
+        { label: "Publish Date", key: "post.publishedAt", testVal: "YYYY-MM-DD" },
       ],
     },
     {
       group: "✍️ Author Fields",
       fields: [
-        { label: "Author Name", key: "post.author.name", testVal: "Dr. Sarah Jenkins" },
+        { label: "Author Name", key: "post.author.name", testVal: "Author Name" },
       ],
     },
     {
       group: "🌐 Site & SEO Info",
       fields: [
-        { label: "Site Name", key: "site.name", testVal: "CoreHead Portal" },
-        { label: "Site Tagline", key: "site.tagline", testVal: "Ideas worth sharing" },
-        { label: "Site Description", key: "site.description", testVal: "A publication for curious readers." },
+        { label: "Site Name", key: "site.name", testVal: "Site Title" },
+        { label: "Site Tagline", key: "site.tagline", testVal: "Site Tagline" },
+        { label: "Site Description", key: "site.description", testVal: "Site Description" },
         { label: "Site Logo", key: "site.logo", testVal: "/uploads/logo.png" },
         { label: "Hero Image", key: "site.heroImage", testVal: "/uploads/hero.jpg" },
       ],
