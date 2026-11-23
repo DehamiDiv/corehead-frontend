@@ -459,6 +459,15 @@ function ContentTab({ selectedBlock, updateBlock }: any) {
         reader.readAsDataURL(file);
       };
 
+      const rawImageVal = typeof selectedBlock.content === "string" ? selectedBlock.content : selectedBlock.content?.url || "";
+      const isMockImage =
+        rawImageVal.includes("photo-1501504905252") ||
+        rawImageVal.includes("photo-1499750310107") ||
+        rawImageVal.includes("photo-1497366811353") ||
+        rawImageVal.includes("photo-1455390582262") ||
+        rawImageVal.includes("picsum.photos");
+      const currentImage = isMockImage ? "" : rawImageVal;
+
       return (
         <div className="space-y-2">
           <div className="flex justify-between items-center mb-1">
@@ -470,14 +479,15 @@ function ContentTab({ selectedBlock, updateBlock }: any) {
           </div>
           <input
             type="text"
-            value={selectedBlock.content}
-          onChange={(e) => updateBlock(selectedBlock.id, e.target.value)}
-          className="w-full px-3 py-2 bg-slate-50 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 outline-none"
-        />
+            value={currentImage}
+            onChange={(e) => updateBlock(selectedBlock.id, e.target.value)}
+            placeholder="https://..."
+            className="w-full px-3 py-2 bg-slate-50 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 outline-none"
+          />
         <div className="mt-2 rounded-lg overflow-hidden border border-gray-200 aspect-video bg-slate-100 relative flex items-center justify-center">
-          {selectedBlock.content && typeof selectedBlock.content === "string" && selectedBlock.content.trim() !== "" ? (
+          {currentImage.trim() !== "" ? (
             <img
-              src={selectedBlock.content}
+              src={currentImage}
               alt="Preview"
               className="w-full h-full object-cover"
             />
@@ -505,19 +515,29 @@ function ContentTab({ selectedBlock, updateBlock }: any) {
     );
   }
   if (selectedBlock.type === "Button") {
+    const buttonText = typeof selectedBlock.content === "object" && selectedBlock.content !== null
+      ? (selectedBlock.content.text ?? "")
+      : String(selectedBlock.content ?? "Click Me");
+    const buttonUrl = typeof selectedBlock.content === "object" && selectedBlock.content !== null
+      ? (selectedBlock.content.url ?? "")
+      : "#";
+
     return (
       <div className="space-y-4">
         <div className="space-y-2">
           <label className="text-sm text-slate-700">Button Text</label>
           <input
             type="text"
-            value={selectedBlock.content.text}
-            onChange={(e) =>
+            value={buttonText}
+            onChange={(e) => {
+              const current = typeof selectedBlock.content === "object" && selectedBlock.content !== null
+                ? selectedBlock.content
+                : { url: buttonUrl };
               updateBlock(selectedBlock.id, {
-                ...selectedBlock.content,
+                ...current,
                 text: e.target.value,
-              })
-            }
+              });
+            }}
             className="w-full px-3 py-2 bg-slate-50 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 outline-none"
           />
         </div>
@@ -525,13 +545,16 @@ function ContentTab({ selectedBlock, updateBlock }: any) {
           <label className="text-sm text-slate-700">Button URL</label>
           <input
             type="text"
-            value={selectedBlock.content.url}
-            onChange={(e) =>
+            value={buttonUrl}
+            onChange={(e) => {
+              const current = typeof selectedBlock.content === "object" && selectedBlock.content !== null
+                ? selectedBlock.content
+                : { text: buttonText };
               updateBlock(selectedBlock.id, {
-                ...selectedBlock.content,
+                ...current,
                 url: e.target.value,
-              })
-            }
+              });
+            }}
             className="w-full px-3 py-2 bg-slate-50 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 outline-none"
           />
         </div>
