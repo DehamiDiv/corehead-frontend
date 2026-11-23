@@ -1,0 +1,74 @@
+services:
+  # PostgreSQL Database Service
+  postgres:
+    image: postgres:16-alpine
+    container_name: corehead-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${DB_USER:-postgres}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-postgres123}
+      POSTGRES_DB: ${DB_NAME:-corehead_blog}
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-postgres} -d ${DB_NAME:-corehead_blog}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    networks:
+      - corehead-network
+
+  # CoreHead Backend Express API + Prisma
+  backend:
+    build:
+      context: ../Corehead-Backend
+      dockerfile: Dockerfile
+    container_name: corehead-backend
+    restart: unless-stopped
+    environment:
+      PORT: 5000
+      NODE_ENV: production
+      DATABASE_URL: postgresql://${DB_USER:-postgres}:${DB_PASSWORD:-postgres123}@postgres:5432/${DB_NAME:-corehead_blog}
+      FRONTEND_URL: http://localhost:3000
+      JWT_SECRET: ${JWT_SECRET:-corehead_jwt_super_secret_key_2026}
+      UPLOADS_DIR: public/uploads
+    ports:
+      - "5000:5000"
+    volumes:
+      - backend_uploads:/app/public/uploads
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - corehead-network
+
+  # CoreHead Frontend Next.js 16
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: corehead-frontend
+    restart: unless-stopped
+    environment:
+      NODE_ENV: production
+      PORT: 3000
+      NEXT_PUBLIC_API_URL: http://localhost:5000
+      NEXT_PUBLIC_MEDIA_ORIGIN: http://localhost:5000
+    ports:
+      - "3000:3000"
+    depends_on:
+      - backend
+    networks:
+      - corehead-network
+
+volumes:
+  postgres_data:
+    driver: local
+  backend_uploads:
+    driver: local
+
+networks:
+  corehead-network:
+    driver: bridge

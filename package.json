@@ -10,6 +10,10 @@
     "build": "npm --prefix frontend run build",
     "start": "npm --prefix frontend start",
     "lint": "npm --prefix frontend run lint",
-    "test": "npm --prefix frontend test"
+    "test": "npm --prefix frontend test",
+    "docker:build": "docker compose build",
+    "docker:up": "docker compose up -d",
+    "docker:down": "docker compose down",
+    "docker:logs": "docker compose logs -f"
   }
 }

@@ -12,6 +12,7 @@ function mediaOrigin(): string {
 }
 
 const nextConfig: NextConfig = {
+  output: "standalone",
   images: {
     remotePatterns: [
       {
