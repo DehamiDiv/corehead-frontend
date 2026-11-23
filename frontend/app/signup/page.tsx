@@ -13,6 +13,7 @@ import {
   X 
 } from "lucide-react";
 import { api } from "@/lib/api";
+import { persistSession } from "@/lib/authSession";
 import { useToast, ToastContainer } from "@/components/ui/Toast";
 
 
@@ -114,14 +115,12 @@ function SignupForm() {
       const { credential } = response;
       const data = await api.googleLogin({ credential });
 
-      // PERSIST AUTH STATE
-      localStorage.setItem("accessToken", data.accessToken);
-      localStorage.setItem("refreshToken", data.refreshToken);
-      localStorage.setItem("user", JSON.stringify(data.user));
-
-      // SET COOKIES for middleware
-      document.cookie = `auth_token=${data.accessToken}; path=/; max-age=86400; SameSite=Lax`;
-      document.cookie = `user_role=${data.user.role}; path=/; max-age=86400; SameSite=Lax`;
+      // PERSIST AUTH STATE & CLEAR ANY PREVIOUS DRAFTS
+      persistSession({
+        accessToken: data.accessToken,
+        refreshToken: data.refreshToken,
+        user: data.user,
+      });
 
       setSuccess("Registration and login successful! Redirecting...");
 
