@@ -32,7 +32,7 @@ export function getApiOrigin(): string {
  */
 export function resolveAdminMediaUrl(path?: string | null): string | null {
   if (!path) return null;
-  let value = String(path).trim();
+  const value = String(path).trim();
   if (!value) return null;
 
   // blob: only works in the creating tab
