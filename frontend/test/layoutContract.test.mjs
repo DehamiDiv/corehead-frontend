@@ -2,11 +2,11 @@ import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import test from "node:test";
 
-const contractUrl = new URL("../../../contracts/layout-document-v1.schema.json", import.meta.url);
-const validSingleUrl = new URL("../../../contracts/fixtures/valid-single-post.json", import.meta.url);
-const validArchiveUrl = new URL("../../../contracts/fixtures/valid-blog-archive.json", import.meta.url);
-const validHomeUrl = new URL("../../../contracts/fixtures/valid-home-page.json", import.meta.url);
-const invalidSingleUrl = new URL("../../../contracts/fixtures/invalid-single-post.json", import.meta.url);
+const contractUrl = new URL("../contracts/layout-document-v1.schema.json", import.meta.url);
+const validSingleUrl = new URL("../contracts/fixtures/valid-single-post.json", import.meta.url);
+const validArchiveUrl = new URL("../contracts/fixtures/valid-blog-archive.json", import.meta.url);
+const validHomeUrl = new URL("../contracts/fixtures/valid-home-page.json", import.meta.url);
+const invalidSingleUrl = new URL("../contracts/fixtures/invalid-single-post.json", import.meta.url);
 
 async function readJson(url) {
   return JSON.parse(await readFile(url, "utf8"));

@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
-import classification from "../../../contracts/template-classification-v1.js";
+import classification from "../contracts/template-classification-v1.js";
 
 const {
   isPublishedTemplate,

@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import test from "node:test";
 
-import registry from "../../../contracts/appearance-registry-v1.js";
+import registry from "../contracts/appearance-registry-v1.js";
 
 const {
   HOME_LAYOUT_REGISTRY,

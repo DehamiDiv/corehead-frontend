@@ -2,12 +2,12 @@ import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import test from "node:test";
 
-import renderable from "../../../contracts/renderable-layout-v1.js";
+import renderable from "../contracts/renderable-layout-v1.js";
 
 const { prepareRenderableLayout } = renderable;
 
 async function fixture(name) {
-  return JSON.parse(await readFile(new URL(`../../../contracts/fixtures/${name}`, import.meta.url), "utf8"));
+  return JSON.parse(await readFile(new URL(`../contracts/fixtures/${name}`, import.meta.url), "utf8"));
 }
 
 test("preview and public preparation accept the same canonical layout", async () => {

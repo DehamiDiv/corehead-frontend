@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
-import appearance from "../../../contracts/appearance-model-v1.js";
+import appearance from "../contracts/appearance-model-v1.js";
 
 const {
   APPEARANCE_SETTING_OWNERSHIP,

@@ -2,12 +2,12 @@ import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import test from "node:test";
 
-import validator from "../../../contracts/layout-validator-v1.js";
+import validator from "../contracts/layout-validator-v1.js";
 
 const { validateLayoutDocumentV1 } = validator;
 
 async function fixture(name) {
-  const url = new URL(`../../../contracts/fixtures/${name}`, import.meta.url);
+  const url = new URL(`../contracts/fixtures/${name}`, import.meta.url);
   return JSON.parse(await readFile(url, "utf8"));
 }
 

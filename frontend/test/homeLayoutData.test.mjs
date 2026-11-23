@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
-import data from "../../../contracts/home-layout-data-v1.js";
+import data from "../contracts/home-layout-data-v1.js";
 
 const { normalizeHomeLayoutData } = data;
 
