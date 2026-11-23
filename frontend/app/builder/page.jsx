@@ -308,11 +308,7 @@ export default function BlogBuilderPage() {
                   if (block.type === 'Image') {
                     const hasRealUrl = typeof block.content === 'string' && block.content.trim() !== '';
                     if (!hasRealUrl) {
-                      // Compute same seed used by BlockRenderer
-                      const seed = Math.abs(
-                        (block.id || '').toString().split('').reduce((a, c) => a + c.charCodeAt(0), 42)
-                      );
-                      return { ...block, content: `https://picsum.photos/seed/ai-${seed}/800/400` };
+                      return { ...block, content: '' };
                     }
                   }
                   return block;
@@ -343,7 +339,7 @@ export default function BlogBuilderPage() {
                   childBlocks.push({
                     id: `img-${post.id}-${idx}`,
                     type: 'Image',
-                    content: post.image || 'https://picsum.photos/400/250',
+                    content: post.image || '',
                     parentId: parentId,
                     styles: { borderRadius: '12px', margin: '0px 0px 16px 0px' },
                     bindings: contentMode === 'dynamic' ? { content: 'post.featured_image' } : {}
