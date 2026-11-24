@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
   FileText,
   Type,
@@ -21,12 +21,18 @@ import {
   Trash2,
   Plus,
   X,
+  BookmarkPlus,
+  Send,
+  ListTree,
+  Check,
 } from "lucide-react";
 import {
   useBuilder,
   BlockType,
   BuilderBlock,
 } from "@/components/admin/builder/BuilderContext";
+import InlineRichTextBlock from "./InlineRichTextBlock";
+import { highlightCodeToHtml } from "@/lib/codeHighlight";
 
 const QUICK_BLOCKS: { type: BlockType; label: string; icon: any }[] = [
   { type: "Heading", label: "Heading", icon: Type },
@@ -44,6 +50,8 @@ const QUICK_BLOCKS: { type: BlockType; label: string; icon: any }[] = [
   { type: "Social Links", label: "Social Links", icon: Share2 },
   { type: "Spacer", label: "Spacer", icon: MoveVertical },
   { type: "Code Block", label: "Code Block", icon: Code },
+  { type: "Contact Form", label: "Contact Form", icon: Send },
+  { type: "Table of Contents", label: "Table of Contents", icon: ListTree },
 ];
 
 interface DropTargetState {
@@ -57,12 +65,15 @@ export default function Canvas() {
   const {
     blocks,
     addBlock,
+    updateBlock,
     selectBlock,
     selectedBlockId,
     deviceMode,
     isAnalyzing,
     reorderBlocks,
     duplicateBlock,
+    copyBlock,
+    pasteBlock,
     moveBlock,
     moveBlockTo,
     removeBlock,
@@ -70,6 +81,11 @@ export default function Canvas() {
     aiBlocks,
     acceptAiLayout,
     discardAiLayout,
+    undo,
+    redo,
+    saveBlockAsSection,
+    insertSavedSection,
+    lastActionNotice,
   } = useBuilder();
 
   const [isDragging, setIsDragging] = useState(false);
@@ -79,6 +95,62 @@ export default function Canvas() {
     parentId?: string;
     targetIndex: number;
   } | null>(null);
+  const [saveSectionBlockId, setSaveSectionBlockId] = useState<string | null>(
+    null,
+  );
+  const [sectionNameInput, setSectionNameInput] = useState("");
+  const [sectionCategoryInput, setSectionCategoryInput] = useState("Custom");
+
+  // Laptop Keyboard Shortcuts: Copy (Ctrl/Cmd+C), Paste (Ctrl/Cmd+V), Duplicate (Ctrl/Cmd+D), Delete/Backspace, Undo/Redo
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      const target = e.target as HTMLElement | null;
+      const isEditable =
+        !target ||
+        target.tagName === "INPUT" ||
+        target.tagName === "TEXTAREA" ||
+        target.tagName === "SELECT" ||
+        target.isContentEditable;
+      if (isEditable) return;
+
+      const mod = e.ctrlKey || e.metaKey;
+      const key = e.key.toLowerCase();
+
+      if (mod && key === "c" && selectedBlockId) {
+        e.preventDefault();
+        copyBlock(selectedBlockId);
+      } else if (mod && key === "v") {
+        e.preventDefault();
+        pasteBlock();
+      } else if (mod && key === "d" && selectedBlockId) {
+        e.preventDefault();
+        duplicateBlock(selectedBlockId);
+      } else if (
+        (e.key === "Delete" || e.key === "Backspace") &&
+        selectedBlockId
+      ) {
+        e.preventDefault();
+        removeBlock(selectedBlockId);
+      } else if (mod && key === "z" && !e.shiftKey) {
+        e.preventDefault();
+        undo();
+      } else if ((mod && key === "y") || (mod && e.shiftKey && key === "z")) {
+        e.preventDefault();
+        redo();
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [
+    selectedBlockId,
+    copyBlock,
+    pasteBlock,
+    duplicateBlock,
+    removeBlock,
+    undo,
+    redo,
+  ]);
 
   const handleDragOverCanvas = (e: React.DragEvent) => {
     e.preventDefault();
@@ -86,7 +158,9 @@ export default function Canvas() {
 
     const typesArray = Array.from(e.dataTransfer.types);
     const isSidebarDrag = typesArray.some(
-      (t) => t.toLowerCase() === "application/react-dnd",
+      (t) =>
+        t.toLowerCase() === "application/react-dnd" ||
+        t.toLowerCase() === "application/corehead-section",
     );
     const isInternalDrag = typesArray.some(
       (t) => t.toLowerCase() === "sourceblockid",
@@ -119,9 +193,19 @@ export default function Canvas() {
 
     const sourceId = e.dataTransfer.getData("sourceBlockId");
     const type = e.dataTransfer.getData("application/react-dnd") as BlockType;
+    const savedSectionRaw = e.dataTransfer.getData(
+      "application/corehead-section",
+    );
 
     if (sourceId) {
       moveBlockTo(sourceId, undefined, undefined);
+    } else if (savedSectionRaw) {
+      try {
+        const parsed = JSON.parse(savedSectionRaw);
+        if (Array.isArray(parsed)) insertSavedSection(parsed);
+      } catch {
+        /* ignore */
+      }
     } else if (type) {
       addBlock(type);
     }
@@ -173,9 +257,20 @@ export default function Canvas() {
 
     const sourceId = e.dataTransfer.getData("sourceBlockId");
     const type = e.dataTransfer.getData("application/react-dnd") as BlockType;
+    const savedSectionRaw = e.dataTransfer.getData(
+      "application/corehead-section",
+    );
 
     if (sourceId) {
       moveBlockTo(sourceId, targetParentId, targetIndex);
+    } else if (savedSectionRaw) {
+      try {
+        const parsed = JSON.parse(savedSectionRaw);
+        if (Array.isArray(parsed))
+          insertSavedSection(parsed, targetParentId, targetIndex);
+      } catch {
+        /* ignore */
+      }
     } else if (type) {
       addBlock(type, targetParentId, targetIndex);
     }
@@ -260,9 +355,14 @@ export default function Canvas() {
               {/* Block Item */}
               <div
                 draggable={isInteractive}
-                onDragStart={(e) =>
-                  isInteractive && handleBlockDragStart(e, block.id)
-                }
+                onDragStart={(e) => {
+                  const target = e.target as HTMLElement | null;
+                  if (target?.isContentEditable || target?.closest?.('[contenteditable="true"]')) {
+                    e.preventDefault();
+                    return;
+                  }
+                  if (isInteractive) handleBlockDragStart(e, block.id);
+                }}
                 onDragEnd={handleBlockDragEnd}
                 onDragOver={(e) =>
                   isInteractive &&
@@ -360,9 +460,24 @@ export default function Canvas() {
                         duplicateBlock(block.id);
                       }}
                       className="p-1 hover:bg-slate-800 rounded text-slate-300 hover:text-white transition"
-                      title="Duplicate Block"
+                      title="Duplicate Block (Ctrl+D)"
                     >
                       <Copy size={14} />
+                    </button>
+
+                    {/* Save as Reusable Section */}
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setSectionNameInput(`${block.type} Section`);
+                        setSectionCategoryInput("Custom");
+                        setSaveSectionBlockId(block.id);
+                      }}
+                      className="p-1 hover:bg-slate-800 rounded text-emerald-400 hover:text-emerald-300 transition"
+                      title="Save as Reusable Section"
+                    >
+                      <BookmarkPlus size={14} />
                     </button>
 
                     {/* Delete */}
@@ -373,7 +488,7 @@ export default function Canvas() {
                         removeBlock(block.id);
                       }}
                       className="p-1 hover:bg-red-900/60 rounded text-red-400 hover:text-red-300 transition ml-1"
-                      title="Delete Block"
+                      title="Delete Block (Del)"
                     >
                       <Trash2 size={14} />
                     </button>
@@ -391,7 +506,18 @@ export default function Canvas() {
                 )}
 
                 {/* Block Content */}
-                {renderBlockContent(block, isInteractive && isSelected)}
+                {renderBlockContent(
+                  block,
+                  isInteractive && isSelected,
+                  blocks,
+                  (nextContent) =>
+                    updateBlock(
+                      block.id,
+                      nextContent,
+                      block.styles,
+                      block.bindings,
+                    ),
+                )}
 
                 {/* Nested Containers / Columns */}
                 {(block.type === "Container" || block.type === "Columns") && (
@@ -702,11 +828,173 @@ export default function Canvas() {
           </div>
         </div>
       )}
+      {/* Save Reusable Section Modal */}
+      {saveSectionBlockId && (
+        <div
+          className="fixed inset-0 z-50 bg-slate-900/40 backdrop-blur-sm flex items-center justify-center p-4"
+          onClick={() => setSaveSectionBlockId(null)}
+        >
+          <div
+            className="bg-white rounded-2xl shadow-2xl border border-slate-100 p-6 max-w-md w-full"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h3 className="font-bold text-slate-900 text-lg mb-1">
+              Save Reusable Section
+            </h3>
+            <p className="text-slate-500 text-xs mb-4">
+              Save this block or container so you can reuse it across any page
+              or template.
+            </p>
+            <div className="space-y-3">
+              <div>
+                <label className="text-xs font-semibold text-slate-600 block mb-1">
+                  Section Name
+                </label>
+                <input
+                  type="text"
+                  value={sectionNameInput}
+                  onChange={(e) => setSectionNameInput(e.target.value)}
+                  placeholder="e.g. Hero Banner, Pricing Cards, Footer"
+                  className="w-full px-3 py-2 border border-slate-200 rounded-xl text-sm outline-none focus:ring-2 focus:ring-blue-500"
+                  autoFocus
+                />
+              </div>
+              <div>
+                <label className="text-xs font-semibold text-slate-600 block mb-1">
+                  Category
+                </label>
+                <select
+                  value={sectionCategoryInput}
+                  onChange={(e) => setSectionCategoryInput(e.target.value)}
+                  className="w-full px-3 py-2 border border-slate-200 rounded-xl text-sm outline-none focus:ring-2 focus:ring-blue-500 bg-white"
+                >
+                  <option value="Custom">Custom</option>
+                  <option value="Hero">Hero</option>
+                  <option value="Header">Header</option>
+                  <option value="Footer">Footer</option>
+                  <option value="CTA">CTA</option>
+                  <option value="Pricing">Pricing</option>
+                </select>
+              </div>
+            </div>
+            <div className="flex justify-end gap-2 mt-5">
+              <button
+                type="button"
+                onClick={() => setSaveSectionBlockId(null)}
+                className="px-4 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-100 rounded-xl"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={async () => {
+                  if (!sectionNameInput.trim()) return;
+                  await saveBlockAsSection(
+                    saveSectionBlockId,
+                    sectionNameInput,
+                    sectionCategoryInput,
+                  );
+                  setSaveSectionBlockId(null);
+                }}
+                className="px-4 py-2 text-xs font-semibold bg-blue-600 hover:bg-blue-700 text-white rounded-xl shadow-sm"
+              >
+                Save Section
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Action Notice Toast & Laptop Shortcut Hints */}
+      {lastActionNotice && (
+        <div className="fixed bottom-12 right-8 z-50 bg-slate-900 text-white text-xs font-semibold px-3.5 py-2 rounded-xl shadow-xl flex items-center gap-2 animate-in fade-in slide-in-from-bottom-2">
+          <Check size={14} className="text-emerald-400" />
+          {lastActionNotice}
+        </div>
+      )}
+      <div className="fixed bottom-3 left-1/2 -translate-x-1/2 z-30 hidden md:flex items-center gap-3 bg-white/90 backdrop-blur border border-slate-200 px-3.5 py-1.5 rounded-full shadow-sm text-[11px] text-slate-500 pointer-events-none">
+        <span>
+          <kbd className="font-mono font-semibold text-slate-700">Ctrl+C</kbd>{" "}
+          Copy
+        </span>
+        <span>
+          <kbd className="font-mono font-semibold text-slate-700">Ctrl+V</kbd>{" "}
+          Paste
+        </span>
+        <span>
+          <kbd className="font-mono font-semibold text-slate-700">Ctrl+D</kbd>{" "}
+          Duplicate
+        </span>
+        <span>
+          <kbd className="font-mono font-semibold text-slate-700">Del</kbd>{" "}
+          Delete
+        </span>
+        <span>
+          <kbd className="font-mono font-semibold text-slate-700">Ctrl+Z</kbd>{" "}
+          Undo
+        </span>
+      </div>
     </div>
   );
 }
 
-function renderBlockContent(block: BuilderBlock, isSelected: boolean) {
+function CodeBlockCanvasView({
+  block,
+  styleString,
+}: {
+  block: BuilderBlock;
+  styleString: Record<string, any>;
+}) {
+  const [copied, setCopied] = useState(false);
+  const code = block.content?.code || "console.log('Hello World');";
+  const language = block.content?.language || "javascript";
+  const highlighted = highlightCodeToHtml(code, language);
+
+  return (
+    <div
+      style={styleString}
+      className="bg-[#1e1e1e] rounded-xl overflow-hidden border border-slate-800 shadow-md"
+    >
+      <div className="flex items-center justify-between px-4 py-2 bg-[#252526] border-b border-slate-800">
+        <div className="flex items-center gap-2">
+          <span className="w-2.5 h-2.5 rounded-full bg-rose-500/80" />
+          <span className="w-2.5 h-2.5 rounded-full bg-amber-400/80" />
+          <span className="w-2.5 h-2.5 rounded-full bg-emerald-500/80" />
+          <span className="ml-2 text-[11px] font-mono uppercase tracking-wider text-slate-400">
+            {language}
+          </span>
+        </div>
+        <button
+          type="button"
+          onClick={(e) => {
+            e.stopPropagation();
+            navigator.clipboard?.writeText(code).catch(() => {});
+            setCopied(true);
+            setTimeout(() => setCopied(false), 1800);
+          }}
+          className="flex items-center gap-1.5 text-[11px] font-medium px-2.5 py-1 rounded-md bg-slate-800 hover:bg-slate-700 text-slate-200 transition"
+        >
+          {copied ? (
+            <Check size={12} className="text-emerald-400" />
+          ) : (
+            <Copy size={12} />
+          )}
+          {copied ? "Copied!" : "Copy"}
+        </button>
+      </div>
+      <pre className="p-5 font-mono text-sm text-slate-100 overflow-x-auto leading-relaxed">
+        <code dangerouslySetInnerHTML={{ __html: highlighted }} />
+      </pre>
+    </div>
+  );
+}
+
+function renderBlockContent(
+  block: BuilderBlock,
+  isSelected: boolean,
+  allBlocks: BuilderBlock[] = [],
+  onInlineChange?: (nextContent: any) => void,
+) {
   const styleString = block.styles || {};
   // Use binding content if available
   const contentToRender = block.bindings?.content ? (
@@ -718,19 +1006,84 @@ function renderBlockContent(block: BuilderBlock, isSelected: boolean) {
   );
 
   switch (block.type) {
-    case "Heading":
+    case "Heading": {
+      const rawHeading =
+        typeof block.content === "object"
+          ? block.content?.text || ""
+          : String(block.content ?? "");
+      if (!block.bindings?.content && onInlineChange) {
+        return (
+          <InlineRichTextBlock
+            blockId={block.id}
+            tag="h2"
+            value={rawHeading}
+            className="text-3xl font-bold text-slate-800 whitespace-pre-wrap break-words"
+            style={{
+              whiteSpace: "pre-wrap",
+              wordBreak: "break-word",
+              ...styleString,
+            }}
+            isSelected={isSelected}
+            onChange={(html) =>
+              onInlineChange(
+                typeof block.content === "object"
+                  ? { ...block.content, text: html }
+                  : html,
+              )
+            }
+          />
+        );
+      }
       return (
-        <h2 className="text-3xl font-bold text-slate-800 whitespace-pre-wrap break-words" style={{ whiteSpace: "pre-wrap", wordBreak: "break-word", ...styleString }}>
+        <h2
+          className="text-3xl font-bold text-slate-800 whitespace-pre-wrap break-words"
+          style={{
+            whiteSpace: "pre-wrap",
+            wordBreak: "break-word",
+            ...styleString,
+          }}
+        >
           {contentToRender}
         </h2>
       );
+    }
     case "Paragraph": {
-      const rawContent = typeof block.content === "object" ? block.content?.text || "" : (block.content ?? "");
+      const rawContent =
+        typeof block.content === "object"
+          ? block.content?.text || ""
+          : (block.content ?? "");
       const isBinding = !!block.bindings?.content;
+      if (!isBinding && onInlineChange) {
+        return (
+          <InlineRichTextBlock
+            blockId={block.id}
+            tag="p"
+            value={String(rawContent)}
+            className="text-slate-600 leading-relaxed text-lg whitespace-pre-wrap break-words"
+            style={{
+              whiteSpace: "pre-wrap",
+              wordBreak: "break-word",
+              ...styleString,
+            }}
+            isSelected={isSelected}
+            onChange={(html) =>
+              onInlineChange(
+                typeof block.content === "object"
+                  ? { ...block.content, text: html }
+                  : html,
+              )
+            }
+          />
+        );
+      }
       return (
         <p
           className="text-slate-600 leading-relaxed text-lg whitespace-pre-wrap break-words"
-          style={{ whiteSpace: "pre-wrap", wordBreak: "break-word", ...styleString }}
+          style={{
+            whiteSpace: "pre-wrap",
+            wordBreak: "break-word",
+            ...styleString,
+          }}
         >
           {isBinding ? contentToRender : rawContent}
         </p>
@@ -798,7 +1151,11 @@ function renderBlockContent(block: BuilderBlock, isSelected: boolean) {
       return (
         <blockquote
           className="border-l-4 border-blue-500 pl-4 italic text-slate-700 text-xl whitespace-pre-wrap break-words"
-          style={{ whiteSpace: "pre-wrap", wordBreak: "break-word", ...styleString }}
+          style={{
+            whiteSpace: "pre-wrap",
+            wordBreak: "break-word",
+            ...styleString,
+          }}
         >
           {contentToRender}
         </blockquote>
@@ -935,17 +1292,88 @@ function renderBlockContent(block: BuilderBlock, isSelected: boolean) {
         </div>
       );
     case "Code Block":
+      return <CodeBlockCanvasView block={block} styleString={styleString} />;
+    case "Contact Form":
       return (
         <div
           style={styleString}
-          className="bg-slate-900 rounded-xl p-6 font-mono text-sm text-blue-300 relative overflow-hidden"
+          className="bg-slate-50 border border-slate-200 rounded-2xl p-6 max-w-xl mx-auto"
         >
-          <div className="absolute top-0 right-0 p-2 text-[10px] text-slate-500 uppercase tracking-widest">
-            {block.content?.language || "javascript"}
+          <div className="flex items-center gap-2 text-blue-600 text-xs font-bold uppercase tracking-wider mb-1">
+            <Send size={13} /> Contact / Lead Form
           </div>
-          <pre>{block.content?.code || "print('hello world')"}</pre>
+          <h4 className="text-xl font-bold text-slate-900">
+            {block.content?.title || "Get in Touch"}
+          </h4>
+          <p className="text-sm text-slate-500 mt-1 mb-4">
+            {block.content?.description ||
+              "Send us a message and we will get back to you soon."}
+          </p>
+          <div className="space-y-3 pointer-events-none opacity-85">
+            <div className="grid grid-cols-2 gap-3">
+              <div className="h-9 bg-white border border-slate-200 rounded-lg px-3 flex items-center text-xs text-slate-400">
+                Your Name
+              </div>
+              <div className="h-9 bg-white border border-slate-200 rounded-lg px-3 flex items-center text-xs text-slate-400">
+                you@example.com
+              </div>
+            </div>
+            {block.content?.showSubject !== false && (
+              <div className="h-9 bg-white border border-slate-200 rounded-lg px-3 flex items-center text-xs text-slate-400">
+                Subject
+              </div>
+            )}
+            <div className="h-20 bg-white border border-slate-200 rounded-lg p-3 text-xs text-slate-400">
+              Your message...
+            </div>
+            <div className="inline-flex items-center px-5 py-2 bg-blue-600 text-white text-xs font-semibold rounded-lg">
+              {block.content?.buttonText || "Send Message"}
+            </div>
+          </div>
         </div>
       );
+    case "Table of Contents": {
+      const headings = allBlocks
+        .filter((b) => b.type === "Heading")
+        .map((b) => {
+          const text =
+            typeof b.content === "object"
+              ? b.content?.text || "Heading"
+              : String(b.content || "Heading");
+          return text.replace(/<[^>]+>/g, "").trim() || "Heading";
+        });
+      return (
+        <div
+          style={styleString}
+          className={`rounded-2xl p-5 ${
+            block.content?.style === "minimal"
+              ? "border-l-2 border-blue-500 pl-4 bg-transparent"
+              : "bg-slate-50 border border-slate-200"
+          }`}
+        >
+          <div className="flex items-center gap-2 text-slate-800 font-bold text-sm mb-3">
+            <ListTree size={16} className="text-blue-600" />
+            {block.content?.title || "Table of Contents"}
+          </div>
+          {headings.length === 0 ? (
+            <p className="text-xs text-slate-400 italic">
+              Headings in this page or post will automatically appear here.
+            </p>
+          ) : (
+            <ul className="space-y-1.5 text-sm text-slate-600">
+              {headings.map((h, i) => (
+                <li key={i} className="flex items-center gap-2">
+                  <span className="text-xs font-mono text-blue-500">
+                    {i + 1}.
+                  </span>
+                  <span className="truncate">{h}</span>
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
+      );
+    }
     default:
       return <div className="text-red-500">Unknown block type</div>;
   }
