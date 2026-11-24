@@ -10,6 +10,8 @@ import { looksLikeHtml, preparePostHtml } from "@/lib/htmlContent";
 import { resolveMediaUrl } from "@/lib/siteMedia";
 import { api } from "@/lib/api";
 import type { LayoutDocumentV1 } from "@/lib/layoutContract";
+import { highlightCodeToHtml } from "@/lib/codeHighlight";
+import { hasInlineHtml, sanitizeInlineRichHtml } from "@/lib/inlineRichText";
 
 /**
  * R2-3: Public Page Renderer — all builder BlockTypes supported.
@@ -100,6 +102,12 @@ function normalizeBlockType(type: string): string {
     code: "Code Block",
     html: "Html",
     markdown: "Markdown",
+    "contact form": "Contact Form",
+    "contact-form": "Contact Form",
+    form: "Contact Form",
+    "table of contents": "Table of Contents",
+    "table-of-contents": "Table of Contents",
+    toc: "Table of Contents",
     "rich-text": "Paragraph",
     "hero-section": "Heading",
   };
@@ -285,23 +293,23 @@ export function PublicPageRenderer({
           typeof content === "object" && content?.text != null
             ? content.text
             : content;
-        const className = "mb-4 font-bold text-[var(--site-ink,#0f172a)]";
+        const plain = String(text ?? "").replace(/<[^>]+>/g, "").trim();
+        const anchorId = `toc-${plain.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "") || block.id}`;
+        const className = "mb-4 font-bold text-[var(--site-ink,#0f172a)] scroll-mt-24";
+        const useHtml = hasInlineHtml(text);
+        const body = useHtml
+          ? { dangerouslySetInnerHTML: { __html: sanitizeInlineRichHtml(String(text)) } }
+          : { children: text };
         if (level === 1)
           return (
-            <h1 key={block.id} style={styleString} className={className + " text-4xl"}>
-              {text}
-            </h1>
+            <h1 id={anchorId} key={block.id} style={styleString} className={className + " text-4xl"} {...body} />
           );
         if (level === 3)
           return (
-            <h3 key={block.id} style={styleString} className={className + " text-xl"}>
-              {text}
-            </h3>
+            <h3 id={anchorId} key={block.id} style={styleString} className={className + " text-xl"} {...body} />
           );
         return (
-          <h2 key={block.id} style={styleString} className={className + " text-2xl"}>
-            {text}
-          </h2>
+          <h2 id={anchorId} key={block.id} style={styleString} className={className + " text-2xl"} {...body} />
         );
       }
 
@@ -337,13 +345,25 @@ export function PublicPageRenderer({
           );
         }
 
+        const plainOrInline = typeof content === "object" ? content?.text || "" : String(content ?? "");
+        if (hasInlineHtml(plainOrInline)) {
+          return (
+            <p
+              key={block.id}
+              style={{ whiteSpace: "pre-wrap", wordBreak: "break-word", ...styleString }}
+              className="mb-4 leading-relaxed whitespace-pre-wrap break-words text-[color-mix(in_srgb,var(--site-ink,#0f172a)_82%,var(--site-muted,#64748b))]"
+              dangerouslySetInnerHTML={{ __html: sanitizeInlineRichHtml(plainOrInline) }}
+            />
+          );
+        }
+
         return (
           <p
             key={block.id}
             style={{ whiteSpace: "pre-wrap", wordBreak: "break-word", ...styleString }}
             className="mb-4 leading-relaxed whitespace-pre-wrap break-words text-[color-mix(in_srgb,var(--site-ink,#0f172a)_82%,var(--site-muted,#64748b))]"
           >
-            {typeof content === "object" ? content?.text || "" : content}
+            {plainOrInline}
           </p>
         );
       }
@@ -635,21 +655,102 @@ export function PublicPageRenderer({
         );
       }
 
-      case "Code Block":
+      case "Code Block": {
+        const codeStr =
+          (typeof content === "object" && content?.code) ||
+          (typeof content === "string" ? content : "");
+        const lang = (typeof content === "object" && content?.language) || "javascript";
         return (
-          <div
+          <PublicCodeBlock
             key={block.id}
-            className="my-6 bg-slate-900 rounded-xl p-6 overflow-x-auto border border-slate-800"
+            code={codeStr}
+            language={lang}
             style={styleString}
-          >
-            <pre className="text-blue-300 font-mono text-sm">
-              <code>
-                {(typeof content === "object" && content?.code) ||
-                  (typeof content === "string" ? content : "")}
-              </code>
-            </pre>
-          </div>
+          />
         );
+      }
+
+      case "Contact Form":
+        return (
+          <PublicContactFormBlock
+            key={block.id}
+            content={content}
+            style={styleString}
+            siteId={data?.site?.id}
+            siteSlug={data?.site?.slug}
+          />
+        );
+
+      case "Table of Contents": {
+        const maxDepth = Number(content?.maxDepth || 3);
+        const tocItems: { id: string; text: string; level: number }[] = [];
+
+        // 1. Scan Heading blocks in the layout
+        blocksArray.forEach((b: any) => {
+          if (normalizeBlockType(b.type) === "Heading") {
+            const lvl = Number((b as any).level || (b.content as any)?.level || 2);
+            if (lvl <= maxDepth) {
+              const resolved = bindData(b.content, b.bindings, data);
+              const rawText =
+                typeof resolved === "object" && resolved?.text != null
+                  ? resolved.text
+                  : resolved;
+              const clean = String(rawText ?? "").replace(/<[^>]+>/g, "").trim();
+              if (clean) {
+                const anchorId = `toc-${clean.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "") || b.id}`;
+                tocItems.push({ id: anchorId, text: clean, level: lvl });
+              }
+            }
+          }
+        });
+
+        // 2. Also scan HTML headings from post.contentHtml if present
+        const postHtml = String(data?.post?.contentHtml || data?.post?.content || "");
+        if (postHtml) {
+          const headingRegex = /<h([1-3])[^>]*>(.*?)<\/h\1>/gi;
+          let m: RegExpExecArray | null;
+          while ((m = headingRegex.exec(postHtml)) !== null) {
+            const lvl = Number(m[1]);
+            const clean = m[2].replace(/<[^>]+>/g, "").trim();
+            if (lvl <= maxDepth && clean) {
+              const anchorId = `toc-${clean.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "")}`;
+              tocItems.push({ id: anchorId, text: clean, level: lvl });
+            }
+          }
+        }
+
+        if (tocItems.length === 0) return null;
+
+        return (
+          <nav
+            key={block.id}
+            aria-label="Table of Contents"
+            style={styleString}
+            className={`my-6 rounded-2xl p-5 ${
+              content?.style === "minimal"
+                ? "border-l-2 border-blue-500 pl-5 bg-transparent"
+                : "bg-slate-50 border border-slate-200"
+            }`}
+          >
+            <div className="font-bold text-sm text-slate-900 mb-3 uppercase tracking-wider">
+              {content?.title || "Table of Contents"}
+            </div>
+            <ul className="space-y-1.5 text-sm">
+              {tocItems.map((item, idx) => (
+                <li key={`${item.id}-${idx}`} style={{ paddingLeft: item.level === 3 ? "14px" : "0px" }}>
+                  <a
+                    href={`#${item.id}`}
+                    className="text-slate-600 hover:text-blue-600 transition-colors flex items-center gap-2"
+                  >
+                    <span className="text-xs font-mono text-blue-500">{idx + 1}.</span>
+                    <span>{item.text}</span>
+                  </a>
+                </li>
+              ))}
+            </ul>
+          </nav>
+        );
+      }
 
       case "Social Links": {
         const links =
@@ -766,5 +867,161 @@ export function PublicPageRenderer({
 
   return (
     <div className="public-renderer-wrapper w-full">{renderChildren()}</div>
+  );
+}
+
+function PublicCodeBlock({
+  code,
+  language,
+  style,
+}: {
+  code: string;
+  language: string;
+  style?: React.CSSProperties;
+}) {
+  const [copied, setCopied] = useState(false);
+  const highlighted = highlightCodeToHtml(code, language);
+
+  return (
+    <div
+      style={style}
+      className="my-6 bg-[#1e1e1e] rounded-xl overflow-hidden border border-slate-800 shadow-lg"
+    >
+      <div className="flex items-center justify-between px-4 py-2.5 bg-[#252526] border-b border-slate-800">
+        <div className="flex items-center gap-2">
+          <span className="w-2.5 h-2.5 rounded-full bg-rose-500/80" />
+          <span className="w-2.5 h-2.5 rounded-full bg-amber-400/80" />
+          <span className="w-2.5 h-2.5 rounded-full bg-emerald-500/80" />
+          <span className="ml-2 text-xs font-mono uppercase tracking-wider text-slate-400">
+            {language}
+          </span>
+        </div>
+        <button
+          type="button"
+          onClick={() => {
+            navigator.clipboard?.writeText(code).catch(() => {});
+            setCopied(true);
+            setTimeout(() => setCopied(false), 1800);
+          }}
+          className="text-xs font-medium px-2.5 py-1 rounded-md bg-slate-800 hover:bg-slate-700 text-slate-200 transition"
+        >
+          {copied ? "Copied!" : "Copy"}
+        </button>
+      </div>
+      <pre className="p-5 font-mono text-sm text-slate-100 overflow-x-auto leading-relaxed">
+        <code dangerouslySetInnerHTML={{ __html: highlighted }} />
+      </pre>
+    </div>
+  );
+}
+
+function PublicContactFormBlock({
+  content,
+  style,
+  siteId,
+  siteSlug,
+}: {
+  content: any;
+  style?: React.CSSProperties;
+  siteId?: number | string;
+  siteSlug?: string;
+}) {
+  const [name, setName] = useState("");
+  const [email, setEmail] = useState("");
+  const [subject, setSubject] = useState("");
+  const [message, setMessage] = useState("");
+  const [submitting, setSubmitting] = useState(false);
+  const [submitted, setSubmitted] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setSubmitting(true);
+    setError(null);
+    try {
+      await api.submitContactForm({
+        siteId,
+        siteSlug,
+        formTitle: content?.title || "Contact Form",
+        name,
+        email,
+        subject: content?.showSubject !== false ? subject : undefined,
+        message,
+      });
+      setSubmitted(true);
+      setName("");
+      setEmail("");
+      setSubject("");
+      setMessage("");
+    } catch (err: any) {
+      setError(err?.message || "Failed to send message.");
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  return (
+    <div
+      style={style}
+      className="my-8 bg-slate-50 border border-slate-200 rounded-2xl p-6 md:p-8 max-w-2xl mx-auto"
+    >
+      <h3 className="text-2xl font-bold text-slate-900">
+        {content?.title || "Get in Touch"}
+      </h3>
+      {content?.description && (
+        <p className="text-sm text-slate-600 mt-1 mb-6">{content.description}</p>
+      )}
+      {submitted ? (
+        <div className="p-4 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-800 text-sm font-medium">
+          {content?.successMessage || "Thank you! Your message has been sent."}
+        </div>
+      ) : (
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <input
+              type="text"
+              required
+              placeholder="Your Name"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              className="w-full px-4 py-2.5 bg-white border border-slate-200 rounded-xl text-sm outline-none focus:ring-2 focus:ring-blue-500"
+            />
+            <input
+              type="email"
+              required
+              placeholder="you@example.com"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              className="w-full px-4 py-2.5 bg-white border border-slate-200 rounded-xl text-sm outline-none focus:ring-2 focus:ring-blue-500"
+            />
+          </div>
+          {content?.showSubject !== false && (
+            <input
+              type="text"
+              placeholder="Subject"
+              value={subject}
+              onChange={(e) => setSubject(e.target.value)}
+              className="w-full px-4 py-2.5 bg-white border border-slate-200 rounded-xl text-sm outline-none focus:ring-2 focus:ring-blue-500"
+            />
+          )}
+          <textarea
+            required
+            rows={4}
+            placeholder="Write your message..."
+            value={message}
+            onChange={(e) => setMessage(e.target.value)}
+            className="w-full px-4 py-2.5 bg-white border border-slate-200 rounded-xl text-sm outline-none focus:ring-2 focus:ring-blue-500"
+          />
+          {error && <p className="text-xs text-red-600 font-medium">{error}</p>}
+          <button
+            type="submit"
+            disabled={submitting}
+            className="px-6 py-2.5 bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold rounded-xl shadow-sm transition disabled:opacity-60"
+          >
+            {submitting ? "Sending..." : content?.buttonText || "Send Message"}
+          </button>
+        </form>
+      )}
+    </div>
   );
 }
