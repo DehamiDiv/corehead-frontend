@@ -906,41 +906,22 @@ export const api = {
    * Falls back to backend if the local route is unavailable.
    */
   async subscribeToNewsletter(
-    email: string, 
-    siteSlug?: string, 
+    email: string,
+    siteSlug?: string,
     siteId?: number | string,
     siteName?: string
   ) {
-    // 1. Try local Next.js route first (app/api/newsletter/subscribe)
-    try {
-      const localRes = await fetch('/api/newsletter/subscribe', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, siteSlug, siteId, siteName }),
-      });
-
-      if (localRes.ok) {
-        return await localRes.json();
-      }
-      // If local route returned error, fall through to try backend
-    } catch {
-      // Local route not reachable in this context, try backend
+    // 1. Persist subscriber in backend PostgreSQL database first
+    const res = await fetch(`${BASE_URL}/newsletter/subscribe`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email, siteSlug, siteId, siteName }),
+    });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) {
+      throw new Error(data.error || 'Failed to subscribe to newsletter');
     }
-
-    // 2. Fallback to backend
-    try {
-      const res = await fetch(`${BASE_URL}/newsletter/subscribe`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, siteSlug, siteId, siteName }),
-      });
-      if (!res.ok) {
-        return { success: true, demo: true };
-      }
-      return await res.json();
-    } catch (_e) {
-      return { success: true, demo: true };
-    }
+    return data;
   },
 
   async subscribeNewsletter(email: string) {
@@ -971,5 +952,139 @@ export const api = {
     } catch (_e) {
       return { success: false, error: 'Failed to dispatch post alerts' };
     }
-  }
+  },
+
+  // ── Reusable Saved Sections (Builder) ────────────────────────────────────
+  async getSavedSections() {
+    return this.fetchWithAuth(`${BASE_URL}/builder/sections`, {
+      cache: 'no-store',
+    });
+  },
+
+  async createSavedSection(data: { name: string; category?: string; blocks: any[] }) {
+    return this.fetchWithAuth(`${BASE_URL}/builder/sections`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data),
+    });
+  },
+
+  async deleteSavedSection(id: number | string) {
+    return this.fetchWithAuth(`${BASE_URL}/builder/sections/${id}`, {
+      method: 'DELETE',
+    });
+  },
+
+  // ── Contact / Lead Form Submissions ──────────────────────────────────────
+  async submitContactForm(data: {
+    siteId?: number | string;
+    siteSlug?: string;
+    formTitle?: string;
+    name: string;
+    email: string;
+    subject?: string;
+    message: string;
+  }) {
+    const res = await fetch(`${BASE_URL}/forms/submit`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data),
+    });
+    const json = await res.json().catch(() => ({}));
+    if (!res.ok) {
+      throw new Error(json.error || 'Failed to submit form');
+    }
+    return json;
+  },
+
+  async getFormSubmissions(status?: string) {
+    const qs = status && status !== 'all' ? `?status=${encodeURIComponent(status)}` : '';
+    return this.fetchWithAuth(`${BASE_URL}/forms/submissions${qs}`, {
+      cache: 'no-store',
+    });
+  },
+
+  async updateFormSubmissionStatus(id: number | string, status: 'unread' | 'read' | 'archived') {
+    return this.fetchWithAuth(`${BASE_URL}/forms/submissions/${id}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ status }),
+    });
+  },
+
+  async deleteFormSubmission(id: number | string) {
+    return this.fetchWithAuth(`${BASE_URL}/forms/submissions/${id}`, {
+      method: 'DELETE',
+    });
+  },
+
+  // ── Built-in Traffic & Post Views Analytics ──────────────────────────────
+  async trackPostView(postId: number | string) {
+    try {
+      await fetch(`${BASE_URL}/analytics/track`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          postId,
+          referrer: typeof document !== 'undefined' ? document.referrer || undefined : undefined,
+        }),
+      });
+    } catch {
+      /* non-blocking analytics */
+    }
+  },
+
+  async getAnalyticsOverview(days = 14) {
+    return this.fetchWithAuth(`${BASE_URL}/analytics/overview?days=${days}`, {
+      cache: 'no-store',
+    });
+  },
+
+  // ── Newsletter Subscriber Manager & Campaigns ────────────────────────────
+  async getNewsletterSubscribers(search = '') {
+    const qs = search.trim() ? `?search=${encodeURIComponent(search.trim())}` : '';
+    return this.fetchWithAuth(`${BASE_URL}/newsletter/subscribers${qs}`, {
+      cache: 'no-store',
+    });
+  },
+
+  async exportNewsletterSubscribersCsv() {
+    const headers: Record<string, string> = {
+      ...getAuthHeader(),
+      ...getSiteHeader(),
+    };
+    const res = await fetch(`${BASE_URL}/newsletter/subscribers/export`, { headers });
+    if (!res.ok) throw new Error('Failed to export CSV');
+    return res.blob();
+  },
+
+  async deleteNewsletterSubscriber(id: number | string) {
+    return this.fetchWithAuth(`${BASE_URL}/newsletter/subscribers/${id}`, {
+      method: 'DELETE',
+    });
+  },
+
+  async getNewsletterCampaigns() {
+    return this.fetchWithAuth(`${BASE_URL}/newsletter/campaigns`, {
+      cache: 'no-store',
+    });
+  },
+
+  async createNewsletterCampaign(data: {
+    subject: string;
+    contentHtml: string;
+    scheduledAt?: string;
+  }) {
+    return this.fetchWithAuth(`${BASE_URL}/newsletter/campaigns`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data),
+    });
+  },
+
+  async deleteNewsletterCampaign(id: number | string) {
+    return this.fetchWithAuth(`${BASE_URL}/newsletter/campaigns/${id}`, {
+      method: 'DELETE',
+    });
+  },
 };
