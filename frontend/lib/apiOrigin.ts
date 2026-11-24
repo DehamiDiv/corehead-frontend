@@ -8,6 +8,10 @@ const DEV_ORIGIN = "http://localhost:5000";
 
 /** Backend API base including `/api` */
 export function getApiBaseUrl(): string {
+  if (typeof window === "undefined") {
+    const internal = process.env.BACKEND_INTERNAL_URL?.trim();
+    if (internal) return internal.replace(/\/$/, "");
+  }
   const fromEnv = process.env.NEXT_PUBLIC_API_URL?.trim();
   if (fromEnv) return fromEnv.replace(/\/$/, "");
   return DEV_API;
