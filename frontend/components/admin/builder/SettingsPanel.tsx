@@ -752,6 +752,9 @@ function ContentTab({ selectedBlock, updateBlock }: any) {
             <option value="python">Python</option>
             <option value="css">CSS</option>
             <option value="html">HTML</option>
+            <option value="json">JSON</option>
+            <option value="bash">Bash</option>
+            <option value="sql">SQL</option>
           </select>
         </div>
         <div className="space-y-2">
@@ -762,6 +765,98 @@ function ContentTab({ selectedBlock, updateBlock }: any) {
             onChange={(e) => updateBlock(selectedBlock.id, { ...selectedBlock.content, code: e.target.value })}
             className="w-full px-3 py-2 bg-slate-900 text-blue-300 font-mono text-xs border border-gray-700 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
           />
+        </div>
+      </div>
+    );
+  }
+
+  if (selectedBlock.type === "Contact Form") {
+    const content = selectedBlock.content || {};
+    return (
+      <div className="space-y-4">
+        <div className="space-y-1">
+          <label className="text-xs font-semibold text-slate-600">Form Title</label>
+          <input
+            type="text"
+            value={content.title ?? "Get in Touch"}
+            onChange={(e) => updateBlock(selectedBlock.id, { ...content, title: e.target.value })}
+            className="w-full px-3 py-2 bg-slate-50 border border-gray-200 rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-500"
+          />
+        </div>
+        <div className="space-y-1">
+          <label className="text-xs font-semibold text-slate-600">Description</label>
+          <textarea
+            rows={2}
+            value={content.description ?? ""}
+            onChange={(e) => updateBlock(selectedBlock.id, { ...content, description: e.target.value })}
+            className="w-full px-3 py-2 bg-slate-50 border border-gray-200 rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-500"
+          />
+        </div>
+        <div className="space-y-1">
+          <label className="text-xs font-semibold text-slate-600">Submit Button Label</label>
+          <input
+            type="text"
+            value={content.buttonText ?? "Send Message"}
+            onChange={(e) => updateBlock(selectedBlock.id, { ...content, buttonText: e.target.value })}
+            className="w-full px-3 py-2 bg-slate-50 border border-gray-200 rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-500"
+          />
+        </div>
+        <div className="space-y-1">
+          <label className="text-xs font-semibold text-slate-600">Success Message</label>
+          <input
+            type="text"
+            value={content.successMessage ?? "Thank you! Your message has been sent."}
+            onChange={(e) => updateBlock(selectedBlock.id, { ...content, successMessage: e.target.value })}
+            className="w-full px-3 py-2 bg-slate-50 border border-gray-200 rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-500"
+          />
+        </div>
+        <label className="flex items-center gap-2 text-sm text-slate-700 pt-1">
+          <input
+            type="checkbox"
+            checked={content.showSubject !== false}
+            onChange={(e) => updateBlock(selectedBlock.id, { ...content, showSubject: e.target.checked })}
+            className="rounded border-gray-300"
+          />
+          Show Subject Field
+        </label>
+      </div>
+    );
+  }
+
+  if (selectedBlock.type === "Table of Contents") {
+    const content = selectedBlock.content || {};
+    return (
+      <div className="space-y-4">
+        <div className="space-y-1">
+          <label className="text-xs font-semibold text-slate-600">Heading Title</label>
+          <input
+            type="text"
+            value={content.title ?? "Table of Contents"}
+            onChange={(e) => updateBlock(selectedBlock.id, { ...content, title: e.target.value })}
+            className="w-full px-3 py-2 bg-slate-50 border border-gray-200 rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-500"
+          />
+        </div>
+        <div className="space-y-1">
+          <label className="text-xs font-semibold text-slate-600">Max Heading Depth</label>
+          <select
+            value={content.maxDepth ?? 3}
+            onChange={(e) => updateBlock(selectedBlock.id, { ...content, maxDepth: Number(e.target.value) })}
+            className="w-full px-3 py-2 bg-slate-50 border border-gray-200 rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-500"
+          >
+            <option value={2}>Up to H2</option>
+            <option value={3}>Up to H3</option>
+          </select>
+        </div>
+        <div className="space-y-1">
+          <label className="text-xs font-semibold text-slate-600">Visual Style</label>
+          <select
+            value={content.style ?? "card"}
+            onChange={(e) => updateBlock(selectedBlock.id, { ...content, style: e.target.value })}
+            className="w-full px-3 py-2 bg-slate-50 border border-gray-200 rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-500"
+          >
+            <option value="card">Card Box</option>
+            <option value="minimal">Minimal Left Border</option>
+          </select>
         </div>
       </div>
     );
