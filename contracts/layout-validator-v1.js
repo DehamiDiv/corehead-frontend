@@ -37,6 +37,8 @@ const BLOCK_KEYS = {
   'Code Block': new Set(['id', 'type', 'content', 'parentId', 'styles']),
   Html: COMMON_BLOCK_KEYS,
   Markdown: COMMON_BLOCK_KEYS,
+  'Contact Form': new Set(['id', 'type', 'content', 'parentId', 'styles']),
+  'Table of Contents': new Set(['id', 'type', 'content', 'parentId', 'styles']),
 };
 
 function isObject(value) {
@@ -295,6 +297,23 @@ function validateContent(block, path, addError) {
     case 'Markdown':
       if (!(isString(value, 100000) || (exactObject(value, ['markdown']) && isString(value.markdown, 100000)))) fail('Markdown content must be a string or { markdown }.');
       break;
+    case 'Contact Form': {
+      const valid =
+        exactObject(value, ['title', 'description', 'buttonText', 'successMessage'], ['showSubject']) &&
+        ['title', 'description', 'buttonText', 'successMessage'].every((key) => isString(value[key])) &&
+        (value.showSubject === undefined || typeof value.showSubject === 'boolean');
+      if (!valid) fail('Contact Form content must contain title, description, buttonText, and successMessage strings.');
+      break;
+    }
+    case 'Table of Contents': {
+      const valid =
+        exactObject(value, ['title'], ['maxDepth', 'style']) &&
+        isString(value.title) &&
+        (value.maxDepth === undefined || isIntegerBetween(value.maxDepth, 2, 3)) &&
+        (value.style === undefined || ['card', 'minimal'].includes(value.style));
+      if (!valid) fail('Table of Contents content must contain title and optional maxDepth (2-3) and style.');
+      break;
+    }
   }
 }
 

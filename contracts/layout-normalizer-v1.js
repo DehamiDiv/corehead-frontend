@@ -30,6 +30,12 @@ const TYPE_ALIASES = new Map([
   ['code', 'Code Block'],
   ['html', 'Html'],
   ['markdown', 'Markdown'],
+  ['contact form', 'Contact Form'],
+  ['contact-form', 'Contact Form'],
+  ['form', 'Contact Form'],
+  ['table of contents', 'Table of Contents'],
+  ['table-of-contents', 'Table of Contents'],
+  ['toc', 'Table of Contents'],
 ]);
 
 function clone(value) {
@@ -133,6 +139,8 @@ function defaultContent(type) {
     case 'Social Links': return { links: [] };
     case 'Spacer': return '40px';
     case 'Code Block': return { code: '', language: 'text' };
+    case 'Contact Form': return { title: 'Get in Touch', description: 'Send us a message and we will get back to you soon.', buttonText: 'Send Message', successMessage: 'Thank you! Your message has been sent.', showSubject: true };
+    case 'Table of Contents': return { title: 'Table of Contents', maxDepth: 3, style: 'card' };
     default: return '';
   }
 }
@@ -188,6 +196,22 @@ function normalizeContent(type, content, source, path, warnings) {
       return isObject(value) ? { html: String(value.html || value.code || '') } : String(value || '');
     case 'Markdown':
       return isObject(value) ? { markdown: String(value.markdown || value.text || '') } : String(value || '');
+    case 'Contact Form':
+      return {
+        title: String(isObject(value) ? value.title ?? 'Get in Touch' : 'Get in Touch'),
+        description: String(isObject(value) ? value.description ?? 'Send us a message and we will get back to you soon.' : 'Send us a message and we will get back to you soon.'),
+        buttonText: String(isObject(value) ? value.buttonText ?? 'Send Message' : 'Send Message'),
+        successMessage: String(isObject(value) ? value.successMessage ?? 'Thank you! Your message has been sent.' : 'Thank you! Your message has been sent.'),
+        showSubject: isObject(value) && typeof value.showSubject === 'boolean' ? value.showSubject : true,
+      };
+    case 'Table of Contents': {
+      const depth = Number(isObject(value) ? value.maxDepth : 3);
+      return {
+        title: String(isObject(value) ? value.title ?? 'Table of Contents' : 'Table of Contents'),
+        maxDepth: depth === 2 ? 2 : 3,
+        style: isObject(value) && value.style === 'minimal' ? 'minimal' : 'card',
+      };
+    }
     default:
       warnings.push({ code: 'normalize.content_unknown', path: `${path}.content`, message: `Content for ${type} could not be normalized.` });
       return value;
