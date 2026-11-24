@@ -18,6 +18,8 @@ import {
   PanelLeft,
   Globe2,
   UserPlus,
+  Inbox,
+  Mail,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { isPlatformAdmin } from "@/lib/rbac";
@@ -118,6 +120,8 @@ export default function Sidebar({ isOpen = true }: { isOpen?: boolean }) {
         { label: "Categories", href: "/admin/categories", Icon: Tags },
         { label: "Media Library", href: "/admin/media", Icon: ImageIcon },
         { label: "Interactions", href: "/admin/comments", Icon: MessageSquare },
+        { label: "Form Inbox", href: "/admin/submissions", Icon: Inbox },
+        { label: "Newsletter", href: "/admin/newsletter", Icon: Mail },
         // R3-1: site-scoped custom HTML pages
         { label: "Pages", href: "/admin/pages", Icon: File },
         { label: "Users", href: "/admin/users", Icon: Users, platformAdminOnly: true },

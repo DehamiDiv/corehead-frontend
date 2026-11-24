@@ -33,6 +33,8 @@ const ADMIN_SECTIONS: Array<{ prefix: string; section: string; page: string }> =
   { prefix: "/admin/media", section: "Content", page: "Media Library" },
   { prefix: "/admin/categories", section: "Content", page: "Categories" },
   { prefix: "/admin/comments", section: "Content", page: "Interactions" },
+  { prefix: "/admin/submissions", section: "Content", page: "Form Inbox" },
+  { prefix: "/admin/newsletter", section: "Content", page: "Newsletter" },
   { prefix: "/admin/team", section: "Site", page: "Team" },
   { prefix: "/admin/sites", section: "Site", page: "My Sites" },
   { prefix: "/admin/users", section: "Platform", page: "Users" },
