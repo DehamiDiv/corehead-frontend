@@ -32,7 +32,17 @@ export type BlockType =
   | "Newsletter"
   | "Social Links"
   | "Spacer"
-  | "Code Block";
+  | "Code Block"
+  | "Contact Form"
+  | "Table of Contents";
+
+export interface SavedSectionItem {
+  id: number | string;
+  name: string;
+  category: string;
+  blocks: BuilderBlock[];
+  createdAt?: string;
+}
 
 export interface BuilderBlock {
   id: string;
@@ -61,7 +71,11 @@ interface BuilderContextType {
   reorderBlocks: (startIndex: number, endIndex: number) => void;
   duplicateBlock: (id: string) => void;
   moveBlock: (id: string, direction: "up" | "down") => void;
-  moveBlockTo: (sourceBlockId: string, targetParentId?: string, targetIndex?: number) => void;
+  moveBlockTo: (
+    sourceBlockId: string,
+    targetParentId?: string,
+    targetIndex?: number,
+  ) => void;
   serializeLayout: () => string;
   loadLayout: (json: string) => void;
   saveToBackend: (
@@ -83,7 +97,10 @@ interface BuilderContextType {
   setDeviceMode: (mode: "desktop" | "tablet" | "mobile") => void;
   isAnalyzing: boolean;
   setIsAnalyzing: (analyzing: boolean) => void;
-  generateLayout: (prompt: string, options?: any) => Promise<string | undefined>;
+  generateLayout: (
+    prompt: string,
+    options?: any,
+  ) => Promise<string | undefined>;
   // Compare Mode
   compareMode: boolean;
   setCompareMode: (v: boolean) => void;
@@ -95,6 +112,25 @@ interface BuilderContextType {
   canUndo: boolean;
   canRedo: boolean;
   modifyLayout: (instruction: string) => Promise<boolean>;
+  // Clipboard & Keyboard Actions
+  copiedBlocks: BuilderBlock[] | null;
+  copyBlock: (id: string) => void;
+  pasteBlock: (parentId?: string, targetIndex?: number) => void;
+  // Reusable Saved Sections
+  savedSections: SavedSectionItem[];
+  refreshSavedSections: () => Promise<void>;
+  saveBlockAsSection: (
+    blockId: string,
+    name: string,
+    category?: string,
+  ) => Promise<boolean>;
+  insertSavedSection: (
+    sectionBlocks: BuilderBlock[],
+    parentId?: string,
+    targetIndex?: number,
+  ) => void;
+  deleteSavedSection: (id: number | string) => Promise<void>;
+  lastActionNotice: string | null;
 }
 
 const BuilderContext = createContext<BuilderContextType | undefined>(undefined);
@@ -115,7 +151,10 @@ export function sanitizeBlock(block: BuilderBlock): BuilderBlock {
         content = "";
       }
     } else if (content && typeof content === "object") {
-      if (typeof content.url === "string" && MOCK_PATTERNS.some((pat) => content.url.includes(pat))) {
+      if (
+        typeof content.url === "string" &&
+        MOCK_PATTERNS.some((pat) => content.url.includes(pat))
+      ) {
         content = { ...content, url: "" };
       }
     }
@@ -139,10 +178,15 @@ export function BuilderProvider({ children }: { children: ReactNode }) {
   const [templateId, setTemplateId] = useState<string | null>(null);
   const [aiHistoryId, setAiHistoryId] = useState<string | null>(null);
   const [templateName, setTemplateName] = useState("New Layout");
-  const [templateType, setTemplateType] = useState<BuilderTemplateType>("Single Post");
+  const [templateType, setTemplateType] =
+    useState<BuilderTemplateType>("Single Post");
 
-  const [activeSidebar, setActiveSidebar] = useState<"chat" | "blocks" | "settings" | "cms">("blocks");
-  const [deviceMode, setDeviceMode] = useState<"desktop" | "tablet" | "mobile">("desktop");
+  const [activeSidebar, setActiveSidebar] = useState<
+    "chat" | "blocks" | "settings" | "cms"
+  >("blocks");
+  const [deviceMode, setDeviceMode] = useState<"desktop" | "tablet" | "mobile">(
+    "desktop",
+  );
   const [isAnalyzing, setIsAnalyzing] = useState(false);
 
   // Compare Mode state
@@ -154,6 +198,41 @@ export function BuilderProvider({ children }: { children: ReactNode }) {
   // History State
   const [history, setHistory] = useState<BuilderBlock[][]>([]);
   const [historyIndex, setHistoryIndex] = useState(-1);
+  const [copiedBlocks, setCopiedBlocks] = useState<BuilderBlock[] | null>(null);
+  const [savedSections, setSavedSections] = useState<SavedSectionItem[]>([]);
+  const [lastActionNotice, setLastActionNotice] = useState<string | null>(null);
+
+  const showNotice = (msg: string) => {
+    setLastActionNotice(msg);
+    setTimeout(() => {
+      setLastActionNotice((curr) => (curr === msg ? null : curr));
+    }, 2200);
+  };
+
+  const refreshSavedSections = async () => {
+    try {
+      const res = await api.getSavedSections();
+      if (Array.isArray(res?.sections)) {
+        setSavedSections(res.sections);
+        return;
+      }
+    } catch {
+      // Fallback to localStorage if offline/unauthenticated
+    }
+    try {
+      const raw = localStorage.getItem("corehead_saved_sections");
+      if (raw) {
+        const parsed = JSON.parse(raw);
+        if (Array.isArray(parsed)) setSavedSections(parsed);
+      }
+    } catch {
+      /* ignore */
+    }
+  };
+
+  useEffect(() => {
+    refreshSavedSections();
+  }, []);
 
   const acceptAiLayout = () => {
     if (aiBlocks.length > 0) {
@@ -164,7 +243,10 @@ export function BuilderProvider({ children }: { children: ReactNode }) {
         origin: "ai",
       });
       setBlocks(prepared.document.blocks as BuilderBlock[]);
-      localStorage.setItem("corehead_builder_layout", JSON.stringify(prepared.document));
+      localStorage.setItem(
+        "corehead_builder_layout",
+        JSON.stringify(prepared.document),
+      );
       setAiBlocks([]);
       setCompareMode(false);
     }
@@ -193,7 +275,13 @@ export function BuilderProvider({ children }: { children: ReactNode }) {
       }
       localStorage.setItem(
         "corehead_builder_meta",
-        JSON.stringify({ name, type, id, userId, ai_history_id: historyId ?? aiHistoryId }),
+        JSON.stringify({
+          name,
+          type,
+          id,
+          userId,
+          ai_history_id: historyId ?? aiHistoryId,
+        }),
       );
     } catch {
       /* ignore quota */
@@ -221,11 +309,16 @@ export function BuilderProvider({ children }: { children: ReactNode }) {
           const rawMeta = localStorage.getItem("corehead_builder_meta");
           if (rawMeta) {
             const localMeta = JSON.parse(rawMeta);
-            const userMatches = !localMeta.userId || !currentUserId || String(localMeta.userId) === String(currentUserId);
+            const userMatches =
+              !localMeta.userId ||
+              !currentUserId ||
+              String(localMeta.userId) === String(currentUserId);
             if (String(localMeta.id) === String(id) && userMatches) {
               // Same template ID and same user → return to existing session
               // Prefer localStorage layout over re-fetching from API
-              const savedLayout = localStorage.getItem("corehead_builder_layout");
+              const savedLayout = localStorage.getItem(
+                "corehead_builder_layout",
+              );
               if (savedLayout) {
                 const parsed = JSON.parse(savedLayout);
                 const normalized = normalizeLayoutDocumentV1(parsed, {
@@ -237,10 +330,15 @@ export function BuilderProvider({ children }: { children: ReactNode }) {
                 setBlocks(sanitizeBlocks(doc.blocks as BuilderBlock[]));
                 setTemplateId(String(id));
                 if (localMeta.name) setTemplateName(localMeta.name);
-                if (localMeta.type === "Single Post" || localMeta.type === "Blog Archive" || localMeta.type === "Home Page") {
+                if (
+                  localMeta.type === "Single Post" ||
+                  localMeta.type === "Blog Archive" ||
+                  localMeta.type === "Home Page"
+                ) {
                   setTemplateType(localMeta.type);
                 }
-                if (localMeta.ai_history_id) setAiHistoryId(String(localMeta.ai_history_id));
+                if (localMeta.ai_history_id)
+                  setAiHistoryId(String(localMeta.ai_history_id));
                 restoredFromLocal = true;
               }
             }
@@ -253,11 +351,14 @@ export function BuilderProvider({ children }: { children: ReactNode }) {
           try {
             const template = await api.getTemplateById(id);
             if (template && template.layoutJson) {
-              const normalized = normalizeLayoutDocumentV1(template.layoutJson, {
-                name: template.name,
-                kind: template.type,
-                origin: template.layoutJson?.metadata?.origin || "migrated",
-              });
+              const normalized = normalizeLayoutDocumentV1(
+                template.layoutJson,
+                {
+                  name: template.name,
+                  kind: template.type,
+                  origin: template.layoutJson?.metadata?.origin || "migrated",
+                },
+              );
               const doc = normalized.document as any;
               setBlocks(sanitizeBlocks(doc.blocks as BuilderBlock[]));
               setTemplateId(String(template.id));
@@ -283,10 +384,14 @@ export function BuilderProvider({ children }: { children: ReactNode }) {
             const initialBlocks = getTemplateInitialBlocks(temp.id);
             setBlocks(sanitizeBlocks(initialBlocks));
             setTemplateName(temp.name);
-            const tType = temp.id === "card-grid" ? "Blog Archive" : "Single Post";
+            const tType =
+              temp.id === "card-grid" ? "Blog Archive" : "Single Post";
             setTemplateType(tType);
             persistMeta(temp.name, tType, null);
-            localStorage.setItem("corehead_builder_layout", JSON.stringify(initialBlocks));
+            localStorage.setItem(
+              "corehead_builder_layout",
+              JSON.stringify(initialBlocks),
+            );
             localStorage.removeItem("selected_template");
             setIsLoaded(true);
             return;
@@ -344,7 +449,11 @@ export function BuilderProvider({ children }: { children: ReactNode }) {
         if (rawMeta) {
           try {
             const m = JSON.parse(rawMeta);
-            if (m.userId && currentUserId && String(m.userId) !== String(currentUserId)) {
+            if (
+              m.userId &&
+              currentUserId &&
+              String(m.userId) !== String(currentUserId)
+            ) {
               userMatches = false;
             }
           } catch {
@@ -375,7 +484,11 @@ export function BuilderProvider({ children }: { children: ReactNode }) {
             try {
               const m = JSON.parse(rawMeta);
               if (m.name) setTemplateName(m.name);
-              if (m.type === "Single Post" || m.type === "Blog Archive" || m.type === "Home Page") {
+              if (
+                m.type === "Single Post" ||
+                m.type === "Blog Archive" ||
+                m.type === "Home Page"
+              ) {
                 setTemplateType(m.type);
               }
               if (m.id) setTemplateId(String(m.id));
@@ -415,14 +528,24 @@ export function BuilderProvider({ children }: { children: ReactNode }) {
 
     // Check if the new state is actually different from the current history pointer
     const currentRecorded = historyRef.current[historyIndexRef.current];
-    if (currentRecorded && JSON.stringify(currentRecorded) === JSON.stringify(blocks)) {
+    if (
+      currentRecorded &&
+      JSON.stringify(currentRecorded) === JSON.stringify(blocks)
+    ) {
       return;
     }
 
     // Debounce the push to prevent filling history with every keystroke
     const timer = setTimeout(() => {
-      const nextHistory = historyRef.current.slice(0, historyIndexRef.current + 1);
-      if (nextHistory.length > 0 && JSON.stringify(nextHistory[nextHistory.length - 1]) === JSON.stringify(blocks)) {
+      const nextHistory = historyRef.current.slice(
+        0,
+        historyIndexRef.current + 1,
+      );
+      if (
+        nextHistory.length > 0 &&
+        JSON.stringify(nextHistory[nextHistory.length - 1]) ===
+          JSON.stringify(blocks)
+      ) {
         return;
       }
       const updated = [...nextHistory, blocks];
@@ -437,7 +560,10 @@ export function BuilderProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       const target = e.target as HTMLElement;
-      const isInput = target?.tagName === "INPUT" || target?.tagName === "TEXTAREA" || target?.isContentEditable;
+      const isInput =
+        target?.tagName === "INPUT" ||
+        target?.tagName === "TEXTAREA" ||
+        target?.isContentEditable;
 
       if ((e.ctrlKey || e.metaKey) && !e.shiftKey) {
         if (e.key === "z" || e.key === "Z") {
@@ -463,7 +589,12 @@ export function BuilderProvider({ children }: { children: ReactNode }) {
     if (isLoaded) {
       // Do not replace a restored layout with an empty initial React render.
       const localLayout = localStorage.getItem("corehead_builder_layout");
-      if (blocks.length === 0 && localLayout && localLayout !== "[]" && localLayout !== "null") {
+      if (
+        blocks.length === 0 &&
+        localLayout &&
+        localLayout !== "[]" &&
+        localLayout !== "null"
+      ) {
         return;
       }
       const normalized = normalizeLayoutDocumentV1(blocks, {
@@ -471,12 +602,19 @@ export function BuilderProvider({ children }: { children: ReactNode }) {
         kind: templateType,
         origin: "manual",
       });
-      localStorage.setItem("corehead_builder_layout", JSON.stringify(normalized.document));
+      localStorage.setItem(
+        "corehead_builder_layout",
+        JSON.stringify(normalized.document),
+      );
       persistMeta(templateName, templateType, templateId);
     }
   }, [blocks, isLoaded, templateName, templateType, templateId]);
 
-  const addBlock = (type: BlockType, parentId?: string, targetIndex?: number) => {
+  const addBlock = (
+    type: BlockType,
+    parentId?: string,
+    targetIndex?: number,
+  ) => {
     const newBlock: BuilderBlock = {
       id: crypto.randomUUID(),
       type,
@@ -489,7 +627,7 @@ export function BuilderProvider({ children }: { children: ReactNode }) {
         return [...prev, newBlock];
       }
       const levelBlocks = prev.filter(
-        (b) => b.parentId === parentId || (!b.parentId && !parentId)
+        (b) => b.parentId === parentId || (!b.parentId && !parentId),
       );
       const targetBlock = levelBlocks[targetIndex];
       const globalIndex = targetBlock
@@ -513,11 +651,11 @@ export function BuilderProvider({ children }: { children: ReactNode }) {
       prev.map((block) =>
         block.id === id
           ? {
-            ...block,
-            content,
-            styles: { ...block.styles, ...styles },
-            bindings: { ...block.bindings, ...bindings },
-          }
+              ...block,
+              content,
+              styles: { ...block.styles, ...styles },
+              bindings: { ...block.bindings, ...bindings },
+            }
           : block,
       ),
     );
@@ -558,24 +696,189 @@ export function BuilderProvider({ children }: { children: ReactNode }) {
     });
   };
 
-  const duplicateBlock = (id: string) => {
+  const collectSubtree = (
+    allBlocks: BuilderBlock[],
+    rootId: string,
+  ): BuilderBlock[] => {
+    const ids = new Set<string>([rootId]);
+    let prevSize = 0;
+    while (ids.size > prevSize) {
+      prevSize = ids.size;
+      allBlocks.forEach((b) => {
+        if (b.parentId && ids.has(b.parentId)) ids.add(b.id);
+      });
+    }
+    return allBlocks.filter((b) => ids.has(b.id));
+  };
+
+  const cloneSubtreeWithFreshIds = (
+    subtree: BuilderBlock[],
+    targetParentId?: string,
+  ): BuilderBlock[] => {
+    const idMap = new Map<string, string>();
+    subtree.forEach((b) => idMap.set(b.id, crypto.randomUUID()));
+    const rootOriginalId = subtree[0]?.id;
+    return subtree.map((b) => ({
+      ...b,
+      id: idMap.get(b.id)!,
+      parentId:
+        b.id === rootOriginalId
+          ? targetParentId
+          : b.parentId && idMap.has(b.parentId)
+            ? idMap.get(b.parentId)
+            : targetParentId,
+      content: JSON.parse(JSON.stringify(b.content)),
+      styles: b.styles ? { ...b.styles } : undefined,
+      bindings: b.bindings ? { ...b.bindings } : undefined,
+    }));
+  };
+
+  const copyBlock = (id: string) => {
+    const subtree = collectSubtree(blocks, id);
+    if (subtree.length === 0) return;
+    setCopiedBlocks(JSON.parse(JSON.stringify(subtree)));
+    if (typeof navigator !== "undefined" && navigator.clipboard?.writeText) {
+      navigator.clipboard
+        .writeText(JSON.stringify({ __coreheadBlocks: subtree }))
+        .catch(() => {});
+    }
+    showNotice(`Copied ${subtree[0].type}`);
+  };
+
+  const insertClonedSubtree = (
+    subtree: BuilderBlock[],
+    parentId?: string,
+    targetIndex?: number,
+  ) => {
+    if (!subtree || subtree.length === 0) return;
+    const cloned = cloneSubtreeWithFreshIds(subtree, parentId);
     setBlocks((prev) => {
-      const originalIndex = prev.findIndex((b) => b.id === id);
-      if (originalIndex === -1) return prev;
-      const original = prev[originalIndex];
-      const newId = crypto.randomUUID();
-      const clone: BuilderBlock = {
-        ...original,
-        id: newId,
-        content: JSON.parse(JSON.stringify(original.content)),
-        styles: original.styles ? { ...original.styles } : undefined,
-        bindings: original.bindings ? { ...original.bindings } : undefined,
-      };
+      if (targetIndex === undefined) {
+        return [...prev, ...cloned];
+      }
+      const levelBlocks = prev.filter(
+        (b) => b.parentId === parentId || (!b.parentId && !parentId),
+      );
+      const targetBlock = levelBlocks[targetIndex];
+      const globalIndex = targetBlock
+        ? prev.findIndex((b) => b.id === targetBlock.id)
+        : prev.length;
       const result = Array.from(prev);
-      result.splice(originalIndex + 1, 0, clone);
-      setSelectedBlockId(newId);
+      result.splice(globalIndex, 0, ...cloned);
       return result;
     });
+    setSelectedBlockId(cloned[0].id);
+  };
+
+  const pasteBlock = (parentId?: string, targetIndex?: number) => {
+    if (!copiedBlocks || copiedBlocks.length === 0) return;
+    if (
+      parentId === undefined &&
+      targetIndex === undefined &&
+      selectedBlockId
+    ) {
+      const selected = blocks.find((b) => b.id === selectedBlockId);
+      if (selected) {
+        const levelBlocks = blocks.filter(
+          (b) =>
+            b.parentId === selected.parentId ||
+            (!b.parentId && !selected.parentId),
+        );
+        const idx = levelBlocks.findIndex((b) => b.id === selected.id) + 1;
+        insertClonedSubtree(copiedBlocks, selected.parentId, idx);
+        showNotice(`Pasted ${copiedBlocks[0].type}`);
+        return;
+      }
+    }
+    insertClonedSubtree(copiedBlocks, parentId, targetIndex);
+    showNotice(`Pasted ${copiedBlocks[0].type}`);
+  };
+
+  const duplicateBlock = (id: string) => {
+    const subtree = collectSubtree(blocks, id);
+    if (subtree.length === 0) return;
+    const root = subtree[0];
+    const levelBlocks = blocks.filter(
+      (b) => b.parentId === root.parentId || (!b.parentId && !root.parentId),
+    );
+    const idx = levelBlocks.findIndex((b) => b.id === root.id) + 1;
+    insertClonedSubtree(subtree, root.parentId, idx);
+    showNotice(`Duplicated ${root.type}`);
+  };
+
+  const saveBlockAsSection = async (
+    blockId: string,
+    name: string,
+    category = "Custom",
+  ): Promise<boolean> => {
+    const subtree = collectSubtree(blocks, blockId);
+    if (subtree.length === 0 || !name.trim()) return false;
+    // Normalize root parentId to undefined so the saved section is portable
+    const portable = subtree.map((b, i) =>
+      i === 0 ? { ...b, parentId: undefined } : b,
+    );
+    try {
+      const res = await api.createSavedSection({
+        name: name.trim(),
+        category,
+        blocks: portable,
+      });
+      if (res?.section) {
+        setSavedSections((prev) => [res.section, ...prev]);
+        showNotice(`Saved "${name.trim()}" section`);
+        return true;
+      }
+    } catch {
+      const localSection: SavedSectionItem = {
+        id: `local-${Date.now()}`,
+        name: name.trim(),
+        category,
+        blocks: portable,
+        createdAt: new Date().toISOString(),
+      };
+      setSavedSections((prev) => {
+        const next = [localSection, ...prev];
+        try {
+          localStorage.setItem("corehead_saved_sections", JSON.stringify(next));
+        } catch {
+          /* ignore */
+        }
+        return next;
+      });
+      showNotice(`Saved "${name.trim()}" locally`);
+      return true;
+    }
+    return false;
+  };
+
+  const insertSavedSection = (
+    sectionBlocks: BuilderBlock[],
+    parentId?: string,
+    targetIndex?: number,
+  ) => {
+    if (!Array.isArray(sectionBlocks) || sectionBlocks.length === 0) return;
+    insertClonedSubtree(sectionBlocks, parentId, targetIndex);
+    showNotice("Inserted saved section");
+  };
+
+  const deleteSavedSection = async (id: number | string) => {
+    try {
+      if (typeof id === "number" || !String(id).startsWith("local-")) {
+        await api.deleteSavedSection(id);
+      }
+    } catch {
+      /* ignore */
+    }
+    setSavedSections((prev) => {
+      const next = prev.filter((s) => s.id !== id);
+      try {
+        localStorage.setItem("corehead_saved_sections", JSON.stringify(next));
+      } catch {
+        /* ignore */
+      }
+      return next;
+    });
+    showNotice("Removed saved section");
   };
 
   const moveBlock = (id: string, direction: "up" | "down") => {
@@ -584,15 +887,17 @@ export function BuilderProvider({ children }: { children: ReactNode }) {
       if (!block) return prev;
       const parentId = block.parentId;
       const siblingBlocks = prev.filter(
-        (b) => b.parentId === parentId || (!b.parentId && !parentId)
+        (b) => b.parentId === parentId || (!b.parentId && !parentId),
       );
       const siblingIndex = siblingBlocks.findIndex((b) => b.id === id);
       if (siblingIndex === -1) return prev;
 
       if (direction === "up" && siblingIndex === 0) return prev;
-      if (direction === "down" && siblingIndex === siblingBlocks.length - 1) return prev;
+      if (direction === "down" && siblingIndex === siblingBlocks.length - 1)
+        return prev;
 
-      const targetSibling = siblingBlocks[direction === "up" ? siblingIndex - 1 : siblingIndex + 1];
+      const targetSibling =
+        siblingBlocks[direction === "up" ? siblingIndex - 1 : siblingIndex + 1];
       const currentIndex = prev.findIndex((b) => b.id === id);
       const targetIndex = prev.findIndex((b) => b.id === targetSibling.id);
 
@@ -603,7 +908,11 @@ export function BuilderProvider({ children }: { children: ReactNode }) {
     });
   };
 
-  const moveBlockTo = (sourceBlockId: string, targetParentId?: string, targetIndex?: number) => {
+  const moveBlockTo = (
+    sourceBlockId: string,
+    targetParentId?: string,
+    targetIndex?: number,
+  ) => {
     setBlocks((prev) => {
       const sourceIndex = prev.findIndex((b) => b.id === sourceBlockId);
       if (sourceIndex === -1) return prev;
@@ -623,7 +932,8 @@ export function BuilderProvider({ children }: { children: ReactNode }) {
         result.push(updatedBlock);
       } else {
         const levelBlocks = result.filter(
-          (b) => b.parentId === targetParentId || (!b.parentId && !targetParentId)
+          (b) =>
+            b.parentId === targetParentId || (!b.parentId && !targetParentId),
         );
         const targetBlock = levelBlocks[targetIndex];
         const globalTargetIndex = targetBlock
@@ -657,7 +967,10 @@ export function BuilderProvider({ children }: { children: ReactNode }) {
       });
       const doc = normalized.document as any;
       setBlocks(doc.blocks as BuilderBlock[]);
-      localStorage.setItem("corehead_builder_layout", JSON.stringify(normalized.document));
+      localStorage.setItem(
+        "corehead_builder_layout",
+        JSON.stringify(normalized.document),
+      );
     } catch (e) {
       console.error("Failed to parse layout string", e);
     }
@@ -715,14 +1028,16 @@ export function BuilderProvider({ children }: { children: ReactNode }) {
       layoutType?: string;
       designStyle?: string;
       features?: Record<string, boolean>;
-    }
+    },
   ): Promise<string | undefined> => {
     if (!prompt.trim() || isAnalyzing) return undefined;
 
     setIsAnalyzing(true);
     try {
       const type = options?.layoutType || templateTypeToKind(templateType);
-      const generatedTemplateType = kindToTemplateType(templateTypeToKind(type));
+      const generatedTemplateType = kindToTemplateType(
+        templateTypeToKind(type),
+      );
       setTemplateType(generatedTemplateType);
       const style = options?.designStyle || "modern";
 
@@ -740,7 +1055,10 @@ export function BuilderProvider({ children }: { children: ReactNode }) {
           status: "draft",
           origin: "ai",
         });
-        localStorage.setItem("corehead_builder_layout", JSON.stringify(prepared.document));
+        localStorage.setItem(
+          "corehead_builder_layout",
+          JSON.stringify(prepared.document),
+        );
         setAiBlocks(prepared.document.blocks as BuilderBlock[]);
         setCompareMode(true);
       }
@@ -749,8 +1067,16 @@ export function BuilderProvider({ children }: { children: ReactNode }) {
       return (data.provider as string) || "ai";
     } catch (error: any) {
       console.error("AI Generation error:", error);
-      if (error.message?.includes("LIMIT_EXCEEDED") || error.data?.error?.includes("LIMIT_EXCEEDED") || error.status === 402 || error.status === 429 || error.status === 403) {
-        setPaywallCooldown(error.data?.cooldown_remaining || error.data?.cooldownRemaining || 0);
+      if (
+        error.message?.includes("LIMIT_EXCEEDED") ||
+        error.data?.error?.includes("LIMIT_EXCEEDED") ||
+        error.status === 402 ||
+        error.status === 429 ||
+        error.status === 403
+      ) {
+        setPaywallCooldown(
+          error.data?.cooldown_remaining || error.data?.cooldownRemaining || 0,
+        );
         setIsPaywallOpen(true);
       } else {
         alert("AI Generation failed: " + error.message);
@@ -768,7 +1094,7 @@ export function BuilderProvider({ children }: { children: ReactNode }) {
     try {
       const data = await api.modifyLayout({
         currentBlocks: blocks,
-        instruction: instruction.trim()
+        instruction: instruction.trim(),
       });
 
       if (data.success && data.blocks) {
@@ -825,7 +1151,8 @@ export function BuilderProvider({ children }: { children: ReactNode }) {
         templateName,
         setTemplateName,
         templateType,
-        setTemplateType,
+        setTemplateType: (type: BuilderTemplateType) =>
+          setTemplateType(kindToTemplateType(templateTypeToKind(type))),
         templateId,
         setTemplateId,
         aiHistoryId,
@@ -847,6 +1174,15 @@ export function BuilderProvider({ children }: { children: ReactNode }) {
         canUndo,
         canRedo,
         modifyLayout,
+        copiedBlocks,
+        copyBlock,
+        pasteBlock,
+        savedSections,
+        refreshSavedSections,
+        saveBlockAsSection,
+        insertSavedSection,
+        deleteSavedSection,
+        lastActionNotice,
       }}
     >
       {children}
@@ -915,6 +1251,20 @@ function getDefaultContent(type: BlockType): any {
       return "40px";
     case "Code Block":
       return { code: "console.log('Hello World');", language: "javascript" };
+    case "Contact Form":
+      return {
+        title: "Get in Touch",
+        description: "Send us a message and we will get back to you soon.",
+        buttonText: "Send Message",
+        successMessage: "Thank you! Your message has been sent.",
+        showSubject: true,
+      };
+    case "Table of Contents":
+      return {
+        title: "Table of Contents",
+        maxDepth: 3,
+        style: "card",
+      };
     default:
       return "";
   }
@@ -940,7 +1290,12 @@ function getTemplateInitialBlocks(templateId: string): BuilderBlock[] {
           id: headingId,
           type: "Heading",
           content: "Minimal Single Post Layout",
-          styles: { fontSize: "32px", fontWeight: "bold", textAlign: "center", marginBottom: "20px" },
+          styles: {
+            fontSize: "32px",
+            fontWeight: "bold",
+            textAlign: "center",
+            marginBottom: "20px",
+          },
           bindings: { content: "post.title" },
           parentId: containerId,
         },
@@ -948,15 +1303,28 @@ function getTemplateInitialBlocks(templateId: string): BuilderBlock[] {
           id: imageId,
           type: "Image",
           content: "",
-          styles: { width: "100%", height: "400px", objectFit: "cover", borderRadius: "8px", marginBottom: "30px" },
+          styles: {
+            width: "100%",
+            height: "400px",
+            objectFit: "cover",
+            borderRadius: "8px",
+            marginBottom: "30px",
+          },
           bindings: { src: "post.coverImage" },
           parentId: containerId,
         },
         {
           id: paragraphId,
           type: "Paragraph",
-          content: "This is a clean, centered typography layout designed for readability. The main elements of your post like the title, featured image, and content body are placed sequentially without complex columns.",
-          styles: { fontSize: "18px", lineHeight: "1.8", color: "#334155", maxWidth: "700px", margin: "0 auto 20px auto" },
+          content:
+            "This is a clean, centered typography layout designed for readability. The main elements of your post like the title, featured image, and content body are placed sequentially without complex columns.",
+          styles: {
+            fontSize: "18px",
+            lineHeight: "1.8",
+            color: "#334155",
+            maxWidth: "700px",
+            margin: "0 auto 20px auto",
+          },
           bindings: { content: "post.content" },
           parentId: containerId,
         },
@@ -986,7 +1354,11 @@ function getTemplateInitialBlocks(templateId: string): BuilderBlock[] {
           id: columnsId,
           type: "Columns",
           content: 2,
-          styles: { display: "grid", gridTemplateColumns: "2fr 1fr", gap: "30px" },
+          styles: {
+            display: "grid",
+            gridTemplateColumns: "2fr 1fr",
+            gap: "30px",
+          },
           parentId: containerId,
         },
         {
@@ -1000,14 +1372,21 @@ function getTemplateInitialBlocks(templateId: string): BuilderBlock[] {
           id: imageId,
           type: "Image",
           content: "",
-          styles: { width: "100%", height: "300px", objectFit: "cover", borderRadius: "12px", marginBottom: "20px" },
+          styles: {
+            width: "100%",
+            height: "300px",
+            objectFit: "cover",
+            borderRadius: "12px",
+            marginBottom: "20px",
+          },
           bindings: { src: "post.coverImage" },
           parentId: colLeftId,
         },
         {
           id: paragraphId,
           type: "Paragraph",
-          content: "Magazine layouts combine rich editorial content on the left with widgets and discovery blocks on the right. This classic structure is standard for high-volume publishing sites.",
+          content:
+            "Magazine layouts combine rich editorial content on the left with widgets and discovery blocks on the right. This classic structure is standard for high-volume publishing sites.",
           styles: { fontSize: "16px", lineHeight: "1.6", color: "#0f172a" },
           bindings: { content: "post.content" },
           parentId: colLeftId,
@@ -1016,7 +1395,12 @@ function getTemplateInitialBlocks(templateId: string): BuilderBlock[] {
           id: colRightId,
           type: "Container",
           content: "",
-          styles: { padding: "20px", backgroundColor: "#ffffff", borderRadius: "12px", boxShadow: "0 1px 3px rgba(0,0,0,0.05)" },
+          styles: {
+            padding: "20px",
+            backgroundColor: "#ffffff",
+            borderRadius: "12px",
+            boxShadow: "0 1px 3px rgba(0,0,0,0.05)",
+          },
           parentId: columnsId,
         },
         {
@@ -1029,7 +1413,11 @@ function getTemplateInitialBlocks(templateId: string): BuilderBlock[] {
         {
           id: newsId,
           type: "Newsletter",
-          content: { title: "Subscribe to our magazine feed", buttonText: "Keep Updated", placeholder: "your@email.com" },
+          content: {
+            title: "Subscribe to our magazine feed",
+            buttonText: "Keep Updated",
+            placeholder: "your@email.com",
+          },
           styles: {},
           parentId: colRightId,
         },
@@ -1047,21 +1435,36 @@ function getTemplateInitialBlocks(templateId: string): BuilderBlock[] {
           id: headingId,
           type: "Heading",
           content: "Card Grid Archive",
-          styles: { fontSize: "30px", fontWeight: "bold", textAlign: "center", marginBottom: "10px" },
+          styles: {
+            fontSize: "30px",
+            fontWeight: "bold",
+            textAlign: "center",
+            marginBottom: "10px",
+          },
           parentId: containerId,
         },
         {
           id: paragraphId,
           type: "Paragraph",
-          content: "Browse our latest stories and articles in a modern grid view.",
-          styles: { fontSize: "16px", color: "#64748b", textAlign: "center", marginBottom: "40px" },
+          content:
+            "Browse our latest stories and articles in a modern grid view.",
+          styles: {
+            fontSize: "16px",
+            color: "#64748b",
+            textAlign: "center",
+            marginBottom: "40px",
+          },
           parentId: containerId,
         },
         {
           id: listGridId,
           type: "Collection List",
           content: { limit: 6, category: "" },
-          styles: { display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "24px" },
+          styles: {
+            display: "grid",
+            gridTemplateColumns: "repeat(3, 1fr)",
+            gap: "24px",
+          },
           parentId: containerId,
         },
       ];
@@ -1079,29 +1482,62 @@ function getTemplateInitialBlocks(templateId: string): BuilderBlock[] {
           id: headingId,
           type: "Heading",
           content: "Reading-Optimized Long-form Layout",
-          styles: { fontFamily: "Georgia, serif", fontSize: "40px", textAlign: "center", marginBottom: "15px", color: "#1c1917" },
+          styles: {
+            fontFamily: "Georgia, serif",
+            fontSize: "40px",
+            textAlign: "center",
+            marginBottom: "15px",
+            color: "#1c1917",
+          },
           bindings: { content: "post.title" },
           parentId: containerId,
         },
         {
           id: paragraphId,
           type: "Paragraph",
-          content: "A layout built specifically for longer essays and research. Features high contrast, beautiful serif typography, and generous vertical margins.",
-          styles: { fontFamily: "Georgia, serif", fontSize: "20px", fontStyle: "italic", textAlign: "center", color: "#44403c", maxWidth: "800px", margin: "0 auto 40px auto" },
+          content:
+            "A layout built specifically for longer essays and research. Features high contrast, beautiful serif typography, and generous vertical margins.",
+          styles: {
+            fontFamily: "Georgia, serif",
+            fontSize: "20px",
+            fontStyle: "italic",
+            textAlign: "center",
+            color: "#44403c",
+            maxWidth: "800px",
+            margin: "0 auto 40px auto",
+          },
           parentId: containerId,
         },
         {
           id: quoteBlockId,
           type: "Quote",
-          content: "This elegant pull-quote serves to break up long runs of text and showcase crucial takeaways from your writing.",
-          styles: { paddingLeft: "20px", borderLeft: "4px solid #b91c1c", fontSize: "22px", fontFamily: "Georgia, serif", fontStyle: "italic", margin: "40px auto", maxWidth: "650px", color: "#78716c" },
+          content:
+            "This elegant pull-quote serves to break up long runs of text and showcase crucial takeaways from your writing.",
+          styles: {
+            paddingLeft: "20px",
+            borderLeft: "4px solid #b91c1c",
+            fontSize: "22px",
+            fontFamily: "Georgia, serif",
+            fontStyle: "italic",
+            margin: "40px auto",
+            maxWidth: "650px",
+            color: "#78716c",
+          },
           parentId: containerId,
         },
         {
           id: bodyParaId,
           type: "Paragraph",
-          content: "Continue your long-form publication content here. Use multiple paragraphs, subtitles, and headings to keep the reader engaged as they scroll down the single-column content area.",
-          styles: { fontFamily: "Georgia, serif", fontSize: "18px", lineHeight: "1.8", color: "#1c1917", maxWidth: "700px", margin: "0 auto" },
+          content:
+            "Continue your long-form publication content here. Use multiple paragraphs, subtitles, and headings to keep the reader engaged as they scroll down the single-column content area.",
+          styles: {
+            fontFamily: "Georgia, serif",
+            fontSize: "18px",
+            lineHeight: "1.8",
+            color: "#1c1917",
+            maxWidth: "700px",
+            margin: "0 auto",
+          },
           bindings: { content: "post.content" },
           parentId: containerId,
         },
@@ -1121,13 +1557,19 @@ function getTemplateInitialBlocks(templateId: string): BuilderBlock[] {
           id: headingId,
           type: "Heading",
           content: "Portfolio Showcase",
-          styles: { fontSize: "36px", fontWeight: "bold", color: "#ffffff", marginBottom: "12px" },
+          styles: {
+            fontSize: "36px",
+            fontWeight: "bold",
+            color: "#ffffff",
+            marginBottom: "12px",
+          },
           parentId: containerId,
         },
         {
           id: paragraphId,
           type: "Paragraph",
-          content: "A modern design focused on high-quality visual presentation & media case studies.",
+          content:
+            "A modern design focused on high-quality visual presentation & media case studies.",
           styles: { fontSize: "16px", color: "#a1a1aa", marginBottom: "30px" },
           parentId: containerId,
         },
@@ -1135,21 +1577,36 @@ function getTemplateInitialBlocks(templateId: string): BuilderBlock[] {
           id: imageGridId,
           type: "Columns",
           content: 2,
-          styles: { display: "grid", gridTemplateColumns: "1fr 1fr", gap: "20px", marginBottom: "20px" },
+          styles: {
+            display: "grid",
+            gridTemplateColumns: "1fr 1fr",
+            gap: "20px",
+            marginBottom: "20px",
+          },
           parentId: containerId,
         },
         {
           id: p1,
           type: "Image",
           content: "",
-          styles: { width: "100%", height: "350px", objectFit: "cover", borderRadius: "8px" },
+          styles: {
+            width: "100%",
+            height: "350px",
+            objectFit: "cover",
+            borderRadius: "8px",
+          },
           parentId: imageGridId,
         },
         {
           id: p2,
           type: "Image",
           content: "",
-          styles: { width: "100%", height: "350px", objectFit: "cover", borderRadius: "8px" },
+          styles: {
+            width: "100%",
+            height: "350px",
+            objectFit: "cover",
+            borderRadius: "8px",
+          },
           parentId: imageGridId,
         },
       ];
@@ -1157,4 +1614,3 @@ function getTemplateInitialBlocks(templateId: string): BuilderBlock[] {
       return [];
   }
 }
-
