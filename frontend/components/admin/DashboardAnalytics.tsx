@@ -68,11 +68,11 @@ export default function DashboardAnalytics() {
     <section className="max-w-7xl mx-auto px-2 sm:px-4 space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div>
-          <h2 className="text-xl font-bold text-slate-900 flex items-center gap-2">
+          <h2 className="text-[22px] font-bold text-slate-900 flex items-center gap-2">
             <BarChart3 className="w-5 h-5 text-blue-600" />
             Traffic &amp; Reader Analytics
           </h2>
-          <p className="text-xs text-slate-500 mt-0.5">
+          <p className="text-[14px] text-slate-500 mt-0.5">
             Real-time post views, daily reader trends, and newsletter growth for your active site.
           </p>
         </div>
@@ -82,7 +82,7 @@ export default function DashboardAnalytics() {
               key={d}
               type="button"
               onClick={() => setDays(d)}
-              className={`px-3 py-1 text-xs font-semibold rounded-lg transition ${
+              className={`px-3 py-1 admin-small rounded-lg transition ${
                 days === d
                   ? "bg-slate-900 text-white"
                   : "text-slate-600 hover:bg-slate-100"
@@ -97,31 +97,31 @@ export default function DashboardAnalytics() {
       {/* KPI Cards */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         <div className="bg-white border border-slate-200/80 rounded-2xl p-5 shadow-xs">
-          <div className="flex items-center justify-between text-slate-500 text-xs font-semibold">
+          <div className="flex items-center justify-between text-slate-500 text-[13px] font-semibold">
             <span>Total Post Views</span>
             <Eye className="w-4 h-4 text-blue-600" />
           </div>
-          <p className="text-2xl font-extrabold text-slate-900 mt-2">
+          <p className="text-[28px] font-bold text-slate-900 mt-2 leading-tight">
             {loading ? "—" : (data?.summary.totalViews ?? 0).toLocaleString()}
           </p>
         </div>
 
         <div className="bg-white border border-slate-200/80 rounded-2xl p-5 shadow-xs">
-          <div className="flex items-center justify-between text-slate-500 text-xs font-semibold">
+          <div className="flex items-center justify-between text-slate-500 text-[13px] font-semibold">
             <span>Views Today</span>
             <TrendingUp className="w-4 h-4 text-emerald-600" />
           </div>
-          <p className="text-2xl font-extrabold text-slate-900 mt-2">
+          <p className="text-[28px] font-bold text-slate-900 mt-2 leading-tight">
             {loading ? "—" : (data?.summary.todayViews ?? 0).toLocaleString()}
           </p>
         </div>
 
         <div className="bg-white border border-slate-200/80 rounded-2xl p-5 shadow-xs">
-          <div className="flex items-center justify-between text-slate-500 text-xs font-semibold">
+          <div className="flex items-center justify-between text-slate-500 text-[13px] font-semibold">
             <span>Published Posts</span>
             <FileText className="w-4 h-4 text-indigo-600" />
           </div>
-          <p className="text-2xl font-extrabold text-slate-900 mt-2">
+          <p className="text-[28px] font-bold text-slate-900 mt-2 leading-tight">
             {loading
               ? "—"
               : `${data?.summary.publishedPosts ?? 0} / ${data?.summary.totalPosts ?? 0}`}
@@ -132,15 +132,15 @@ export default function DashboardAnalytics() {
           href="/admin/newsletter"
           className="bg-white border border-slate-200/80 hover:border-blue-300 rounded-2xl p-5 shadow-xs transition group"
         >
-          <div className="flex items-center justify-between text-slate-500 text-xs font-semibold">
+          <div className="flex items-center justify-between text-slate-500 text-[13px] font-semibold">
             <span>Newsletter Subscribers</span>
             <Users className="w-4 h-4 text-purple-600" />
           </div>
           <div className="flex items-baseline justify-between mt-2">
-            <p className="text-2xl font-extrabold text-slate-900">
+            <p className="text-[28px] font-bold text-slate-900 leading-tight">
               {loading ? "—" : (data?.summary.totalSubscribers ?? 0).toLocaleString()}
             </p>
-            <span className="text-[11px] font-semibold text-blue-600 opacity-0 group-hover:opacity-100 transition flex items-center gap-0.5">
+            <span className="admin-small text-blue-600 opacity-0 group-hover:opacity-100 transition flex items-center gap-0.5">
               Manage <ArrowUpRight size={12} />
             </span>
           </div>

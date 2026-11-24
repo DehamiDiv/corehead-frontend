@@ -61,19 +61,21 @@ export default function SubmissionsPage() {
   const unreadCount = submissions.filter((s) => s.status === "unread").length;
 
   return (
-    <div className="p-6 md:p-8 max-w-6xl mx-auto space-y-6">
+    <div className="space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-slate-900 flex items-center gap-2.5">
-            <Inbox className="w-6 h-6 text-blue-600" />
-            Form Inbox
+          <div className="flex items-center gap-3">
+            <h1 className="admin-title flex items-center gap-2.5">
+              <Inbox className="w-7 h-7 text-blue-600" />
+              Form Inbox
+            </h1>
             {unreadCount > 0 && (
-              <span className="text-xs font-bold bg-blue-100 text-blue-700 px-2.5 py-0.5 rounded-full">
+              <span className="admin-small bg-blue-100 text-blue-700 px-2.5 py-1 rounded-full">
                 {unreadCount} unread
               </span>
             )}
-          </h1>
-          <p className="text-sm text-slate-500 mt-1">
+          </div>
+          <p className="admin-subtitle">
             View and manage messages submitted through Contact Form blocks on your site.
           </p>
         </div>
@@ -81,7 +83,7 @@ export default function SubmissionsPage() {
         <button
           type="button"
           onClick={loadSubmissions}
-          className="inline-flex items-center gap-2 px-4 py-2 bg-white border border-slate-200 hover:bg-slate-50 text-slate-700 text-sm font-medium rounded-xl shadow-xs transition"
+          className="inline-flex items-center gap-2 px-4 py-2.5 bg-white border border-slate-200 hover:bg-slate-50 text-slate-700 admin-btn-secondary rounded-xl shadow-xs transition"
         >
           <RefreshCw size={15} className={loading ? "animate-spin" : ""} />
           Refresh
@@ -95,7 +97,7 @@ export default function SubmissionsPage() {
             key={tab}
             type="button"
             onClick={() => setFilter(tab)}
-            className={`px-3.5 py-1.5 rounded-lg text-xs font-semibold capitalize transition ${
+            className={`px-4 py-2 rounded-xl admin-btn-secondary capitalize transition ${
               filter === tab
                 ? "bg-slate-900 text-white"
                 : "text-slate-600 hover:bg-slate-100"

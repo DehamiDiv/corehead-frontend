@@ -141,14 +141,14 @@ export default function NewsletterAdminPage() {
   };
 
   return (
-    <div className="p-6 md:p-8 max-w-6xl mx-auto space-y-6">
+    <div className="space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-slate-900 flex items-center gap-2.5">
-            <Mail className="w-6 h-6 text-blue-600" />
+          <h1 className="admin-title flex items-center gap-2.5">
+            <Mail className="w-7 h-7 text-blue-600" />
             Newsletter Manager
           </h1>
-          <p className="text-sm text-slate-500 mt-1">
+          <p className="admin-subtitle">
             Manage your email subscribers, export CSV lists, and send or schedule campaigns.
           </p>
         </div>
@@ -158,7 +158,7 @@ export default function NewsletterAdminPage() {
             type="button"
             onClick={handleExportCsv}
             disabled={exporting}
-            className="inline-flex items-center gap-2 px-4 py-2 bg-white border border-slate-200 hover:bg-slate-50 text-slate-700 text-sm font-semibold rounded-xl shadow-xs transition disabled:opacity-60"
+            className="inline-flex items-center gap-2 px-4 py-2.5 bg-white border border-slate-200 hover:bg-slate-50 text-slate-700 admin-btn-secondary rounded-xl shadow-xs transition disabled:opacity-60"
           >
             <Download size={15} />
             {exporting ? "Exporting..." : "Export CSV"}
@@ -166,7 +166,7 @@ export default function NewsletterAdminPage() {
           <button
             type="button"
             onClick={loadData}
-            className="p-2 bg-white border border-slate-200 hover:bg-slate-50 text-slate-600 rounded-xl shadow-xs transition"
+            className="p-2.5 bg-white border border-slate-200 hover:bg-slate-50 text-slate-600 rounded-xl shadow-xs transition"
             title="Refresh"
           >
             <RefreshCw size={16} className={loading ? "animate-spin" : ""} />
@@ -179,25 +179,25 @@ export default function NewsletterAdminPage() {
         <button
           type="button"
           onClick={() => setTab("subscribers")}
-          className={`inline-flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-semibold transition ${
+          className={`inline-flex items-center gap-2 px-4 py-2 rounded-xl admin-btn-secondary transition ${
             tab === "subscribers"
               ? "bg-slate-900 text-white"
               : "text-slate-600 hover:bg-slate-100"
           }`}
         >
-          <Users size={14} />
+          <Users size={15} />
           Subscribers ({subscribers.length})
         </button>
         <button
           type="button"
           onClick={() => setTab("campaigns")}
-          className={`inline-flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-semibold transition ${
+          className={`inline-flex items-center gap-2 px-4 py-2 rounded-xl admin-btn-secondary transition ${
             tab === "campaigns"
               ? "bg-slate-900 text-white"
               : "text-slate-600 hover:bg-slate-100"
           }`}
         >
-          <Send size={14} />
+          <Send size={15} />
           Email Campaigns ({campaigns.length})
         </button>
       </div>
@@ -218,12 +218,12 @@ export default function NewsletterAdminPage() {
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 placeholder="Search subscriber email..."
-                className="w-full pl-9 pr-3 py-2 bg-white border border-slate-200 rounded-xl text-sm outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full pl-9 pr-3 py-2 bg-white border border-slate-200 rounded-xl admin-input outline-none focus:ring-2 focus:ring-blue-500"
               />
             </div>
             <button
               type="submit"
-              className="px-4 py-2 bg-slate-900 text-white text-xs font-semibold rounded-xl hover:bg-slate-800 transition"
+              className="px-4 py-2 bg-slate-900 text-white admin-btn-primary rounded-xl hover:bg-slate-800 transition"
             >
               Search
             </button>
@@ -241,23 +241,23 @@ export default function NewsletterAdminPage() {
             ) : (
               <table className="w-full text-left border-collapse">
                 <thead>
-                  <tr className="bg-slate-50 border-b border-slate-200 text-[11px] font-bold text-slate-500 uppercase tracking-wider">
-                    <th className="py-3 px-4">Email</th>
-                    <th className="py-3 px-4">Status</th>
-                    <th className="py-3 px-4">Subscribed Date</th>
-                    <th className="py-3 px-4 text-right">Action</th>
+                  <tr className="bg-slate-50 border-b border-slate-200 uppercase tracking-wider">
+                    <th className="py-3 px-4 admin-table-th">Email</th>
+                    <th className="py-3 px-4 admin-table-th">Status</th>
+                    <th className="py-3 px-4 admin-table-th">Subscribed Date</th>
+                    <th className="py-3 px-4 admin-table-th text-right">Action</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-slate-100 text-sm">
+                <tbody className="divide-y divide-slate-100">
                   {subscribers.map((sub) => (
                     <tr key={sub.id} className="hover:bg-slate-50/60">
-                      <td className="py-3 px-4 font-medium text-slate-900">{sub.email}</td>
+                      <td className="py-3 px-4 admin-table-td-bold">{sub.email}</td>
                       <td className="py-3 px-4">
-                        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-emerald-50 text-emerald-700 capitalize">
+                        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full admin-small bg-emerald-50 text-emerald-700 capitalize">
                           {sub.status}
                         </span>
                       </td>
-                      <td className="py-3 px-4 text-xs text-slate-500">
+                      <td className="py-3 px-4 admin-table-td text-slate-500">
                         {new Date(sub.createdAt).toLocaleString()}
                       </td>
                       <td className="py-3 px-4 text-right">
