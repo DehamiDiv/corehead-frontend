@@ -26,6 +26,8 @@ export const LAYOUT_BLOCK_TYPES = [
   "Code Block",
   "Html",
   "Markdown",
+  "Contact Form",
+  "Table of Contents",
 ] as const;
 
 export const LAYOUT_BINDING_PATHS = [
