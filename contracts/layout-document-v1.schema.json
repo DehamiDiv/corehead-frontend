@@ -121,7 +121,9 @@
         { "$ref": "#/$defs/spacerBlock" },
         { "$ref": "#/$defs/codeBlock" },
         { "$ref": "#/$defs/htmlBlock" },
-        { "$ref": "#/$defs/markdownBlock" }
+        { "$ref": "#/$defs/markdownBlock" },
+        { "$ref": "#/$defs/contactFormBlock" },
+        { "$ref": "#/$defs/tableOfContentsBlock" }
       ]
     },
     "headingBlock": {
@@ -347,6 +349,50 @@
         "parentId": { "$ref": "#/$defs/baseBlockProperties/parentId" },
         "styles": { "$ref": "#/$defs/styles" },
         "bindings": { "$ref": "#/$defs/bindings" }
+      }
+    },
+    "contactFormBlock": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "type", "content"],
+      "properties": {
+        "id": { "$ref": "#/$defs/baseBlockProperties/id" },
+        "type": { "const": "Contact Form" },
+        "content": {
+          "type": "object",
+          "required": ["title", "description", "buttonText", "successMessage"],
+          "properties": {
+            "title": { "type": "string" },
+            "description": { "type": "string" },
+            "buttonText": { "type": "string" },
+            "successMessage": { "type": "string" },
+            "showSubject": { "type": "boolean" }
+          },
+          "additionalProperties": false
+        },
+        "parentId": { "$ref": "#/$defs/baseBlockProperties/parentId" },
+        "styles": { "$ref": "#/$defs/styles" }
+      }
+    },
+    "tableOfContentsBlock": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "type", "content"],
+      "properties": {
+        "id": { "$ref": "#/$defs/baseBlockProperties/id" },
+        "type": { "const": "Table of Contents" },
+        "content": {
+          "type": "object",
+          "required": ["title"],
+          "properties": {
+            "title": { "type": "string" },
+            "maxDepth": { "type": "integer", "minimum": 2, "maximum": 3 },
+            "style": { "enum": ["card", "minimal"] }
+          },
+          "additionalProperties": false
+        },
+        "parentId": { "$ref": "#/$defs/baseBlockProperties/parentId" },
+        "styles": { "$ref": "#/$defs/styles" }
       }
     }
   }

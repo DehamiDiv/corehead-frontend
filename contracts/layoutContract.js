@@ -25,6 +25,8 @@ const LAYOUT_BLOCK_TYPES = Object.freeze([
   'Code Block',
   'Html',
   'Markdown',
+  'Contact Form',
+  'Table of Contents',
 ]);
 const LAYOUT_BINDING_PATHS = Object.freeze([
   'post.title',
