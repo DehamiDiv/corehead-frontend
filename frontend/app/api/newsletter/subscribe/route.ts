@@ -130,8 +130,36 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Register subscriber for this site
+    // Register subscriber in local store + PostgreSQL backend
     addSubscriber(email, siteSlug);
+
+    const backendApi = (
+      process.env.BACKEND_INTERNAL_URL ||
+      process.env.NEXT_PUBLIC_API_URL ||
+      'http://localhost:5000/api'
+    ).replace(/\/$/, '');
+
+    try {
+      const backendRes = await fetch(`${backendApi}/newsletter/subscribe`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          email,
+          siteSlug,
+          siteId: body.siteId,
+          siteName,
+        }),
+      });
+      const backendData = await backendRes.json().catch(() => ({}));
+      if (!backendRes.ok && backendData?.error) {
+        return NextResponse.json(
+          { success: false, error: backendData.error },
+          { status: backendRes.status }
+        );
+      }
+    } catch (err: any) {
+      console.warn('[Newsletter] Backend forward warning:', err?.message || err);
+    }
 
     // Fire welcome email asynchronously in background so response returns instantly
     sendSubscriptionEmail(email, siteName, siteSlug).catch((err) => {
