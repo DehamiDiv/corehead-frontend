@@ -1,5 +1,6 @@
 import AdminNavbar from "@/components/admin/Navbar";
 import DashboardHero from "@/components/admin/DashboardHero";
+import DashboardAnalytics from "@/components/admin/DashboardAnalytics";
 import FeatureCards from "@/components/admin/FeatureCards";
 
 export default function AdminPage() {
@@ -11,8 +12,9 @@ export default function AdminPage() {
         <DashboardHero />
       </div>
 
-      {/* Features & Content */}
+      {/* Features & Analytics Content */}
       <div className="mt-8 relative z-10 space-y-12">
+        <DashboardAnalytics />
         <FeatureCards />
       </div>
     </div>

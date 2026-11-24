@@ -21,6 +21,7 @@ import { postToBindData, resolveTenantLayout } from "@/lib/tenantLayout";
 import CommentsSection from "@/components/blog/CommentsSection";
 import PostReactions from "@/components/blog/PostReactions";
 import PostShareButtons from "@/components/blog/PostShareButtons";
+import PostViewTracker from "@/components/blog/PostViewTracker";
 
 interface Props {
   params: Promise<{ siteSlug: string; postSlug: string }>;
@@ -184,6 +185,7 @@ export default async function PublicSitePostPage({ params }: Props) {
 
   return (
     <article className="w-full" aria-labelledby="public-post-title">
+      <PostViewTracker postId={post.id} />
       <div className="mx-auto max-w-3xl px-4 pb-16 pt-8 sm:px-6 sm:pb-24 sm:pt-12">
         <Link
           href={siteBlogPath(site.slug)}
