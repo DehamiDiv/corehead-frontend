@@ -33,6 +33,7 @@ services:
       DATABASE_URL: postgresql://${DB_USER:-postgres}:${DB_PASSWORD:-postgres123}@postgres:5432/${DB_NAME:-corehead_blog}
       FRONTEND_URL: http://localhost:3000
       JWT_SECRET: ${JWT_SECRET:-corehead_jwt_super_secret_key_2026}
+      ALLOW_DEV_OTP: ${ALLOW_DEV_OTP:-true}
       GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:-606018182778-tk0ta55e8db8ph5490b0v9u7p1qraq6j.apps.googleusercontent.com}
       GROQ_API_KEY: ${GROQ_API_KEY:-}
       UPLOADS_DIR: public/uploads
