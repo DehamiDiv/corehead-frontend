@@ -13,17 +13,25 @@ export default function ForgotPasswordPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
+  const [devResetUrl, setDevResetUrl] = useState<string | null>(null);
   const { toasts, remove, success: toastSuccess, error: toastError, info: toastInfo } = useToast();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
     setSuccess(null);
+    setDevResetUrl(null);
     setIsLoading(true);
 
     try {
-      await api.forgotPassword(email);
-      toastSuccess("If an account exists with this email, you will receive a reset link shortly.");
+      const res = await api.forgotPassword(email);
+      if (res?.devResetUrl) {
+        setDevResetUrl(res.devResetUrl);
+        setSuccess("Email provider is not configured — use the reset link below to set a new password.");
+      } else {
+        setSuccess("If an account exists with this email, you will receive a reset link shortly.");
+      }
+      toastSuccess("Password reset request processed.");
     } catch (err: any) {
       toastError(err.message || "An error occurred. Please try again.");
     } finally {
@@ -65,8 +73,20 @@ export default function ForgotPasswordPage() {
                 <div className="w-12 h-12 bg-emerald-100 text-emerald-600 rounded-full flex items-center justify-center mx-auto mb-2">
                   <Mail className="w-6 h-6" />
                 </div>
-                <p className="font-medium text-slate-900">Email Sent!</p>
+                <p className="font-medium text-slate-900">
+                  {devResetUrl ? "Reset Link Ready!" : "Email Sent!"}
+                </p>
                 <p className="text-sm text-slate-600">{success}</p>
+                {devResetUrl && (
+                  <div className="pt-2">
+                    <Link
+                      href={devResetUrl}
+                      className="inline-block px-5 py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-semibold text-sm rounded-xl shadow-sm transition"
+                    >
+                      Reset Password Now →
+                    </Link>
+                  </div>
+                )}
               </div>
               <Link
                 href="/login"
