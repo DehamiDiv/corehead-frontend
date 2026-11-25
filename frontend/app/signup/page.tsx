@@ -141,7 +141,7 @@ function SignupForm() {
     uppercase: /[A-Z]/.test(formData.password),
     lowercase: /[a-z]/.test(formData.password),
     number: /\d/.test(formData.password),
-    special: /[@$!%*?&]/.test(formData.password),
+    special: /[^A-Za-z0-9\s]/.test(formData.password),
   };
 
   const strengthScore = Object.values(criteria).filter(Boolean).length;
@@ -200,9 +200,9 @@ function SignupForm() {
       }
       case "password": {
         if (!value) return "Password is required.";
-        const strongPasswordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/;
+        const strongPasswordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z0-9\s]).{8,}$/;
         if (!strongPasswordRegex.test(value)) {
-          return "Password is not strong enough yet.";
+          return "Password must include uppercase, lowercase, number, and special character.";
         }
         return "";
       }
@@ -265,9 +265,9 @@ function SignupForm() {
     };
     setErrors(allErrors);
 
-    const hasErrors = Object.values(allErrors).some((err) => err !== "");
-    if (hasErrors) {
-      toastError("Please fill in all fields correctly before submitting.", "Validation Error");
+    const firstError = Object.values(allErrors).find((err) => err !== "");
+    if (firstError) {
+      toastError(firstError, "Validation Error");
       return;
     }
 
